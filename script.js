@@ -167,11 +167,6 @@ function submitForm() {
     resetForm();
 }
 
-if (!/^\d{10}$/.test(mobile)) {
-    alert("Please enter a valid 10-digit mobile number.");
-    return;
-}
-
 // Reset form fields
 function resetForm() {
     document.getElementById("patientName").value = "";
