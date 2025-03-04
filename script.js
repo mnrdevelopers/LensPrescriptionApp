@@ -119,6 +119,9 @@ function submitForm() {
     // Show Prescription Preview
     document.getElementById("prescriptionPreview").style.display = "block";
 
+    // Enable Print Button
+    document.getElementById("printButton").disabled = false;
+
     // Increment prescription count and earnings
     prescriptionCount++;
     amountEarned += amount;
