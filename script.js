@@ -175,3 +175,40 @@ window.addEventListener("beforeinstallprompt", (event) => {
         }
     }, 3000);
 });
+
+function showInstallButton() {
+    const installButton = document.createElement('button');
+    installButton.textContent = 'Install App';
+    installButton.style.position = 'fixed';
+    installButton.style.bottom = '20px';
+    installButton.style.right = '20px';
+    installButton.style.padding = '10px 20px';
+    installButton.style.backgroundColor = '#007bff';
+    installButton.style.color = '#fff';
+    installButton.style.border = 'none';
+    installButton.style.borderRadius = '5px';
+    installButton.style.cursor = 'pointer';
+    installButton.style.zIndex = '1000';
+    document.body.appendChild(installButton);
+
+    installButton.addEventListener('click', () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('User accepted the install prompt');
+                } else {
+                    console.log('User dismissed the install prompt');
+                }
+                deferredPrompt = null;
+                installButton.remove(); // Remove the button after prompting
+            });
+        }
+    });
+}
+
+window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    deferredPrompt = event;
+    showInstallButton(); // Show the custom install button
+});
