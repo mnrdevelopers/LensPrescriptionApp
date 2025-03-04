@@ -7,6 +7,7 @@ function generateWhatsAppMessage() {
     const age = document.getElementById("previewAge").textContent;
     const gender = document.getElementById("previewGender").textContent;
     const mobile = document.getElementById("previewMobile").textContent;
+    const lensType = document.getElementById("previewVisionType").textContent;
     const rightSPH = document.getElementById("previewRightSPH").textContent;
     const rightCYL = document.getElementById("previewRightCYL").textContent;
     const rightAXIS = document.getElementById("previewRightAXIS").textContent;
@@ -27,6 +28,8 @@ function generateWhatsAppMessage() {
         *Mobile:* ${mobile}
         *Date:* ${date}
 
+        *Vision Type:* ${visionType}
+        
         *Right Eye:*
         - SPH: ${rightSPH}
         - CYL: ${rightCYL}
@@ -159,6 +162,13 @@ function submitForm() {
         return;
     }
 
+ // Generate vision type selection
+    let visionType = [];
+    if (document.getElementById("nearvision").checked) visionType.push("Near Vision");
+    if (document.getElementById("rearvision").checked) visionType.push("Rear Vision");
+    if (document.getElementById("both").checked) visionType.push("Both");
+    
+    
     // Generate lens type selection
     let lensType = [];
     if (document.getElementById("blueCut").checked) lensType.push("Blue Cut");
@@ -171,6 +181,7 @@ function submitForm() {
     document.getElementById("previewAge").textContent = age;
     document.getElementById("previewGender").textContent = gender;
     document.getElementById("previewMobile").textContent = mobile;
+    document.getElementById("previewLensType").textContent = visionType.join(", ") || "None";
     document.getElementById("previewRightSPH").textContent = rightSPH;
     document.getElementById("previewRightCYL").textContent = rightCYL;
     document.getElementById("previewRightAXIS").textContent = rightAXIS;
@@ -205,6 +216,10 @@ function resetForm() {
     document.getElementById("age").value = "";
     document.getElementById("gender").value = "Male";
     document.getElementById("patientMobile").value = "";
+
+    document.getElementById("nearvision").checked = false;
+    document.getElementById("rearvision").checked = false;
+    document.getElementById("both").checked = false;
 
     document.getElementById("rightSPH").value = "";
     document.getElementById("rightCYL").value = "";
