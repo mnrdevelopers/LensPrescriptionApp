@@ -60,7 +60,30 @@ function shareOnWhatsApp() {
     window.open(whatsappUrl, "_blank");
 }
 
-// Enable WhatsApp Share Button after form submission
+// Function to print the prescription
+function printPrescription() {
+    const prescriptionPreview = document.getElementById("prescriptionPreview");
+    const printWindow = window.open("", "_blank");
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>Prescription</title>
+                <style>
+                    body { font-family: Arial, sans-serif; }
+                    h2 { color: #333; }
+                    p { margin: 5px 0; }
+                </style>
+            </head>
+            <body>
+                ${prescriptionPreview.innerHTML}
+            </body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+}
+
+// Enable WhatsApp Share and Print Buttons after form submission
 function submitForm() {
     // Get form values
     const patientName = document.getElementById("patientName").value.trim();
@@ -115,8 +138,9 @@ function submitForm() {
     // Show Prescription Preview
     document.getElementById("prescriptionPreview").style.display = "block";
 
-    // Enable the WhatsApp Share button
+    // Enable the WhatsApp Share and Print buttons
     document.getElementById("whatsappShareButton").disabled = false;
+    document.getElementById("printButton").disabled = false;
 
     // Increment prescription count and earnings
     prescriptionCount++;
@@ -192,8 +216,10 @@ function saveCounters() {
 // Check for day change when the page loads
 checkDayChange();
 
-// Add event listener for the WhatsApp Share button
+// Add event listeners
 document.addEventListener("DOMContentLoaded", function() {
+    document.getElementById("submitButton").addEventListener("click", submitForm);
+    document.getElementById("printButton").addEventListener("click", printPrescription);
     document.getElementById("whatsappShareButton").addEventListener("click", shareOnWhatsApp);
     document.getElementById("resetButton").addEventListener("click", resetStats);
 });
