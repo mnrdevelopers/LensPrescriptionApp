@@ -114,12 +114,11 @@
         </div>
         <hr>
 
-        <!-- Buttons -->
         <div class="buttons">
-            <button onclick="generatePDF()" class="btn-download">Download PDF</button>
-            <button onclick="window.print()" class="btn-print">Print</button>
-            <button onclick="submitForm()" class="btn-submit">Submit</button>
-        </div>
+    <button onclick="generatePDF()" class="btn-download">Download PDF</button>
+    <button id="printButton" onclick="window.print()" class="btn-print" disabled>Print</button>
+    <button onclick="submitForm()" class="btn-submit">Submit</button>
+</div>
 
         <div id="prescriptionPreview" style="display: none; width: 58mm; padding: 5px; font-family: Times New Roman, sans-serif; font-size: 10px;">
     <!-- Clinic Details -->
