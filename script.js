@@ -1,20 +1,18 @@
 // Auto-fill the current date
 document.getElementById("currentDate").textContent = new Date().toLocaleDateString();
 
-// Generate PDF
 function generatePDF() {
     const element = document.getElementById('prescription');
-    html2pdf().from(element).save('Lens_Prescription.pdf');
+    html2pdf().from(element).save('Lens_Prescription.pdf')
+        .catch((error) => console.error("PDF generation failed:", error));
 }
 
-// PWA Installation
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/service-worker.js')
         .then(() => console.log("Service Worker Registered"))
         .catch((error) => console.log("Service Worker Registration Failed", error));
 }
 
-// Handle PWA Install Prompt
 let deferredPrompt;
 window.addEventListener("beforeinstallprompt", (event) => {
     event.preventDefault();
@@ -34,6 +32,43 @@ window.addEventListener("beforeinstallprompt", (event) => {
             }).catch(error => console.error("Install prompt error:", error));
         }
     }, 3000);
+});
+
+function showInstallButton() {
+    const installButton = document.createElement('button');
+    installButton.textContent = 'Install App';
+    installButton.style.position = 'fixed';
+    installButton.style.bottom = '20px';
+    installButton.style.right = '20px';
+    installButton.style.padding = '10px 20px';
+    installButton.style.backgroundColor = '#007bff';
+    installButton.style.color = '#fff';
+    installButton.style.border = 'none';
+    installButton.style.borderRadius = '5px';
+    installButton.style.cursor = 'pointer';
+    installButton.style.zIndex = '1000';
+    document.body.appendChild(installButton);
+
+    installButton.addEventListener('click', () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('User accepted the install prompt');
+                } else {
+                    console.log('User dismissed the install prompt');
+                }
+                deferredPrompt = null;
+                installButton.remove(); // Remove the button after prompting
+            });
+        }
+    });
+}
+
+window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    deferredPrompt = event;
+    showInstallButton(); // Show the custom install button
 });
 
 // Initialize counters
@@ -130,6 +165,11 @@ function submitForm() {
 
     // Reset the form for the next prescription
     resetForm();
+}
+
+if (!/^\d{10}$/.test(mobile)) {
+    alert("Please enter a valid 10-digit mobile number.");
+    return;
 }
 
 // Reset form fields
