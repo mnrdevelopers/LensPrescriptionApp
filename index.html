@@ -9,20 +9,20 @@
 </head>
 <body>
     <div id="prescription">
-    <!-- Prescription Count and Amount Earned -->
-<div class="prescription-stats">
-    <div class="left">
-        <p><strong>Prescription Count:</strong> <span id="prescriptionCount">0</span></p>
-    </div>
-    <div class="right">
-        <p><strong>Amount Earned:</strong> ₹<span id="amountEarned">0</span></p>
-    </div>
-</div>
-       <div>
-    <button id="resetButton" style="display: none;">🔄 Reset Stats</button>
-</div>
+        <!-- Prescription Count and Amount Earned -->
+        <div class="prescription-stats">
+            <div class="left">
+                <p><strong>Prescription Count:</strong> <span id="prescriptionCount">0</span></p>
+            </div>
+            <div class="right">
+                <p><strong>Amount Earned:</strong> ₹<span id="amountEarned">0</span></p>
+            </div>
+        </div>
+        <div>
+            <button id="resetButton" style="display: none;">🔄 Reset Stats</button>
+        </div>
         <hr>
-    
+        
         <!-- Optical Shop Details -->
         <div class="header">
             <h2>Srinidhi Eye Care & Optical</h2>
@@ -61,11 +61,11 @@
                     <option>Other</option>
                 </select>
             </div>
-<div>
-    <label for="patientMobile">Mobile</label>
-    <input type="tel" id="patientMobile" placeholder="Enter mobile number">
-</div>
-</div>
+            <div>
+                <label for="patientMobile">Mobile</label>
+                <input type="tel" id="patientMobile" placeholder="Enter mobile number">
+            </div>
+        </div>
         <hr>
 
         <!-- Prescription Table -->
@@ -84,12 +84,12 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td><input type="text" id="leftSPH"></td>
-                        <td><input type="text" id="leftCYL"></td>
-                        <td><input type="text" id="leftAXIS"></td>
                         <td><input type="text" id="rightSPH"></td>
                         <td><input type="text" id="rightCYL"></td>
                         <td><input type="text" id="rightAXIS"></td>
+                        <td><input type="text" id="leftSPH"></td>
+                        <td><input type="text" id="leftCYL"></td>
+                        <td><input type="text" id="leftAXIS"></td>
                     </tr>
                 </tbody>
             </table>
@@ -114,36 +114,35 @@
         </div>
         <hr>
 
-    <!-- Buttons -->
-<div class="buttons">
-    <button onclick="generatePDF()" class="btn-download">Download PDF</button>
-    <button onclick="window.print()" class="btn-print">Print</button>
-    <button onclick="submitForm()" class="btn-submit">Submit</button>
-</div>
+        <!-- Buttons -->
+        <div class="buttons">
+            <button onclick="generatePDF()" class="btn-download">Download PDF</button>
+            <button onclick="window.print()" class="btn-print">Print</button>
+            <button onclick="submitForm()" class="btn-submit">Submit</button>
+        </div>
 
         <div id="prescriptionPreview" style="display: none; border: 1px solid #000; padding: 10px; margin-top: 20px;">
-    <h2>Prescription Preview</h2>
-    <p><strong>Patient Name:</strong> <span id="previewPatientName"></span></p>
-    <p><strong>Age:</strong> <span id="previewAge"></span></p>
-    <p><strong>Gender:</strong> <span id="previewGender"></span></p>
-    <p><strong>Mobile:</strong> <span id="previewMobile"></span></p>
-    <h3>Prescription Details</h3>
-    <table border="1" width="100%">
-        <tr>
-            <th>Right Eye (SPH)</th><th>Right Eye (CYL)</th><th>Right Eye (AXIS)</th>
-            <th>Left Eye (SPH)</th><th>Left Eye (CYL)</th><th>Left Eye (AXIS)</th>
-        </tr>
-        <tr>
-            <td id="previewRightSPH"></td><td id="previewRightCYL"></td><td id="previewRightAXIS"></td>
-            <td id="previewLeftSPH"></td><td id="previewLeftCYL"></td><td id="previewLeftAXIS"></td>
-        </tr>
-    </table>
-    <h3>Lens Type:</h3>
-    <p id="previewLensType"></p>
-    <h3>Amount:</h3>
-    <p><strong>₹</strong> <span id="previewAmount"></span></p>
-</div>
-
+            <h2>Prescription Preview</h2>
+            <p><strong>Patient Name:</strong> <span id="previewPatientName"></span></p>
+            <p><strong>Age:</strong> <span id="previewAge"></span></p>
+            <p><strong>Gender:</strong> <span id="previewGender"></span></p>
+            <p><strong>Mobile:</strong> <span id="previewMobile"></span></p>
+            <h3>Prescription Details</h3>
+            <table border="1" width="100%">
+                <tr>
+                    <th>Right Eye (SPH)</th><th>Right Eye (CYL)</th><th>Right Eye (AXIS)</th>
+                    <th>Left Eye (SPH)</th><th>Left Eye (CYL)</th><th>Left Eye (AXIS)</th>
+                </tr>
+                <tr>
+                    <td id="previewRightSPH"></td><td id="previewRightCYL"></td><td id="previewRightAXIS"></td>
+                    <td id="previewLeftSPH"></td><td id="previewLeftCYL"></td><td id="previewLeftAXIS"></td>
+                </tr>
+            </table>
+            <h3>Lens Type:</h3>
+            <p id="previewLensType"></p>
+            <h3>Amount:</h3>
+            <p><strong>₹</strong> <span id="previewAmount"></span></p>
+        </div>
 
         <!-- Developer Credit -->
         <div style="text-align: center; margin-top: 15px; font-size: 12px; color: #666;">
