@@ -1,11 +1,76 @@
 // Auto-fill the current date
 document.getElementById("currentDate").textContent = new Date().toLocaleDateString();
 
-// Generate PDF
-function generatePDF() {
-    const element = document.getElementById('prescription');
-    html2pdf().from(element).save('Lens_Prescription.pdf');
+// Function to generate a WhatsApp shareable message
+function generateWhatsAppMessage() {
+    const patientName = document.getElementById("previewPatientName").textContent;
+    const age = document.getElementById("previewAge").textContent;
+    const gender = document.getElementById("previewGender").textContent;
+    const mobile = document.getElementById("previewMobile").textContent;
+    const rightSPH = document.getElementById("previewRightSPH").textContent;
+    const rightCYL = document.getElementById("previewRightCYL").textContent;
+    const rightAXIS = document.getElementById("previewRightAXIS").textContent;
+    const leftSPH = document.getElementById("previewLeftSPH").textContent;
+    const leftCYL = document.getElementById("previewLeftCYL").textContent;
+    const leftAXIS = document.getElementById("previewLeftAXIS").textContent;
+    const lensType = document.getElementById("previewLensType").textContent;
+    const amount = document.getElementById("previewAmount").textContent;
+    const date = document.getElementById("previewDate").textContent;
+
+    // Format the message
+    const message = `
+        *Prescription Details:*
+        ----------------------
+        *Patient Name:* ${patientName}
+        *Age:* ${age}
+        *Gender:* ${gender}
+        *Mobile:* ${mobile}
+        *Date:* ${date}
+
+        *Right Eye:*
+        - SPH: ${rightSPH}
+        - CYL: ${rightCYL}
+        - AXIS: ${rightAXIS}
+
+        *Left Eye:*
+        - SPH: ${leftSPH}
+        - CYL: ${leftCYL}
+        - AXIS: ${leftAXIS}
+
+        *Lens Type:* ${lensType}
+        *Amount:* ₹${amount}
+
+        Thank you for choosing us!
+    `;
+
+    // Encode the message for URL
+    return encodeURIComponent(message);
 }
+
+// Function to share on WhatsApp
+function shareOnWhatsApp() {
+    const message = generateWhatsAppMessage();
+    const mobile = document.getElementById("previewMobile").textContent;
+
+    // Open WhatsApp with the pre-filled message
+    const whatsappUrl = `https://wa.me/${mobile}?text=${message}`;
+    window.open(whatsappUrl, "_blank");
+}
+
+// Enable WhatsApp Share Button after form submission
+function submitForm() {
+    // ... (existing form submission logic)
+
+    // Enable the WhatsApp Share button
+    document.getElementById("whatsappShareButton").disabled = false;
+
+    // ... (rest of the code)
+}
+
+// Add event listener for the WhatsApp Share button
+document.addEventListener("DOMContentLoaded", function() {
+    document.getElementById("whatsappShareButton").addEventListener("click", shareOnWhatsApp);
+});
 
 // PWA Installation
 if ('serviceWorker' in navigator) {
