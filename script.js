@@ -106,6 +106,7 @@ function submitForm() {
     document.getElementById("previewAge").textContent = age;
     document.getElementById("previewGender").textContent = gender;
     document.getElementById("previewMobile").textContent = mobile;
+    document.getElementById("previewDate").textContent = new Date().toLocaleDateString();
     document.getElementById("previewRightSPH").textContent = rightSPH;
     document.getElementById("previewRightCYL").textContent = rightCYL;
     document.getElementById("previewRightAXIS").textContent = rightAXIS;
