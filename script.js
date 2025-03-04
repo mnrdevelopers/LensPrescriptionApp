@@ -116,7 +116,7 @@ function submitForm() {
     document.getElementById("previewAmount").textContent = amount.toFixed(2);
 
     // Update the date in the preview
-    document.getElementById("previewDate").textContent = new Date().toLocaleDateString();
+    document.getElementById("currentDate").textContent = new Date().toLocaleDateString();
 
     // Show Prescription Preview
     document.getElementById("prescriptionPreview").style.display = "block";
