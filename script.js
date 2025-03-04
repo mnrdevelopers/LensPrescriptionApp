@@ -1,5 +1,6 @@
 // Auto-fill the current date
 document.getElementById("currentDate").textContent = new Date().toLocaleDateString();
+}
 
 function generatePDF() {
     const element = document.getElementById('prescription');
@@ -63,7 +64,6 @@ function showInstallButton() {
             });
         }
     });
-}
 
 window.addEventListener("beforeinstallprompt", (event) => {
     event.preventDefault();
