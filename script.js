@@ -115,9 +115,9 @@ function submitForm() {
     document.getElementById("previewLensType").textContent = lensType.join(", ") || "None";
     document.getElementById("previewAmount").textContent = amount.toFixed(2);
 
-    // Update the date in the preview
-    document.getElementById("currentDate").textContent = new Date().toLocaleDateString();
-
+    // Update the date in the preview (use the auto-filled date)
+    document.getElementById("previewDate").textContent = document.getElementById("currentDate").textContent;
+    
     // Show Prescription Preview
     document.getElementById("prescriptionPreview").style.display = "block";
 
