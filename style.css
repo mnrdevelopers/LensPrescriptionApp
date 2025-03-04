@@ -113,6 +113,26 @@ p {
     border-radius: 5px;
 }
 
+/* Vision Type */
+.vision-type {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+
+.vision-type label {
+    flex: 1;
+    font-size: 14px;
+    text-align: left;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+}
+
+.vision-type input {
+    margin-right: 5px;
+}
+
 /* Prescription Table */
 .prescription-table {
     margin-top: 10px;
