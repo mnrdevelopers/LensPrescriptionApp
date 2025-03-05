@@ -365,44 +365,66 @@ input {
     border-radius: 5px;
 }
 
-/* Buttons Container */
+/* Button Container */
 .buttons {
     display: flex;
-    flex-wrap: wrap;
     justify-content: center;
-    gap: 10px; /* Increased space between buttons */
+    gap: 6px; /* Adjust space between buttons */
     margin-top: 15px;
 }
 
+/* Button Styles */
 .btn {
-    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
     font-size: 14px;
     font-weight: bold;
-    border-radius: 8px;
+    border: none;
+    border-radius: 6px;
     cursor: pointer;
-    text-align: center;
     transition: all 0.3s ease;
+    text-align: center;
     color: white;
-    min-width: 100px;
+    min-width: 90px; /* Small buttons */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* Button Icons */
 .btn i {
     margin-right: 5px;
-    font-size: 16px;
+    font-size: 14px;
 }
 
-/* Responsive Buttons for Small Screens */
+/* Button Colors */
+.btn-download { background: #ff4757; }
+.btn-download:hover { background: #e84118; }
+
+.btn-print { background: #f39c12; }
+.btn-print:hover { background: #e67e22; }
+
+.btn-whatsapp { background: #25D366; }
+.btn-whatsapp:hover { background: #1EBE5D; }
+
+.btn-submit { background: #2980b9; }
+.btn-submit:hover { background: #3498db; }
+
+/* Disabled Button */
+.btn:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
+}
+
+/* Responsive for Small Screens */
 @media (max-width: 500px) {
     .buttons {
-        flex-direction: column;
-        align-items: center;
+        flex-wrap: wrap;
     }
-
     .btn {
-        width: 90%; /* Full width on small screens */
-        font-size: 16px;
-        padding: 12px;
+        min-width: auto;
+        padding: 6px 10px;
+        font-size: 12px;
     }
 }
 
