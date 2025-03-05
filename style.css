@@ -289,16 +289,16 @@ input {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 12px;
+    gap: 10px;
     margin-top: 20px;
 }
 
-/* General Button Styles */
+/* Button Styles */
 .btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 12px 20px;
+    padding: 12px 18px;
     font-size: 16px;
     font-weight: bold;
     border: none;
@@ -306,9 +306,9 @@ input {
     cursor: pointer;
     transition: all 0.3s ease;
     text-align: center;
-    min-width: 160px;
     color: white;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    min-width: 180px;
+    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
 }
 
 /* Button Icons */
@@ -317,41 +317,18 @@ input {
     font-size: 18px;
 }
 
-/* Download Button */
-.btn-download {
-    background: #ff4757;
-}
-.btn-download:hover {
-    background: #e84118;
-    transform: translateY(-2px);
-}
+/* Button Colors */
+.btn-download { background: #ff4757; }
+.btn-download:hover { background: #e84118; }
 
-/* Print Button */
-.btn-print {
-    background: #f39c12;
-}
-.btn-print:hover {
-    background: #e67e22;
-    transform: translateY(-2px);
-}
+.btn-print { background: #f39c12; }
+.btn-print:hover { background: #e67e22; }
 
-/* WhatsApp Button */
-.btn-whatsapp {
-    background: #25D366;
-}
-.btn-whatsapp:hover {
-    background: #1EBE5D;
-    transform: translateY(-2px);
-}
+.btn-whatsapp { background: #25D366; }
+.btn-whatsapp:hover { background: #1EBE5D; }
 
-/* Submit Button */
-.btn-submit {
-    background: #2980b9;
-}
-.btn-submit:hover {
-    background: #3498db;
-    transform: translateY(-2px);
-}
+.btn-submit { background: #2980b9; }
+.btn-submit:hover { background: #3498db; }
 
 /* Disabled Button */
 .btn:disabled {
@@ -359,15 +336,13 @@ input {
     cursor: not-allowed;
 }
 
-/* Responsive Design */
+/* Responsive for Small Screens */
 @media (max-width: 600px) {
     .buttons {
         flex-direction: column;
-        align-items: center;
     }
     .btn {
         width: 100%;
-        max-width: 280px;
     }
 }
 
