@@ -123,33 +123,43 @@
             </table>
         </div>
         <hr>
-<!-- Vision Type -->
-<div class="section-title">Vision Type</div>
-<div class="vision-type">
-    <label><input type="checkbox" id="singleVision"> Single Vision</label>
-    <label><input type="checkbox" id="bifocal"> Bifocal</label>
-    <label><input type="checkbox" id="progressive"> Progressive</label>
-    <label><input type="checkbox" id="reading"> Reading</label>
-</div>
-<hr>
 
-        <!-- Lens Type -->
-        <div class="section-title">Lens Type</div>
-        <div class="lens-type">
-            <label><input type="checkbox" id="blueCut"> Blue Cut</label>
-            <label><input type="checkbox" id="progressive"> Progressive</label>
-            <label><input type="checkbox" id="bifocal"> Bifocal</label>
-            <label><input type="checkbox" id="antiGlare"> Anti-Glare</label>
-        </div>
-        <hr>
-<!-- Frame Type -->
-<div class="section-title">Frame Type</div>
-<div class="frame-type">
-    <label><input type="radio" name="frameType" value="Full Rim"> Full Rim</label>
-    <label><input type="radio" name="frameType" value="Half Rim"> Half Rim</label>
-    <label><input type="radio" name="frameType" value="Rimless"> Rimless</label>
-    <label><input type="radio" name="frameType" value="Metal"> Metal</label>
-    <label><input type="radio" name="frameType" value="Plastic"> Plastic</label>
+        <!-- Vision Type, Lens Type, and Frame Type Side by Side -->
+<div class="section-title">Options</div>
+<div class="options-row">
+    <!-- Vision Type -->
+    <div class="form-group">
+        <label for="visionType">Vision Type</label>
+        <select id="visionType">
+            <option value="Single Vision">Single Vision</option>
+            <option value="Bifocal">Bifocal</option>
+            <option value="Progressive">Progressive</option>
+            <option value="Reading">Reading</option>
+        </select>
+    </div>
+
+    <!-- Lens Type -->
+    <div class="form-group">
+        <label for="lensType">Lens Type</label>
+        <select id="lensType">
+            <option value="Blue Cut">Blue Cut</option>
+            <option value="Progressive">Progressive</option>
+            <option value="Bifocal">Bifocal</option>
+            <option value="Anti-Glare">Anti-Glare</option>
+        </select>
+    </div>
+
+    <!-- Frame Type -->
+    <div class="form-group">
+        <label for="frameType">Frame Type</label>
+        <select id="frameType">
+            <option value="Full Rim">Full Rim</option>
+            <option value="Half Rim">Half Rim</option>
+            <option value="Rimless">Rimless</option>
+            <option value="Metal">Metal</option>
+            <option value="Plastic">Plastic</option>
+        </select>
+    </div>
 </div>
 <hr>
         
