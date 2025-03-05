@@ -24,9 +24,12 @@ window.addEventListener("beforeunload", () => {
 // Auto-fill the current date
 document.getElementById("currentDate").textContent = new Date().toLocaleDateString();
 
-// Generate PDF
 function generatePDF() {
-    const element = document.getElementById('prescription');
+    const element = document.getElementById('prescriptionPreview'); // Target only the preview
+    if (!element) {
+        alert("No prescription preview found!");
+        return;
+    }
     html2pdf().from(element).save('Lens_Prescription.pdf');
 }
 
