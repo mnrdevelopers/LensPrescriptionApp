@@ -1,17 +1,22 @@
 document.addEventListener("DOMContentLoaded", () => {
-    // Check if splash screen was already shown in this session
-    if (sessionStorage.getItem("splashShown")) {
-        document.getElementById("splash-screen").style.display = "none"; // Hide splash
-    } else {
-        // Show splash screen for first-time app opening
-        document.getElementById("splash-screen").style.display = "flex";
+    const splashScreen = document.getElementById("splash-screen");
+    const mainContent = document.getElementById("prescription");
 
-        setTimeout(() => {
-            document.getElementById("splash-screen").classList.add("hidden");
-            sessionStorage.setItem("splashShown", "true"); // Store flag in sessionStorage
-        }, 3000); // Show splash for 3 seconds
+    if (!splashScreen || !mainContent) {
+        console.error("Splash screen or main content not found!");
+        return;
     }
+
+    // Show splash screen for 3 seconds, then hide it
+    setTimeout(() => {
+        splashScreen.style.opacity = "0";  // Smooth fade out effect
+        setTimeout(() => {
+            splashScreen.style.display = "none"; // Hide splash screen
+            mainContent.style.display = "block"; // Show main content
+        }, 500); // Wait for opacity transition to complete
+    }, 3000);
 });
+
 
 // Clear splash screen flag when the app is fully closed
 window.addEventListener("beforeunload", () => {
