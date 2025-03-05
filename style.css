@@ -287,10 +287,9 @@ input {
 /* Button Container */
 .buttons {
     display: flex;
-    flex-wrap: wrap;
     justify-content: center;
-    gap: 10px;
-    margin-top: 20px;
+    gap: 6px; /* Adjust space between buttons */
+    margin-top: 15px;
 }
 
 /* Button Styles */
@@ -298,23 +297,23 @@ input {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 12px 18px;
-    font-size: 16px;
+    padding: 8px 12px;
+    font-size: 14px;
     font-weight: bold;
     border: none;
-    border-radius: 8px;
+    border-radius: 6px;
     cursor: pointer;
     transition: all 0.3s ease;
     text-align: center;
     color: white;
-    min-width: 180px;
-    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+    min-width: 90px; /* Small buttons */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* Button Icons */
 .btn i {
-    margin-right: 8px;
-    font-size: 18px;
+    margin-right: 5px;
+    font-size: 14px;
 }
 
 /* Button Colors */
@@ -332,17 +331,19 @@ input {
 
 /* Disabled Button */
 .btn:disabled {
-    background: #95a5a6;
+    background: #bdc3c7;
     cursor: not-allowed;
 }
 
 /* Responsive for Small Screens */
-@media (max-width: 600px) {
+@media (max-width: 500px) {
     .buttons {
-        flex-direction: column;
+        flex-wrap: wrap;
     }
     .btn {
-        width: 100%;
+        min-width: auto;
+        padding: 6px 10px;
+        font-size: 12px;
     }
 }
 
