@@ -283,6 +283,12 @@ function submitForm() {
     resetForm();
 }
 
+let newRef = firebase.database().ref("prescriptions").push();
+    newRef.set(patientData)
+        .then(() => alert("Prescription Saved!"))
+        .catch(error => alert("Error: " + error));
+}
+
 // Reset form fields
 function resetForm() {
     document.getElementById("patientName").value = "";
@@ -385,3 +391,26 @@ prescriptionInputs.forEach(id => {
         this.value = this.value.replace(/[^0-9.-]/g, ""); // Allow numbers, decimals, and negative values
     });
 });
+
+function loadPrescriptions() {
+    firebase.database().ref("prescriptions").once("value", (snapshot) => {
+        let data = snapshot.val();
+        let table = document.getElementById("prescriptionsTable");
+
+        table.innerHTML = "<tr><th>Name</th><th>Age</th><th>Mobile</th><th>Right Eye</th><th>Left Eye</th><th>Lens Type</th><th>Amount</th></tr>";
+
+        for (let key in data) {
+            let prescription = data[key];
+            let row = `<tr>
+                <td>${prescription.patientName}</td>
+                <td>${prescription.age}</td>
+                <td>${prescription.mobile}</td>
+                <td>${prescription.rightEye}</td>
+                <td>${prescription.leftEye}</td>
+                <td>${prescription.lensType}</td>
+                <td>${prescription.amount}</td>
+            </tr>`;
+            table.innerHTML += row;
+        }
+    });
+}
