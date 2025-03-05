@@ -216,12 +216,27 @@ function submitForm() {
     const leftCYL = document.getElementById("leftCYL").value.trim();
     const leftAXIS = document.getElementById("leftAXIS").value.trim();
 
+    // Vision Type
+    const visionType = [];
+    if (document.getElementById("singleVision").checked) visionType.push("Single Vision");
+    if (document.getElementById("bifocal").checked) visionType.push("Bifocal");
+    if (document.getElementById("progressive").checked) visionType.push("Progressive");
+    if (document.getElementById("reading").checked) visionType.push("Reading");
+
+    // Frame Type
+    const frameType = document.querySelector('input[name="frameType"]:checked');
+    const selectedFrameType = frameType ? frameType.value : "Not Selected";
+
+    // Payment Mode
+    const paymentMode = document.querySelector('input[name="paymentMode"]:checked');
+    const selectedPaymentMode = paymentMode ? paymentMode.value : "Not Selected";
+
     // Validation Checks
     if (!patientName) {
         alert("Patient Name is required.");
         return;
     }
-    
+
     if (!age || isNaN(age) || age <= 0) {
         alert("Please enter a valid Age.");
         return;
@@ -237,10 +252,10 @@ function submitForm() {
         return;
     }
 
-    // Validate Prescription Inputs (Allow only numbers and decimals)
+    // Validate Prescription Inputs
     const prescriptionFields = [rightSPH, rightCYL, rightAXIS, leftSPH, leftCYL, leftAXIS];
-    const validNumberPattern = /^-?\d*\.?\d*$/; // Allows numbers and decimals (e.g., -1.25, 2.00)
-    
+    const validNumberPattern = /^-?\d*\.?\d*$/;
+
     for (let i = 0; i < prescriptionFields.length; i++) {
         if (prescriptionFields[i] && !validNumberPattern.test(prescriptionFields[i])) {
             alert("Please enter valid prescription values (numbers only).");
@@ -269,6 +284,11 @@ function submitForm() {
     document.getElementById("previewLensType").textContent = lensType.join(", ") || "None";
     document.getElementById("previewAmount").textContent = parseFloat(amount).toFixed(2);
 
+    // Update Vision Type, Frame Type, and Payment Mode in Preview
+    document.getElementById("previewVisionType").textContent = visionType.join(", ") || "None";
+    document.getElementById("previewFrameType").textContent = selectedFrameType;
+    document.getElementById("previewPaymentMode").textContent = selectedPaymentMode;
+
     // Update the date in the preview
     document.getElementById("previewcurrentDate").textContent = new Date().toLocaleDateString();
 
@@ -277,7 +297,7 @@ function submitForm() {
 
     // Enable the print button
     document.getElementById("printButton").disabled = false;
-    
+
     // Increment prescription count and earnings
     prescriptionCount++;
     amountEarned += parseFloat(amount);
