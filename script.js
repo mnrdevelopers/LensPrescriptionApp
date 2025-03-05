@@ -13,7 +13,7 @@ document.getElementById("patientName").addEventListener("input", checkFormFilled
 document.getElementById("age").addEventListener("input", checkFormFilled);
 document.getElementById("patientMobile").addEventListener("input", checkFormFilled);
 
-// Handle back button press
+// Handle back button press in PWA
 window.addEventListener("popstate", (event) => {
     if (isFormFilled) {
         // Show the custom modal
@@ -38,6 +38,20 @@ document.getElementById("cancelExit").addEventListener("click", () => {
 
 // Initialize history state
 history.pushState(null, document.title, location.href);
+
+// Handle PWA standalone mode (optional)
+window.addEventListener("appinstalled", () => {
+    console.log("PWA installed successfully!");
+});
+
+// Handle beforeunload event for closing the PWA
+window.addEventListener("beforeunload", (event) => {
+    if (isFormFilled) {
+        event.preventDefault();
+        event.returnValue = ""; // Required for Chrome and other modern browsers
+        return ""; // Required for older browsers
+    }
+});
 
 
 document.addEventListener("DOMContentLoaded", () => {
