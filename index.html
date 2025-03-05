@@ -123,6 +123,15 @@
             </table>
         </div>
         <hr>
+<!-- Vision Type -->
+<div class="section-title">Vision Type</div>
+<div class="vision-type">
+    <label><input type="checkbox" id="singleVision"> Single Vision</label>
+    <label><input type="checkbox" id="bifocal"> Bifocal</label>
+    <label><input type="checkbox" id="progressive"> Progressive</label>
+    <label><input type="checkbox" id="reading"> Reading</label>
+</div>
+<hr>
 
         <!-- Lens Type -->
         <div class="section-title">Lens Type</div>
@@ -133,7 +142,17 @@
             <label><input type="checkbox" id="antiGlare"> Anti-Glare</label>
         </div>
         <hr>
-
+<!-- Frame Type -->
+<div class="section-title">Frame Type</div>
+<div class="frame-type">
+    <label><input type="radio" name="frameType" value="Full Rim"> Full Rim</label>
+    <label><input type="radio" name="frameType" value="Half Rim"> Half Rim</label>
+    <label><input type="radio" name="frameType" value="Rimless"> Rimless</label>
+    <label><input type="radio" name="frameType" value="Metal"> Metal</label>
+    <label><input type="radio" name="frameType" value="Plastic"> Plastic</label>
+</div>
+<hr>
+        
         <!-- Amount -->
         <div class="section-title">Amount</div>
         <div class="amount">
@@ -141,6 +160,16 @@
            <input type="number" id="amount" placeholder="Enter amount" required>
         </div>
         <hr>
+
+        <!-- Payment Mode -->
+<div class="section-title">Payment Mode</div>
+<div class="payment-mode">
+    <label><input type="radio" name="paymentMode" value="Cash"> Cash</label>
+    <label><input type="radio" name="paymentMode" value="Card"> Card</label>
+    <label><input type="radio" name="paymentMode" value="UPI"> UPI</label>
+    <label><input type="radio" name="paymentMode" value="Online"> Online</label>
+</div>
+<hr>
 
    <div class="buttons">
     <button id="downloadButton" onclick="generatePDF()" class="btn btn-download">
