@@ -1,7 +1,24 @@
 document.addEventListener("DOMContentLoaded", () => {
-    setTimeout(() => {
-        document.getElementById("splash-screen").classList.add("hidden");
-    }, 3000); // Show splash screen for 3 seconds
+    // Check if splash screen was already shown
+    if (!localStorage.getItem("splashShown")) {
+        // Show splash screen
+        document.getElementById("splash-screen").style.display = "flex";
+
+        setTimeout(() => {
+            document.getElementById("splash-screen").classList.add("hidden");
+            localStorage.setItem("splashShown", "true"); // Set flag in localStorage
+        }, 3000); // Show splash for 3 seconds
+    } else {
+        // Hide splash screen immediately
+        document.getElementById("splash-screen").style.display = "none";
+    }
+});
+
+// Clear splash screen flag when the app is fully closed
+window.addEventListener("beforeunload", () => {
+    if (!navigator.onLine) {
+        localStorage.removeItem("splashShown"); // Reset splash flag only on full close
+    }
 });
 
 
