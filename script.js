@@ -1,24 +1,43 @@
-// Show custom exit prompt modal
-window.addEventListener("beforeunload", (event) => {
-    const isFormFilled = document.getElementById("patientName").value.trim() !== "" ||
-                         document.getElementById("age").value.trim() !== "" ||
-                         document.getElementById("patientMobile").value.trim() !== "";
+// Track if the form is filled
+let isFormFilled = false;
 
+// Function to check if the form is filled
+function checkFormFilled() {
+    isFormFilled = document.getElementById("patientName").value.trim() !== "" ||
+                   document.getElementById("age").value.trim() !== "" ||
+                   document.getElementById("patientMobile").value.trim() !== "";
+}
+
+// Add event listeners to form fields to track changes
+document.getElementById("patientName").addEventListener("input", checkFormFilled);
+document.getElementById("age").addEventListener("input", checkFormFilled);
+document.getElementById("patientMobile").addEventListener("input", checkFormFilled);
+
+// Handle back button press
+window.addEventListener("popstate", (event) => {
     if (isFormFilled) {
-        event.preventDefault();
+        // Show the custom modal
         document.getElementById("exitPromptModal").style.display = "flex";
+
+        // Prevent the default back navigation
+        history.pushState(null, document.title, location.href);
     }
 });
 
 // Handle exit confirmation
 document.getElementById("confirmExit").addEventListener("click", () => {
-    window.location.href = "about:blank"; // Redirect to a blank page (or any other URL)
+    // Allow the user to leave
+    window.history.back();
 });
 
 // Handle cancel exit
 document.getElementById("cancelExit").addEventListener("click", () => {
+    // Hide the modal
     document.getElementById("exitPromptModal").style.display = "none";
 });
+
+// Initialize history state
+history.pushState(null, document.title, location.href);
 
 
 document.addEventListener("DOMContentLoaded", () => {
