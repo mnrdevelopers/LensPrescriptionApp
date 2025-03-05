@@ -378,23 +378,40 @@ input {
     border-color: #007bff;
     box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
 }
-/* Amount */
-.amount {
+
+/* Flexbox Layout for Amount and Payment Mode */
+.amount-payment-row {
     display: flex;
-    align-items: center;
-    justify-content: start;
+    gap: 15px; /* Space between Amount and Payment Mode */
+    margin-bottom: 15px;
 }
 
-.amount strong {
-    font-size: 18px;
-    margin-right: 10px;
+.amount-payment-row .form-group {
+    flex: 1; /* Each section takes equal space */
 }
 
-.amount input {
-    width: 100px;
+.amount-payment-row label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.amount-payment-row input,
+.amount-payment-row select {
+    width: 100%;
+    padding: 8px;
     font-size: 14px;
     border: 1px solid #ccc;
     border-radius: 5px;
+    background-color: white;
+}
+
+.amount-payment-row input:focus,
+.amount-payment-row select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
 }
 
 /* Button Container */
