@@ -1,30 +1,15 @@
 document.addEventListener("DOMContentLoaded", () => {
-    console.log("DOM fully loaded");
-
-    const splashScreen = document.getElementById("splash-screen");
-    const mainContent = document.getElementById("prescription"); // Ensure this ID exists in index.html
-
-    if (!splashScreen || !mainContent) {
-        console.error("🚨 Error: Splash screen or main content not found!");
-        return;
-    }
-
-    console.log("✅ Splash screen and main content found");
-
+    // Check if splash screen was already shown in this session
     if (sessionStorage.getItem("splashShown")) {
-        console.log("⏩ Skipping splash screen, showing main content");
-        splashScreen.style.display = "none"; // Hide splash screen
-        mainContent.classList.add("show"); // Apply CSS fade-in effect
+        document.getElementById("splash-screen").style.display = "none"; // Hide splash
     } else {
-        console.log("🕒 Showing splash screen for 3 seconds");
-        splashScreen.style.display = "flex"; // Show splash screen
+        // Show splash screen for first-time app opening
+        document.getElementById("splash-screen").style.display = "flex";
 
         setTimeout(() => {
-            console.log("✅ Hiding splash screen, showing main content");
-            splashScreen.classList.add("hidden"); // Fully hide splash
-            mainContent.classList.add("show"); // Show main content with fade-in
-            sessionStorage.setItem("splashShown", "true"); // Remember in sessionStorage
-        }, 3000);
+            document.getElementById("splash-screen").classList.add("hidden");
+            sessionStorage.setItem("splashShown", "true"); // Store flag in sessionStorage
+        }, 3000); // Show splash for 3 seconds
     }
 });
 
@@ -61,39 +46,31 @@ document.addEventListener("DOMContentLoaded", () => {
 // Auto-fill the current date
 document.getElementById("currentDate").textContent = new Date().toLocaleDateString();
 
-async function generatePDF() {
-    // Ensure the preview updates before generating the PDF
-    await new Promise((resolve) => {
-        submitForm();
-        setTimeout(resolve, 500); // Wait 500ms for UI update
-    });
+function generatePDF() {
+    // Ensure the preview is updated before generating the PDF
+    submitForm();  // Calls the function to fill the preview
 
-    const element = document.getElementById('prescriptionPreview');
-    if (!element || element.style.display === "none") {
-        alert("Please submit the form before downloading the PDF.");
-        return;
-    }
-
-    // Disable button to prevent multiple clicks
-    document.getElementById("downloadButton").disabled = true;
-
-    // Generate the PDF from the preview section
-    html2pdf()
-        .set({
-            margin: 5,
-            filename: 'Lens_Prescription.pdf',
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        })
-        .from(element)
-        .save()
-        .then(() => {
-            // Re-enable button after PDF is generated
-            document.getElementById("downloadButton").disabled = false;
-        });
+    // Wait a short time to allow the preview to update
+    setTimeout(() => {
+        const element = document.getElementById('prescriptionPreview');
+        if (!element || element.style.display === "none") {
+            alert("Please submit the form before downloading the PDF.");
+            return;
+        }
+        
+        // Generate the PDF from the preview section
+        html2pdf()
+            .set({
+                margin: 5,
+                filename: 'Lens_Prescription.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            })
+            .from(element)
+            .save();
+    }, 500); // Small delay to ensure preview updates
 }
-
 
 // PWA Installation
 if ('serviceWorker' in navigator) {
@@ -162,7 +139,7 @@ function saveCounters() {
 // Check for day change when the page loads
 checkDayChange();
 
-async function submitForm() {
+function submitForm() {
     // Get form values
     const patientName = document.getElementById("patientName").value.trim();
     const age = document.getElementById("age").value.trim();
@@ -170,6 +147,7 @@ async function submitForm() {
     const mobile = document.getElementById("patientMobile").value.trim();
     const amount = document.getElementById("amount").value.trim();
 
+    // Prescription Fields
     const rightSPH = document.getElementById("rightSPH").value.trim();
     const rightCYL = document.getElementById("rightCYL").value.trim();
     const rightAXIS = document.getElementById("rightAXIS").value.trim();
@@ -177,20 +155,46 @@ async function submitForm() {
     const leftCYL = document.getElementById("leftCYL").value.trim();
     const leftAXIS = document.getElementById("leftAXIS").value.trim();
 
-    // Validate Required Fields
-    if (!patientName || !age || !mobile || isNaN(amount) || amount <= 0) {
-        alert("Please fill in all required fields correctly.");
+    // Validation Checks
+    if (!patientName) {
+        alert("Patient Name is required.");
+        return;
+    }
+    
+    if (!age || isNaN(age) || age <= 0) {
+        alert("Please enter a valid Age.");
         return;
     }
 
-    // Get selected Lens Types
+    if (!mobile || !/^\d{10}$/.test(mobile)) {
+        alert("Please enter a valid 10-digit Mobile Number.");
+        return;
+    }
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+        alert("Please enter a valid Amount.");
+        return;
+    }
+
+    // Validate Prescription Inputs (Allow only numbers and decimals)
+    const prescriptionFields = [rightSPH, rightCYL, rightAXIS, leftSPH, leftCYL, leftAXIS];
+    const validNumberPattern = /^-?\d*\.?\d*$/; // Allows numbers and decimals (e.g., -1.25, 2.00)
+    
+    for (let i = 0; i < prescriptionFields.length; i++) {
+        if (prescriptionFields[i] && !validNumberPattern.test(prescriptionFields[i])) {
+            alert("Please enter valid prescription values (numbers only).");
+            return;
+        }
+    }
+
+    // Generate Lens Type Selection
     let lensType = [];
     if (document.getElementById("blueCut").checked) lensType.push("Blue Cut");
     if (document.getElementById("progressive").checked) lensType.push("Progressive");
     if (document.getElementById("bifocal").checked) lensType.push("Bifocal");
     if (document.getElementById("antiGlare").checked) lensType.push("Anti-Glare");
 
-    // ✅ **Update Prescription Preview (Before Sending Data)**
+    // Update Prescription Preview
     document.getElementById("previewPatientName").textContent = patientName;
     document.getElementById("previewAge").textContent = age;
     document.getElementById("previewGender").textContent = gender;
@@ -204,50 +208,20 @@ async function submitForm() {
     document.getElementById("previewLensType").textContent = lensType.join(", ") || "None";
     document.getElementById("previewAmount").textContent = parseFloat(amount).toFixed(2);
 
-    // **Update the Date in the Preview**
+    // Update the date in the preview
     document.getElementById("previewcurrentDate").textContent = new Date().toLocaleDateString();
 
-    // ✅ **Show the Prescription Preview**
+    // Show Prescription Preview
     document.getElementById("prescriptionPreview").style.display = "block";
 
-    // ✅ **Enable the Print Button**
+    // Enable the print button
     document.getElementById("printButton").disabled = false;
-
-    // ✅ **Increment Prescription Count & Earnings (for local tracking)**
+    
+    // Increment prescription count and earnings
     prescriptionCount++;
     amountEarned += parseFloat(amount);
     updateStats();
     saveCounters();
-
-    // ✅ **Now, Send Data to Google Sheets**
-    const apiUrl = "https://script.google.com/macros/s/AKfycbwUdNkhMZuhqV_uAJcOu1uVRqZYsb9G66V6fmzhnXYrDPNGQhzxBGf9o1z11yKAu_3m/exec"; // Replace with your actual URL
-
-    const payload = {
-        patientName, age, gender, mobile,
-        rightSPH, rightCYL, rightAXIS,
-        leftSPH, leftCYL, leftAXIS,
-        lensType, amount
-    };
-
-    try {
-        // Show "Submitting" message
-        alert("Submitting data to Google Sheets...");
-
-        // Send data to Google Sheets
-        const response = await fetch(apiUrl, {
-            method: "POST",
-            mode: "no-cors", // Required for Google Apps Script
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        });
-
-        alert("Prescription saved successfully!"); // Success message
-
-    } catch (error) {
-        console.error("Error submitting data:", error);
-        alert("Failed to submit prescription. Please check your internet connection.");
-    }
-}
 
     // Reset the form for the next prescription
     resetForm();
@@ -288,26 +262,19 @@ document.addEventListener("DOMContentLoaded", function() {
 
 function sendWhatsApp() {
     const mobileNumber = document.getElementById("patientMobile").value.trim();
-    
+
     if (!mobileNumber) {
         alert("Please enter a valid mobile number before sending.");
         return;
     }
 
-    // Check if an image is already cached
-    const cachedImage = localStorage.getItem("cachedPrescriptionImage");
-    if (cachedImage) {
-        sendWhatsAppMessage(mobileNumber, cachedImage);
-        return;
-    }
-
-    // Generate new prescription preview before uploading
+    // Ensure the preview is updated before capturing the image
     submitForm();
 
     // Wait for the preview update before capturing the image
     setTimeout(() => {
         const element = document.getElementById('prescriptionPreview');
-        
+
         if (!element || element.style.display === "none") {
             alert("Please submit the form before sending via WhatsApp.");
             return;
@@ -316,21 +283,15 @@ function sendWhatsApp() {
         // Convert the prescription preview to an image
         html2canvas(element, { scale: 2 }).then(canvas => {
             const imageData = canvas.toDataURL("image/png"); // Convert to base64
+
+            // Upload the image to ImgBB
             uploadImageToImgBB(imageData, mobileNumber);
         });
     }, 500);
 }
 
-
+// Function to upload image to ImgBB and send via WhatsApp
 function uploadImageToImgBB(base64Image, mobileNumber) {
-    const cachedImage = localStorage.getItem("cachedPrescriptionImage");
-
-    // If an image is already cached, use it instead of re-uploading
-    if (cachedImage) {
-        sendWhatsAppMessage(mobileNumber, cachedImage);
-        return;
-    }
-
     const apiKey = "bbfde58b1da5fc9ee9d7d6a591852f71"; // Your ImgBB API Key
     const formData = new FormData();
     formData.append("image", base64Image.split(',')[1]); // Remove 'data:image/png;base64,'
@@ -342,9 +303,12 @@ function uploadImageToImgBB(base64Image, mobileNumber) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            const imageURL = data.data.url;
-            localStorage.setItem("cachedPrescriptionImage", imageURL); // Cache the image
-            sendWhatsAppMessage(mobileNumber, imageURL);
+            const imageURL = data.data.url; // Get the uploaded image URL
+            const message = "Here is your digital prescription from Lens Prescription App: " + imageURL;
+            const whatsappURL = `https://wa.me/${mobileNumber}?text=${encodeURIComponent(message)}`;
+
+            // Open WhatsApp with the image URL
+            window.open(whatsappURL, "_blank");
         } else {
             alert("Image upload failed. Please try again.");
         }
@@ -354,15 +318,6 @@ function uploadImageToImgBB(base64Image, mobileNumber) {
         alert("Error uploading image. Please check your internet connection.");
     });
 }
-
-function sendWhatsAppMessage(mobileNumber, imageURL) {
-    const message = "Here is your digital prescription from Lens Prescription App: " + imageURL;
-    const whatsappURL = `https://wa.me/${mobileNumber}?text=${encodeURIComponent(message)}`;
-
-    // Open WhatsApp with the image URL
-    window.open(whatsappURL, "_blank");
-}
-
 
 document.getElementById("age").addEventListener("input", function () {
     this.value = this.value.replace(/[^0-9]/g, ""); // Only allow numbers
