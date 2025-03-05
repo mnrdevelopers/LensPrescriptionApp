@@ -1,3 +1,26 @@
+// Show custom exit prompt modal
+window.addEventListener("beforeunload", (event) => {
+    const isFormFilled = document.getElementById("patientName").value.trim() !== "" ||
+                         document.getElementById("age").value.trim() !== "" ||
+                         document.getElementById("patientMobile").value.trim() !== "";
+
+    if (isFormFilled) {
+        event.preventDefault();
+        document.getElementById("exitPromptModal").style.display = "flex";
+    }
+});
+
+// Handle exit confirmation
+document.getElementById("confirmExit").addEventListener("click", () => {
+    window.location.href = "about:blank"; // Redirect to a blank page (or any other URL)
+});
+
+// Handle cancel exit
+document.getElementById("cancelExit").addEventListener("click", () => {
+    document.getElementById("exitPromptModal").style.display = "none";
+});
+
+
 document.addEventListener("DOMContentLoaded", () => {
     // Check if splash screen was already shown in this session
     if (sessionStorage.getItem("splashShown")) {
