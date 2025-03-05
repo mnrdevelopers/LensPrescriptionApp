@@ -23,3 +23,14 @@ self.addEventListener('fetch', (event) => {
       .then((response) => response || fetch(event.request))
   );
 });
+
+self.addEventListener('activate', (event) => {
+    event.waitUntil(
+        caches.keys().then((cacheNames) => {
+            return Promise.all(
+                cacheNames.filter((cache) => cache !== CACHE_NAME)
+                .map((cache) => caches.delete(cache))
+            );
+        })
+    );
+});
