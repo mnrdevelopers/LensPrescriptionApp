@@ -46,31 +46,39 @@ document.addEventListener("DOMContentLoaded", () => {
 // Auto-fill the current date
 document.getElementById("currentDate").textContent = new Date().toLocaleDateString();
 
-function generatePDF() {
-    // Ensure the preview is updated before generating the PDF
-    submitForm();  // Calls the function to fill the preview
+async function generatePDF() {
+    // Ensure the preview updates before generating the PDF
+    await new Promise((resolve) => {
+        submitForm();
+        setTimeout(resolve, 500); // Wait 500ms for UI update
+    });
 
-    // Wait a short time to allow the preview to update
-    setTimeout(() => {
-        const element = document.getElementById('prescriptionPreview');
-        if (!element || element.style.display === "none") {
-            alert("Please submit the form before downloading the PDF.");
-            return;
-        }
-        
-        // Generate the PDF from the preview section
-        html2pdf()
-            .set({
-                margin: 5,
-                filename: 'Lens_Prescription.pdf',
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            })
-            .from(element)
-            .save();
-    }, 500); // Small delay to ensure preview updates
+    const element = document.getElementById('prescriptionPreview');
+    if (!element || element.style.display === "none") {
+        alert("Please submit the form before downloading the PDF.");
+        return;
+    }
+
+    // Disable button to prevent multiple clicks
+    document.getElementById("downloadButton").disabled = true;
+
+    // Generate the PDF from the preview section
+    html2pdf()
+        .set({
+            margin: 5,
+            filename: 'Lens_Prescription.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        })
+        .from(element)
+        .save()
+        .then(() => {
+            // Re-enable button after PDF is generated
+            document.getElementById("downloadButton").disabled = false;
+        });
 }
+
 
 // PWA Installation
 if ('serviceWorker' in navigator) {
