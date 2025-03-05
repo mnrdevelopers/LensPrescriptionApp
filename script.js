@@ -205,7 +205,7 @@ async function submitForm() {
     saveCounters();
 
     // ✅ **Now, Send Data to Google Sheets**
-    const apiUrl = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL"; // Replace with your actual URL
+    const apiUrl = "https://script.google.com/macros/s/AKfycbwUdNkhMZuhqV_uAJcOu1uVRqZYsb9G66V6fmzhnXYrDPNGQhzxBGf9o1z11yKAu_3m/exec"; // Replace with your actual URL
 
     const payload = {
         patientName, age, gender, mobile,
