@@ -55,15 +55,20 @@ window.addEventListener("beforeunload", (event) => {
 
 
 document.addEventListener("DOMContentLoaded", () => {
+    const splashScreen = document.getElementById("splash-screen");
+
     // Check if splash screen was already shown in this session
     if (sessionStorage.getItem("splashShown")) {
-        document.getElementById("splash-screen").style.display = "none"; // Hide splash
+        splashScreen.classList.add("hidden"); // Hide splash immediately
     } else {
         // Show splash screen for first-time app opening
-        document.getElementById("splash-screen").style.display = "flex";
+        splashScreen.style.display = "flex";
 
         setTimeout(() => {
-            document.getElementById("splash-screen").classList.add("hidden");
+            splashScreen.classList.add("hidden"); // Apply the hidden class for smooth fade-out
+            setTimeout(() => {
+                splashScreen.style.display = "none"; // Remove the element from the DOM after fade-out
+            }, 500); // Wait for the fade-out transition to complete
             sessionStorage.setItem("splashShown", "true"); // Store flag in sessionStorage
         }, 3000); // Show splash for 3 seconds
     }
