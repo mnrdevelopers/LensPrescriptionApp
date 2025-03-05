@@ -31,15 +31,6 @@ function generatePDF() {
         return;
     }
 
-    // Hide button before downloading
-    document.getElementById("downloadButton").style.display = "none";
-
-    html2pdf().from(element).save('Lens_Prescription.pdf').then(() => {
-        // Show button again after download is complete
-        document.getElementById("downloadButton").style.display = "block";
-    });
-}
-
 // PWA Installation
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/service-worker.js')
