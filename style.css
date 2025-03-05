@@ -284,67 +284,90 @@ input {
     border-radius: 5px;
 }
 
-/* Buttons Container */
+/* Button Container */
 .buttons {
     display: flex;
-    flex-wrap: wrap;  /* Allows wrapping on small screens */
-    justify-content: center; /* Centers buttons */
-    gap: 10px; /* Space between buttons */
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
     margin-top: 20px;
 }
 
-/* General Button Styling */
-.buttons button {
+/* General Button Styles */
+.btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #007bff; /* Default Blue */
-    color: white;
-    border: none;
     padding: 12px 20px;
     font-size: 16px;
     font-weight: bold;
-    border-radius: 5px;
+    border: none;
+    border-radius: 8px;
     cursor: pointer;
-    transition: 0.3s ease-in-out;
+    transition: all 0.3s ease;
     text-align: center;
-    width: 48%; /* Makes buttons side-by-side on larger screens */
-    max-width: 250px;
+    min-width: 160px;
+    color: white;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-/* Icons for Buttons */
-.buttons button img {
-    width: 20px;
-    height: 20px;
+/* Button Icons */
+.btn i {
     margin-right: 8px;
+    font-size: 18px;
 }
 
-/* Button Hover Effect */
-.buttons button:hover {
-    opacity: 0.9;
+/* Download Button */
+.btn-download {
+    background: #ff4757;
+}
+.btn-download:hover {
+    background: #e84118;
+    transform: translateY(-2px);
 }
 
-/* Specific Button Colors */
-.btn-download { background-color: #28a745; } /* Green */
-.btn-print { background-color: #ffc107; } /* Yellow */
-.btn-whatsapp { background-color: #25D366; } /* WhatsApp Green */
-.btn-submit { background-color: #dc3545; } /* Red */
+/* Print Button */
+.btn-print {
+    background: #f39c12;
+}
+.btn-print:hover {
+    background: #e67e22;
+    transform: translateY(-2px);
+}
 
-/* Hover Effects */
-.btn-download:hover { background-color: #218838; } /* Dark Green */
-.btn-print:hover { background-color: #e0a800; } /* Dark Yellow */
-.btn-whatsapp:hover { background-color: #1EBE5D; } /* Dark WhatsApp Green */
-.btn-submit:hover { background-color: #c82333; } /* Dark Red */
+/* WhatsApp Button */
+.btn-whatsapp {
+    background: #25D366;
+}
+.btn-whatsapp:hover {
+    background: #1EBE5D;
+    transform: translateY(-2px);
+}
+
+/* Submit Button */
+.btn-submit {
+    background: #2980b9;
+}
+.btn-submit:hover {
+    background: #3498db;
+    transform: translateY(-2px);
+}
+
+/* Disabled Button */
+.btn:disabled {
+    background: #95a5a6;
+    cursor: not-allowed;
+}
 
 /* Responsive Design */
 @media (max-width: 600px) {
     .buttons {
-        flex-direction: column; /* Stack buttons on small screens */
+        flex-direction: column;
+        align-items: center;
     }
-    
-    .buttons button {
-        width: 100%; /* Full width buttons on small screens */
+    .btn {
+        width: 100%;
+        max-width: 280px;
     }
 }
 
