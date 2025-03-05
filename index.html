@@ -126,21 +126,26 @@
         <hr>
 
         <div class="buttons">
-    <button id="downloadButton" onclick="generatePDF()" class="btn btn-download">
-        <i class="fas fa-file-pdf"></i> Download PDF
-    </button>
-    
-    <button id="printButton" onclick="window.print()" class="btn btn-print" disabled>
-        <i class="fas fa-print"></i> Print
-    </button>
-    
-    <button onclick="sendWhatsApp()" class="btn btn-whatsapp">
-        <i class="fab fa-whatsapp"></i> Send via WhatsApp
-    </button>
-    
-    <button onclick="submitForm()" class="btn btn-submit">
+    <but<div class="buttons">
+    <!-- Submit Button (Visible by Default) -->
+    <button onclick="submitForm()" id="submitButton" class="btn btn-submit">
         <i class="fas fa-paper-plane"></i> Submit
     </button>
+
+    <!-- Hidden Buttons (Visible After Preview) -->
+    <div id="previewButtons" style="display: none;">
+        <button id="downloadButton" onclick="generatePDF()" class="btn btn-download">
+            <i class="fas fa-file-pdf"></i> PDF
+        </button>
+
+        <button id="printButton" onclick="window.print()" class="btn btn-print" disabled>
+            <i class="fas fa-print"></i> Print
+        </button>
+
+        <button onclick="sendWhatsApp()" class="btn btn-whatsapp">
+            <i class="fab fa-whatsapp"></i> WhatsApp
+        </button>
+    </div>
         </div>
 
         <div id="prescriptionPreview" style="display: none; width: 58mm; padding: 5px; font-family: Times New Roman, sans-serif; font-size: 10px;">
