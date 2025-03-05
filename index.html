@@ -68,15 +68,6 @@
         </div>
         <hr>
 
-<!-- Vision Type -->
-        <div class="section-title">Vision Type</div>
-        <div class="lens-type">
-            <label><input type="checkbox" id="nearvision"> Near Vision</label>
-            <label><input type="checkbox" id="rearvision"> Rear Vision</label>
-            <label><input type="checkbox" id="both"> Both</label>
-        </div>
-        <hr>
-        
         <!-- Prescription Table -->
         <div class="section-title">Prescription Details</div>
         <div class="prescription-table">
@@ -124,6 +115,7 @@
         <hr>
 
         <div class="buttons">
+    <button onclick="generatePDF()" class="btn-download">Download PDF</button>
     <button id="printButton" onclick="window.print()" class="btn-print" disabled>Print</button>
     <button onclick="submitForm()" class="btn-submit">Submit</button>
 </div>
@@ -153,12 +145,6 @@
     </div>
     <hr style="border: 0.5px dashed #000; margin: 5px 0;">
 
-<!-- Vision Type -->
-    <div style="margin-bottom: 5px;">
-        <p style="margin: 2px 0;"><strong>Vision Type:</strong> <span id="previewVisionType"></span></p>
-    </div>
-    <hr style="border: 0.5px dashed #000; margin: 5px 0;">
-            
     <!-- Prescription Details -->
     <div style="margin-bottom: 5px;">
         <h3 style="font-size: 11px; margin: 5px 0; text-align: center;">Prescription Details</h3>
