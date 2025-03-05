@@ -385,3 +385,67 @@ prescriptionInputs.forEach(id => {
         this.value = this.value.replace(/[^0-9.-]/g, ""); // Allow numbers, decimals, and negative values
     });
 });
+
+const GIST_ID = "17ebc00d22853b88ad24aa66e6b5b82b"; // Replace with your actual Gist ID
+const GITHUB_TOKEN = "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"; // Never expose this publicly
+
+async function savePrescription() {
+    const prescriptionData = {
+        patientName: document.getElementById("patientName").value,
+        age: document.getElementById("age").value,
+        mobile: document.getElementById("patientMobile").value,
+        rightEye: document.getElementById("rightSPH").value,
+        leftEye: document.getElementById("leftSPH").value,
+        lensType: document.querySelector('input[name="lensType"]:checked')?.value || "",
+        amount: document.getElementById("amount").value
+    };
+
+    // Fetch current Gist content
+    let response = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+        headers: { Authorization: `token ${GITHUB_TOKEN}` }
+    });
+
+    let gist = await response.json();
+    let fileKey = Object.keys(gist.files)[0]; // Get the first file in Gist
+    let existingData = gist.files[fileKey].content ? JSON.parse(gist.files[fileKey].content) : [];
+
+    existingData.push(prescriptionData); // Append new data
+
+    // Update Gist
+    fetch(`https://api.github.com/gists/${GIST_ID}`, {
+        method: "PATCH",
+        headers: {
+            Authorization: `token ${GITHUB_TOKEN}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            files: { [fileKey]: { content: JSON.stringify(existingData, null, 2) } }
+        })
+    })
+    .then(() => alert("Prescription saved in GitHub Gist!"))
+    .catch(error => console.error("Error saving to GitHub:", error));
+}
+
+async function loadPrescriptions() {
+    let response = await fetch(`https://api.github.com/gists/${GIST_ID}`);
+    let gist = await response.json();
+    let fileKey = Object.keys(gist.files)[0];
+    let prescriptions = JSON.parse(gist.files[fileKey].content || "[]");
+
+    let table = document.getElementById("prescriptionsTable");
+    table.innerHTML = "<tr><th>Name</th><th>Age</th><th>Mobile</th><th>Right Eye</th><th>Left Eye</th><th>Lens Type</th><th>Amount</th></tr>";
+
+    prescriptions.forEach(p => {
+        table.innerHTML += `
+            <tr>
+                <td>${p.patientName}</td>
+                <td>${p.age}</td>
+                <td>${p.mobile}</td>
+                <td>${p.rightEye}</td>
+                <td>${p.leftEye}</td>
+                <td>${p.lensType}</td>
+                <td>${p.amount}</td>
+            </tr>
+        `;
+    });
+}
