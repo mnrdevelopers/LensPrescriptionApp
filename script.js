@@ -147,7 +147,7 @@ function saveCounters() {
 // Check for day change when the page loads
 checkDayChange();
 
-function submitForm() {
+async function submitForm() {
     // Get form values
     const patientName = document.getElementById("patientName").value.trim();
     const age = document.getElementById("age").value.trim();
@@ -155,7 +155,6 @@ function submitForm() {
     const mobile = document.getElementById("patientMobile").value.trim();
     const amount = document.getElementById("amount").value.trim();
 
-    // Prescription Fields
     const rightSPH = document.getElementById("rightSPH").value.trim();
     const rightCYL = document.getElementById("rightCYL").value.trim();
     const rightAXIS = document.getElementById("rightAXIS").value.trim();
@@ -163,46 +162,20 @@ function submitForm() {
     const leftCYL = document.getElementById("leftCYL").value.trim();
     const leftAXIS = document.getElementById("leftAXIS").value.trim();
 
-    // Validation Checks
-    if (!patientName) {
-        alert("Patient Name is required.");
-        return;
-    }
-    
-    if (!age || isNaN(age) || age <= 0) {
-        alert("Please enter a valid Age.");
+    // Validate Required Fields
+    if (!patientName || !age || !mobile || isNaN(amount) || amount <= 0) {
+        alert("Please fill in all required fields correctly.");
         return;
     }
 
-    if (!mobile || !/^\d{10}$/.test(mobile)) {
-        alert("Please enter a valid 10-digit Mobile Number.");
-        return;
-    }
-
-    if (!amount || isNaN(amount) || amount <= 0) {
-        alert("Please enter a valid Amount.");
-        return;
-    }
-
-    // Validate Prescription Inputs (Allow only numbers and decimals)
-    const prescriptionFields = [rightSPH, rightCYL, rightAXIS, leftSPH, leftCYL, leftAXIS];
-    const validNumberPattern = /^-?\d*\.?\d*$/; // Allows numbers and decimals (e.g., -1.25, 2.00)
-    
-    for (let i = 0; i < prescriptionFields.length; i++) {
-        if (prescriptionFields[i] && !validNumberPattern.test(prescriptionFields[i])) {
-            alert("Please enter valid prescription values (numbers only).");
-            return;
-        }
-    }
-
-    // Generate Lens Type Selection
+    // Get selected Lens Types
     let lensType = [];
     if (document.getElementById("blueCut").checked) lensType.push("Blue Cut");
     if (document.getElementById("progressive").checked) lensType.push("Progressive");
     if (document.getElementById("bifocal").checked) lensType.push("Bifocal");
     if (document.getElementById("antiGlare").checked) lensType.push("Anti-Glare");
 
-    // Update Prescription Preview
+    // ✅ **Update Prescription Preview (Before Sending Data)**
     document.getElementById("previewPatientName").textContent = patientName;
     document.getElementById("previewAge").textContent = age;
     document.getElementById("previewGender").textContent = gender;
@@ -216,20 +189,50 @@ function submitForm() {
     document.getElementById("previewLensType").textContent = lensType.join(", ") || "None";
     document.getElementById("previewAmount").textContent = parseFloat(amount).toFixed(2);
 
-    // Update the date in the preview
+    // **Update the Date in the Preview**
     document.getElementById("previewcurrentDate").textContent = new Date().toLocaleDateString();
 
-    // Show Prescription Preview
+    // ✅ **Show the Prescription Preview**
     document.getElementById("prescriptionPreview").style.display = "block";
 
-    // Enable the print button
+    // ✅ **Enable the Print Button**
     document.getElementById("printButton").disabled = false;
-    
-    // Increment prescription count and earnings
+
+    // ✅ **Increment Prescription Count & Earnings (for local tracking)**
     prescriptionCount++;
     amountEarned += parseFloat(amount);
     updateStats();
     saveCounters();
+
+    // ✅ **Now, Send Data to Google Sheets**
+    const apiUrl = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL"; // Replace with your actual URL
+
+    const payload = {
+        patientName, age, gender, mobile,
+        rightSPH, rightCYL, rightAXIS,
+        leftSPH, leftCYL, leftAXIS,
+        lensType, amount
+    };
+
+    try {
+        // Show "Submitting" message
+        alert("Submitting data to Google Sheets...");
+
+        // Send data to Google Sheets
+        const response = await fetch(apiUrl, {
+            method: "POST",
+            mode: "no-cors", // Required for Google Apps Script
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        alert("Prescription saved successfully!"); // Success message
+
+    } catch (error) {
+        console.error("Error submitting data:", error);
+        alert("Failed to submit prescription. Please check your internet connection.");
+    }
+}
 
     // Reset the form for the next prescription
     resetForm();
