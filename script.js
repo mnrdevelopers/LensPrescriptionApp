@@ -449,3 +449,34 @@ async function loadPrescriptions() {
         `;
     });
 }
+
+const REPO_OWNER = "mnrdevelopers";
+const REPO_NAME = "LensPrescriptionApp";
+const FILE_PATH = "prescriptions.json";
+const GITHUB_TOKEN = "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";
+
+async function saveToRepo(data) {
+    let response = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`, {
+        headers: { Authorization: `token ${GITHUB_TOKEN}` }
+    });
+
+    let file = await response.json();
+    let existingData = JSON.parse(atob(file.content)); // Decode Base64
+
+    existingData.push(data); // Append new data
+
+    fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`, {
+        method: "PUT",
+        headers: {
+            Authorization: `token ${GITHUB_TOKEN}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            message: "Update prescriptions",
+            content: btoa(JSON.stringify(existingData, null, 2)), // Encode Base64
+            sha: file.sha
+        })
+    })
+    .then(() => alert("Saved to GitHub Repo!"))
+    .catch(error => console.error("Error saving:", error));
+}
