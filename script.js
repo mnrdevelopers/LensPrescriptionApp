@@ -25,11 +25,30 @@ window.addEventListener("beforeunload", () => {
 document.getElementById("currentDate").textContent = new Date().toLocaleDateString();
 
 function generatePDF() {
-    const element = document.getElementById('prescriptionPreview'); // Target only the preview
-    if (!element) {
-        alert("No prescription preview found!");
-        return;
-    }
+    // Ensure the preview is updated before generating the PDF
+    submitForm();  // Calls the function to fill the preview
+
+    // Wait a short time to allow the preview to update
+    setTimeout(() => {
+        const element = document.getElementById('prescriptionPreview');
+        if (!element || element.style.display === "none") {
+            alert("Please submit the form before downloading the PDF.");
+            return;
+        }
+        
+        // Generate the PDF from the preview section
+        html2pdf()
+            .set({
+                margin: 5,
+                filename: 'Lens_Prescription.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            })
+            .from(element)
+            .save();
+    }, 500); // Small delay to ensure preview updates
+}
 
 // PWA Installation
 if ('serviceWorker' in navigator) {
