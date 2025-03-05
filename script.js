@@ -1,18 +1,30 @@
 document.addEventListener("DOMContentLoaded", () => {
+    console.log("DOM fully loaded");
+
     const splashScreen = document.getElementById("splash-screen");
-    const mainContent = document.getElementById("prescription"); // Main app content
+    const mainContent = document.getElementById("prescription"); // Ensure this ID exists in index.html
+
+    if (!splashScreen || !mainContent) {
+        console.error("🚨 Error: Splash screen or main content not found!");
+        return;
+    }
+
+    console.log("✅ Splash screen and main content found");
 
     if (sessionStorage.getItem("splashShown")) {
+        console.log("⏩ Skipping splash screen, showing main content");
         splashScreen.style.display = "none"; // Hide splash screen
-        mainContent.style.display = "block"; // Show main content
+        mainContent.classList.add("show"); // Apply CSS fade-in effect
     } else {
+        console.log("🕒 Showing splash screen for 3 seconds");
         splashScreen.style.display = "flex"; // Show splash screen
 
         setTimeout(() => {
-            splashScreen.classList.add("hidden");
-            mainContent.style.display = "block"; // Show main content
+            console.log("✅ Hiding splash screen, showing main content");
+            splashScreen.classList.add("hidden"); // Fully hide splash
+            mainContent.classList.add("show"); // Show main content with fade-in
             sessionStorage.setItem("splashShown", "true"); // Remember in sessionStorage
-        }, 3000); // Show splash for 3 seconds
+        }, 3000);
     }
 });
 
