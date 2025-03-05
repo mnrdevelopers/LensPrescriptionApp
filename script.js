@@ -268,19 +268,3 @@ function uploadImageToImgBB(base64Image, mobileNumber) {
         alert("Error uploading image. Please check your internet connection.");
     });
 }
-
-function submitForm() {
-    // Your existing form submission code here...
-
-    // Hide Submit button
-    document.getElementById("submitButton").style.display = "none";
-
-    // Show Download, Print, and WhatsApp buttons
-    document.getElementById("previewButtons").style.display = "flex";
-}
-
-// Ensure the buttons stay hidden on page reload
-window.onload = function () {
-    document.getElementById("previewButtons").style.display = "none";
-    document.getElementById("submitButton").style.display = "block";
-};
