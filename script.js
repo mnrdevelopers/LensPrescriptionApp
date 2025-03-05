@@ -1,16 +1,15 @@
 document.addEventListener("DOMContentLoaded", () => {
-    // Check if splash screen was already shown
-    if (!localStorage.getItem("splashShown")) {
-        // Show splash screen
+    // Check if splash screen was already shown in this session
+    if (sessionStorage.getItem("splashShown")) {
+        document.getElementById("splash-screen").style.display = "none"; // Hide splash
+    } else {
+        // Show splash screen for first-time app opening
         document.getElementById("splash-screen").style.display = "flex";
 
         setTimeout(() => {
             document.getElementById("splash-screen").classList.add("hidden");
-            localStorage.setItem("splashShown", "true"); // Set flag in localStorage
+            sessionStorage.setItem("splashShown", "true"); // Store flag in sessionStorage
         }, 3000); // Show splash for 3 seconds
-    } else {
-        // Hide splash screen immediately
-        document.getElementById("splash-screen").style.display = "none";
     }
 });
 
