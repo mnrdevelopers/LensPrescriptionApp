@@ -211,7 +211,6 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 function sendWhatsApp() {
-    // Get patient mobile number
     const mobileNumber = document.getElementById("patientMobile").value.trim();
 
     if (!mobileNumber) {
@@ -222,7 +221,7 @@ function sendWhatsApp() {
     // Ensure the preview is updated before capturing the image
     submitForm();
 
-    // Wait a short time to allow preview update
+    // Wait for the preview update before capturing the image
     setTimeout(() => {
         const element = document.getElementById('prescriptionPreview');
 
@@ -231,34 +230,41 @@ function sendWhatsApp() {
             return;
         }
 
-        // Convert prescription preview to an image
+        // Convert the prescription preview to an image
         html2canvas(element, { scale: 2 }).then(canvas => {
-            const imageData = canvas.toDataURL("image/png"); // Convert to base64 image
-            const imageBlob = dataURLtoBlob(imageData); // Convert base64 to Blob
+            const imageData = canvas.toDataURL("image/png"); // Convert to base64
 
-            // Create an object URL for sharing
-            const imageURL = URL.createObjectURL(imageBlob);
-
-            // Create WhatsApp share link
-            const message = "Here is your digital prescription from Lens Prescription App.";
-            const whatsappURL = `https://wa.me/${mobileNumber}?text=${encodeURIComponent(message)}%0A${imageURL}`;
-
-            // Open WhatsApp with the image link
-            window.open(whatsappURL, "_blank");
+            // Upload the image to ImgBB
+            uploadImageToImgBB(imageData, mobileNumber);
         });
-    }, 500); // Small delay to ensure preview updates
+    }, 500);
 }
 
-// Function to convert base64 to Blob
-function dataURLtoBlob(dataURL) {
-    const byteString = atob(dataURL.split(',')[1]);
-    const mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0];
-    const arrayBuffer = new ArrayBuffer(byteString.length);
-    const uintArray = new Uint8Array(arrayBuffer);
+// Function to upload image to ImgBB and send via WhatsApp
+function uploadImageToImgBB(base64Image, mobileNumber) {
+    const apiKey = "bbfde58b1da5fc9ee9d7d6a591852f71"; // Your ImgBB API Key
+    const formData = new FormData();
+    formData.append("image", base64Image.split(',')[1]); // Remove 'data:image/png;base64,'
 
-    for (let i = 0; i < byteString.length; i++) {
-        uintArray[i] = byteString.charCodeAt(i);
-    }
+    fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+        method: "POST",
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const imageURL = data.data.url; // Get the uploaded image URL
+            const message = "Here is your digital prescription from Lens Prescription App: " + imageURL;
+            const whatsappURL = `https://wa.me/${mobileNumber}?text=${encodeURIComponent(message)}`;
 
-    return new Blob([arrayBuffer], { type: mimeString });
+            // Open WhatsApp with the image URL
+            window.open(whatsappURL, "_blank");
+        } else {
+            alert("Image upload failed. Please try again.");
+        }
+    })
+    .catch(error => {
+        console.error("Image upload error:", error);
+        alert("Error uploading image. Please check your internet connection.");
+    });
 }
