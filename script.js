@@ -156,7 +156,7 @@ function submitForm() {
 
     // Enable the print and download button
     document.getElementById("printButton").disabled = false;
-    document.getElementById("downloadButton").style.display = "block";
+    document.getElementById("downloadButton").disabled = false;
     
     // Increment prescription count and earnings
     prescriptionCount++;
