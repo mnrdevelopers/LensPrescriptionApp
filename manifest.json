@@ -2,7 +2,7 @@
     "name": "Lens Prescription App",
     "short_name": "LensApp",
     "start_url": "https://mnrdevelopers.github.io/LensPrescriptionApp/",
-    "display": "fullscreen",
+    "display": "standalone",
     "icons": [
         {
             "src": "https://i.postimg.cc/2S2Pcrt6/glasses-220002.png",
