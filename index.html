@@ -58,11 +58,11 @@
         <div class="patient-details">
             <div>
                 <label for="patientName">Patient Name</label>
-                <input type="text" id="patientName" placeholder="Enter name">
+                <input type="text" id="patientName" placeholder="Enter name" required>
             </div>
             <div>
                 <label for="age">Age</label>
-                <input type="number" id="age" placeholder="Age">
+                <input type="number" id="age" placeholder="Age" required>
             </div>
             <div>
                 <label for="gender">Gender</label>
@@ -74,7 +74,7 @@
             </div>
             <div>
                 <label for="patientMobile">Mobile</label>
-                <input type="tel" id="patientMobile" placeholder="Enter mobile number">
+                <input type="tel" id="patientMobile" placeholder="Enter mobile number" required pattern="[0-9]{10}">
             </div>
         </div>
         <hr>
@@ -121,7 +121,7 @@
         <div class="section-title">Amount</div>
         <div class="amount">
             <strong>₹</strong>
-            <input type="number" id="amount" placeholder="Enter amount">
+           <input type="number" id="amount" placeholder="Enter amount" required>
         </div>
         <hr>
 
