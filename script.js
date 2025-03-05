@@ -30,7 +30,14 @@ function generatePDF() {
         alert("No prescription preview found!");
         return;
     }
-    html2pdf().from(element).save('Lens_Prescription.pdf');
+
+    // Hide button before downloading
+    document.getElementById("downloadButton").style.display = "none";
+
+    html2pdf().from(element).save('Lens_Prescription.pdf').then(() => {
+        // Show button again after download is complete
+        document.getElementById("downloadButton").style.display = "block";
+    });
 }
 
 // PWA Installation
@@ -147,9 +154,10 @@ function submitForm() {
     // Show Prescription Preview
     document.getElementById("prescriptionPreview").style.display = "block";
 
-    // Enable the print button
+    // Enable the print and download button
     document.getElementById("printButton").disabled = false;
-
+    document.getElementById("downloadButton").style.display = "block";
+    
     // Increment prescription count and earnings
     prescriptionCount++;
     amountEarned += amount;
