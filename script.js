@@ -209,3 +209,56 @@ function resetStats() {
 document.addEventListener("DOMContentLoaded", function() {
     document.getElementById("resetButton").addEventListener("click", resetStats);
 });
+
+function sendWhatsApp() {
+    // Get patient mobile number
+    const mobileNumber = document.getElementById("patientMobile").value.trim();
+
+    if (!mobileNumber) {
+        alert("Please enter a valid mobile number before sending.");
+        return;
+    }
+
+    // Ensure the preview is updated before capturing the image
+    submitForm();
+
+    // Wait a short time to allow preview update
+    setTimeout(() => {
+        const element = document.getElementById('prescriptionPreview');
+
+        if (!element || element.style.display === "none") {
+            alert("Please submit the form before sending via WhatsApp.");
+            return;
+        }
+
+        // Convert prescription preview to an image
+        html2canvas(element, { scale: 2 }).then(canvas => {
+            const imageData = canvas.toDataURL("image/png"); // Convert to base64 image
+            const imageBlob = dataURLtoBlob(imageData); // Convert base64 to Blob
+
+            // Create an object URL for sharing
+            const imageURL = URL.createObjectURL(imageBlob);
+
+            // Create WhatsApp share link
+            const message = "Here is your digital prescription from Lens Prescription App.";
+            const whatsappURL = `https://wa.me/${mobileNumber}?text=${encodeURIComponent(message)}%0A${imageURL}`;
+
+            // Open WhatsApp with the image link
+            window.open(whatsappURL, "_blank");
+        });
+    }, 500); // Small delay to ensure preview updates
+}
+
+// Function to convert base64 to Blob
+function dataURLtoBlob(dataURL) {
+    const byteString = atob(dataURL.split(',')[1]);
+    const mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0];
+    const arrayBuffer = new ArrayBuffer(byteString.length);
+    const uintArray = new Uint8Array(arrayBuffer);
+
+    for (let i = 0; i < byteString.length; i++) {
+        uintArray[i] = byteString.charCodeAt(i);
+    }
+
+    return new Blob([arrayBuffer], { type: mimeString });
+}
