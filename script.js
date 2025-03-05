@@ -164,9 +164,8 @@ function submitForm() {
     // Show Prescription Preview
     document.getElementById("prescriptionPreview").style.display = "block";
 
-    // Enable the print and download button
+    // Enable the print button
     document.getElementById("printButton").disabled = false;
-    document.getElementById("downloadButton").disabled = false;
     
     // Increment prescription count and earnings
     prescriptionCount++;
