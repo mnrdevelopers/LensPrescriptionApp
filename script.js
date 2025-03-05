@@ -216,20 +216,10 @@ function submitForm() {
     const leftCYL = document.getElementById("leftCYL").value.trim();
     const leftAXIS = document.getElementById("leftAXIS").value.trim();
 
-    // Vision Type
-    const visionType = [];
-    if (document.getElementById("singleVision").checked) visionType.push("Single Vision");
-    if (document.getElementById("bifocal").checked) visionType.push("Bifocal");
-    if (document.getElementById("progressive").checked) visionType.push("Progressive");
-    if (document.getElementById("reading").checked) visionType.push("Reading");
-
-    // Frame Type
-    const frameType = document.querySelector('input[name="frameType"]:checked');
-    const selectedFrameType = frameType ? frameType.value : "Not Selected";
-
-    // Payment Mode
-    const paymentMode = document.querySelector('input[name="paymentMode"]:checked');
-    const selectedPaymentMode = paymentMode ? paymentMode.value : "Not Selected";
+    // Vision Type, Lens Type, and Frame Type
+    const visionType = document.getElementById("visionType").value;
+    const lensType = document.getElementById("lensType").value;
+    const frameType = document.getElementById("frameType").value;
 
     // Validation Checks
     if (!patientName) {
@@ -263,13 +253,6 @@ function submitForm() {
         }
     }
 
-    // Generate Lens Type Selection
-    let lensType = [];
-    if (document.getElementById("blueCut").checked) lensType.push("Blue Cut");
-    if (document.getElementById("progressive").checked) lensType.push("Progressive");
-    if (document.getElementById("bifocal").checked) lensType.push("Bifocal");
-    if (document.getElementById("antiGlare").checked) lensType.push("Anti-Glare");
-
     // Update Prescription Preview
     document.getElementById("previewPatientName").textContent = patientName;
     document.getElementById("previewAge").textContent = age;
@@ -281,13 +264,13 @@ function submitForm() {
     document.getElementById("previewLeftSPH").textContent = leftSPH;
     document.getElementById("previewLeftCYL").textContent = leftCYL;
     document.getElementById("previewLeftAXIS").textContent = leftAXIS;
-    document.getElementById("previewLensType").textContent = lensType.join(", ") || "None";
+    document.getElementById("previewLensType").textContent = lensType;
     document.getElementById("previewAmount").textContent = parseFloat(amount).toFixed(2);
 
-    // Update Vision Type, Frame Type, and Payment Mode in Preview
-    document.getElementById("previewVisionType").textContent = visionType.join(", ") || "None";
-    document.getElementById("previewFrameType").textContent = selectedFrameType;
-    document.getElementById("previewPaymentMode").textContent = selectedPaymentMode;
+    // Update Vision Type, Lens Type, and Frame Type in Preview
+    document.getElementById("previewVisionType").textContent = visionType;
+    document.getElementById("previewLensType").textContent = lensType;
+    document.getElementById("previewFrameType").textContent = frameType;
 
     // Update the date in the preview
     document.getElementById("previewcurrentDate").textContent = new Date().toLocaleDateString();
