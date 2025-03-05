@@ -90,6 +90,7 @@
 
 /* Hide splash screen */
 .hidden {
+    display: none !important; /* Fully remove splash screen */
     opacity: 0;
     pointer-events: none;
 }
@@ -210,6 +211,18 @@ body.dark-mode {
     border-radius: 10px;
     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
 }
+
+#prescription {
+    display: none; /* Initially hidden */
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+#prescription.show {
+    display: block !important; /* Ensure it overrides any hidden styles */
+    opacity: 1;
+}
+
 
 /* Header */
 .header {
