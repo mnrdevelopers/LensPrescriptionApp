@@ -216,10 +216,11 @@ function submitForm() {
     const leftCYL = document.getElementById("leftCYL").value.trim();
     const leftAXIS = document.getElementById("leftAXIS").value.trim();
 
-    // Vision Type, Lens Type, and Frame Type
+    // Vision Type, Lens Type, Frame Type, and Payment Mode
     const visionType = document.getElementById("visionType").value;
     const lensType = document.getElementById("lensType").value;
     const frameType = document.getElementById("frameType").value;
+    const paymentMode = document.getElementById("paymentMode").value; // Capture Payment Mode
 
     // Validation Checks
     if (!patientName) {
@@ -267,10 +268,11 @@ function submitForm() {
     document.getElementById("previewLensType").textContent = lensType;
     document.getElementById("previewAmount").textContent = parseFloat(amount).toFixed(2);
 
-    // Update Vision Type, Lens Type, and Frame Type in Preview
+    // Update Vision Type, Lens Type, Frame Type, and Payment Mode in Preview
     document.getElementById("previewVisionType").textContent = visionType;
     document.getElementById("previewLensType").textContent = lensType;
     document.getElementById("previewFrameType").textContent = frameType;
+    document.getElementById("previewPaymentMode").textContent = paymentMode; // Update Payment Mode in Preview
 
     // Update the date in the preview
     document.getElementById("previewcurrentDate").textContent = new Date().toLocaleDateString();
