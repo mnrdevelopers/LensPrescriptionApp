@@ -1,3 +1,10 @@
+document.addEventListener("DOMContentLoaded", () => {
+    setTimeout(() => {
+        document.getElementById("splash-screen").classList.add("hidden");
+    }, 3000); // Show splash screen for 3 seconds
+});
+
+
 // Auto-fill the current date
 document.getElementById("currentDate").textContent = new Date().toLocaleDateString();
 
