@@ -287,7 +287,6 @@ let newRef = firebase.database().ref("prescriptions").push();
     newRef.set(patientData)
         .then(() => alert("Prescription Saved!"))
         .catch(error => alert("Error: " + error));
-}
 
 // Reset form fields
 function resetForm() {
