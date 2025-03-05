@@ -1,5 +1,6 @@
 // Auto-fill the current date
 document.getElementById("currentDate").textContent = new Date().toLocaleDateString();
+document.getElementById("previewcurrentDate").textContent = new Date().toLocaleDateString();
 
 // Function to generate a WhatsApp shareable message
 function generateWhatsAppMessage() {
@@ -16,7 +17,7 @@ function generateWhatsAppMessage() {
     const leftAXIS = document.getElementById("previewLeftAXIS").textContent;
     const lensType = document.getElementById("previewLensType").textContent;
     const amount = document.getElementById("previewAmount").textContent;
-    const date = document.getElementById("previewDate").textContent;
+    const date = document.getElementById("previewcurrentDate").textContent;
 
     // Format the message
     const message = `
@@ -133,7 +134,7 @@ function submitForm() {
     document.getElementById("previewAmount").textContent = amount.toFixed(2);
 
     // Update the date in the preview (use the auto-filled date)
-    document.getElementById("previewDate").textContent = document.getElementById("currentDate").textContent;
+    document.getElementById("previewcurrentDate").textContent = document.getElementById("currentDate").textContent;
 
     // Show Prescription Preview
     document.getElementById("prescriptionPreview").style.display = "block";
@@ -188,6 +189,14 @@ function updateStats() {
     document.getElementById("amountEarned").textContent = amountEarned.toFixed(2); // Format to 2 decimal places
 }
 
+// Function to reset stats
+function resetStats() {
+    prescriptionCount = 0;
+    amountEarned = 0;
+    updateStats();
+    saveCounters();
+}
+
 // Function to check if the day has changed
 function checkDayChange() {
     const today = new Date().toLocaleDateString(); // Get current date in "MM/DD/YYYY" format
@@ -217,7 +226,7 @@ function saveCounters() {
 checkDayChange();
 
 // Add event listeners
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("submitButton").addEventListener("click", submitForm);
     document.getElementById("printButton").addEventListener("click", printPrescription);
     document.getElementById("whatsappShareButton").addEventListener("click", shareOnWhatsApp);
