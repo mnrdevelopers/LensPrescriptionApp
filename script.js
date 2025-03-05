@@ -262,19 +262,26 @@ document.addEventListener("DOMContentLoaded", function() {
 
 function sendWhatsApp() {
     const mobileNumber = document.getElementById("patientMobile").value.trim();
-
+    
     if (!mobileNumber) {
         alert("Please enter a valid mobile number before sending.");
         return;
     }
 
-    // Ensure the preview is updated before capturing the image
+    // Check if an image is already cached
+    const cachedImage = localStorage.getItem("cachedPrescriptionImage");
+    if (cachedImage) {
+        sendWhatsAppMessage(mobileNumber, cachedImage);
+        return;
+    }
+
+    // Generate new prescription preview before uploading
     submitForm();
 
     // Wait for the preview update before capturing the image
     setTimeout(() => {
         const element = document.getElementById('prescriptionPreview');
-
+        
         if (!element || element.style.display === "none") {
             alert("Please submit the form before sending via WhatsApp.");
             return;
@@ -283,15 +290,21 @@ function sendWhatsApp() {
         // Convert the prescription preview to an image
         html2canvas(element, { scale: 2 }).then(canvas => {
             const imageData = canvas.toDataURL("image/png"); // Convert to base64
-
-            // Upload the image to ImgBB
             uploadImageToImgBB(imageData, mobileNumber);
         });
     }, 500);
 }
 
-// Function to upload image to ImgBB and send via WhatsApp
+
 function uploadImageToImgBB(base64Image, mobileNumber) {
+    const cachedImage = localStorage.getItem("cachedPrescriptionImage");
+
+    // If an image is already cached, use it instead of re-uploading
+    if (cachedImage) {
+        sendWhatsAppMessage(mobileNumber, cachedImage);
+        return;
+    }
+
     const apiKey = "bbfde58b1da5fc9ee9d7d6a591852f71"; // Your ImgBB API Key
     const formData = new FormData();
     formData.append("image", base64Image.split(',')[1]); // Remove 'data:image/png;base64,'
@@ -303,12 +316,9 @@ function uploadImageToImgBB(base64Image, mobileNumber) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            const imageURL = data.data.url; // Get the uploaded image URL
-            const message = "Here is your digital prescription from Lens Prescription App: " + imageURL;
-            const whatsappURL = `https://wa.me/${mobileNumber}?text=${encodeURIComponent(message)}`;
-
-            // Open WhatsApp with the image URL
-            window.open(whatsappURL, "_blank");
+            const imageURL = data.data.url;
+            localStorage.setItem("cachedPrescriptionImage", imageURL); // Cache the image
+            sendWhatsAppMessage(mobileNumber, imageURL);
         } else {
             alert("Image upload failed. Please try again.");
         }
@@ -318,6 +328,15 @@ function uploadImageToImgBB(base64Image, mobileNumber) {
         alert("Error uploading image. Please check your internet connection.");
     });
 }
+
+function sendWhatsAppMessage(mobileNumber, imageURL) {
+    const message = "Here is your digital prescription from Lens Prescription App: " + imageURL;
+    const whatsappURL = `https://wa.me/${mobileNumber}?text=${encodeURIComponent(message)}`;
+
+    // Open WhatsApp with the image URL
+    window.open(whatsappURL, "_blank");
+}
+
 
 document.getElementById("age").addEventListener("input", function () {
     this.value = this.value.replace(/[^0-9]/g, ""); // Only allow numbers
