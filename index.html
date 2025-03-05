@@ -163,21 +163,25 @@
 </div>
 <hr>
         
-        <!-- Amount -->
-        <div class="section-title">Amount</div>
-        <div class="amount">
-            <strong>₹</strong>
-           <input type="number" id="amount" placeholder="Enter amount" required>
-        </div>
-        <hr>
+        <!-- Amount and Payment Mode Combined -->
+<div class="section-title">Amount & Payment Mode</div>
+<div class="amount-payment-row">
+    <!-- Amount -->
+    <div class="form-group">
+        <label for="amount">Amount (₹)</label>
+        <input type="number" id="amount" placeholder="Enter amount" required>
+    </div>
 
-        <!-- Payment Mode -->
-<div class="section-title">Payment Mode</div>
-<div class="payment-mode">
-    <label><input type="radio" name="paymentMode" value="Cash"> Cash</label>
-    <label><input type="radio" name="paymentMode" value="Card"> Card</label>
-    <label><input type="radio" name="paymentMode" value="UPI"> UPI</label>
-    <label><input type="radio" name="paymentMode" value="Online"> Online</label>
+    <!-- Payment Mode -->
+    <div class="form-group">
+        <label for="paymentMode">Payment Mode</label>
+        <select id="paymentMode">
+            <option value="Cash">Cash</option>
+            <option value="Card">Card</option>
+            <option value="UPI">UPI</option>
+            <option value="Online">Online</option>
+        </select>
+    </div>
 </div>
 <hr>
 
