@@ -123,21 +123,49 @@ function submitForm() {
     const age = document.getElementById("age").value.trim();
     const gender = document.getElementById("gender").value.trim();
     const mobile = document.getElementById("patientMobile").value.trim();
+    const amount = document.getElementById("amount").value.trim();
+
+    // Prescription Fields
     const rightSPH = document.getElementById("rightSPH").value.trim();
     const rightCYL = document.getElementById("rightCYL").value.trim();
     const rightAXIS = document.getElementById("rightAXIS").value.trim();
     const leftSPH = document.getElementById("leftSPH").value.trim();
     const leftCYL = document.getElementById("leftCYL").value.trim();
     const leftAXIS = document.getElementById("leftAXIS").value.trim();
-    const amount = parseFloat(document.getElementById("amount").value);
 
-    // Validate required fields
-    if (!patientName || !age || !mobile || isNaN(amount) || amount <= 0) {
-        alert("Please fill in all required fields correctly.");
+    // Validation Checks
+    if (!patientName) {
+        alert("Patient Name is required.");
+        return;
+    }
+    
+    if (!age || isNaN(age) || age <= 0) {
+        alert("Please enter a valid Age.");
         return;
     }
 
-    // Generate lens type selection
+    if (!mobile || !/^\d{10}$/.test(mobile)) {
+        alert("Please enter a valid 10-digit Mobile Number.");
+        return;
+    }
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+        alert("Please enter a valid Amount.");
+        return;
+    }
+
+    // Validate Prescription Inputs (Allow only numbers and decimals)
+    const prescriptionFields = [rightSPH, rightCYL, rightAXIS, leftSPH, leftCYL, leftAXIS];
+    const validNumberPattern = /^-?\d*\.?\d*$/; // Allows numbers and decimals (e.g., -1.25, 2.00)
+    
+    for (let i = 0; i < prescriptionFields.length; i++) {
+        if (prescriptionFields[i] && !validNumberPattern.test(prescriptionFields[i])) {
+            alert("Please enter valid prescription values (numbers only).");
+            return;
+        }
+    }
+
+    // Generate Lens Type Selection
     let lensType = [];
     if (document.getElementById("blueCut").checked) lensType.push("Blue Cut");
     if (document.getElementById("progressive").checked) lensType.push("Progressive");
@@ -156,7 +184,7 @@ function submitForm() {
     document.getElementById("previewLeftCYL").textContent = leftCYL;
     document.getElementById("previewLeftAXIS").textContent = leftAXIS;
     document.getElementById("previewLensType").textContent = lensType.join(", ") || "None";
-    document.getElementById("previewAmount").textContent = amount.toFixed(2);
+    document.getElementById("previewAmount").textContent = parseFloat(amount).toFixed(2);
 
     // Update the date in the preview
     document.getElementById("previewcurrentDate").textContent = new Date().toLocaleDateString();
@@ -169,7 +197,7 @@ function submitForm() {
     
     // Increment prescription count and earnings
     prescriptionCount++;
-    amountEarned += amount;
+    amountEarned += parseFloat(amount);
     updateStats();
     saveCounters();
 
@@ -268,3 +296,14 @@ function uploadImageToImgBB(base64Image, mobileNumber) {
         alert("Error uploading image. Please check your internet connection.");
     });
 }
+
+document.getElementById("age").addEventListener("input", function () {
+    this.value = this.value.replace(/[^0-9]/g, ""); // Only allow numbers
+});
+
+const prescriptionInputs = ["rightSPH", "rightCYL", "rightAXIS", "leftSPH", "leftCYL", "leftAXIS"];
+prescriptionInputs.forEach(id => {
+    document.getElementById(id).addEventListener("input", function () {
+        this.value = this.value.replace(/[^0-9.-]/g, ""); // Allow numbers, decimals, and negative values
+    });
+});
