@@ -182,12 +182,23 @@ function submitForm() {
     const amount = document.getElementById("amount").value.trim();
 
     // Prescription Fields
-    const rightSPH = document.getElementById("rightSPH").value.trim();
-    const rightCYL = document.getElementById("rightCYL").value.trim();
-    const rightAXIS = document.getElementById("rightAXIS").value.trim();
-    const leftSPH = document.getElementById("leftSPH").value.trim();
-    const leftCYL = document.getElementById("leftCYL").value.trim();
-    const leftAXIS = document.getElementById("leftAXIS").value.trim();
+     const rightDistSPH = document.getElementById("rightDistSPH").value.trim();
+    const rightDistCYL = document.getElementById("rightDistCYL").value.trim();
+    const rightDistAXIS = document.getElementById("rightDistAXIS").value.trim();
+    const rightDistV/A = document.getElementById("rightDistV/A").value.trim();
+    const leftDistSPH = document.getElementById("leftDistSPH").value.trim();
+    const leftDistCYL = document.getElementById("leftDistCYL").value.trim();
+    const leftDistAXIS = document.getElementById("leftDistAXIS").value.trim();
+    const leftDistV/A = document.getElementById("leftDistV/A").value.trim();
+
+    const rightNearSPH = document.getElementById("rightNearSPH").value.trim();
+    const rightNearCYL = document.getElementById("rightNearCYL").value.trim();
+    const rightNearAXIS = document.getElementById("rightNearAXIS").value.trim();
+    const rightNearV/A = document.getElementById("rightNearV/A").value.trim();
+    const leftNearSPH = document.getElementById("leftNearSPH").value.trim();
+    const leftNearCYL = document.getElementById("leftNearCYL").value.trim();
+    const leftNearAXIS = document.getElementById("leftNearAXIS").value.trim();
+    const leftNearV/A = document.getElementById("leftNearV/A").value.trim();
 
     // Vision Type, Lens Type, Frame Type, and Payment Mode
     const visionType = document.getElementById("visionType").value;
@@ -232,12 +243,23 @@ function submitForm() {
     document.getElementById("previewAge").textContent = age;
     document.getElementById("previewGender").textContent = gender;
     document.getElementById("previewMobile").textContent = mobile;
-    document.getElementById("previewRightSPH").textContent = rightSPH;
-    document.getElementById("previewRightCYL").textContent = rightCYL;
-    document.getElementById("previewRightAXIS").textContent = rightAXIS;
-    document.getElementById("previewLeftSPH").textContent = leftSPH;
-    document.getElementById("previewLeftCYL").textContent = leftCYL;
-    document.getElementById("previewLeftAXIS").textContent = leftAXIS;
+    document.getElementById("previewRightDistSPH").textContent = rightDistSPH;
+    document.getElementById("previewRightDistCYL").textContent = rightDistCYL;
+    document.getElementById("previewRightDistAXIS").textContent = rightDistAXIS;
+    document.getElementById("previewRightDistV/A").textContent = rightDistV/A;
+    document.getElementById("previewLeftDistSPH").textContent = leftDistSPH;
+    document.getElementById("previewLeftDistCYL").textContent = leftDistCYL;
+    document.getElementById("previewLeftDistAXIS").textContent = leftDistAXIS;
+    document.getElementById("previewLeftDistV/A").textContent = leftDistV/A;
+
+    document.getElementById("previewRightNearSPH").textContent = rightNearSPH;
+    document.getElementById("previewRightNearCYL").textContent = rightNearCYL;
+    document.getElementById("previewRightNearAXIS").textContent = rightNearAXIS;
+    document.getElementById("previewRightNearV/A").textContent = rightNearV/A;
+    document.getElementById("previewLeftNearSPH").textContent = leftNearSPH;
+    document.getElementById("previewLeftNearCYL").textContent = leftNearCYL;
+    document.getElementById("previewLeftNearAXIS").textContent = leftNearAXIS;
+    document.getElementById("previewLeftNearV/A").textContent = leftNearV/A;
     document.getElementById("previewLensType").textContent = lensType;
     document.getElementById("previewAmount").textContent = parseFloat(amount).toFixed(2);
 
