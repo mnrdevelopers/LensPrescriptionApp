@@ -53,32 +53,11 @@ window.addEventListener("beforeunload", (event) => {
     }
 });
 
-
-document.addEventListener("DOMContentLoaded", () => {
-    const splashScreen = document.getElementById("splash-screen");
-
-    // Ensure splash only appears on first open (not reloads)
-    if (sessionStorage.getItem("splashShown")) {
-        splashScreen.style.display = "none"; // Completely hide splash on reload
-    } else {
-        splashScreen.style.display = "flex"; // Show splash on first app open
-
-        setTimeout(() => {
-            splashScreen.classList.add("hidden"); // Smooth fade-out effect
-            setTimeout(() => {
-                splashScreen.style.display = "none"; // Remove splash from DOM
-            }, 500); // Wait for fade-out transition
-            sessionStorage.setItem("splashShown", "true"); // Store session flag
-        }, 3000); // Show splash for 3 seconds
-    }
-});
-
-// Reset splash flag **ONLY when user fully closes the tab**
-window.addEventListener("beforeunload", () => {
-    if (!navigator.onLine) {
-        sessionStorage.removeItem("splashShown"); // Reset splash flag on full close
-    }
-});
+// Check if splash was already shown
+if (!sessionStorage.getItem("splashShown")) {
+    window.location.href = "index.html"; // Show splash only on first load
+    sessionStorage.setItem("splashShown", "true"); // Mark splash as shown
+}
 
 
 document.addEventListener("DOMContentLoaded", () => {
