@@ -88,32 +88,51 @@
         </div>
         <hr>
 
-        <!-- Prescription Table -->
-        <div class="section-title">Prescription Details</div>
-        <div class="prescription-table">
-            <table>
-                <thead>
-                    <tr>
-                        <th colspan="3">Right Eye</th>
-                        <th colspan="3">Left Eye</th>
-                    </tr>
-                    <tr>
-                       <th>SPH</th><th>CYL</th><th>AXIS</th>
-                       <th>SPH</th><th>CYL</th><th>AXIS</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><input type="text" id="rightSPH"></td>
-                        <td><input type="text" id="rightCYL"></td>
-                        <td><input type="text" id="rightAXIS"></td>
-                        <td><input type="text" id="leftSPH"></td>
-                        <td><input type="text" id="leftCYL"></td>
-                        <td><input type="text" id="leftAXIS"></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+<div class="prescription-table">
+    <table>
+        <thead>
+            <tr>
+                <th rowspan="2">R/x</th>
+                <th colspan="4">RIGHT EYE (OD)</th>
+                <th colspan="4">LEFT EYE (OS)</th>
+            </tr>
+            <tr>
+                <th>SPH</th>
+                <th>CYL</th>
+                <th>AXIS</th>
+                <th>V/A</th>
+                <th>SPH</th>
+                <th>CYL</th>
+                <th>AXIS</th>
+                <th>V/A</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>DIST</strong></td>
+                <td><input type="text" id="rightDistSPH" placeholder="SPH"></td>
+                <td><input type="text" id="rightDistCYL" placeholder="CYL"></td>
+                <td><input type="text" id="rightDistAXIS" placeholder="AXIS"></td>
+                <td><input type="text" id="rightDistV/A" placeholder="V/A"></td>
+                <td><input type="text" id="leftDistSPH" placeholder="SPH"></td>
+                <td><input type="text" id="leftDistCYL" placeholder="CYL"></td>
+                <td><input type="text" id="leftDistAXIS" placeholder="AXIS"></td>
+                <td><input type="text" id="leftDistV/A" placeholder="V/A"></td>
+            </tr>
+            <tr>
+                <td><strong>NEAR</strong></td>
+                <td><input type="text" id="rightNearSPH" placeholder="SPH"></td>
+                <td><input type="text" id="rightNearCYL" placeholder="CYL"></td>
+                <td><input type="text" id="rightNearAXIS" placeholder="AXIS"></td>
+                <td><input type="text" id="rightNearV/A" placeholder="V/A"></td>
+                <td><input type="text" id="leftNearSPH" placeholder="SPH"></td>
+                <td><input type="text" id="leftNearCYL" placeholder="CYL"></td>
+                <td><input type="text" id="leftNearAXIS" placeholder="AXIS"></td>
+                <td><input type="text" id="leftNearV/A" placeholder="V/A"></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
         <hr>
 
         <!-- Vision Type, Lens Type, and Frame Type Side by Side -->
