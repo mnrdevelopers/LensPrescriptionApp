@@ -315,30 +315,81 @@ p {
 }
 
 
+/* Official Prescription Styles */
+body {
+    background-color: white; /* White background */
+    color: black; /* Black text */
+    font-family: 'Arial', sans-serif; /* Professional font */
+}
+
+/* Section Titles */
+.section-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin: 20px 0 10px;
+    color: black; /* Black text */
+}
+
 /* Prescription Table */
 .prescription-table {
     margin-top: 10px;
     overflow-x: auto;
+    background-color: white; /* White background */
+    border: 1px solid #ccc; /* Light border */
+    border-radius: 5px;
+    padding: 15px;
 }
 
-table {
+.prescription-table table {
     width: 100%;
     border-collapse: collapse;
+    margin-bottom: 15px;
 }
 
-th, td {
-    border: 1px solid black;
-    padding: 5px;
+.prescription-table th, .prescription-table td {
+    border: 1px solid #ccc; /* Light border */
+    padding: 10px;
     text-align: center;
+    color: black; /* Black text */
 }
 
-input {
+.prescription-table th {
+    background-color: #f0f0f0; /* Light gray background for headers */
+    font-weight: bold; /* Bold headings */
+}
+
+.prescription-heading {
+    background-color: #007bff; /* Blue background for eye headings */
+    color: white; /* White text */
+    font-size: 16px;
+    font-weight: bold;
+    padding: 10px;
+}
+
+.prescription-table input {
     width: 90%;
+    padding: 8px;
     font-size: 14px;
     text-align: center;
-    border: 1px solid #ccc;
+    border: 1px solid #ccc; /* Light border */
     border-radius: 5px;
+    background-color: white; /* White background */
+    color: black; /* Black text */
 }
+
+.prescription-table input:focus {
+    outline: none;
+    border-color: #007bff; /* Blue border on focus */
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+}
+
+/* Remarks and Usage Instructions */
+.official-input {
+    width: 100%;
+    padding: 10px;
+    font-size: 14px;
+    border: 1px solid #ccc; /* Light border */
+    border-radius: 5px
 
 /* Flexbox Layout for Side-by-Side Dropdowns */
 .options-row {
