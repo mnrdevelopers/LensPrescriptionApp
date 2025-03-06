@@ -53,14 +53,6 @@ window.addEventListener("beforeunload", (event) => {
     }
 });
 
-document.addEventListener("DOMContentLoaded", () => {
-    // Check if splash has already been shown in this session
-    if (!sessionStorage.getItem("splashShown")) {
-        sessionStorage.setItem("splashShown", "true"); // Mark splash as shown
-        window.location.replace("index.html"); // Redirect to splash screen only once
-    }
-});
-
 
 document.addEventListener("DOMContentLoaded", () => {
     const darkModeToggle = document.getElementById("darkModeToggle");
