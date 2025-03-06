@@ -57,7 +57,7 @@ window.addEventListener("beforeunload", (event) => {
 document.addEventListener("DOMContentLoaded", () => {
     const splashScreen = document.getElementById("splash-screen");
 
-    // Check if splash screen was already shown in this session
+    // Ensure splash only appears on first open (not reloads)
     if (sessionStorage.getItem("splashShown")) {
         splashScreen.style.display = "none"; // Completely hide splash on reload
     } else {
@@ -66,17 +66,20 @@ document.addEventListener("DOMContentLoaded", () => {
         setTimeout(() => {
             splashScreen.classList.add("hidden"); // Smooth fade-out effect
             setTimeout(() => {
-                splashScreen.style.display = "none"; // Completely remove splash
+                splashScreen.style.display = "none"; // Remove splash from DOM
             }, 500); // Wait for fade-out transition
-            sessionStorage.setItem("splashShown", "true"); // Store flag
+            sessionStorage.setItem("splashShown", "true"); // Store session flag
         }, 3000); // Show splash for 3 seconds
     }
 });
 
-// Reset splash flag only when the user **closes the browser tab or app completely**
-window.addEventListener("pagehide", () => {
-    sessionStorage.removeItem("splashShown"); // Ensures splash resets on full close
+// Reset splash flag **ONLY when user fully closes the tab**
+window.addEventListener("beforeunload", () => {
+    if (!navigator.onLine) {
+        sessionStorage.removeItem("splashShown"); // Reset splash flag on full close
+    }
 });
+
 
 document.addEventListener("DOMContentLoaded", () => {
     const darkModeToggle = document.getElementById("darkModeToggle");
