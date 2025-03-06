@@ -59,26 +59,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Check if splash screen was already shown in this session
     if (sessionStorage.getItem("splashShown")) {
-        splashScreen.classList.add("hidden"); // Hide splash immediately
+        splashScreen.style.display = "none"; // Completely hide splash on reload
     } else {
-        // Show splash screen for first-time app opening
-        splashScreen.style.display = "flex";
+        splashScreen.style.display = "flex"; // Show splash on first app open
 
         setTimeout(() => {
-            splashScreen.classList.add("hidden"); // Apply the hidden class for smooth fade-out
+            splashScreen.classList.add("hidden"); // Smooth fade-out effect
             setTimeout(() => {
-                splashScreen.style.display = "none"; // Remove the element from the DOM after fade-out
-            }, 500); // Wait for the fade-out transition to complete
-            sessionStorage.setItem("splashShown", "true"); // Store flag in sessionStorage
+                splashScreen.style.display = "none"; // Completely remove splash
+            }, 500); // Wait for fade-out transition
+            sessionStorage.setItem("splashShown", "true"); // Store flag
         }, 3000); // Show splash for 3 seconds
     }
 });
 
-// Clear splash screen flag when the app is fully closed
-window.addEventListener("beforeunload", () => {
-    if (!navigator.onLine) {
-        localStorage.removeItem("splashShown"); // Reset splash flag only on full close
-    }
+// Reset splash flag only when the user **closes the browser tab or app completely**
+window.addEventListener("pagehide", () => {
+    sessionStorage.removeItem("splashShown"); // Ensures splash resets on full close
 });
 
 document.addEventListener("DOMContentLoaded", () => {
