@@ -3,6 +3,7 @@ const CACHE_NAME = 'lens-prescription-v2';
 const ASSETS = [
   '/',
   '/index.html',
+  '/app.html',
   '/style.css',
   '/script.js',
   '/manifest.json'
