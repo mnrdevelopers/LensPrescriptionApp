@@ -297,23 +297,33 @@ function submitForm() {
 
 // Reset form fields
 function resetForm() {
+    // Reset patient details
     document.getElementById("patientName").value = "";
     document.getElementById("age").value = "";
     document.getElementById("gender").value = "Male";
     document.getElementById("patientMobile").value = "";
 
-    document.getElementById("rightSPH").value = "";
-    document.getElementById("rightCYL").value = "";
-    document.getElementById("rightAXIS").value = "";
-    document.getElementById("leftSPH").value = "";
-    document.getElementById("leftCYL").value = "";
-    document.getElementById("leftAXIS").value = "";
+    // Reset DIST fields
+    document.getElementById("rightDistSPH").value = "";
+    document.getElementById("rightDistCYL").value = "";
+    document.getElementById("rightDistAXIS").value = "";
+    document.getElementById("rightDistVA").value = "";
+    document.getElementById("leftDistSPH").value = "";
+    document.getElementById("leftDistCYL").value = "";
+    document.getElementById("leftDistAXIS").value = "";
+    document.getElementById("leftDistVA").value = "";
 
-    document.getElementById("blueCut").checked = false;
-    document.getElementById("progressive").checked = false;
-    document.getElementById("bifocal").checked = false;
-    document.getElementById("antiGlare").checked = false;
+    // Reset NEAR fields
+    document.getElementById("rightNearSPH").value = "";
+    document.getElementById("rightNearCYL").value = "";
+    document.getElementById("rightNearAXIS").value = "";
+    document.getElementById("rightNearVA").value = "";
+    document.getElementById("leftNearSPH").value = "";
+    document.getElementById("leftNearCYL").value = "";
+    document.getElementById("leftNearAXIS").value = "";
+    document.getElementById("leftNearVA").value = "";
 
+    // Reset amount
     document.getElementById("amount").value = "";
 }
 
@@ -391,7 +401,13 @@ document.getElementById("age").addEventListener("input", function () {
     this.value = this.value.replace(/[^0-9]/g, ""); // Only allow numbers
 });
 
-const prescriptionInputs = ["rightSPH", "rightCYL", "rightAXIS", "leftSPH", "leftCYL", "leftAXIS"];
+const prescriptionInputs = [
+    "rightDistSPH", "rightDistCYL", "rightDistAXIS", "rightDistVA",
+    "leftDistSPH", "leftDistCYL", "leftDistAXIS", "leftDistVA",
+    "rightNearSPH", "rightNearCYL", "rightNearAXIS", "rightNearVA",
+    "leftNearSPH", "leftNearCYL", "leftNearAXIS", "leftNearVA"
+];
+
 prescriptionInputs.forEach(id => {
     document.getElementById(id).addEventListener("input", function () {
         this.value = this.value.replace(/[^0-9.-]/g, ""); // Allow numbers, decimals, and negative values
