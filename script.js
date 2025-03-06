@@ -182,7 +182,7 @@ function submitForm() {
     const amount = document.getElementById("amount").value.trim();
 
     // Prescription Fields
-      const rightDistSPH = document.getElementById("rightDistSPH").value.trim();
+    const rightDistSPH = document.getElementById("rightDistSPH").value.trim();
     const rightDistCYL = document.getElementById("rightDistCYL").value.trim();
     const rightDistAXIS = document.getElementById("rightDistAXIS").value.trim();
     const rightDistVA = document.getElementById("rightDistVA").value.trim();
@@ -228,7 +228,12 @@ function submitForm() {
     }
 
     // Validate Prescription Inputs
-    const prescriptionFields = [rightSPH, rightCYL, rightAXIS, leftSPH, leftCYL, leftAXIS];
+    const prescriptionFields = [
+        rightDistSPH, rightDistCYL, rightDistAXIS, rightDistVA,
+        leftDistSPH, leftDistCYL, leftDistAXIS, leftDistVA,
+        rightNearSPH, rightNearCYL, rightNearAXIS, rightNearVA,
+        leftNearSPH, leftNearCYL, leftNearAXIS, leftNearVA
+    ];
     const validNumberPattern = /^-?\d*\.?\d*$/;
 
     for (let i = 0; i < prescriptionFields.length; i++) {
@@ -243,7 +248,9 @@ function submitForm() {
     document.getElementById("previewAge").textContent = age;
     document.getElementById("previewGender").textContent = gender;
     document.getElementById("previewMobile").textContent = mobile;
-   document.getElementById("previewRightDistSPH").textContent = rightDistSPH;
+
+    // Update DIST and NEAR fields
+    document.getElementById("previewRightDistSPH").textContent = rightDistSPH;
     document.getElementById("previewRightDistCYL").textContent = rightDistCYL;
     document.getElementById("previewRightDistAXIS").textContent = rightDistAXIS;
     document.getElementById("previewRightDistVA").textContent = rightDistVA;
@@ -260,6 +267,7 @@ function submitForm() {
     document.getElementById("previewLeftNearCYL").textContent = leftNearCYL;
     document.getElementById("previewLeftNearAXIS").textContent = leftNearAXIS;
     document.getElementById("previewLeftNearVA").textContent = leftNearVA;
+
     document.getElementById("previewAmount").textContent = parseFloat(amount).toFixed(2);
 
     // Update Vision Type, Lens Type, Frame Type, and Payment Mode in Preview
