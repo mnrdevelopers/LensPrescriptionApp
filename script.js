@@ -55,8 +55,8 @@ window.addEventListener("beforeunload", (event) => {
 
 // Check if splash was already shown
 if (!sessionStorage.getItem("splashShown")) {
-    window.location.href = "index.html"; // Show splash only on first load
     sessionStorage.setItem("splashShown", "true"); // Mark splash as shown
+    window.location.replace("index.html"); // Redirect to splash screen only once
 }
 
 
