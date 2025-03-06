@@ -17,9 +17,16 @@
     </div>
 
     <script>
-        setTimeout(() => {
-            window.location.replace("app.html"); // Redirect only once
-        }, 3000); // Show splash for 3 seconds
+        // Check if the splash screen has already been shown
+        if (!sessionStorage.getItem("splashShown")) {
+            sessionStorage.setItem("splashShown", "true"); // Mark splash as shown
+            setTimeout(() => {
+                window.location.replace("app.html"); // Redirect to app.html after 3 seconds
+            }, 3000);
+        } else {
+            // If splash has already been shown, redirect immediately
+            window.location.replace("app.html");
+        }
     </script>
 </body>
 </html>
