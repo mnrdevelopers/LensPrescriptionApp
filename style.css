@@ -20,6 +20,7 @@
     color: white;
     font-family: 'Arial', sans-serif;
     z-index: 9999;
+    opacity: 1;
     transition: opacity 0.5s ease-out;
 }
 
@@ -88,10 +89,10 @@
     100% { left: 100%; }
 }
 
+/* Smooth Hide Effect */
 .hidden {
-    visibility: hidden; /* Hide the element but keep its space in the layout */
-    opacity: 0; /* Make the element fully transparent */
-    transition: visibility 0s 0.5s, opacity 0.5s ease-out; /* Delay visibility change until opacity transition completes */
+    opacity: 0; /* Smooth transition to invisible */
+    pointer-events: none; /* Prevents interaction when hidden */
 }
 
 html, body {
