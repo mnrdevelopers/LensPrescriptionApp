@@ -423,14 +423,32 @@ document.getElementById("age").addEventListener("input", function () {
 });
 
 const prescriptionInputs = [
-    "rightDistSPH", "rightDistCYL", "rightDistAXIS", "rightDistVA",
-    "leftDistSPH", "leftDistCYL", "leftDistAXIS", "leftDistVA",
-    "rightAddSPH", "rightAddCYL", "rightAddAXIS", "rightAddVA",
-    "leftAddSPH", "leftAddCYL", "leftAddAXIS", "leftAddVA"
+    { id: "rightDistSPH", type: "number" },
+    { id: "rightDistCYL", type: "number" },
+    { id: "rightDistAXIS", type: "number" },
+    { id: "rightDistVA", type: "va" }, // V/A field
+    { id: "leftDistSPH", type: "number" },
+    { id: "leftDistCYL", type: "number" },
+    { id: "leftDistAXIS", type: "number" },
+    { id: "leftDistVA", type: "va" }, // V/A field
+    { id: "rightAddSPH", type: "number" },
+    { id: "rightAddCYL", type: "number" },
+    { id: "rightAddAXIS", type: "number" },
+    { id: "rightAddVA", type: "va" }, // V/A field
+    { id: "leftAddSPH", type: "number" },
+    { id: "leftAddCYL", type: "number" },
+    { id: "leftAddAXIS", type: "number" },
+    { id: "leftAddVA", type: "va" }, // V/A field
 ];
 
-prescriptionInputs.forEach(id => {
-    document.getElementById(id).addEventListener("input", function () {
-        this.value = this.value.replace(/[^0-9.-]/g, ""); // Allow numbers, decimals, and negative values
+prescriptionInputs.forEach(field => {
+    document.getElementById(field.id).addEventListener("input", function () {
+        if (field.type === "number") {
+            // Allow numbers, decimals, and negative values
+            this.value = this.value.replace(/[^0-9.-]/g, "");
+        } else if (field.type === "va") {
+            // Allow numbers and the '/' character for V/A fields
+            this.value = this.value.replace(/[^0-9/]/g, "");
+        }
     });
 });
