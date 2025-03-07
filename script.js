@@ -447,8 +447,8 @@ prescriptionInputs.forEach(field => {
             // Allow numbers, decimals, and negative values
             this.value = this.value.replace(/[^0-9.-]/g, "");
         } else if (field.type === "va") {
-            // Allow numbers and the '/' character for V/A fields
-            this.value = this.value.replace(/[^0-9/]/g, "");
+            // Allow numbers, '/', and 'N' for V/A fields
+            this.value = this.value.replace(/[^0-9/N]/g, "");
         }
     });
 });
