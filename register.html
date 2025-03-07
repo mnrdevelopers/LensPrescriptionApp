@@ -69,10 +69,12 @@
                 contactNumber
             };
 
-            fetch(scriptURL, {
-                method: "POST",
-                body: JSON.stringify(data)
-            })
+           fetch(scriptURL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" }, // ✅ Fix: Added headers
+    body: JSON.stringify(data)
+})
+
             .then(response => response.json())
             .then(result => {
                 alert(result.message);
