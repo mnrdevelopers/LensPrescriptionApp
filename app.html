@@ -396,10 +396,17 @@
 
         // Fetch user details from Google Sheets
         fetch(scriptURL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" }, // ✅ Added Headers
-            body: JSON.stringify({ action: "getDetails", username: username })
-        })
+    method: "POST",
+    headers: { "Content-Type": "application/json" },  // ✅ Fix: Added headers
+    body: JSON.stringify({
+        action: "updateProfile",
+        username: username,
+        clinicName: newClinicName,
+        optometristName: newOptometristName,
+        address: newAddress,
+        contactNumber: newContactNumber
+    })
+})
         .then(response => response.json())
         .then(result => {
             if (result.status === "success") {
