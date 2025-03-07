@@ -7,50 +7,10 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="manifest" href="manifest.json">
+
 </head>
 <body>
 
-<div id="mpinAuth" style="display: none; text-align: center; margin-top: 20px;">
-    <h2>Enter MPIN</h2>
-    <input type="password" id="mpinInput" placeholder="Enter MPIN" maxlength="4">
-    <button onclick="authenticate()">Submit</button>
-</div>
-
-<script>
-    // Check if user is registered
-    const clinicName = localStorage.getItem("clinicName");
-    const mpin = localStorage.getItem("mpin");
-
-    if (!clinicName || !mpin) {
-        // Redirect to profile page if not registered
-        window.location.href = "profile.html";
-    } else {
-        // Show MPIN authentication
-        document.getElementById("mpinAuth").style.display = "block";
-        document.getElementById("prescription").style.display = "none"; // Hide main app
-    }
-
-    function authenticate() {
-        const enteredMPIN = document.getElementById("mpinInput").value;
-        const savedMPIN = localStorage.getItem("mpin");
-
-        if (enteredMPIN === savedMPIN) {
-            // Show main app
-            document.getElementById("mpinAuth").style.display = "none";
-            document.getElementById("prescription").style.display = "block";
-
-            // Populate clinic and optometrist details
-            document.querySelector(".header h2").textContent = localStorage.getItem("clinicName");
-            document.querySelector(".header p").textContent = localStorage.getItem("clinicAddress");
-            document.querySelector(".optometrist-details .left p").textContent = localStorage.getItem("optometristName");
-            document.querySelector(".optometrist-details .left p + p").textContent = localStorage.getItem("optometristMobile");
-        } else {
-            alert("Invalid MPIN. Please try again.");
-        }
-    }
-</script>
-
-    
 <!-- Custom Exit Prompt Modal -->
 <div id="exitPromptModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); justify-content: center; align-items: center; z-index: 10000;">
     <div style="background: white; padding: 20px; border-radius: 10px; text-align: center;">
@@ -68,23 +28,6 @@
     </label>
 </div>
 
-        <!-- Add this button in app.html -->
-<button onclick="logout()" style="position: absolute; top: 10px; left: 10px;">Logout</button>
-
-<script>
-    function logout() {
-        // Clear saved details
-        localStorage.removeItem("clinicName");
-        localStorage.removeItem("clinicAddress");
-        localStorage.removeItem("optometristName");
-        localStorage.removeItem("optometristMobile");
-        localStorage.removeItem("mpin");
-
-        // Redirect to profile page
-        window.location.href = "profile.html";
-    }
-</script>
-
         <!-- Prescription Count and Amount Earned -->
         <div class="prescription-stats">
             <div class="left">
@@ -100,24 +43,25 @@
         </div>
         <hr>
         
-        <!-- Replace this section in app.html -->
-<div class="header">
-    <h2 id="clinicNamePlaceholder">Srinidhi Eye Care & Optical</h2>
-    <p id="clinicAddressPlaceholder">Beside Bangalore Kobari Bondalu, Nizamabad</p>
-</div>
-<hr>
+        <!-- Optical Shop Details -->
+        <div class="header">
+            <h2>Srinidhi Eye Care & Optical</h2>
+            <p>Beside Bangalore Kobari Bondalu, Nizamabad</p>
+        </div>
+        <hr>
 
-<!-- Optometrist Details -->
-<div class="optometrist-details">
-    <div class="left">
-        <p id="optometristNamePlaceholder"><strong>B MAHESH KUMAR(D.O.A)</strong></p>
-        <p id="optometristMobilePlaceholder"><strong>+91 96037 69267</strong></p>
-    </div>
-    <div class="right">
-        <p><strong>Date:</strong> <span id="currentDate"></span></p>
-    </div>
-<hr>
-    
+        <!-- Optometrist Details -->
+        <div class="optometrist-details">
+            <div class="left">
+                <p><strong>B MAHESH KUMAR(D.O.A)</strong>
+                <p><strong>+91 96037 69267</strong>
+            </div>
+            <div class="right">
+                <p><strong>Date:</strong> <span id="currentDate"></span></p>
+            </div>
+        </div>
+        <hr>
+
         <!-- Patient Details -->
         <div class="section-title">Patient Details</div>
         <div class="patient-details">
@@ -293,23 +237,22 @@
 </div>
 
         
-    <!-- Replace this section in app.html -->
-<div id="prescriptionPreview" style="display: none; width: 58mm; padding: 5px; font-family: Times New Roman, sans-serif; font-size: 8px;">
+      <div id="prescriptionPreview" style="display: none; width: 58mm; padding: 5px; font-family: Times New Roman, sans-serif; font-size: 8px;">
     <!-- Clinic Details -->
     <div style="text-align: center; margin-bottom: 5px;">
-        <h2 id="previewClinicName" style="font-size: 10px; margin: 0;">Srinidhi Eye Care & Optical</h2>
-        <p id="previewClinicAddress" style="font-size: 8px; margin: 2px 0;">Beside Bangalore Kobari Bondalu, Nizamabad</p>
+        <h2 style="font-size: 10px; margin: 0;">Srinidhi Eye Care & Optical</h2>
+        <p style="font-size: 8px; margin: 2px 0;">Beside Bangalore Kobari Bondalu, Nizamabad</p>
     </div>
     <hr style="border: 0.5px dashed #000; margin: 5px 0;">
 
     <!-- Optometrist Details -->
     <div style="margin-bottom: 5px;">
-        <p id="previewOptometristName" style="margin: 2px 0;"><strong>B Mahesh Kumar(D.O.A)</strong></p>
-        <p id="previewOptometristMobile" style="margin: 2px 0;"><strong>+91 96037 69267</strong></p>
+        <p style="margin: 2px 0;"><strong>B Mahesh Kumar(D.O.A)</strong>
+        <p style="margin: 2px 0;"><strong>+91 96037 69267</strong>
         <p style="margin: 2px 0;"><strong>Date:</strong> <span id="previewcurrentDate"></span></p>
     </div>
     <hr style="border: 0.5px dashed #000; margin: 5px 0;">
-    
+
     <!-- Patient Details -->
     <div style="margin-bottom: 5px;">
         <p style="margin: 2px 0;"><strong>Patient Name:</strong> <span id="previewPatientName"></span></p>
