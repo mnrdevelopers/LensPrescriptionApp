@@ -248,7 +248,7 @@ const prescriptionFields = [
 ];
 
 const validNumberPattern = /^-?\d*\.?\d*$/; // For SPH, CYL, AXIS
-const validVAPattern = /^\d+\/\d+$/; // For V/A (e.g., 6/6)
+const validVAPattern = /^[Nn]?\d+(\/\d+)?$/; // For V/A (e.g., 6/6, N6, 6/N)
 
 for (let i = 0; i < prescriptionFields.length; i++) {
     const field = prescriptionFields[i];
@@ -258,7 +258,7 @@ for (let i = 0; i < prescriptionFields.length; i++) {
             return;
         }
         if (field.type === "va" && !validVAPattern.test(field.value)) {
-            alert("Please enter valid V/A values (e.g., 6/6).");
+            alert("Please enter valid V/A values (e.g., 6/6, N6, 6/N).");
             return;
         }
     }
