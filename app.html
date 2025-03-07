@@ -369,7 +369,7 @@
 
     <script>
     const scriptURL = "https://script.google.com/macros/s/AKfycbzs3aR8Id1VC2X0OmNNRbOYrqMIQluKsQMgE12L6yqiWD8xzMwUepB9K8lqRb-W0IJ1/exec"; // Replace with your Google Apps Script URL
-
+        
     document.addEventListener("DOMContentLoaded", function() {
         const username = localStorage.getItem("username");
 
@@ -387,20 +387,34 @@
         .then(response => response.json())
         .then(result => {
             if (result.status === "success") {
-                // Auto-fill clinic details
+                // ✅ Update Clinic Details in Main Section
                 document.querySelector(".header h2").textContent = result.clinicName;
                 document.querySelector(".header p").textContent = result.address;
                 document.querySelector(".optometrist-details .left p:nth-child(1)").textContent = result.optometristName;
                 document.querySelector(".optometrist-details .left p:nth-child(2)").textContent = result.contactNumber;
+
+                // ✅ Update Clinic Details in Prescription Preview
+                document.querySelector("#prescriptionPreview h2").textContent = result.clinicName;
+                document.querySelector("#prescriptionPreview p:nth-child(2)").textContent = result.address;
+                document.querySelector("#prescriptionPreview p:nth-child(3)").textContent = result.optometristName;
+                document.querySelector("#prescriptionPreview p:nth-child(4)").textContent = result.contactNumber;
             } else {
                 alert("Error fetching clinic details. Please log in again.");
                 localStorage.removeItem("username");
                 window.location.href = "login.html";
             }
         })
-        .catch(error => console.error("Error:", error));
+        .catch(error => {
+            console.error("Error:", error);
+            alert("Failed to fetch clinic details. Please check your internet connection.");
+        });
     });
-</script>
 
+    // Logout Function
+    function logoutUser() {
+        localStorage.removeItem("username");
+        window.location.href = "login.html"; // Redirect to login page
+    }
+</script>
 </body>
 </html>
