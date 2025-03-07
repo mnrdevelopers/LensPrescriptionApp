@@ -18,7 +18,7 @@
 
         <div class="form-group">
             <label for="password">Password</label>
-            <input type="password" id="password" placeholder="Enter Password" required autocomplete="current-password">
+            <input type="password" id="password" placeholder="Enter Password" required>
         </div>
 
         <button type="submit" class="btn btn-submit">Login</button>
@@ -40,10 +40,9 @@
             };
 
             fetch(scriptURL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" }, // ✅ Fix: Added headers
-    body: JSON.stringify(data)
-})
+                method: "POST",
+                body: JSON.stringify(data)
+            })
             .then(response => response.json())
             .then(result => {
                 alert(result.message);
