@@ -40,29 +40,6 @@
     box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
 }
 
-/* Button */
-.btn {
-    width: 100%;
-    padding: 10px;
-    font-size: 14px;
-    font-weight: bold;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-align: center;
-    color: white;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.btn-submit {
-    background: #2980b9;
-}
-
-.btn-submit:hover {
-    background: #3498db;
-}
-
 /* Form Text */
 .form-text {
     font-size: 14px;
