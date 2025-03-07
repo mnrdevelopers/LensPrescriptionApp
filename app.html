@@ -438,54 +438,38 @@
         document.getElementById("editProfileModal").style.display = "none";
     }
 
-    function saveProfileChanges() {
-        const username = localStorage.getItem("username");
-        const newClinicName = document.getElementById("editClinicName").value.trim();
-        const newOptometristName = document.getElementById("editOptometristName").value.trim();
-        const newAddress = document.getElementById("editAddress").value.trim();
-        const newContactNumber = document.getElementById("editContactNumber").value.trim();
-
-        if (!newClinicName || !newOptometristName || !newAddress || !newContactNumber) {
-            alert("All fields are required.");
-            return;
-        }
-
-        fetch(scriptURL, {
-            method: "POST",
-            body: JSON.stringify({
-                action: "updateProfile",
-                username: username,
-                clinicName: newClinicName,
-                optometristName: newOptometristName,
-                address: newAddress,
-                contactNumber: newContactNumber
-            })
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.status === "success") {
-                alert("Profile updated successfully!");
-                document.getElementById("clinicName").textContent = newClinicName;
-                document.getElementById("clinicAddress").textContent = newAddress;
-                document.getElementById("optometristName").textContent = newOptometristName;
-                document.getElementById("contactNumber").textContent = newContactNumber;
-
-                document.getElementById("previewClinicName").textContent = newClinicName;
-                document.getElementById("previewClinicAddress").textContent = newAddress;
-                document.getElementById("previewOptometristName").textContent = newOptometristName;
-                document.getElementById("previewContactNumber").textContent = newContactNumber;
-
-                closeEditProfileModal();
-            } else {
-                alert("Failed to update profile. Please try again.");
-            }
-        })
-        .catch(error => {
-            console.error("Error:", error);
-            alert("Failed to update profile. Please check your internet connection.");
-        });
+    fetch(scriptURL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },  // ✅ Ensures correct headers
+    body: JSON.stringify({
+        action: "updateProfile",
+        username: username,
+        clinicName: newClinicName,
+        optometristName: newOptometristName,
+        address: newAddress,
+        contactNumber: newContactNumber
+    })
+})
+.then(response => response.json())
+.then(result => {
+    console.log("Response from server:", result);
+    if (result.status === "success") {
+        alert("Profile updated successfully!");
+        document.getElementById("clinicName").textContent = newClinicName;
+        document.getElementById("clinicAddress").textContent = newAddress;
+        document.getElementById("optometristName").textContent = newOptometristName;
+        document.getElementById("contactNumber").textContent = newContactNumber;
+        closeEditProfileModal();
+    } else {
+        alert("Failed to update profile. Please try again.");
     }
-
+})
+.catch(error => {
+    console.error("Error:", error);
+    alert("Failed to update profile. Please check your internet connection.");
+});
+       }
+       
     // ✅ Logout Function (Placed outside of `saveProfileChanges`)
     function logoutUser() {
         localStorage.removeItem("username");
