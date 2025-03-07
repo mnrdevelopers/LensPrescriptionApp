@@ -68,6 +68,23 @@
     </label>
 </div>
 
+        <!-- Add this button in app.html -->
+<button onclick="logout()" style="position: absolute; top: 10px; left: 10px;">Logout</button>
+
+<script>
+    function logout() {
+        // Clear saved details
+        localStorage.removeItem("clinicName");
+        localStorage.removeItem("clinicAddress");
+        localStorage.removeItem("optometristName");
+        localStorage.removeItem("optometristMobile");
+        localStorage.removeItem("mpin");
+
+        // Redirect to profile page
+        window.location.href = "profile.html";
+    }
+</script>
+
         <!-- Prescription Count and Amount Earned -->
         <div class="prescription-stats">
             <div class="left">
