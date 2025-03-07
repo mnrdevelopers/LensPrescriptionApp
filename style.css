@@ -315,7 +315,7 @@ p {
 }
 
 .prescription-table {
-    width: 58mm; /* Fixed width for thermal printing */
+    width: 100%; /* Fixed width for thermal printing */
     margin: 0 auto; /* Center the tables */
     font-family: Arial, sans-serif;
     font-size: 8px; /* Smaller font size */
