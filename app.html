@@ -237,7 +237,7 @@
 </div>
 
         
-       <div id="prescriptionPreview" style="display: none; width: 58mm; padding: 5px; font-family: Arial, sans-serif; font-size: 8px;">
+      <div id="prescriptionPreview" style="display: none; width: 58mm; padding: 5px; font-family: Arial, sans-serif; font-size: 8px;">
     <!-- Clinic Details -->
     <div style="text-align: center; margin-bottom: 5px;">
         <h2 style="font-size: 10px; margin: 0;">Srinidhi Eye Care & Optical</h2>
@@ -265,43 +265,67 @@
     <!-- Prescription Details -->
     <div style="margin-bottom: 5px;">
         <h3 style="font-size: 9px; margin: 5px 0; text-align: center;">Prescription Details</h3>
-        <table style="width: 100%; border-collapse: collapse; font-size: 8px;">
+
+        <!-- Right Eye Table -->
+        <table style="width: 100%; border-collapse: collapse; font-size: 8px; margin-bottom: 10px;">
             <thead>
                 <tr>
-                    <th colspan="4" style="border: 1px solid #000; padding: 2px; text-align: center;">RIGHT EYE (OD)</th>
-                    <th colspan="4" style="border: 1px solid #000; padding: 2px; text-align: center;">LEFT EYE (OS)</th>
+                    <th colspan="5">RIGHT EYE (OD)</th>
                 </tr>
                 <tr>
-                    <th style="border: 1px solid #000; padding: 2px; text-align: center;">SPH</th>
-                    <th style="border: 1px solid #000; padding: 2px; text-align: center;">CYL</th>
-                    <th style="border: 1px solid #000; padding: 2px; text-align: center;">AXIS</th>
-                    <th style="border: 1px solid #000; padding: 2px; text-align: center;">V/A</th>
-                    <th style="border: 1px solid #000; padding: 2px; text-align: center;">SPH</th>
-                    <th style="border: 1px solid #000; padding: 2px; text-align: center;">CYL</th>
-                    <th style="border: 1px solid #000; padding: 2px; text-align: center;">AXIS</th>
-                    <th style="border: 1px solid #000; padding: 2px; text-align: center;">V/A</th>
+                    <th>R/x</th>
+                    <th>SPH</th>
+                    <th>CYL</th>
+                    <th>AXIS</th>
+                    <th>V/A</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td style="border: 1px solid #000; padding: 2px; text-align: center;"><span id="previewRightDistSPH"></span></td>
-                    <td style="border: 1px solid #000; padding: 2px; text-align: center;"><span id="previewRightDistCYL"></span></td>
-                    <td style="border: 1px solid #000; padding: 2px; text-align: center;"><span id="previewRightDistAXIS"></span></td>
-                    <td style="border: 1px solid #000; padding: 2px; text-align: center;"><span id="previewRightDistVA"></span></td>
-                    <td style="border: 1px solid #000; padding: 2px; text-align: center;"><span id="previewLeftDistSPH"></span></td>
-                    <td style="border: 1px solid #000; padding: 2px; text-align: center;"><span id="previewLeftDistCYL"></span></td>
-                    <td style="border: 1px solid #000; padding: 2px; text-align: center;"><span id="previewLeftDistAXIS"></span></td>
-                    <td style="border: 1px solid #000; padding: 2px; text-align: center;"><span id="previewLeftDistVA"></span></td>
+                    <td><strong>DIST</strong></td>
+                    <td><span id="previewRightDistSPH"></span></td>
+                    <td><span id="previewRightDistCYL"></span></td>
+                    <td><span id="previewRightDistAXIS"></span></td>
+                    <td><span id="previewRightDistVA"></span></td>
                 </tr>
                 <tr>
-                    <td style="border: 1px solid #000; padding: 2px; text-align: center;"><span id="previewRightNearSPH"></span></td>
-                    <td style="border: 1px solid #000; padding: 2px; text-align: center;"><span id="previewRightNearCYL"></span></td>
-                    <td style="border: 1px solid #000; padding: 2px; text-align: center;"><span id="previewRightNearAXIS"></span></td>
-                    <td style="border: 1px solid #000; padding: 2px; text-align: center;"><span id="previewRightNearVA"></span></td>
-                    <td style="border: 1px solid #000; padding: 2px; text-align: center;"><span id="previewLeftNearSPH"></span></td>
-                    <td style="border: 1px solid #000; padding: 2px; text-align: center;"><span id="previewLeftNearCYL"></span></td>
-                    <td style="border: 1px solid #000; padding: 2px; text-align: center;"><span id="previewLeftNearAXIS"></span></td>
-                    <td style="border: 1px solid #000; padding: 2px; text-align: center;"><span id="previewLeftNearVA"></span></td>
+                    <td><strong>NEAR</strong></td>
+                    <td><span id="previewRightNearSPH"></span></td>
+                    <td><span id="previewRightNearCYL"></span></td>
+                    <td><span id="previewRightNearAXIS"></span></td>
+                    <td><span id="previewRightNearVA"></span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Left Eye Table -->
+        <table style="width: 100%; border-collapse: collapse; font-size: 8px;">
+            <thead>
+                <tr>
+                    <th colspan="5">LEFT EYE (OS)</th>
+                </tr>
+                <tr>
+                    <th>R/x</th>
+                    <th>SPH</th>
+                    <th>CYL</th>
+                    <th>AXIS</th>
+                    <th>V/A</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>DIST</strong></td>
+                    <td><span id="previewLeftDistSPH"></span></td>
+                    <td><span id="previewLeftDistCYL"></span></td>
+                    <td><span id="previewLeftDistAXIS"></span></td>
+                    <td><span id="previewLeftDistVA"></span></td>
+                </tr>
+                <tr>
+                    <td><strong>NEAR</strong></td>
+                    <td><span id="previewLeftNearSPH"></span></td>
+                    <td><span id="previewLeftNearCYL"></span></td>
+                    <td><span id="previewLeftNearAXIS"></span></td>
+                    <td><span id="previewLeftNearVA"></span></td>
                 </tr>
             </tbody>
         </table>
@@ -312,14 +336,14 @@
     <div style="margin-bottom: 5px;">
         <p style="margin: 2px 0;"><strong>Vision Type:</strong> <span id="previewVisionType"></span></p>
         <p style="margin: 2px 0;"><strong>Lens Type:</strong> <span id="previewLensType"></span></p>
-        <p style="margin: 2px 0;"><strong>Frame Type:</strong> <span id="previewFrameType"></span></p> 
+        <p style="margin: 2px 0;"><strong>Frame Type:</strong> <span id="previewFrameType"></span></p>
+        <p style="margin: 2px 0;"><strong>Payment Mode:</strong> <span id="previewPaymentMode"></span></p>
     </div>
     <hr style="border: 0.5px dashed #000; margin: 5px 0;">
 
     <!-- Amount -->
     <div style="margin-bottom: 5px;">
         <p style="margin: 2px 0;"><strong>Amount:</strong> ₹<span id="previewAmount"></span></p>
-        <p style="margin: 2px 0;"><strong>Payment Mode:</strong> <span id="previewPaymentMode"></span></p>
     </div>
     <hr style="border: 0.5px dashed #000; margin: 5px 0;">
 
@@ -330,7 +354,6 @@
         <p style="margin: 2px 0;">We hope to see you again soon.</p>
     </div>
 </div>
-
         <!-- Developer Credit -->
         <div style="text-align: center; margin-top: 15px; font-size: 12px; color: #666;">
             App developed by <strong>Maniteja</strong>
