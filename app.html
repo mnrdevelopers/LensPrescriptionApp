@@ -364,5 +364,41 @@
     <script src="script.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script>
+    const scriptURL = "YOUR_DEPLOYMENT_URL"; // Replace with your Google Apps Script URL
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const username = localStorage.getItem("username");
+
+        if (!username) {
+            // Redirect to login page if no user is logged in
+            window.location.href = "login.html";
+            return;
+        }
+
+        // Fetch user details from Google Sheets
+        fetch(scriptURL, {
+            method: "POST",
+            body: JSON.stringify({ action: "getDetails", username: username })
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.status === "success") {
+                // Auto-fill clinic details
+                document.querySelector(".header h2").textContent = result.clinicName;
+                document.querySelector(".header p").textContent = result.address;
+                document.querySelector(".optometrist-details .left p:nth-child(1)").textContent = result.optometristName;
+                document.querySelector(".optometrist-details .left p:nth-child(2)").textContent = result.contactNumber;
+            } else {
+                alert("Error fetching clinic details. Please log in again.");
+                localStorage.removeItem("username");
+                window.location.href = "login.html";
+            }
+        })
+        .catch(error => console.error("Error:", error));
+    });
+</script>
+
 </body>
 </html>
