@@ -5,6 +5,104 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profile Setup</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Additional styles for the profile page */
+        body {
+            background-color: #f4f4f4;
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #profile-setup {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        #profile-setup h2 {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #007bff;
+        }
+
+        #profileForm div {
+            margin-bottom: 15px;
+        }
+
+        #profileForm label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        #profileForm input {
+            width: 100%;
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        #profileForm input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+        }
+
+        #profileForm button {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        #profileForm button:hover {
+            background: #0056b3;
+        }
+
+        /* Dark Mode Styles */
+        body.dark-mode #profile-setup {
+            background: #1e1e1e;
+            color: #ffffff;
+        }
+
+        body.dark-mode #profileForm label {
+            color: #ffffff;
+        }
+
+        body.dark-mode #profileForm input {
+            background: #2a2a2a;
+            color: white;
+            border: 1px solid #555;
+        }
+
+        body.dark-mode #profileForm button {
+            background: #444;
+        }
+
+        body.dark-mode #profileForm button:hover {
+            background: #666;
+        }
+    </style>
 </head>
 <body>
     <div id="profile-setup">
@@ -54,6 +152,36 @@
 
             // Redirect to main app
             window.location.href = "app.html";
+        });
+
+        // Dark Mode Toggle (if you want to include it)
+        const darkModeToggle = document.createElement("div");
+        darkModeToggle.className = "dark-mode-toggle";
+        darkModeToggle.innerHTML = `
+            <label class="switch">
+                <input type="checkbox" id="darkModeToggle">
+                <span class="slider round"></span>
+            </label>
+        `;
+        document.body.appendChild(darkModeToggle);
+
+        const darkModeToggleCheckbox = document.getElementById("darkModeToggle");
+
+        // Check if Dark Mode was enabled before
+        if (localStorage.getItem("darkMode") === "enabled") {
+            document.body.classList.add("dark-mode");
+            darkModeToggleCheckbox.checked = true;
+        }
+
+        // Toggle Dark Mode on Switch Click
+        darkModeToggleCheckbox.addEventListener("change", () => {
+            if (darkModeToggleCheckbox.checked) {
+                document.body.classList.add("dark-mode");
+                localStorage.setItem("darkMode", "enabled");
+            } else {
+                document.body.classList.remove("dark-mode");
+                localStorage.setItem("darkMode", "disabled");
+            }
         });
     </script>
 </body>
