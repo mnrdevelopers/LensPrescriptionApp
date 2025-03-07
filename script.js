@@ -191,14 +191,14 @@ function submitForm() {
     const leftDistAXIS = document.getElementById("leftDistAXIS").value.trim();
     const leftDistVA = document.getElementById("leftDistVA").value.trim();
 
-    const rightNearSPH = document.getElementById("rightNearSPH").value.trim();
-    const rightNearCYL = document.getElementById("rightNearCYL").value.trim();
-    const rightNearAXIS = document.getElementById("rightNearAXIS").value.trim();
-    const rightNearVA = document.getElementById("rightNearVA").value.trim();
-    const leftNearSPH = document.getElementById("leftNearSPH").value.trim();
-    const leftNearCYL = document.getElementById("leftNearCYL").value.trim();
-    const leftNearAXIS = document.getElementById("leftNearAXIS").value.trim();
-    const leftNearVA = document.getElementById("leftNearVA").value.trim();
+    const rightAddSPH = document.getElementById("rightAddSPH").value.trim();
+    const rightAddCYL = document.getElementById("rightAddCYL").value.trim();
+    const rightAddAXIS = document.getElementById("rightAddAXIS").value.trim();
+    const rightAddVA = document.getElementById("rightAddVA").value.trim();
+    const leftAddSPH = document.getElementById("leftAddSPH").value.trim();
+    const leftAddCYL = document.getElementById("leftAddCYL").value.trim();
+    const leftAddAXIS = document.getElementById("leftAddAXIS").value.trim();
+    const leftAddVA = document.getElementById("leftAddVA").value.trim();
 
     // Vision Type, Lens Type, Frame Type, and Payment Mode
     const visionType = document.getElementById("visionType").value;
@@ -237,14 +237,14 @@ const prescriptionFields = [
     { value: leftDistCYL, type: "number" },
     { value: leftDistAXIS, type: "number" },
     { value: leftDistVA, type: "va" }, // V/A field
-    { value: rightNearSPH, type: "number" },
-    { value: rightNearCYL, type: "number" },
-    { value: rightNearAXIS, type: "number" },
-    { value: rightNearVA, type: "va" }, // V/A field
-    { value: leftNearSPH, type: "number" },
-    { value: leftNearCYL, type: "number" },
-    { value: leftNearAXIS, type: "number" },
-    { value: leftNearVA, type: "va" }, // V/A field
+    { value: rightAddSPH, type: "number" },
+    { value: rightAddCYL, type: "number" },
+    { value: rightAddAXIS, type: "number" },
+    { value: rightAddVA, type: "va" }, // V/A field
+    { value: leftAddSPH, type: "number" },
+    { value: leftAddCYL, type: "number" },
+    { value: leftAddAXIS, type: "number" },
+    { value: leftAddVA, type: "va" }, // V/A field
 ];
 
 const validNumberPattern = /^-?\d*\.?\d*$/; // For SPH, CYL, AXIS
@@ -280,14 +280,14 @@ for (let i = 0; i < prescriptionFields.length; i++) {
     document.getElementById("previewLeftDistAXIS").textContent = leftDistAXIS;
     document.getElementById("previewLeftDistVA").textContent = leftDistVA;
 
-    document.getElementById("previewRightNearSPH").textContent = rightNearSPH;
-    document.getElementById("previewRightNearCYL").textContent = rightNearCYL;
-    document.getElementById("previewRightNearAXIS").textContent = rightNearAXIS;
-    document.getElementById("previewRightNearVA").textContent = rightNearVA;
-    document.getElementById("previewLeftNearSPH").textContent = leftNearSPH;
-    document.getElementById("previewLeftNearCYL").textContent = leftNearCYL;
-    document.getElementById("previewLeftNearAXIS").textContent = leftNearAXIS;
-    document.getElementById("previewLeftNearVA").textContent = leftNearVA;
+    document.getElementById("previewRightAddSPH").textContent = rightAddSPH;
+    document.getElementById("previewRightAddCYL").textContent = rightAddCYL;
+    document.getElementById("previewRightAddAXIS").textContent = rightAddAXIS;
+    document.getElementById("previewRightAddVA").textContent = rightAddVA;
+    document.getElementById("previewLeftAddSPH").textContent = leftAddSPH;
+    document.getElementById("previewLeftAddCYL").textContent = leftAddCYL;
+    document.getElementById("previewLeftAddAXIS").textContent = leftAddAXIS;
+    document.getElementById("previewLeftAddVA").textContent = leftAddVA;
 
     document.getElementById("previewAmount").textContent = parseFloat(amount).toFixed(2);
 
@@ -334,15 +334,15 @@ function resetForm() {
     document.getElementById("leftDistAXIS").value = "";
     document.getElementById("leftDistVA").value = "";
 
-    // Reset NEAR fields
-    document.getElementById("rightNearSPH").value = "";
-    document.getElementById("rightNearCYL").value = "";
-    document.getElementById("rightNearAXIS").value = "";
-    document.getElementById("rightNearVA").value = "";
-    document.getElementById("leftNearSPH").value = "";
-    document.getElementById("leftNearCYL").value = "";
-    document.getElementById("leftNearAXIS").value = "";
-    document.getElementById("leftNearVA").value = "";
+    // Reset ADD fields
+    document.getElementById("rightAddSPH").value = "";
+    document.getElementById("rightAddCYL").value = "";
+    document.getElementById("rightAddAXIS").value = "";
+    document.getElementById("rightAddVA").value = "";
+    document.getElementById("leftAddSPH").value = "";
+    document.getElementById("leftAddCYL").value = "";
+    document.getElementById("leftAddAXIS").value = "";
+    document.getElementById("leftAddVA").value = "";
 
     // Reset amount
     document.getElementById("amount").value = "";
@@ -425,8 +425,8 @@ document.getElementById("age").addEventListener("input", function () {
 const prescriptionInputs = [
     "rightDistSPH", "rightDistCYL", "rightDistAXIS", "rightDistVA",
     "leftDistSPH", "leftDistCYL", "leftDistAXIS", "leftDistVA",
-    "rightNearSPH", "rightNearCYL", "rightNearAXIS", "rightNearVA",
-    "leftNearSPH", "leftNearCYL", "leftNearAXIS", "leftNearVA"
+    "rightAddSPH", "rightAddCYL", "rightAddAXIS", "rightAddVA",
+    "leftAddSPH", "leftAddCYL", "leftAddAXIS", "leftAddVA"
 ];
 
 prescriptionInputs.forEach(id => {
