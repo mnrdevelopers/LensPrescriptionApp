@@ -314,78 +314,44 @@ p {
     border-radius: 5px;
 }
 
-
-/* Prescription Table Styles */
 .prescription-table {
-    margin-top: 20px;
-    overflow-x: auto;
-    width: 100%; /* Ensure table fits within container */
+    width: 58mm; /* Fixed width for thermal printing */
+    margin: 0 auto; /* Center the tables */
+    font-family: Arial, sans-serif;
+    font-size: 8px; /* Smaller font size */
 }
 
 .prescription-table table {
     width: 100%;
     border-collapse: collapse;
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    font-size: 14px; /* Adjust font size for better fit */
+    margin-bottom: 10px; /* Space between tables */
 }
 
 .prescription-table th,
 .prescription-table td {
-    padding: 10px; /* Reduce padding for smaller table */
+    border: 1px solid #000;
+    padding: 2px; /* Reduced padding */
     text-align: center;
-    border: 1px solid #e0e0e0;
 }
 
 .prescription-table th {
-    background-color: #007bff;
-    color: white;
+    background-color: #f5f5f5; /* Light gray background for headers */
     font-weight: bold;
 }
 
-.prescription-table td {
-    font-size: 14px;
-}
-
 .prescription-table input {
-    width: 90%;
-    padding: 6px; /* Reduce input padding */
-    font-size: 12px; /* Smaller font size for inputs */
+    width: 90%; /* Make inputs fit within cells */
+    padding: 2px; /* Reduced padding */
+    font-size: 8px; /* Smaller font size for inputs */
     text-align: center;
     border: 1px solid #ccc;
-    border-radius: 5px;
-    transition: border-color 0.3s ease;
+    border-radius: 3px;
 }
 
 .prescription-table input:focus {
     outline: none;
     border-color: #007bff;
-    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
-}
-
-.prescription-table tbody tr:nth-child(odd) {
-    background-color: #f9f9f9;
-}
-
-.prescription-table tbody tr:hover {
-    background-color: #f1f1f1;
-}
-
-/* Responsive Table */
-@media (max-width: 600px) {
-    .prescription-table table {
-        font-size: 12px; /* Smaller font size for mobile */
-    }
-
-    .prescription-table th,
-    .prescription-table td {
-        padding: 8px; /* Reduce padding further for mobile */
-    }
-
-    .prescription-table input {
-        font-size: 10px; /* Smaller font size for inputs on mobile */
-    }
+    box-shadow: 0 0 3px rgba(0, 123, 255, 0.5);
 }
 
 /* Flexbox Layout for Side-by-Side Dropdowns */
