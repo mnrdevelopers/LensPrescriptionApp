@@ -228,20 +228,41 @@ function submitForm() {
     }
 
     // Validate Prescription Inputs
-    const prescriptionFields = [
-        rightDistSPH, rightDistCYL, rightDistAXIS, rightDistVA,
-        leftDistSPH, leftDistCYL, leftDistAXIS, leftDistVA,
-        rightNearSPH, rightNearCYL, rightNearAXIS, rightNearVA,
-        leftNearSPH, leftNearCYL, leftNearAXIS, leftNearVA
-    ];
-    const validNumberPattern = /^-?\d*\.?\d*$/;
+const prescriptionFields = [
+    { value: rightDistSPH, type: "number" },
+    { value: rightDistCYL, type: "number" },
+    { value: rightDistAXIS, type: "number" },
+    { value: rightDistVA, type: "va" }, // V/A field
+    { value: leftDistSPH, type: "number" },
+    { value: leftDistCYL, type: "number" },
+    { value: leftDistAXIS, type: "number" },
+    { value: leftDistVA, type: "va" }, // V/A field
+    { value: rightNearSPH, type: "number" },
+    { value: rightNearCYL, type: "number" },
+    { value: rightNearAXIS, type: "number" },
+    { value: rightNearVA, type: "va" }, // V/A field
+    { value: leftNearSPH, type: "number" },
+    { value: leftNearCYL, type: "number" },
+    { value: leftNearAXIS, type: "number" },
+    { value: leftNearVA, type: "va" }, // V/A field
+];
 
-    for (let i = 0; i < prescriptionFields.length; i++) {
-        if (prescriptionFields[i] && !validNumberPattern.test(prescriptionFields[i])) {
-            alert("Please enter valid prescription values (numbers only).");
+const validNumberPattern = /^-?\d*\.?\d*$/; // For SPH, CYL, AXIS
+const validVAPattern = /^\d+\/\d+$/; // For V/A (e.g., 6/6)
+
+for (let i = 0; i < prescriptionFields.length; i++) {
+    const field = prescriptionFields[i];
+    if (field.value) {
+        if (field.type === "number" && !validNumberPattern.test(field.value)) {
+            alert("Please enter valid prescription values (numbers only for SPH, CYL, AXIS).");
+            return;
+        }
+        if (field.type === "va" && !validVAPattern.test(field.value)) {
+            alert("Please enter valid V/A values (e.g., 6/6).");
             return;
         }
     }
+}
 
     // Update Prescription Preview
     document.getElementById("previewPatientName").textContent = patientName;
