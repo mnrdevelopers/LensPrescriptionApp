@@ -391,7 +391,6 @@
         const username = localStorage.getItem("username");
 
         if (!username) {
-            // Redirect to login page if no user is logged in
             window.location.href = "login.html";
             return;
         }
@@ -404,17 +403,15 @@
         .then(response => response.json())
         .then(result => {
             if (result.status === "success") {
-                // ✅ Update Clinic Details in Main Section
-                document.querySelector(".header h2").textContent = result.clinicName;
-                document.querySelector(".header p").textContent = result.address;
-                document.querySelector(".optometrist-details .left p:nth-child(1)").textContent = result.optometristName;
-                document.querySelector(".optometrist-details .left p:nth-child(2)").textContent = result.contactNumber;
+                document.getElementById("clinicName").textContent = result.clinicName;
+                document.getElementById("clinicAddress").textContent = result.address;
+                document.getElementById("optometristName").textContent = result.optometristName;
+                document.getElementById("contactNumber").textContent = result.contactNumber;
 
-                // ✅ Update Clinic Details in Prescription Preview
-                document.querySelector("#prescriptionPreview h2").textContent = result.clinicName;
-                document.querySelector("#prescriptionPreview p:nth-child(2)").textContent = result.address;
-                document.querySelector("#prescriptionPreview p:nth-child(3)").textContent = result.optometristName;
-                document.querySelector("#prescriptionPreview p:nth-child(4)").textContent = result.contactNumber;
+                document.getElementById("previewClinicName").textContent = result.clinicName;
+                document.getElementById("previewClinicAddress").textContent = result.address;
+                document.getElementById("previewOptometristName").textContent = result.optometristName;
+                document.getElementById("previewContactNumber").textContent = result.contactNumber;
             } else {
                 alert("Error fetching clinic details. Please log in again.");
                 localStorage.removeItem("username");
@@ -425,8 +422,70 @@
             console.error("Error:", error);
             alert("Failed to fetch clinic details. Please check your internet connection.");
         });
+
+        document.getElementById("currentDate").textContent = new Date().toLocaleDateString();
+        document.getElementById("previewcurrentDate").textContent = new Date().toLocaleDateString();
     });
 
+    function openEditProfileModal() {
+        document.getElementById("editProfileModal").style.display = "flex";
+        document.getElementById("editClinicName").value = document.getElementById("clinicName").textContent;
+        document.getElementById("editOptometristName").value = document.getElementById("optometristName").textContent;
+        document.getElementById("editAddress").value = document.getElementById("clinicAddress").textContent;
+        document.getElementById("editContactNumber").value = document.getElementById("contactNumber").textContent;
+    }
+
+    function closeEditProfileModal() {
+        document.getElementById("editProfileModal").style.display = "none";
+    }
+
+    function saveProfileChanges() {
+        const username = localStorage.getItem("username");
+        const newClinicName = document.getElementById("editClinicName").value.trim();
+        const newOptometristName = document.getElementById("editOptometristName").value.trim();
+        const newAddress = document.getElementById("editAddress").value.trim();
+        const newContactNumber = document.getElementById("editContactNumber").value.trim();
+
+        if (!newClinicName || !newOptometristName || !newAddress || !newContactNumber) {
+            alert("All fields are required.");
+            return;
+        }
+
+        fetch(scriptURL, {
+            method: "POST",
+            body: JSON.stringify({
+                action: "updateProfile",
+                username: username,
+                clinicName: newClinicName,
+                optometristName: newOptometristName,
+                address: newAddress,
+                contactNumber: newContactNumber
+            })
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.status === "success") {
+                alert("Profile updated successfully!");
+                document.getElementById("clinicName").textContent = newClinicName;
+                document.getElementById("clinicAddress").textContent = newAddress;
+                document.getElementById("optometristName").textContent = newOptometristName;
+                document.getElementById("contactNumber").textContent = newContactNumber;
+
+                document.getElementById("previewClinicName").textContent = newClinicName;
+                document.getElementById("previewClinicAddress").textContent = newAddress;
+                document.getElementById("previewOptometristName").textContent = newOptometristName;
+                document.getElementById("previewContactNumber").textContent = newContactNumber;
+
+                closeEditProfileModal();
+            } else {
+                alert("Failed to update profile. Please try again.");
+            }
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            alert("Failed to update profile. Please check your internet connection.");
+        });
+   
     // Logout Function
     function logoutUser() {
         localStorage.removeItem("username");
