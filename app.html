@@ -275,37 +275,7 @@
         <i class="fas fa-paper-plane"></i> Submit
     </button>
 </div>
-
-        <button onclick="fetchPrescriptions()" class="btn btn-history">View Prescriptions</button>
-
-<!-- Prescription History Table -->
-<div id="prescriptionHistory" style="display: none; margin-top: 20px;">
-    <h3>Prescription History</h3>
-    
-    <!-- Search by Mobile Number -->
-    <input type="text" id="searchMobile" placeholder="Enter Mobile Number">
-    <button onclick="searchPrescription()">Search</button>
-    
-    <table border="1" id="prescriptionTable">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Patient Name</th>
-                <th>Age</th>
-                <th>Gender</th>
-                <th>Mobile</th>
-                <th>Amount</th>
-                <th>Vision Type</th>
-                <th>Lens Type</th>
-                <th>Frame Type</th>
-                <th>Payment Mode</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-</div>
-
-        
+   
       <div id="prescriptionPreview" style="display: none; width: 58mm; padding: 5px; font-family: Times New Roman, sans-serif; font-size: 8px;">
     <!-- Clinic Details -->
     <div style="text-align: center; margin-bottom: 5px;">
@@ -534,63 +504,6 @@
         closeEditProfile();
     }
      
-    function fetchPrescriptions() {
-        const username = localStorage.getItem("username");
-        
-        fetch(scriptURL, {
-            method: "POST",
-            body: JSON.stringify({ action: "fetchPrescriptions", username: username })
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.status === "success") {
-                displayPrescriptions(result.data);
-            } else {
-                alert("No prescriptions found!");
-            }
-        })
-        .catch(error => console.error("Error:", error));
-    }
-
-    function searchPrescription() {
-        const mobile = document.getElementById("searchMobile").value.trim();
-
-        if (!mobile) {
-            alert("Please enter a mobile number.");
-            return;
-        }
-
-        fetch(scriptURL, {
-            method: "POST",
-            body: JSON.stringify({ action: "searchPrescription", mobile: mobile })
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.status === "success" && result.data.length > 0) {
-                displayPrescriptions(result.data);
-            } else {
-                alert("No records found for this mobile number.");
-            }
-        })
-        .catch(error => console.error("Error:", error));
-    }
-
-    function displayPrescriptions(data) {
-        document.getElementById("prescriptionHistory").style.display = "block";
-        const tbody = document.getElementById("prescriptionTable").getElementsByTagName("tbody")[0];
-        tbody.innerHTML = ""; // Clear existing rows
-
-        data.forEach(row => {
-            let tr = document.createElement("tr");
-            row.forEach(cell => {
-                let td = document.createElement("td");
-                td.textContent = cell;
-                tr.appendChild(td);
-            });
-            tbody.appendChild(tr);
-        });
-    }
-
     // Logout Function
     function logoutUser() {
         localStorage.removeItem("username");
