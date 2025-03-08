@@ -5,6 +5,135 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>View Prescriptions</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* General Styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar-brand {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            font-size: 14px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .btn-logout {
+            background-color: #ff4757;
+            color: white;
+        }
+
+        .btn-logout:hover {
+            background-color: #e84118;
+        }
+
+        .btn-search {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-search:hover {
+            background-color: #0056b3;
+        }
+
+        .container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-bar input {
+            flex: 1;
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+
+        /* Mobile Styles */
+        @media (max-width: 600px) {
+            table, thead, tbody, th, td, tr {
+                display: block;
+            }
+
+            thead tr {
+                position: absolute;
+                top: -9999px;
+                left: -9999px;
+            }
+
+            tr {
+                margin-bottom: 15px;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+                background-color: white;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+
+            td {
+                border: none;
+                border-bottom: 1px solid #eee;
+                position: relative;
+                padding-left: 50%;
+            }
+
+            td:before {
+                position: absolute;
+                left: 10px;
+                width: 45%;
+                padding-right: 10px;
+                white-space: nowrap;
+                content: attr(data-label);
+                font-weight: bold;
+                color: #007bff;
+            }
+        }
+    </style>
 </head>
 <body>
     <nav class="navbar">
@@ -94,9 +223,11 @@
 
             data.forEach(row => {
                 let tr = document.createElement("tr");
-                row.forEach(cell => {
+                row.forEach((cell, index) => {
                     let td = document.createElement("td");
                     td.textContent = cell;
+                    // Add data-label attribute for mobile view
+                    td.setAttribute("data-label", document.querySelectorAll("th")[index].textContent);
                     tr.appendChild(td);
                 });
                 tbody.appendChild(tr);
