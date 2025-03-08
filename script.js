@@ -174,131 +174,105 @@ function saveCounters() {
 checkDayChange();
 
 function submitForm() {
+    const scriptURL = "YOUR_DEPLOYMENT_URL"; // Replace with your Google Apps Script Web App URL
+    const username = localStorage.getItem("username");
+
+    if (!username) {
+        alert("You are not logged in!");
+        window.location.href = "login.html";
+        return;
+    }
+
     // Get form values
     const patientName = document.getElementById("patientName").value.trim();
     const age = document.getElementById("age").value.trim();
     const gender = document.getElementById("gender").value.trim();
     const mobile = document.getElementById("patientMobile").value.trim();
     const amount = document.getElementById("amount").value.trim();
-
+    
     // Prescription Fields
-    const rightDistSPH = document.getElementById("rightDistSPH").value.trim();
-    const rightDistCYL = document.getElementById("rightDistCYL").value.trim();
-    const rightDistAXIS = document.getElementById("rightDistAXIS").value.trim();
-    const rightDistVA = document.getElementById("rightDistVA").value.trim();
-    const leftDistSPH = document.getElementById("leftDistSPH").value.trim();
-    const leftDistCYL = document.getElementById("leftDistCYL").value.trim();
-    const leftDistAXIS = document.getElementById("leftDistAXIS").value.trim();
-    const leftDistVA = document.getElementById("leftDistVA").value.trim();
+    const prescriptionData = {
+        rightDistSPH: document.getElementById("rightDistSPH").value.trim(),
+        rightDistCYL: document.getElementById("rightDistCYL").value.trim(),
+        rightDistAXIS: document.getElementById("rightDistAXIS").value.trim(),
+        rightDistVA: document.getElementById("rightDistVA").value.trim(),
+        leftDistSPH: document.getElementById("leftDistSPH").value.trim(),
+        leftDistCYL: document.getElementById("leftDistCYL").value.trim(),
+        leftDistAXIS: document.getElementById("leftDistAXIS").value.trim(),
+        leftDistVA: document.getElementById("leftDistVA").value.trim(),
+        rightAddSPH: document.getElementById("rightAddSPH").value.trim(),
+        rightAddCYL: document.getElementById("rightAddCYL").value.trim(),
+        rightAddAXIS: document.getElementById("rightAddAXIS").value.trim(),
+        rightAddVA: document.getElementById("rightAddVA").value.trim(),
+        leftAddSPH: document.getElementById("leftAddSPH").value.trim(),
+        leftAddCYL: document.getElementById("leftAddCYL").value.trim(),
+        leftAddAXIS: document.getElementById("leftAddAXIS").value.trim(),
+        leftAddVA: document.getElementById("leftAddVA").value.trim(),
+    };
 
-    const rightAddSPH = document.getElementById("rightAddSPH").value.trim();
-    const rightAddCYL = document.getElementById("rightAddCYL").value.trim();
-    const rightAddAXIS = document.getElementById("rightAddAXIS").value.trim();
-    const rightAddVA = document.getElementById("rightAddVA").value.trim();
-    const leftAddSPH = document.getElementById("leftAddSPH").value.trim();
-    const leftAddCYL = document.getElementById("leftAddCYL").value.trim();
-    const leftAddAXIS = document.getElementById("leftAddAXIS").value.trim();
-    const leftAddVA = document.getElementById("leftAddVA").value.trim();
-
-    // Vision Type, Lens Type, Frame Type, and Payment Mode
     const visionType = document.getElementById("visionType").value;
     const lensType = document.getElementById("lensType").value;
     const frameType = document.getElementById("frameType").value;
     const paymentMode = document.getElementById("paymentMode").value;
 
     // Validation Checks
-    if (!patientName) {
-        alert("Patient Name is required.");
+    if (!patientName || !age || isNaN(age) || age <= 0 || !mobile.match(/^\d{10}$/) || !amount || isNaN(amount) || amount <= 0) {
+        alert("Please enter valid patient details.");
         return;
     }
 
-    if (!age || isNaN(age) || age <= 0) {
-        alert("Please enter a valid Age.");
-        return;
-    }
+    // Prepare data object for Google Sheets
+    const data = {
+        action: "savePrescription",
+        username: username,
+        patientName: patientName,
+        age: age,
+        gender: gender,
+        mobile: mobile,
+        amount: amount,
+        visionType: visionType,
+        lensType: lensType,
+        frameType: frameType,
+        paymentMode: paymentMode,
+        prescription: prescriptionData
+    };
 
-    if (!mobile || !/^\d{10}$/.test(mobile)) {
-        alert("Please enter a valid 10-digit Mobile Number.");
-        return;
-    }
-
-    if (!amount || isNaN(amount) || amount <= 0) {
-        alert("Please enter a valid Amount.");
-        return;
-    }
-
-    // Validate Prescription Inputs
-    const prescriptionFields = [
-        { value: rightDistSPH, type: "number" },
-        { value: rightDistCYL, type: "number" },
-        { value: rightDistAXIS, type: "number" },
-        { value: rightDistVA, type: "va" },
-        { value: leftDistSPH, type: "number" },
-        { value: leftDistCYL, type: "number" },
-        { value: leftDistAXIS, type: "number" },
-        { value: leftDistVA, type: "va" },
-        { value: rightAddSPH, type: "number" },
-        { value: rightAddCYL, type: "number" },
-        { value: rightAddAXIS, type: "number" },
-        { value: rightAddVA, type: "va" },
-        { value: leftAddSPH, type: "number" },
-        { value: leftAddCYL, type: "number" },
-        { value: leftAddAXIS, type: "number" },
-        { value: leftAddVA, type: "va" },
-    ];
-
-    const validNumberPattern = /^-?\d*\.?\d*$/;
-    const validVAPattern = /^[Nn]?\d+(\/\d+)?$/;
-
-    for (let i = 0; i < prescriptionFields.length; i++) {
-        const field = prescriptionFields[i];
-        if (field.value) {
-            if (field.type === "number" && !validNumberPattern.test(field.value)) {
-                alert("Please enter valid prescription values (numbers only for SPH, CYL, AXIS).");
-                return;
-            }
-            if (field.type === "va" && !validVAPattern.test(field.value)) {
-                alert("Please enter valid V/A values (e.g., 6/6, N6, 6/N).");
-                return;
-            }
+    // Send data to Google Sheets
+    fetch(scriptURL, {
+        method: "POST",
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        alert(result.message);
+        if (result.status === "success") {
+            fetchPrescriptions(); // Refresh stored prescriptions
         }
-    }
+    })
+    .catch(error => console.error("Error:", error));
 
     // Update Prescription Preview
     document.getElementById("previewPatientName").textContent = patientName;
     document.getElementById("previewAge").textContent = age;
     document.getElementById("previewGender").textContent = gender;
     document.getElementById("previewMobile").textContent = mobile;
-
-    document.getElementById("previewRightDistSPH").textContent = rightDistSPH;
-    document.getElementById("previewRightDistCYL").textContent = rightDistCYL;
-    document.getElementById("previewRightDistAXIS").textContent = rightDistAXIS;
-    document.getElementById("previewRightDistVA").textContent = rightDistVA;
-    document.getElementById("previewLeftDistSPH").textContent = leftDistSPH;
-    document.getElementById("previewLeftDistCYL").textContent = leftDistCYL;
-    document.getElementById("previewLeftDistAXIS").textContent = leftDistAXIS;
-    document.getElementById("previewLeftDistVA").textContent = leftDistVA;
-
-    document.getElementById("previewRightAddSPH").textContent = rightAddSPH;
-    document.getElementById("previewRightAddCYL").textContent = rightAddCYL;
-    document.getElementById("previewRightAddAXIS").textContent = rightAddAXIS;
-    document.getElementById("previewRightAddVA").textContent = rightAddVA;
-    document.getElementById("previewLeftAddSPH").textContent = leftAddSPH;
-    document.getElementById("previewLeftAddCYL").textContent = leftAddCYL;
-    document.getElementById("previewLeftAddAXIS").textContent = leftAddAXIS;
-    document.getElementById("previewLeftAddVA").textContent = leftAddVA;
-
     document.getElementById("previewAmount").textContent = parseFloat(amount).toFixed(2);
-
     document.getElementById("previewVisionType").textContent = visionType;
     document.getElementById("previewLensType").textContent = lensType;
     document.getElementById("previewFrameType").textContent = frameType;
     document.getElementById("previewPaymentMode").textContent = paymentMode;
-
     document.getElementById("previewcurrentDate").textContent = new Date().toLocaleDateString();
+
+    // Prescription preview fields
+    for (const key in prescriptionData) {
+        if (document.getElementById("preview" + key)) {
+            document.getElementById("preview" + key).textContent = prescriptionData[key];
+        }
+    }
 
     // Show Prescription Preview
     document.getElementById("prescriptionPreview").style.display = "block";
+    document.getElementById("printButton").disabled = false;
 
     // Enable the print button
     document.getElementById("printButton").disabled = false;
