@@ -391,7 +391,27 @@
     <script src="script.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+    const userId = localStorage.getItem("userId");
 
+    if (!userId) {
+        window.location.href = "login.html";
+        return;
+    }
+
+    db.collection("users").doc(userId).get().then(doc => {
+        if (doc.exists) {
+            document.getElementById("clinicName").textContent = doc.data().clinicName;
+            document.getElementById("clinicAddress").textContent = doc.data().address;
+            document.getElementById("optometristName").textContent = doc.data().optometristName;
+            document.getElementById("contactNumber").textContent = doc.data().contactNumber;
+        }
+    }).catch(error => console.error("Error fetching clinic details:", error));
+});
+    </script>
+    
     <script>
   const firebaseConfig = {
   apiKey: "AIzaSyD0qbeB7cPxBu3IGgrLFph8xOwxdwFER7c",
