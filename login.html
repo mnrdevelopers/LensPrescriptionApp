@@ -5,11 +5,68 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Lens Prescription</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .container {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .logo {
+            width: 100px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        .password-container {
+            position: relative;
+        }
+        .password-container input {
+            padding-right: 40px;
+        }
+        .password-container .toggle-password {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #007bff;
+        }
+        .btn-submit {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .btn-submit:hover {
+            background-color: #0056b3;
+        }
+        .form-text {
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Login to Your Clinic</h2>
+    <img src="logo.png" alt="Clinic Logo" class="logo"> <!-- Replace with your logo path -->
+    <h2>Welcome to Lens Prescription</h2>
     <form id="loginForm">
         <div class="form-group">
             <label for="username">Username</label>
@@ -18,41 +75,88 @@
 
         <div class="form-group">
             <label for="password">Password</label>
-            <input type="password" id="password" placeholder="Enter Password" required>
+            <div class="password-container">
+                <input type="password" id="password" placeholder="Enter Password" required>
+                <span class="toggle-password" onclick="togglePasswordVisibility()">👁️</span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>
+                <input type="checkbox" id="rememberMe"> Remember Me
+            </label>
         </div>
 
         <button type="submit" class="btn btn-submit">Login</button>
         <p class="form-text">Don't have an account? <a href="register.html">Register</a></p>
     </form>
+</div>
+
 <script>
-        const scriptURL = "https://script.google.com/macros/s/AKfycbxXx0Jy7AmSljFYOuXs00Mxj4aiGpSHz92L5sa903Hp09lEQXrVbfNXByZoAOSogwUm/exec"; // Replace with your Apps Script URL
+    const scriptURL = "https://script.google.com/macros/s/AKfycbxXx0Jy7AmSljFYOuXs00Mxj4aiGpSHz92L5sa903Hp09lEQXrVbfNXByZoAOSogwUm/exec"; // Replace with your Apps Script URL
 
-        document.getElementById("loginForm").addEventListener("submit", function(event) {
-            event.preventDefault();
+    // Load saved username and password if "Remember Me" was checked
+    window.onload = function() {
+        const rememberedUsername = localStorage.getItem("rememberedUsername");
+        const rememberedPassword = localStorage.getItem("rememberedPassword");
+        const rememberMe = localStorage.getItem("rememberMe");
 
-            const username = document.getElementById("username").value.trim();
-            const password = document.getElementById("password").value.trim();
+        if (rememberMe === "true" && rememberedUsername && rememberedPassword) {
+            document.getElementById("username").value = rememberedUsername;
+            document.getElementById("password").value = atob(rememberedPassword);
+            document.getElementById("rememberMe").checked = true;
+        }
+    };
 
-            const data = {
-                action: "login",
-                username,
-                passwordHash: btoa(password)
-            };
+    document.getElementById("loginForm").addEventListener("submit", function(event) {
+        event.preventDefault();
 
-            fetch(scriptURL, {
-                method: "POST",
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(result => {
-                alert(result.message);
-                if (result.status === "success") {
-                    localStorage.setItem("username", username);
-                    window.location.href = "dashboard.html"; // Redirect to the main app
+        const username = document.getElementById("username").value.trim();
+        const password = document.getElementById("password").value.trim();
+        const rememberMe = document.getElementById("rememberMe").checked;
+
+        const data = {
+            action: "login",
+            username,
+            passwordHash: btoa(password)
+        };
+
+        fetch(scriptURL, {
+            method: "POST",
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            alert(result.message);
+            if (result.status === "success") {
+                if (rememberMe) {
+                    localStorage.setItem("rememberedUsername", username);
+                    localStorage.setItem("rememberedPassword", btoa(password));
+                    localStorage.setItem("rememberMe", true);
+                } else {
+                    localStorage.removeItem("rememberedUsername");
+                    localStorage.removeItem("rememberedPassword");
+                    localStorage.removeItem("rememberMe");
                 }
-            })
-            .catch(error => console.error("Error:", error));
-        });
-    </script>
+                localStorage.setItem("username", username);
+                window.location.href = "dashboard.html"; // Redirect to the main app
+            }
+        })
+        .catch(error => console.error("Error:", error));
+    });
+
+    function togglePasswordVisibility() {
+        const passwordInput = document.getElementById("password");
+        const toggleButton = document.querySelector(".toggle-password");
+
+        if (passwordInput.type === "password") {
+            passwordInput.type = "text";
+            toggleButton.textContent = "🙈";
+        } else {
+            passwordInput.type = "password";
+            toggleButton.textContent = "👁️";
+        }
+    }
+</script>
 </body>
 </html>
