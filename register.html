@@ -47,41 +47,32 @@
 
 
  <script>
-        const scriptURL = "https://script.google.com/macros/s/AKfycbxXx0Jy7AmSljFYOuXs00Mxj4aiGpSHz92L5sa903Hp09lEQXrVbfNXByZoAOSogwUm/exec"; // Replace with your Apps Script URL
+document.getElementById("registerForm").addEventListener("submit", function(event) {
+    event.preventDefault();
+    
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    const clinicName = document.getElementById("clinicName").value;
+    const optometristName = document.getElementById("optometristName").value;
+    const address = document.getElementById("address").value;
+    const contactNumber = document.getElementById("contactNumber").value;
 
-        document.getElementById("registerForm").addEventListener("submit", function(event) {
-            event.preventDefault();
-
-            const username = document.getElementById("username").value.trim();
-            const password = document.getElementById("password").value.trim();
-            const clinicName = document.getElementById("clinicName").value.trim();
-            const optometristName = document.getElementById("optometristName").value.trim();
-            const address = document.getElementById("address").value.trim();
-            const contactNumber = document.getElementById("contactNumber").value.trim();
-
-            const data = {
-                action: "register",
-                username,
-                passwordHash: btoa(password), // Base64 encode password (for simple hashing)
+    auth.createUserWithEmailAndPassword(email, password)
+        .then(userCredential => {
+            const user = userCredential.user;
+            return db.collection("users").doc(user.uid).set({
                 clinicName,
                 optometristName,
                 address,
                 contactNumber
-            };
-
-            fetch(scriptURL, {
-                method: "POST",
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(result => {
-                alert(result.message);
-                if (result.status === "success") {
-                    window.location.href = "login.html"; // Redirect to login page
-                }
-            })
-            .catch(error => console.error("Error:", error));
-        });
-    </script>
+            });
+        })
+        .then(() => {
+            alert("Registration successful!");
+            window.location.href = "login.html";
+        })
+        .catch(error => alert(error.message));
+});
+</script>
 </body>
 </html>
