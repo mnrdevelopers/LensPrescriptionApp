@@ -6,37 +6,55 @@
     <title>Login - Lens Prescription</title>
     <link rel="stylesheet" href="style.css">
     <style>
+        /* Center the container vertically and horizontally */
+        body {
+            margin: 0;
+            height: 100vh; /* Full viewport height */
+            display: flex;
+            justify-content: center; /* Center horizontally */
+            align-items: center; /* Center vertically */
+            background-color: #f5f5f5; /* Optional: Add a light background */
+        }
+
         .container {
             max-width: 400px;
-            margin: 50px auto;
+            width: 100%; /* Ensure it doesn't overflow on small screens */
             padding: 20px;
             border: 1px solid #ccc;
             border-radius: 10px;
-            text-align: center;
+            background-color: white; /* Optional: Add a white background */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Optional: Add a subtle shadow */
         }
+
         .logo {
             width: 100px;
             margin-bottom: 20px;
         }
+
         .form-group {
             margin-bottom: 15px;
             text-align: left;
         }
+
         .form-group label {
             display: block;
             margin-bottom: 5px;
         }
+
         .form-group input {
             width: 100%;
             padding: 8px;
             box-sizing: border-box;
         }
+
         .password-container {
             position: relative;
         }
+
         .password-container input {
             padding-right: 40px;
         }
+
         .password-container .toggle-password {
             position: absolute;
             right: 10px;
@@ -45,6 +63,7 @@
             cursor: pointer;
             color: #007bff;
         }
+
         .btn-submit {
             width: 100%;
             padding: 10px;
@@ -54,11 +73,21 @@
             border-radius: 5px;
             cursor: pointer;
         }
+
         .btn-submit:hover {
             background-color: #0056b3;
         }
+
         .form-text {
             margin-top: 10px;
+        }
+
+        .remember-me {
+            display: flex;
+            justify-content: center; /* Center the checkbox and text */
+            align-items: center; /* Align items vertically */
+            gap: 5px; /* Space between checkbox and text */
+            margin-bottom: 15px; /* Add spacing below */
         }
     </style>
 </head>
@@ -81,10 +110,9 @@
             </div>
         </div>
 
-        <div class="form-group">
-            <label>
-                <input type="checkbox" id="rememberMe"> Remember Me
-            </label>
+        <div class="remember-me">
+            <input type="checkbox" id="rememberMe">
+            <label for="rememberMe">Remember Me</label>
         </div>
 
         <button type="submit" class="btn btn-submit">Login</button>
