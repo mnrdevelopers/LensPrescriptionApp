@@ -145,8 +145,10 @@ a:hover {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
 const analytics = getAnalytics(app);
+const db = firebase.firestore();
 
 // Login Function
 document.getElementById("loginForm").addEventListener("submit", function(event) {
