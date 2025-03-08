@@ -1,5 +1,27 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
 
+/* Reset default margins and padding */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* General Styles */
+body {
+    font-family: 'Poppins', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+    color: #333;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+body.dark-mode {
+    background-color: #1a1a1a;
+    color: #f4f4f4;
+}
+
 /* Centered Container */
 .container {
     max-width: 400px;
@@ -62,21 +84,6 @@
     }
 }
 
-/* General Styles */
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #f4f4f4;
-    color: #333;
-    transition: background 0.3s ease, color 0.3s ease;
-}
-
-body.dark-mode {
-    background-color: #1a1a1a;
-    color: #f4f4f4;
-}
-
 /* Navigation Bar */
 .navbar {
     display: flex;
@@ -97,52 +104,6 @@ body.dark-mode {
     display: flex;
     align-items: center;
     gap: 15px;
-}
-
-/* Dark Mode Toggle */
-.switch {
-    position: relative;
-    display: inline-block;
-    width: 50px;
-    height: 24px;
-}
-
-.switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-.slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    transition: 0.4s;
-    border-radius: 24px;
-}
-
-.slider:before {
-    position: absolute;
-    content: "";
-    height: 20px;
-    width: 20px;
-    left: 2px;
-    bottom: 2px;
-    background-color: white;
-    transition: 0.4s;
-    border-radius: 50%;
-}
-
-input:checked + .slider {
-    background-color: #007bff;
-}
-
-input:checked + .slider:before {
-    transform: translateX(26px);
 }
 
 /* Buttons */
@@ -227,22 +188,6 @@ body.dark-mode th {
     background-color: #0056b3;
 }
 
-/* Container */
-.container {
-    padding: 20px;
-    max-width: 1200px;
-    margin: 0 auto;
-}
-             
-             </style>
-
-/* Reset default margins and padding */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
 /* Splash Screen Styles */
 #splash-screen {
     position: fixed;
@@ -325,14 +270,7 @@ body.dark-mode th {
     100% { left: 100%; }
 }
 
-html, body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    font-family: 'Poppins', sans-serif;
-    background-color: #f4f4f4;
-}
-
+/* Exit Prompt Modal */
 #exitPromptModal {
     display: none;
     position: fixed;
@@ -371,7 +309,7 @@ html, body {
     color: white;
 }
 
-/* Dark Mode Toggle Styles */
+/* Dark Mode Toggle */
 .dark-mode-toggle {
     position: absolute;
     top: 10px;
@@ -424,52 +362,6 @@ input:checked + .slider:before {
     transform: translateX(20px);
 }
 
-/* Dark Mode Styles */
-body.dark-mode {
-    background-color: #121212;
-    color: #ffffff;
-}
-
-.dark-mode #prescription {
-    background: #1e1e1e;
-    color: #ffffff;
-    box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.1);
-}
-
-.dark-mode input, .dark-mode select {
-    background: #2a2a2a;
-    color: white;
-    border: 1px solid #555;
-}
-
-.dark-mode .btn {
-    background: #444;
-    color: white;
-}
-
-.dark-mode .btn:hover {
-    background: #666;
-}
-
-
-/* Prescription Stats */
-.prescription-stats {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 14px;
-    padding: 10px 0;
-}
-
-.prescription-stats .left,
-.prescription-stats .right {
-    flex: 1;
-}
-
-.prescription-stats .right {
-    text-align: right;
-}
-
 /* Prescription Container */
 #prescription {
     max-width: 400px;
@@ -501,19 +393,19 @@ p {
 .optometrist-details {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start; /* Align items to the top */
+    align-items: flex-start;
     font-size: 14px;
     padding: 10px 0;
 }
 
 .optometrist-details .left {
     display: flex;
-    flex-direction: column; /* Stack name and mobile vertically */
-    gap: 2px; /* Space between name and mobile */
+    flex-direction: column;
+    gap: 2px;
 }
 
 .optometrist-details .right {
-    text-align: right; /* Align date to the right */
+    text-align: right;
 }
 
 /* Section Titles */
@@ -554,7 +446,7 @@ p {
 .prescription-table {
     margin-top: 20px;
     overflow-x: auto;
-    width: 100%; /* Ensure table fits within container */
+    width: 100%;
 }
 
 .prescription-table table {
@@ -563,12 +455,12 @@ p {
     background: white;
     border-radius: 10px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    font-size: 14px; /* Adjust font size for better fit */
+    font-size: 14px;
 }
 
 .prescription-table th,
 .prescription-table td {
-    padding: 10px; /* Reduce padding for smaller table */
+    padding: 10px;
     text-align: center;
     border: 1px solid #e0e0e0;
 }
@@ -585,8 +477,8 @@ p {
 
 .prescription-table input {
     width: 90%;
-    padding: 6px; /* Reduce input padding */
-    font-size: 12px; /* Smaller font size for inputs */
+    padding: 6px;
+    font-size: 12px;
     text-align: center;
     border: 1px solid #ccc;
     border-radius: 5px;
@@ -610,29 +502,28 @@ p {
 /* Responsive Table */
 @media (max-width: 600px) {
     .prescription-table table {
-        font-size: 12px; /* Smaller font size for mobile */
+        font-size: 12px;
     }
 
     .prescription-table th,
     .prescription-table td {
-        padding: 8px; /* Reduce padding further for mobile */
+        padding: 8px;
     }
 
     .prescription-table input {
-        font-size: 10px; /* Smaller font size for inputs on mobile */
+        font-size: 10px;
     }
 }
-
 
 /* Flexbox Layout for Side-by-Side Dropdowns */
 .options-row {
     display: flex;
-    gap: 15px; /* Space between dropdowns */
+    gap: 15px;
     margin-bottom: 15px;
 }
 
 .form-group {
-    flex: 1; /* Each dropdown takes equal space */
+    flex: 1;
 }
 
 .form-group label {
@@ -661,12 +552,12 @@ p {
 /* Flexbox Layout for Amount and Payment Mode */
 .amount-payment-row {
     display: flex;
-    gap: 15px; /* Space between Amount and Payment Mode */
+    gap: 15px;
     margin-bottom: 15px;
 }
 
 .amount-payment-row .form-group {
-    flex: 1; /* Each section takes equal space */
+    flex: 1;
 }
 
 .amount-payment-row label {
@@ -697,7 +588,7 @@ p {
 .buttons {
     display: flex;
     justify-content: center;
-    gap: 6px; /* Adjust space between buttons */
+    gap: 6px;
     margin-top: 15px;
 }
 
@@ -715,7 +606,7 @@ p {
     transition: all 0.3s ease;
     text-align: center;
     color: white;
-    min-width: 90px; /* Small buttons */
+    min-width: 90px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
@@ -756,7 +647,6 @@ p {
     }
 }
 
-
 /* Print Layout */
 @media print {
     body {
@@ -771,48 +661,49 @@ p {
     }
 }
 
+/* Prescription Preview */
 #prescriptionPreview {
-    width: 58mm; /* Fixed width for thermal printing */
-    padding: 5px; /* Reduced padding */
+    width: 58mm;
+    padding: 5px;
     background: white;
-    border-radius: 5px; /* Smaller border radius */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Lighter shadow */
-    margin: 0 auto; /* Center the preview */
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin: 0 auto;
     font-family: 'Arial', sans-serif;
-    font-size: 8px; /* Smaller font size */
+    font-size: 8px;
 }
 
 #prescriptionPreview h2, 
 #prescriptionPreview h3 {
     text-align: center;
     color: #333;
-    margin: 5px 0; /* Reduced margin */
+    margin: 5px 0;
 }
 
 #prescriptionPreview h2 {
-    font-size: 10px; /* Smaller heading size */
+    font-size: 10px;
 }
 
 #prescriptionPreview h3 {
-    font-size: 9px; /* Smaller subheading size */
+    font-size: 9px;
 }
 
 #prescriptionPreview p {
-    font-size: 8px; /* Smaller paragraph text */
-    margin: 2px 0; /* Reduced margin */
+    font-size: 8px;
+    margin: 2px 0;
 }
 
 #prescriptionPreview table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 5px; /* Reduced margin */
-    font-size: 8px; /* Smaller table font size */
+    margin-top: 5px;
+    font-size: 8px;
 }
 
 #prescriptionPreview th, 
 #prescriptionPreview td {
     border: 1px solid #000;
-    padding: 2px; /* Reduced padding */
+    padding: 2px;
     text-align: center;
 }
 
@@ -822,7 +713,7 @@ p {
 }
 
 #previewAmount {
-    font-size: 10px; /* Smaller font size for amount */
+    font-size: 10px;
     font-weight: bold;
     color: #27ae60;
     text-align: center;
@@ -840,11 +731,11 @@ p {
         position: absolute;
         left: 0;
         top: 0;
-        width: 58mm; /* Fixed width for printing */
+        width: 58mm;
         box-shadow: none;
         border: none;
-        padding: 0; /* Remove padding for printing */
-        margin: 0; /* Remove margin for printing */
+        padding: 0;
+        margin: 0;
     }
 }
 
@@ -854,6 +745,7 @@ button:disabled {
     cursor: not-allowed;
     opacity: 0.7;
 }
+
 /* Developer Credit */
 .developer-credit {
     text-align: center;
