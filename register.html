@@ -5,10 +5,89 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - Lens Prescription</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Center the container vertically and horizontally */
+        body {
+            margin: 0;
+            height: 100vh; /* Full viewport height */
+            display: flex;
+            justify-content: center; /* Center horizontally */
+            align-items: center; /* Center vertically */
+            background-color: #f5f5f5; /* Optional: Add a light background */
+        }
+
+        .container {
+            max-width: 400px;
+            width: 100%; /* Ensure it doesn't overflow on small screens */
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            background-color: white; /* Optional: Add a white background */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Optional: Add a subtle shadow */
+            text-align: center;
+        }
+
+        .logo {
+            width: 100px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+
+        .password-container {
+            position: relative;
+        }
+
+        .password-container input {
+            padding-right: 40px;
+        }
+
+        .password-container .toggle-password {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #007bff;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .btn-submit:hover {
+            background-color: #0056b3;
+        }
+
+        .form-text {
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
 
 <div class="container">
+    <img src="logo.png" alt="Clinic Logo" class="logo"> <!-- Replace with your logo path -->
     <h2>Register Your Clinic</h2>
     <form id="registerForm">
         <div class="form-group">
@@ -18,7 +97,10 @@
 
         <div class="form-group">
             <label for="password">Password</label>
-            <input type="password" id="password" placeholder="Enter Password" required>
+            <div class="password-container">
+                <input type="password" id="password" placeholder="Enter Password" required>
+                <span class="toggle-password" onclick="togglePasswordVisibility()">👁️</span>
+            </div>
         </div>
 
         <div class="form-group">
@@ -44,44 +126,57 @@
         <button type="submit" class="btn btn-submit">Register</button>
         <p class="form-text">Already have an account? <a href="login.html">Login</a></p>
     </form>
+</div>
 
+<script>
+    const scriptURL = "https://script.google.com/macros/s/AKfycbxXx0Jy7AmSljFYOuXs00Mxj4aiGpSHz92L5sa903Hp09lEQXrVbfNXByZoAOSogwUm/exec"; // Replace with your Apps Script URL
 
- <script>
-        const scriptURL = "https://script.google.com/macros/s/AKfycbxXx0Jy7AmSljFYOuXs00Mxj4aiGpSHz92L5sa903Hp09lEQXrVbfNXByZoAOSogwUm/exec"; // Replace with your Apps Script URL
+    document.getElementById("registerForm").addEventListener("submit", function(event) {
+        event.preventDefault();
 
-        document.getElementById("registerForm").addEventListener("submit", function(event) {
-            event.preventDefault();
+        const username = document.getElementById("username").value.trim();
+        const password = document.getElementById("password").value.trim();
+        const clinicName = document.getElementById("clinicName").value.trim();
+        const optometristName = document.getElementById("optometristName").value.trim();
+        const address = document.getElementById("address").value.trim();
+        const contactNumber = document.getElementById("contactNumber").value.trim();
 
-            const username = document.getElementById("username").value.trim();
-            const password = document.getElementById("password").value.trim();
-            const clinicName = document.getElementById("clinicName").value.trim();
-            const optometristName = document.getElementById("optometristName").value.trim();
-            const address = document.getElementById("address").value.trim();
-            const contactNumber = document.getElementById("contactNumber").value.trim();
+        const data = {
+            action: "register",
+            username,
+            passwordHash: btoa(password), // Base64 encode password (for simple hashing)
+            clinicName,
+            optometristName,
+            address,
+            contactNumber
+        };
 
-            const data = {
-                action: "register",
-                username,
-                passwordHash: btoa(password), // Base64 encode password (for simple hashing)
-                clinicName,
-                optometristName,
-                address,
-                contactNumber
-            };
+        fetch(scriptURL, {
+            method: "POST",
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            alert(result.message);
+            if (result.status === "success") {
+                window.location.href = "login.html"; // Redirect to login page
+            }
+        })
+        .catch(error => console.error("Error:", error));
+    });
 
-            fetch(scriptURL, {
-                method: "POST",
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(result => {
-                alert(result.message);
-                if (result.status === "success") {
-                    window.location.href = "login.html"; // Redirect to login page
-                }
-            })
-            .catch(error => console.error("Error:", error));
-        });
-    </script>
+    function togglePasswordVisibility() {
+        const passwordInput = document.getElementById("password");
+        const toggleButton = document.querySelector(".toggle-password");
+
+        if (passwordInput.type === "password") {
+            passwordInput.type = "text";
+            toggleButton.textContent = "🙈";
+        } else {
+            passwordInput.type = "password";
+            toggleButton.textContent = "👁️";
+        }
+    }
+</script>
 </body>
 </html>
