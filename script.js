@@ -91,7 +91,7 @@ function generatePDF() {
             alert("Please submit the form before downloading the PDF.");
             return;
         }
-        
+
         // Generate the PDF from the preview section
         html2pdf()
             .set({
