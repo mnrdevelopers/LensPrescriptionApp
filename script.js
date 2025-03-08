@@ -204,7 +204,7 @@ function submitForm() {
     const visionType = document.getElementById("visionType").value;
     const lensType = document.getElementById("lensType").value;
     const frameType = document.getElementById("frameType").value;
-    const paymentMode = document.getElementById("paymentMode").value; // Capture Payment Mode
+    const paymentMode = document.getElementById("paymentMode").value;
 
     // Validation Checks
     if (!patientName) {
@@ -228,41 +228,41 @@ function submitForm() {
     }
 
     // Validate Prescription Inputs
-const prescriptionFields = [
-    { value: rightDistSPH, type: "number" },
-    { value: rightDistCYL, type: "number" },
-    { value: rightDistAXIS, type: "number" },
-    { value: rightDistVA, type: "va" }, // V/A field
-    { value: leftDistSPH, type: "number" },
-    { value: leftDistCYL, type: "number" },
-    { value: leftDistAXIS, type: "number" },
-    { value: leftDistVA, type: "va" }, // V/A field
-    { value: rightAddSPH, type: "number" },
-    { value: rightAddCYL, type: "number" },
-    { value: rightAddAXIS, type: "number" },
-    { value: rightAddVA, type: "va" }, // V/A field
-    { value: leftAddSPH, type: "number" },
-    { value: leftAddCYL, type: "number" },
-    { value: leftAddAXIS, type: "number" },
-    { value: leftAddVA, type: "va" }, // V/A field
-];
+    const prescriptionFields = [
+        { value: rightDistSPH, type: "number" },
+        { value: rightDistCYL, type: "number" },
+        { value: rightDistAXIS, type: "number" },
+        { value: rightDistVA, type: "va" },
+        { value: leftDistSPH, type: "number" },
+        { value: leftDistCYL, type: "number" },
+        { value: leftDistAXIS, type: "number" },
+        { value: leftDistVA, type: "va" },
+        { value: rightAddSPH, type: "number" },
+        { value: rightAddCYL, type: "number" },
+        { value: rightAddAXIS, type: "number" },
+        { value: rightAddVA, type: "va" },
+        { value: leftAddSPH, type: "number" },
+        { value: leftAddCYL, type: "number" },
+        { value: leftAddAXIS, type: "number" },
+        { value: leftAddVA, type: "va" },
+    ];
 
-const validNumberPattern = /^-?\d*\.?\d*$/; // For SPH, CYL, AXIS
-const validVAPattern = /^[Nn]?\d+(\/\d+)?$/; // For V/A (e.g., 6/6, N6, 6/N)
+    const validNumberPattern = /^-?\d*\.?\d*$/;
+    const validVAPattern = /^[Nn]?\d+(\/\d+)?$/;
 
-for (let i = 0; i < prescriptionFields.length; i++) {
-    const field = prescriptionFields[i];
-    if (field.value) {
-        if (field.type === "number" && !validNumberPattern.test(field.value)) {
-            alert("Please enter valid prescription values (numbers only for SPH, CYL, AXIS).");
-            return;
-        }
-        if (field.type === "va" && !validVAPattern.test(field.value)) {
-            alert("Please enter valid V/A values (e.g., 6/6, N6, 6/N).");
-            return;
+    for (let i = 0; i < prescriptionFields.length; i++) {
+        const field = prescriptionFields[i];
+        if (field.value) {
+            if (field.type === "number" && !validNumberPattern.test(field.value)) {
+                alert("Please enter valid prescription values (numbers only for SPH, CYL, AXIS).");
+                return;
+            }
+            if (field.type === "va" && !validVAPattern.test(field.value)) {
+                alert("Please enter valid V/A values (e.g., 6/6, N6, 6/N).");
+                return;
+            }
         }
     }
-}
 
     // Update Prescription Preview
     document.getElementById("previewPatientName").textContent = patientName;
@@ -270,7 +270,6 @@ for (let i = 0; i < prescriptionFields.length; i++) {
     document.getElementById("previewGender").textContent = gender;
     document.getElementById("previewMobile").textContent = mobile;
 
-    // Update DIST and NEAR fields
     document.getElementById("previewRightDistSPH").textContent = rightDistSPH;
     document.getElementById("previewRightDistCYL").textContent = rightDistCYL;
     document.getElementById("previewRightDistAXIS").textContent = rightDistAXIS;
@@ -291,13 +290,11 @@ for (let i = 0; i < prescriptionFields.length; i++) {
 
     document.getElementById("previewAmount").textContent = parseFloat(amount).toFixed(2);
 
-    // Update Vision Type, Lens Type, Frame Type, and Payment Mode in Preview
     document.getElementById("previewVisionType").textContent = visionType;
     document.getElementById("previewLensType").textContent = lensType;
     document.getElementById("previewFrameType").textContent = frameType;
-    document.getElementById("previewPaymentMode").textContent = paymentMode; // Update Payment Mode in Preview
+    document.getElementById("previewPaymentMode").textContent = paymentMode;
 
-    // Update the date in the preview
     document.getElementById("previewcurrentDate").textContent = new Date().toLocaleDateString();
 
     // Show Prescription Preview
@@ -315,6 +312,7 @@ for (let i = 0; i < prescriptionFields.length; i++) {
     // Reset the form for the next prescription
     resetForm();
 }
+
 
 // Reset form fields
 function resetForm() {
