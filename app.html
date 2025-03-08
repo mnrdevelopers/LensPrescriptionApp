@@ -410,6 +410,26 @@
         }
     }).catch(error => console.error("Error fetching clinic details:", error));
 });
+
+        function saveProfileChanges() {
+    const userId = localStorage.getItem("userId");
+
+    const newClinicName = document.getElementById("editClinicName").value.trim();
+    const newOptometristName = document.getElementById("editOptometristName").value.trim();
+    const newAddress = document.getElementById("editAddress").value.trim();
+    const newContactNumber = document.getElementById("editContactNumber").value.trim();
+
+    db.collection("users").doc(userId).update({
+        clinicName: newClinicName,
+        optometristName: newOptometristName,
+        address: newAddress,
+        contactNumber: newContactNumber
+    }).then(() => {
+        alert("Profile updated successfully!");
+        location.reload();
+    }).catch(error => alert("Error updating profile: " + error.message));
+}
+
     </script>
     
     <script>
