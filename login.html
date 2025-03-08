@@ -133,10 +133,25 @@ a:hover {
         <button id="googleLogin" class="btn google-btn">Sign in with Google</button>
     </div>
 
-<script>
+    <script>
+    const firebaseConfig = {
+  apiKey: "AIzaSyD0qbeB7cPxBu3IGgrLFph8xOwxdwFER7c",
+  authDomain: "lensprescriptionapp-e8f48.firebaseapp.com",
+  projectId: "lensprescriptionapp-e8f48",
+  storageBucket: "lensprescriptionapp-e8f48.firebasestorage.app",
+  messagingSenderId: "96345105670",
+  appId: "1:96345105670:web:a6f3d448aa13663e92aa87",
+  measurementId: "G-GS1MLHFP13"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+
+// Login Function
 document.getElementById("loginForm").addEventListener("submit", function(event) {
     event.preventDefault();
-    
+
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
@@ -147,6 +162,17 @@ document.getElementById("loginForm").addEventListener("submit", function(event) 
         })
         .catch(error => alert(error.message));
 });
-</script>
+
+// Google Login
+document.getElementById("googleLogin").addEventListener("click", function() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider)
+        .then(userCredential => {
+            localStorage.setItem("userId", userCredential.user.uid);
+            window.location.href = "app.html";
+        })
+        .catch(error => alert(error.message));
+});
+    </script>
 </body>
 </html>
