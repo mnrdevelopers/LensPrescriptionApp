@@ -17,16 +17,22 @@
     </div>
 
     <script>
-        // Check if the splash screen has already been shown
-        if (!sessionStorage.getItem("splashShown")) {
-            sessionStorage.setItem("splashShown", "true"); // Mark splash as shown
-            setTimeout(() => {
-                window.location.replace("app.html"); // Redirect to app.html after 3 seconds
-            }, 3000);
-        } else {
-            // If splash has already been shown, redirect immediately
-            window.location.replace("app.html");
-        }
-    </script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const isLoggedIn = localStorage.getItem("username"); // Check login state
+
+    if (!sessionStorage.getItem("splashShown")) {
+        sessionStorage.setItem("splashShown", "true"); // Mark splash as shown
+        setTimeout(() => {
+            if (isLoggedIn) {
+                window.location.replace("app.html"); // Redirect to dashboard if logged in
+            } else {
+                window.location.replace("login.html"); // Redirect to login page if not logged in
+            }
+        }, 3000);
+    } else {
+        window.location.replace(isLoggedIn ? "app.html" : "login.html");
+    }
+});
+</script>
 </body>
 </html>
