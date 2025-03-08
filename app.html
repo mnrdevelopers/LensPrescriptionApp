@@ -68,14 +68,36 @@
 
 <!-- Edit Profile Modal -->
 <div id="editProfileModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); justify-content: center; align-items: center; z-index: 10000;">
-    <div style="background: white; padding: 20px; border-radius: 10px; text-align: center;">
-        <h2>Edit Profile</h2>
-        <input type="text" id="editClinicName" placeholder="Clinic Name"><br>
-        <input type="text" id="editOptometristName" placeholder="Optometrist Name"><br>
-        <input type="text" id="editAddress" placeholder="Clinic Address"><br>
-        <input type="tel" id="editContactNumber" placeholder="Contact Number"><br>
-        <button onclick="saveProfile()">Save Changes</button>
-        <button onclick="closeEditProfile()">Cancel</button>
+    <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); width: 100%; max-width: 400px; text-align: left;">
+        <!-- Modal Header -->
+        <h2 style="font-size: 20px; font-weight: 600; color: #333; margin-bottom: 20px; text-align: center;">Edit Profile</h2>
+        
+        <!-- Input Fields -->
+        <div style="margin-bottom: 15px;">
+            <label for="editClinicName" style="display: block; font-size: 14px; font-weight: 500; color: #555; margin-bottom: 5px;">Clinic Name</label>
+            <input type="text" id="editClinicName" placeholder="Enter Clinic Name" style="width: 100%; padding: 10px; font-size: 14px; border: 1px solid #ddd; border-radius: 6px; outline: none; transition: border-color 0.3s ease;">
+        </div>
+
+        <div style="margin-bottom: 15px;">
+            <label for="editOptometristName" style="display: block; font-size: 14px; font-weight: 500; color: #555; margin-bottom: 5px;">Optometrist Name</label>
+            <input type="text" id="editOptometristName" placeholder="Enter Optometrist Name" style="width: 100%; padding: 10px; font-size: 14px; border: 1px solid #ddd; border-radius: 6px; outline: none; transition: border-color 0.3s ease;">
+        </div>
+
+        <div style="margin-bottom: 15px;">
+            <label for="editAddress" style="display: block; font-size: 14px; font-weight: 500; color: #555; margin-bottom: 5px;">Clinic Address</label>
+            <input type="text" id="editAddress" placeholder="Enter Clinic Address" style="width: 100%; padding: 10px; font-size: 14px; border: 1px solid #ddd; border-radius: 6px; outline: none; transition: border-color 0.3s ease;">
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <label for="editContactNumber" style="display: block; font-size: 14px; font-weight: 500; color: #555; margin-bottom: 5px;">Contact Number</label>
+            <input type="tel" id="editContactNumber" placeholder="Enter Contact Number" style="width: 100%; padding: 10px; font-size: 14px; border: 1px solid #ddd; border-radius: 6px; outline: none; transition: border-color 0.3s ease;">
+        </div>
+
+        <!-- Buttons -->
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button onclick="closeEditProfile()" style="padding: 10px 20px; font-size: 14px; font-weight: 500; color: #333; background: #f0f0f0; border: none; border-radius: 6px; cursor: pointer; transition: background 0.3s ease;">Cancel</button>
+            <button onclick="saveProfile()" style="padding: 10px 20px; font-size: 14px; font-weight: 500; color: white; background: #007bff; border: none; border-radius: 6px; cursor: pointer; transition: background 0.3s ease;">Save Changes</button>
+        </div>
     </div>
 </div>
 <hr>
