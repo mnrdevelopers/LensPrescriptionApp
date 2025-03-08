@@ -21,7 +21,7 @@
         if (!sessionStorage.getItem("splashShown")) {
             sessionStorage.setItem("splashShown", "true"); // Mark splash as shown
             setTimeout(() => {
-                window.location.replace("app.html"); // Redirect to app.html after 3 seconds
+                window.location.replace("login.html"); // Redirect to app.html after 3 seconds
             }, 3000);
         } else {
             // If splash has already been shown, redirect immediately
