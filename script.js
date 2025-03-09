@@ -189,7 +189,7 @@ function submitForm() {
     const gender = document.getElementById("gender").value.trim();
     const mobile = document.getElementById("patientMobile").value.trim();
     const amount = document.getElementById("amount").value.trim();
-    
+
     // Prescription Fields
     const prescriptionData = {
         rightDistSPH: document.getElementById("rightDistSPH").value.trim(),
@@ -246,47 +246,43 @@ function submitForm() {
     .then(result => {
         alert(result.message);
         if (result.status === "success") {
-            fetchPrescriptions(); // Refresh stored prescriptions
+            // Save data to localStorage for preview page
+            localStorage.setItem("patientName", patientName);
+            localStorage.setItem("age", age);
+            localStorage.setItem("gender", gender);
+            localStorage.setItem("patientMobile", mobile);
+            localStorage.setItem("amount", amount);
+            localStorage.setItem("visionType", visionType);
+            localStorage.setItem("lensType", lensType);
+            localStorage.setItem("frameType", frameType);
+            localStorage.setItem("paymentMode", paymentMode);
+            localStorage.setItem("currentDate", new Date().toLocaleDateString());
+
+            // Save prescription fields
+            for (const key in prescriptionData) {
+                localStorage.setItem(key, prescriptionData[key]);
+            }
+
+            // Increment prescription count and earnings
+            prescriptionCount++;
+            amountEarned += parseFloat(amount);
+            updateStats();
+            saveCounters();
+
+            // Reset the form for the next prescription
+            resetForm();
+
+            // Redirect to preview page
+            window.location.href = "preview.html";
         }
     })
-    .catch(error => console.error("Error:", error));
-
-    // Update Prescription Preview
-    document.getElementById("previewPatientName").textContent = patientName;
-    document.getElementById("previewAge").textContent = age;
-    document.getElementById("previewGender").textContent = gender;
-    document.getElementById("previewMobile").textContent = mobile;
-    document.getElementById("previewAmount").textContent = parseFloat(amount).toFixed(2);
-    document.getElementById("previewVisionType").textContent = visionType;
-    document.getElementById("previewLensType").textContent = lensType;
-    document.getElementById("previewFrameType").textContent = frameType;
-    document.getElementById("previewPaymentMode").textContent = paymentMode;
-    document.getElementById("previewcurrentDate").textContent = new Date().toLocaleDateString();
-
-    // Prescription preview fields
-    for (const key in prescriptionData) {
-        if (document.getElementById("preview" + key)) {
-            document.getElementById("preview" + key).textContent = prescriptionData[key];
-        }
-    }
-
-    // Show Prescription Preview
-    document.getElementById("prescriptionPreview").style.display = "block";
-    document.getElementById("printButton").disabled = false;
-
-    // Enable the print button
-    document.getElementById("printButton").disabled = false;
-
-    // Increment prescription count and earnings
-    prescriptionCount++;
-    amountEarned += parseFloat(amount);
-    updateStats();
-    saveCounters();
-
-    // Reset the form for the next prescription
-    resetForm();
+    .catch(error => {
+        console.error("Error:", error);
+        alert("An error occurred while submitting the form. Please try again.");
+        // Reset the form even if there's an error
+        resetForm();
+    });
 }
-
 
 // Reset form fields
 function resetForm() {
