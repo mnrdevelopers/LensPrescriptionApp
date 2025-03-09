@@ -274,7 +274,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
- <script>
+<script>
     const scriptURL = "https://script.google.com/macros/s/AKfycbxXx0Jy7AmSljFYOuXs00Mxj4aiGpSHz92L5sa903Hp09lEQXrVbfNXByZoAOSogwUm/exec"; // Replace with your Google Apps Script URL
 
     document.addEventListener("DOMContentLoaded", function() {
@@ -300,11 +300,13 @@
                 document.getElementById("optometristName").textContent = result.optometristName;
                 document.getElementById("contactNumber").textContent = result.contactNumber;
 
-                // ✅ Update Clinic Details in Prescription Preview
-                document.getElementById("previewClinicName").textContent = result.clinicName;
-                document.getElementById("previewClinicAddress").textContent = result.address;
-                document.getElementById("previewOptometristName").textContent = result.optometristName;
-                document.getElementById("previewContactNumber").textContent = result.contactNumber;
+                // ✅ Update Clinic Details in Prescription Preview (if elements exist)
+                if (document.getElementById("previewClinicName")) {
+                    document.getElementById("previewClinicName").textContent = result.clinicName;
+                    document.getElementById("previewClinicAddress").textContent = result.address;
+                    document.getElementById("previewOptometristName").textContent = result.optometristName;
+                    document.getElementById("previewContactNumber").textContent = result.contactNumber;
+                }
             } else {
                 alert("Error fetching clinic details. Please log in again.");
                 localStorage.removeItem("username");
@@ -318,7 +320,9 @@
 
         // Set Current Date
         document.getElementById("currentDate").textContent = new Date().toLocaleDateString();
-        document.getElementById("previewcurrentDate").textContent = new Date().toLocaleDateString();
+        if (document.getElementById("previewcurrentDate")) {
+            document.getElementById("previewcurrentDate").textContent = new Date().toLocaleDateString();
+        }
     });
 
     function openEditProfile() {
@@ -362,21 +366,49 @@
                 document.getElementById("optometristName").textContent = updatedData.optometristName;
                 document.getElementById("contactNumber").textContent = updatedData.contactNumber;
 
-                document.getElementById("previewClinicName").textContent = updatedData.clinicName;
-                document.getElementById("previewClinicAddress").textContent = updatedData.address;
-                document.getElementById("previewOptometristName").textContent = updatedData.optometristName;
-                document.getElementById("previewContactNumber").textContent = updatedData.contactNumber;
+                // Update preview section (if elements exist)
+                if (document.getElementById("previewClinicName")) {
+                    document.getElementById("previewClinicName").textContent = updatedData.clinicName;
+                    document.getElementById("previewClinicAddress").textContent = updatedData.address;
+                    document.getElementById("previewOptometristName").textContent = updatedData.optometristName;
+                    document.getElementById("previewContactNumber").textContent = updatedData.contactNumber;
+                }
             }
         })
         .catch(error => console.error("Error:", error));
 
         closeEditProfile();
     }
-     
+
     // Logout Function
     function logoutUser() {
+        // Clear all relevant data from localStorage
         localStorage.removeItem("username");
-        window.location.href = "login.html"; // Redirect to login page
+        localStorage.removeItem("patientName");
+        localStorage.removeItem("age");
+        localStorage.removeItem("gender");
+        localStorage.removeItem("patientMobile");
+        localStorage.removeItem("amount");
+        localStorage.removeItem("visionType");
+        localStorage.removeItem("lensType");
+        localStorage.removeItem("frameType");
+        localStorage.removeItem("paymentMode");
+        localStorage.removeItem("currentDate");
+
+        // Clear prescription fields
+        const prescriptionFields = [
+            "rightDistSPH", "rightDistCYL", "rightDistAXIS", "rightDistVA",
+            "leftDistSPH", "leftDistCYL", "leftDistAXIS", "leftDistVA",
+            "rightAddSPH", "rightAddCYL", "rightAddAXIS", "rightAddVA",
+            "leftAddSPH", "leftAddCYL", "leftAddAXIS", "leftAddVA"
+        ];
+
+        prescriptionFields.forEach(field => {
+            localStorage.removeItem(field);
+        });
+
+        // Redirect to login page
+        window.location.href = "login.html";
     }
 </script>
 </body
