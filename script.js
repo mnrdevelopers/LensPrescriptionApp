@@ -150,7 +150,7 @@ function saveCounters() {
 checkDayChange();
 
 function submitForm() {
-    const scriptURL = "https://script.google.com/macros/s/AKfycbxXx0Jy7AmSljFYOuXs00Mxj4aiGpSHz92L5sa903Hp09lEQXrVbfNXByZoAOSogwUm/exec"; // Replace with your Google Apps Script Web App URL
+    const scriptURL = "https://script.google.com/macros/s/AKfycbxXx0Jy7AmSljFYOuXs00Mxj4aiGpSHz92L5sa903Hp09lEQXrVbfNXByZoAOSogwUm/exec";
     const username = localStorage.getItem("username");
 
     if (!username) {
@@ -250,6 +250,9 @@ function submitForm() {
 
             // Redirect to preview page
             window.location.href = "preview.html";
+
+            // Update the prescriptions table
+            updatePrescriptionsTable();
         }
     })
     .catch(error => {
@@ -258,6 +261,23 @@ function submitForm() {
         // Reset the form even if there's an error
         resetForm();
     });
+}
+
+function updatePrescriptionsTable() {
+    const username = localStorage.getItem("username");
+    fetch(scriptURL, {
+        method: "POST",
+        body: JSON.stringify({ action: "fetchPrescriptions", username: username })
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.status === "success") {
+            displayPrescriptions(result.data);
+        } else {
+            alert("No prescriptions found!");
+        }
+    })
+    .catch(error => console.error("Error:", error));
 }
 
 // Reset form fields
