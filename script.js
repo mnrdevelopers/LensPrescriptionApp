@@ -174,7 +174,7 @@ function saveCounters() {
 checkDayChange();
 
 function submitForm() {
-    const scriptURL = "YOUR_DEPLOYMENT_URL"; // Replace with your Google Apps Script Web App URL
+    const scriptURL = "https://script.google.com/macros/s/AKfycbxXx0Jy7AmSljFYOuXs00Mxj4aiGpSHz92L5sa903Hp09lEQXrVbfNXByZoAOSogwUm/exec"; // Replace with your Google Apps Script Web App URL
     const username = localStorage.getItem("username");
 
     if (!username) {
