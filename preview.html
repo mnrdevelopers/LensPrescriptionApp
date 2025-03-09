@@ -263,6 +263,32 @@
             document.getElementById(`preview${field}`).textContent = localStorage.getItem(field);
         });
     });
+
+window.addEventListener("beforeunload", function() {
+    localStorage.removeItem("patientName");
+    localStorage.removeItem("age");
+    localStorage.removeItem("gender");
+    localStorage.removeItem("patientMobile");
+    localStorage.removeItem("amount");
+    localStorage.removeItem("visionType");
+    localStorage.removeItem("lensType");
+    localStorage.removeItem("frameType");
+    localStorage.removeItem("paymentMode");
+    localStorage.removeItem("currentDate");
+
+    // Clear prescription fields
+    const prescriptionFields = [
+        "rightDistSPH", "rightDistCYL", "rightDistAXIS", "rightDistVA",
+        "leftDistSPH", "leftDistCYL", "leftDistAXIS", "leftDistVA",
+        "rightAddSPH", "rightAddCYL", "rightAddAXIS", "rightAddVA",
+        "leftAddSPH", "leftAddCYL", "leftAddAXIS", "leftAddVA"
+    ];
+
+    prescriptionFields.forEach(field => {
+        localStorage.removeItem(field);
+    });
+});
+      
 </script>
 </body>
 </html>
