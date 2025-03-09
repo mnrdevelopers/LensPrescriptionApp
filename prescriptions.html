@@ -218,21 +218,70 @@
         }
 
         function displayPrescriptions(data) {
-            const tbody = document.getElementById("prescriptionTable").getElementsByTagName("tbody")[0];
-            tbody.innerHTML = ""; // Clear existing rows
+    const tbody = document.getElementById("prescriptionTable").getElementsByTagName("tbody")[0];
+    tbody.innerHTML = ""; // Clear existing rows
 
-            data.forEach(row => {
-                let tr = document.createElement("tr");
-                row.forEach((cell, index) => {
-                    let td = document.createElement("td");
-                    td.textContent = cell;
-                    // Add data-label attribute for mobile view
-                    td.setAttribute("data-label", document.querySelectorAll("th")[index].textContent);
-                    tr.appendChild(td);
-                });
-                tbody.appendChild(tr);
-            });
+    data.forEach(row => {
+        let tr = document.createElement("tr");
+        row.forEach((cell, index) => {
+            let td = document.createElement("td");
+            td.textContent = cell;
+            td.setAttribute("data-label", document.querySelectorAll("th")[index].textContent);
+            tr.appendChild(td);
+        });
+
+        // Add Preview and Delete buttons
+        let actionsTd = document.createElement("td");
+        let previewButton = document.createElement("button");
+        previewButton.textContent = "Preview";
+        previewButton.className = "btn btn-preview";
+        previewButton.onclick = () => previewPrescription(row);
+        actionsTd.appendChild(previewButton);
+
+        let deleteButton = document.createElement("button");
+        deleteButton.textContent = "Delete";
+        deleteButton.className = "btn btn-delete";
+        deleteButton.onclick = () => deletePrescription(row);
+        actionsTd.appendChild(deleteButton);
+
+        tr.appendChild(actionsTd);
+        tbody.appendChild(tr);
+    });
+}
+
+function previewPrescription(row) {
+    // Redirect to preview page with the selected prescription data
+    localStorage.setItem("patientName", row[1]);
+    localStorage.setItem("age", row[2]);
+    localStorage.setItem("gender", row[3]);
+    localStorage.setItem("patientMobile", row[4]);
+    localStorage.setItem("amount", row[5]);
+    localStorage.setItem("visionType", row[6]);
+    localStorage.setItem("lensType", row[7]);
+    localStorage.setItem("frameType", row[8]);
+    localStorage.setItem("paymentMode", row[9]);
+    window.location.href = "preview.html";
+}
+
+function deletePrescription(row) {
+    const scriptURL = "https://script.google.com/macros/s/AKfycbxXx0Jy7AmSljFYOuXs00Mxj4aiGpSHz92L5sa903Hp09lEQXrVbfNXByZoAOSogwUm/exec";
+    const username = localStorage.getItem("username");
+
+    fetch(scriptURL, {
+        method: "POST",
+        body: JSON.stringify({ action: "deletePrescription", username: username, mobile: row[4] })
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.status === "success") {
+            alert("Prescription deleted successfully!");
+            fetchPrescriptions();
+        } else {
+            alert("Failed to delete prescription.");
         }
+    })
+    .catch(error => console.error("Error:", error));
+}
 
         function logoutUser() {
             localStorage.removeItem("username");
