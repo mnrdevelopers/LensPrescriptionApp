@@ -235,40 +235,45 @@
         }
 
         function displayPrescriptions(data) {
-            const tbody = document.getElementById("prescriptionTable").getElementsByTagName("tbody")[0];
-            tbody.innerHTML = ""; // Clear existing rows
+    const tbody = document.getElementById("prescriptionTable").getElementsByTagName("tbody")[0];
+    tbody.innerHTML = ""; // Clear existing rows
 
-            if (!data || data.length === 0) {
-                console.log("No data to display."); // Debugging: Log if no data is available
-                return;
-            }
+    if (!data || data.length === 0) {
+        console.log("No data to display."); // Debugging: Log if no data is available
+        return;
+    }
 
-            data.forEach(row => {
-                let tr = document.createElement("tr");
-                row.forEach((cell, index) => {
-                    let td = document.createElement("td");
-                    td.textContent = cell;
-                    td.setAttribute("data-label", document.querySelectorAll("th")[index].textContent);
-                    tr.appendChild(td);
-                });
+    data.forEach(row => {
+        if (!Array.isArray(row)) {
+            console.error("Invalid row format:", row); // Debugging: Log invalid row format
+            return;
+        }
 
-                // Add Preview and Delete buttons
-                let actionsTd = document.createElement("td");
-                let previewButton = document.createElement("button");
-                previewButton.textContent = "Preview";
-                previewButton.className = "btn btn-preview";
-                previewButton.onclick = () => previewPrescription(row);
-                actionsTd.appendChild(previewButton);
+        let tr = document.createElement("tr");
+        row.forEach((cell, index) => {
+            let td = document.createElement("td");
+            td.textContent = cell;
+            td.setAttribute("data-label", document.querySelectorAll("th")[index].textContent);
+            tr.appendChild(td);
+        });
 
-                let deleteButton = document.createElement("button");
-                deleteButton.textContent = "Delete";
-                deleteButton.className = "btn btn-delete";
-                deleteButton.onclick = () => deletePrescription(row);
-                actionsTd.appendChild(deleteButton);
+        // Add Preview and Delete buttons
+        let actionsTd = document.createElement("td");
+        let previewButton = document.createElement("button");
+        previewButton.textContent = "Preview";
+        previewButton.className = "btn btn-preview";
+        previewButton.onclick = () => previewPrescription(row);
+        actionsTd.appendChild(previewButton);
 
-                tr.appendChild(actionsTd);
-                tbody.appendChild(tr);
-            });
+        let deleteButton = document.createElement("button");
+        deleteButton.textContent = "Delete";
+        deleteButton.className = "btn btn-delete";
+        deleteButton.onclick = () => deletePrescription(row);
+        actionsTd.appendChild(deleteButton);
+
+        tr.appendChild(actionsTd);
+        tbody.appendChild(tr);
+    });
         }
 
         function previewPrescription(row) {
