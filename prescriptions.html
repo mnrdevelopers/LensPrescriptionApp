@@ -290,26 +290,30 @@
             window.location.href = "preview.html";
         }
 
-        function deletePrescription(row) {
-            const scriptURL = "https://script.google.com/macros/s/AKfycbxXx0Jy7AmSljFYOuXs00Mxj4aiGpSHz92L5sa903Hp09lEQXrVbfNXByZoAOSogwUm/exec";
-            const username = localStorage.getItem("username");
+      function deletePrescription(row) {
+    const scriptURL = "https://script.google.com/macros/s/AKfycbxXx0Jy7AmSljFYOuXs00Mxj4aiGpSHz92L5sa903Hp09lEQXrVbfNXByZoAOSogwUm/exec";
+    const username = localStorage.getItem("username");
 
-            fetch(scriptURL, {
-                method: "POST",
-                body: JSON.stringify({ action: "deletePrescription", username: username, mobile: row[4] })
-            })
-            .then(response => response.json())
-            .then(result => {
-                if (result.status === "success") {
-                    alert("Prescription deleted successfully!");
-                    fetchPrescriptions();
-                } else {
-                    alert("Failed to delete prescription.");
-                }
-            })
-            .catch(error => console.error("Error:", error));
+    fetch(scriptURL, {
+        method: "POST",
+        body: JSON.stringify({ 
+            action: "deletePrescription", 
+            username: username, 
+            mobile: row[4] // Mobile number is in the 5th column (index 4)
+        })
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.status === "success") {
+            alert("Prescription deleted successfully!");
+            fetchPrescriptions(); // Refresh the table
+        } else {
+            alert("Failed to delete prescription.");
         }
-
+    })
+    .catch(error => console.error("Error:", error));
+}
+        
         function logoutUser() {
             localStorage.removeItem("username");
             window.location.href = "login.html";
