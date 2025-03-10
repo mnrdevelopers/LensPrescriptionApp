@@ -213,27 +213,26 @@
         }
 
     function searchPrescription() {
+    const name = document.getElementById("searchName").value.trim();
     const mobile = document.getElementById("searchMobile").value.trim();
-    if (!mobile) {
-        alert("Please enter a mobile number.");
-        return;
-    }
-    
+    const date = document.getElementById("searchDate").value;
+
     fetch(scriptURL, {
         method: "POST",
-        body: JSON.stringify({ action: "searchPrescription", mobile: mobile })
+        body: JSON.stringify({ action: "searchPrescription", name: name, mobile: mobile, date: date })
     })
     .then(response => response.json())
     .then(result => {
         if (result.status === "success" && result.data.length > 0) {
             displayPrescriptions(result.data);
         } else {
-            alert("No records found for this mobile number.");
+            alert("No records found for the given criteria.");
         }
     })
     .catch(error => console.error("Error:", error));
 }
 
+        
 function displayPrescriptions(data) {
     const tbody = document.getElementById("prescriptionTable").getElementsByTagName("tbody")[0];
     tbody.innerHTML = ""; // Clear existing rows
