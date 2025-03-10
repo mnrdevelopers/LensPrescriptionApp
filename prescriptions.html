@@ -243,19 +243,94 @@
         return;
     }
 
-    data.forEach(row => {
-        if (!Array.isArray(row)) {
-            console.error("Invalid row format:", row); // Debugging: Log invalid row format
-            return;
-        }
+    // Get today's and yesterday's dates
+    const today = new Date().toLocaleDateString();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayFormatted = yesterday.toLocaleDateString();
 
-        let tr = document.createElement("tr");
-        row.forEach((cell, index) => {
-            let td = document.createElement("td");
-            td.textContent = cell;
-            td.setAttribute("data-label", document.querySelectorAll("th")[index].textContent);
-            tr.appendChild(td);
+    // Group prescriptions by date
+    const groupedPrescriptions = {
+        today: [],
+        yesterday: [],
+        older: []
+    };
+
+    data.forEach(prescription => {
+        const prescriptionDate = new Date(prescription.date).toLocaleDateString();
+        if (prescriptionDate === today) {
+            groupedPrescriptions.today.push(prescription);
+        } else if (prescriptionDate === yesterdayFormatted) {
+            groupedPrescriptions.yesterday.push(prescription);
+        } else {
+            groupedPrescriptions.older.push(prescription);
+        }
+    });
+
+    // Display today's prescriptions
+    if (groupedPrescriptions.today.length > 0) {
+        addHeadingRow(tbody, "Today");
+        groupedPrescriptions.today.forEach(prescription => {
+            addPrescriptionRow(tbody, prescription);
         });
+    }
+
+    // Display yesterday's prescriptions
+    if (groupedPrescriptions.yesterday.length > 0) {
+        addHeadingRow(tbody, "Yesterday");
+        groupedPrescriptions.yesterday.forEach(prescription => {
+            addPrescriptionRow(tbody, prescription);
+        });
+    }
+
+    // Display older prescriptions
+    if (groupedPrescriptions.older.length > 0) {
+        addHeadingRow(tbody, "Older");
+        groupedPrescriptions.older.forEach(prescription => {
+            addPrescriptionRow(tbody, prescription);
+        });
+    }
+}
+
+// Function to add a heading row
+function addHeadingRow(tbody, heading) {
+    let tr = document.createElement("tr");
+    let td = document.createElement("td");
+    td.colSpan = 11; // Span across all columns
+    td.textContent = heading;
+    td.style.fontWeight = "bold";
+    td.style.backgroundColor = "#f0f0f0";
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+}
+
+// Function to add a prescription row
+function addPrescriptionRow(tbody, prescription) {
+    let tr = document.createElement("tr");
+    Object.values(prescription).forEach((value, index) => {
+        let td = document.createElement("td");
+        td.textContent = value;
+        td.setAttribute("data-label", document.querySelectorAll("th")[index].textContent);
+        tr.appendChild(td);
+    });
+
+    // Add Preview and Delete buttons
+    let actionsTd = document.createElement("td");
+    let previewButton = document.createElement("button");
+    previewButton.textContent = "Preview";
+    previewButton.className = "btn btn-preview";
+    previewButton.onclick = () => previewPrescription(prescription);
+    actionsTd.appendChild(previewButton);
+
+    let deleteButton = document.createElement("button");
+    deleteButton.textContent = "Delete";
+    deleteButton.className = "btn btn-delete";
+    deleteButton.onclick = () => deletePrescription(prescription);
+    actionsTd.appendChild(deleteButton);
+
+    tr.appendChild(actionsTd);
+    tbody.appendChild(tr);
+}
 
         // Add Preview and Delete buttons
         let actionsTd = document.createElement("td");
