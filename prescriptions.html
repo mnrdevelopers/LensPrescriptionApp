@@ -307,10 +307,22 @@ function addHeadingRow(tbody, heading) {
 // Function to add a prescription row
 function addPrescriptionRow(tbody, prescription) {
     let tr = document.createElement("tr");
-    Object.values(prescription).forEach((value, index) => {
+
+    // Format the date for display
+    const formattedDate = new Date(prescription.date).toLocaleString(); // Adjust the format as needed
+
+    // Add the formatted date to the row
+    let dateTd = document.createElement("td");
+    dateTd.textContent = formattedDate;
+    dateTd.setAttribute("data-label", "Date");
+    tr.appendChild(dateTd);
+
+    // Add other prescription details
+    const fields = ["patientName", "age", "gender", "mobile", "amount", "visionType", "lensType", "frameType", "paymentMode"];
+    fields.forEach(field => {
         let td = document.createElement("td");
-        td.textContent = value;
-        td.setAttribute("data-label", document.querySelectorAll("th")[index].textContent);
+        td.textContent = prescription[field];
+        td.setAttribute("data-label", field);
         tr.appendChild(td);
     });
 
@@ -319,13 +331,13 @@ function addPrescriptionRow(tbody, prescription) {
     let previewButton = document.createElement("button");
     previewButton.textContent = "Preview";
     previewButton.className = "btn btn-preview";
-    previewButton.onclick = () => previewPrescription(prescription); // Pass the prescription object
+    previewButton.onclick = () => previewPrescription(prescription);
     actionsTd.appendChild(previewButton);
 
     let deleteButton = document.createElement("button");
     deleteButton.textContent = "Delete";
     deleteButton.className = "btn btn-delete";
-    deleteButton.onclick = () => deletePrescription(prescription); // Pass the prescription object
+    deleteButton.onclick = () => deletePrescription(prescription);
     actionsTd.appendChild(deleteButton);
 
     tr.appendChild(actionsTd);
