@@ -209,31 +209,30 @@
         }
 
         function searchPrescription() {
-            const mobile = document.getElementById("searchMobile").value.trim();
-            if (!mobile) {
-                alert("Please enter a mobile number.");
-                return;
-            }
-            
-            fetch(scriptURL, {
-                method: "POST",
-                body: JSON.stringify({ action: "searchPrescription", mobile: mobile })
-            })
-            .then(response => response.json())
-            .then(result => {
-                console.log("Search result:", result); // Debugging: Log the search result
-                if (result.status === "success" && result.data.length > 0) {
-                    displayPrescriptions(result.data);
-                } else {
-                    alert("No records found for this mobile number.");
-                }
-            })
-            .catch(error => {
-                console.error("Error:", error);
-                alert("Failed to search prescriptions. Please check your internet connection.");
-            });
-        }
+    const mobile = document.getElementById("searchMobile").value.trim().replace(/\D/g, ''); // Normalize the mobile number
+    if (!mobile) {
+        alert("Please enter a mobile number.");
+        return;
+    }
 
+    fetch(scriptURL, {
+        method: "POST",
+        body: JSON.stringify({ action: "searchPrescription", mobile: mobile })
+    })
+    .then(response => response.json())
+    .then(result => {
+        console.log("Search result:", result); // Debugging: Log the search result
+        if (result.status === "success" && result.data.length > 0) {
+            displayPrescriptions(result.data); // Display the search results
+        } else {
+            alert("No records found for this mobile number.");
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        alert("Failed to search prescriptions. Please check your internet connection.");
+    });
+}
      function displayPrescriptions(data) {
     const tbody = document.getElementById("prescriptionTable").getElementsByTagName("tbody")[0];
     tbody.innerHTML = ""; // Clear existing rows
