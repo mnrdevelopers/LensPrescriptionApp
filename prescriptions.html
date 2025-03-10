@@ -319,34 +319,34 @@ function addPrescriptionRow(tbody, prescription) {
     let previewButton = document.createElement("button");
     previewButton.textContent = "Preview";
     previewButton.className = "btn btn-preview";
-    previewButton.onclick = () => previewPrescription(prescription);
+    previewButton.onclick = () => previewPrescription(prescription); // Pass the prescription object
     actionsTd.appendChild(previewButton);
 
     let deleteButton = document.createElement("button");
     deleteButton.textContent = "Delete";
     deleteButton.className = "btn btn-delete";
-    deleteButton.onclick = () => deletePrescription(prescription);
+    deleteButton.onclick = () => deletePrescription(prescription); // Pass the prescription object
     actionsTd.appendChild(deleteButton);
 
     tr.appendChild(actionsTd);
     tbody.appendChild(tr);
 }
 
-        function previewPrescription(row) {
-            // Redirect to preview page with the selected prescription data
-            localStorage.setItem("patientName", row[1]);
-            localStorage.setItem("age", row[2]);
-            localStorage.setItem("gender", row[3]);
-            localStorage.setItem("patientMobile", row[4]);
-            localStorage.setItem("amount", row[5]);
-            localStorage.setItem("visionType", row[6]);
-            localStorage.setItem("lensType", row[7]);
-            localStorage.setItem("frameType", row[8]);
-            localStorage.setItem("paymentMode", row[9]);
-            window.location.href = "preview.html";
-        }
+function previewPrescription(row) {
+    // Redirect to preview page with the selected prescription data
+    localStorage.setItem("patientName", row.patientName);
+    localStorage.setItem("age", row.age);
+    localStorage.setItem("gender", row.gender);
+    localStorage.setItem("patientMobile", row.mobile);
+    localStorage.setItem("amount", row.amount);
+    localStorage.setItem("visionType", row.visionType);
+    localStorage.setItem("lensType", row.lensType);
+    localStorage.setItem("frameType", row.frameType);
+    localStorage.setItem("paymentMode", row.paymentMode);
+    window.location.href = "preview.html";
+}
 
-      function deletePrescription(row) {
+function deletePrescription(row) {
     const scriptURL = "https://script.google.com/macros/s/AKfycbxXx0Jy7AmSljFYOuXs00Mxj4aiGpSHz92L5sa903Hp09lEQXrVbfNXByZoAOSogwUm/exec";
     const username = localStorage.getItem("username");
 
@@ -355,7 +355,7 @@ function addPrescriptionRow(tbody, prescription) {
         body: JSON.stringify({ 
             action: "deletePrescription", 
             username: username, 
-            mobile: row[4] // Mobile number is in the 5th column (index 4)
+            mobile: row.mobile // Access the mobile property from the row object
         })
     })
     .then(response => response.json())
