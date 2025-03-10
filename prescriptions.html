@@ -208,8 +208,8 @@
             });
         }
 
-        function searchPrescription() {
-    const mobile = document.getElementById("searchMobile").value.trim().replace(/\D/g, ''); // Normalize the mobile number
+       function searchPrescription() {
+    const mobile = document.getElementById("searchMobile").value.trim();
     if (!mobile) {
         alert("Please enter a mobile number.");
         return;
@@ -217,6 +217,9 @@
 
     fetch(scriptURL, {
         method: "POST",
+        headers: {
+            "Content-Type": "application/json" // Add this header
+        },
         body: JSON.stringify({ action: "searchPrescription", mobile: mobile })
     })
     .then(response => response.json())
@@ -233,6 +236,7 @@
         alert("Failed to search prescriptions. Please check your internet connection.");
     });
 }
+
      function displayPrescriptions(data) {
     const tbody = document.getElementById("prescriptionTable").getElementsByTagName("tbody")[0];
     tbody.innerHTML = ""; // Clear existing rows
