@@ -146,14 +146,8 @@
     <main class="container">
         <h2>Prescription History</h2>
         
-   <div class="search-bar">
-    <input type="date" id="startDate" placeholder="Start Date">
-    <input type="date" id="endDate" placeholder="End Date">
-    <button onclick="searchPrescription()" class="btn btn-search">Search</button>
-</div>
-        
-        <p id="searchError" style="color: red;"></p>
-<div id="prescriptionResults"></div>
+   <input type="text" id="searchInput" placeholder="Search by Name or Mobile" onkeyup="filterTable()">
+
         <table id="prescriptionTable">
             <thead>
                 <tr>
