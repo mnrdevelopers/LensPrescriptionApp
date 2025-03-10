@@ -208,7 +208,7 @@
             });
         }
 
-       function searchPrescription() {
+    function searchPrescription() {
     const mobile = document.getElementById("searchMobile").value.trim();
     if (!mobile) {
         alert("Please enter a mobile number.");
@@ -218,7 +218,7 @@
     fetch(scriptURL, {
         method: "POST",
         headers: {
-            "Content-Type": "application/json" // Add this header
+            "Content-Type": "application/json" // Ensure the content type is set
         },
         body: JSON.stringify({ action: "searchPrescription", mobile: mobile })
     })
