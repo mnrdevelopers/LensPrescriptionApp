@@ -213,29 +213,23 @@
     function searchPrescription() {
     const mobile = document.getElementById("searchMobile").value.trim();
     if (!mobile) {
-        document.getElementById("searchError").innerText = "Please enter a mobile number.";
+        alert("Please enter a mobile number.");
         return;
     }
-
+    
     fetch(scriptURL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "searchPrescription", mobile: mobile })
     })
     .then(response => response.json())
     .then(result => {
-        console.log("Search result:", result);
         if (result.status === "success" && result.data.length > 0) {
-            document.getElementById("searchError").innerText = "";
             displayPrescriptions(result.data);
         } else {
-            document.getElementById("searchError").innerText = "No records found for this mobile number.";
+            alert("No records found for this mobile number.");
         }
     })
-    .catch(error => {
-        console.error("Error:", error);
-        document.getElementById("searchError").innerText = "Failed to search prescriptions. Please check your internet connection.";
-    });
+    .catch(error => console.error("Error:", error));
 }
 
 function displayPrescriptions(data) {
