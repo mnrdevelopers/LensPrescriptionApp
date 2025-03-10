@@ -211,64 +211,51 @@
         }
 
     function searchPrescription() {
-  const mobile = document.getElementById("searchMobile").value.trim();
-  if (!mobile) {
-    alert("Please enter a mobile number.");
-    return;
-  }
+    const mobile = document.getElementById("searchMobile").value.trim();
+    if (!mobile) {
+        document.getElementById("searchError").innerText = "Please enter a mobile number.";
+        return;
+    }
 
-  fetch(scriptURL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ action: "searchPrescription", mobile: mobile })
-  })
-  .then(response => {
-    if (!response.ok) {
-      throw new Error("Network response was not ok.");
-    }
-    return response.json();
-  })
-  .then(result => {
-    console.log("Search result:", result);
-    if (result.status === "success" && result.data.length > 0) {
-      displayPrescriptions(result.data);
-    } else {
-      alert("No records found for this mobile number.");
-    }
-  })
-  .catch(error => {
-    console.error("Error:", error);
-    alert("Failed to search prescriptions. Please check your internet connection.");
-  });
+    fetch(scriptURL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "searchPrescription", mobile: mobile })
+    })
+    .then(response => response.json())
+    .then(result => {
+        console.log("Search result:", result);
+        if (result.status === "success" && result.data.length > 0) {
+            document.getElementById("searchError").innerText = "";
+            displayPrescriptions(result.data);
+        } else {
+            document.getElementById("searchError").innerText = "No records found for this mobile number.";
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        document.getElementById("searchError").innerText = "Failed to search prescriptions. Please check your internet connection.";
+    });
 }
-        
 
-     function displayPrescriptions(data) {
+function displayPrescriptions(data) {
     const tbody = document.getElementById("prescriptionTable").getElementsByTagName("tbody")[0];
     tbody.innerHTML = ""; // Clear existing rows
 
     if (!data || data.length === 0) {
-        console.log("No data to display."); // Debugging: Log if no data is available
+        console.log("No data to display.");
         return;
     }
 
-    // Get today's and yesterday's dates
     const today = new Date().toLocaleDateString();
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayFormatted = yesterday.toLocaleDateString();
 
-    // Group prescriptions by date
-    const groupedPrescriptions = {
-        today: [],
-        yesterday: [],
-        older: []
-    };
+    const groupedPrescriptions = { today: [], yesterday: [], older: [] };
 
     data.forEach(prescription => {
-        const prescriptionDate = new Date(prescription.date).toLocaleDateString();
+        const prescriptionDate = new Date(Date.parse(prescription.date)).toLocaleDateString();
         if (prescriptionDate === today) {
             groupedPrescriptions.today.push(prescription);
         } else if (prescriptionDate === yesterdayFormatted) {
@@ -278,36 +265,26 @@
         }
     });
 
-    // Display today's prescriptions
     if (groupedPrescriptions.today.length > 0) {
         addHeadingRow(tbody, "Today");
-        groupedPrescriptions.today.forEach(prescription => {
-            addPrescriptionRow(tbody, prescription);
-        });
+        groupedPrescriptions.today.forEach(prescription => addPrescriptionRow(tbody, prescription));
     }
 
-    // Display yesterday's prescriptions
     if (groupedPrescriptions.yesterday.length > 0) {
         addHeadingRow(tbody, "Yesterday");
-        groupedPrescriptions.yesterday.forEach(prescription => {
-            addPrescriptionRow(tbody, prescription);
-        });
+        groupedPrescriptions.yesterday.forEach(prescription => addPrescriptionRow(tbody, prescription));
     }
 
-    // Display older prescriptions
     if (groupedPrescriptions.older.length > 0) {
         addHeadingRow(tbody, "Older");
-        groupedPrescriptions.older.forEach(prescription => {
-            addPrescriptionRow(tbody, prescription);
-        });
+        groupedPrescriptions.older.forEach(prescription => addPrescriptionRow(tbody, prescription));
     }
 }
 
-// Function to add a heading row
 function addHeadingRow(tbody, heading) {
     let tr = document.createElement("tr");
     let td = document.createElement("td");
-    td.colSpan = 11; // Span across all columns
+    td.colSpan = 11;
     td.textContent = heading;
     td.style.fontWeight = "bold";
     td.style.backgroundColor = "#f0f0f0";
@@ -315,20 +292,15 @@ function addHeadingRow(tbody, heading) {
     tbody.appendChild(tr);
 }
 
-// Function to add a prescription row
 function addPrescriptionRow(tbody, prescription) {
     let tr = document.createElement("tr");
+    const formattedDate = new Date(Date.parse(prescription.date)).toLocaleString();
 
-    // Format the date for display
-    const formattedDate = new Date(prescription.date).toLocaleString(); // Adjust the format as needed
-
-    // Add the formatted date to the row
     let dateTd = document.createElement("td");
     dateTd.textContent = formattedDate;
     dateTd.setAttribute("data-label", "Date");
     tr.appendChild(dateTd);
 
-    // Add other prescription details
     const fields = ["patientName", "age", "gender", "mobile", "amount", "visionType", "lensType", "frameType", "paymentMode"];
     fields.forEach(field => {
         let td = document.createElement("td");
@@ -337,8 +309,8 @@ function addPrescriptionRow(tbody, prescription) {
         tr.appendChild(td);
     });
 
-    // Add Preview and Delete buttons
     let actionsTd = document.createElement("td");
+
     let previewButton = document.createElement("button");
     previewButton.textContent = "Preview";
     previewButton.className = "btn btn-preview";
@@ -354,7 +326,7 @@ function addPrescriptionRow(tbody, prescription) {
     tr.appendChild(actionsTd);
     tbody.appendChild(tr);
 }
-
+        
 function previewPrescription(row) {
     // Redirect to preview page with the selected prescription data
     localStorage.setItem("patientName", row.patientName);
