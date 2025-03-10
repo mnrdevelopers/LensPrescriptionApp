@@ -234,7 +234,7 @@
             });
         }
 
-        function displayPrescriptions(data) {
+     function displayPrescriptions(data) {
     const tbody = document.getElementById("prescriptionTable").getElementsByTagName("tbody")[0];
     tbody.innerHTML = ""; // Clear existing rows
 
@@ -331,25 +331,6 @@ function addPrescriptionRow(tbody, prescription) {
     tr.appendChild(actionsTd);
     tbody.appendChild(tr);
 }
-
-        // Add Preview and Delete buttons
-        let actionsTd = document.createElement("td");
-        let previewButton = document.createElement("button");
-        previewButton.textContent = "Preview";
-        previewButton.className = "btn btn-preview";
-        previewButton.onclick = () => previewPrescription(row);
-        actionsTd.appendChild(previewButton);
-
-        let deleteButton = document.createElement("button");
-        deleteButton.textContent = "Delete";
-        deleteButton.className = "btn btn-delete";
-        deleteButton.onclick = () => deletePrescription(row);
-        actionsTd.appendChild(deleteButton);
-
-        tr.appendChild(actionsTd);
-        tbody.appendChild(tr);
-    });
-        }
 
         function previewPrescription(row) {
             // Redirect to preview page with the selected prescription data
