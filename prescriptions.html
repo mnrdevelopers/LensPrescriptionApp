@@ -205,9 +205,26 @@
             });
         }
 
-    function searchPrescription() {
+    function filterTable() {
+    let input = document.getElementById("searchInput").value.toLowerCase();
+    let table = document.getElementById("prescriptionTable");
+    let rows = table.getElementsByTagName("tr");
+
+    for (let i = 1; i < rows.length; i++) {
+        let name = rows[i].getElementsByTagName("td")[1]?.textContent.toLowerCase() || "";
+        let mobile = rows[i].getElementsByTagName("td")[4]?.textContent.toLowerCase() || "";
+        rows[i].style.display = name.includes(input) || mobile.includes(input) ? "" : "none";
+    }
+}
+
+function searchPrescription() {
     const startDate = document.getElementById("startDate").value;
     const endDate = document.getElementById("endDate").value;
+
+    if (!startDate || !endDate) {
+        alert("Please select both start and end dates.");
+        return;
+    }
 
     fetch(scriptURL, {
         method: "POST",
@@ -224,7 +241,6 @@
     .catch(error => console.error("Error:", error));
 }
 
-        
 function displayPrescriptions(data) {
     const tbody = document.getElementById("prescriptionTable").getElementsByTagName("tbody")[0];
     tbody.innerHTML = ""; // Clear existing rows
