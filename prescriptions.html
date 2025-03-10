@@ -146,10 +146,9 @@
     <main class="container">
         <h2>Prescription History</h2>
         
-     <div class="search-bar">
-    <input type="text" id="searchName" placeholder="Enter Patient Name">
-    <input type="text" id="searchMobile" placeholder="Enter Mobile Number">
-    <input type="date" id="searchDate" placeholder="Enter Date">
+   <div class="search-bar">
+    <input type="date" id="startDate" placeholder="Start Date">
+    <input type="date" id="endDate" placeholder="End Date">
     <button onclick="searchPrescription()" class="btn btn-search">Search</button>
 </div>
         
@@ -213,20 +212,19 @@
         }
 
     function searchPrescription() {
-    const name = document.getElementById("searchName").value.trim();
-    const mobile = document.getElementById("searchMobile").value.trim();
-    const date = document.getElementById("searchDate").value;
+    const startDate = document.getElementById("startDate").value;
+    const endDate = document.getElementById("endDate").value;
 
     fetch(scriptURL, {
         method: "POST",
-        body: JSON.stringify({ action: "searchPrescription", name: name, mobile: mobile, date: date })
+        body: JSON.stringify({ action: "searchPrescription", startDate: startDate, endDate: endDate })
     })
     .then(response => response.json())
     .then(result => {
         if (result.status === "success" && result.data.length > 0) {
             displayPrescriptions(result.data);
         } else {
-            alert("No records found for the given criteria.");
+            alert("No records found for the given date range.");
         }
     })
     .catch(error => console.error("Error:", error));
