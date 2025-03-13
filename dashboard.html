@@ -5,47 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Lens Prescription</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-    <!-- Offcanvas Navbar -->
-    <nav class="navbar navbar-light bg-light fixed-top">
-        <div class="container-fluid">
-            <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="navbar-brand">Lens Web App</div>
-            <div class="navbar-right">
-                <button onclick="logoutUser()" class="btn btn-logout">Logout</button>
-            </div>
-            <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
-                <div class="offcanvas-header">
-                    <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
-                    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-                </div>
-                <div class="offcanvas-body">
-                    <ul class="navbar-nav">
-                        <li class="nav-item">
-                            <a class="nav-link" href="dashboard.html">Dashboard</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="app.html">Add New Prescription</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="prescriptions.html">View Prescriptions</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="reports.html">View Reports</a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="navbar-brand">Lens Web App</div>
+        <div class="navbar-right">
+            <button onclick="logoutUser()" class="btn btn-logout">Logout</button>
         </div>
     </nav>
 
     <!-- Dashboard Content -->
-    <main class="dashboard-container" style="padding-top: 60px;"> <!-- Add padding to avoid overlap with navbar -->
+    <main class="dashboard-container">
         <h2>Welcome to Lens Prescription Dashboard</h2>
         <div class="button-group">
             <button onclick="location.href='app.html'" class="btn btn-primary">➕ Add New Prescription</button>
@@ -54,8 +25,7 @@
         </div>
     </main>
 
-   
-     <script>
+    <script>
         // Ensure user is logged in before accessing dashboard
         document.addEventListener("DOMContentLoaded", function () {
             const username = localStorage.getItem("username");
@@ -70,10 +40,8 @@
             window.location.href = "login.html";
         }
     </script>
- <!-- Bootstrap JS (with Popper.js) -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
- <style>
+    <style>
         /* Dashboard Styling */
         body {
             font-family: 'Poppins', sans-serif;
@@ -179,6 +147,5 @@
             }
         }
     </style>
-
 </body>
 </html>
