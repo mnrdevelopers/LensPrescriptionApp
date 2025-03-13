@@ -31,7 +31,24 @@
          <button onclick="window.location.href = 'dashboard.html';" class="btn btn-back">
     <i class="fas fa-arrow-left"></i> Back
 </button>
-        <!-- Optical Shop Details -->
+        <!-- Prescription Stats -->
+        <div class="prescription-stats">
+            <div class="left">
+                <p><strong>Prescription Count:</strong> <span id="prescriptionCount">0</span></p>
+            </div>
+            <div class="right">
+                <p><strong>Amount Earned:</strong> ₹<span id="amountEarned">0</span></p>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="button-group">
+            <button id="resetButton" class="btn btn-reset">🔄 Reset</button>
+            <button id="install-btn" class="btn btn-install" style="display: none;">Install App</button>
+        </div>
+        <hr>
+        
+       <!-- Optical Shop Details -->
 <div class="header">
     <h2 id="clinicName">Loading...</h2>
     <p id="clinicAddress">Please wait...</p>
@@ -396,4 +413,4 @@
     }
 </script>
 </body
-    </html>
+</html>
