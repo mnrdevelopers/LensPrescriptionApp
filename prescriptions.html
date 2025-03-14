@@ -256,9 +256,9 @@
             }
 
             fetch(scriptURL, {
-                method: "POST",
-                body: JSON.stringify({ action: "fetchPrescriptions", username: username })
-            })
+    method: "POST",
+    body: JSON.stringify({ action: "fetchPrescriptions", username: username })
+})
             .then(response => response.json())
             .then(result => {
                 console.log("Fetched data:", result); // Debugging: Log the fetched data
