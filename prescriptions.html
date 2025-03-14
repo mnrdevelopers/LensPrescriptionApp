@@ -245,34 +245,36 @@
             fetchPrescriptions();
         });
 
-        function fetchPrescriptions() {
-            const username = localStorage.getItem("username");
-            console.log("Username:", username); // Debugging: Log the username
-            
-            if (!username) {
-                alert("You are not logged in!");
-                window.location.href = "login.html";
-                return;
-            }
+       function fetchPrescriptions() {
+    const username = localStorage.getItem("username");
+    
+    if (!username) {
+        alert("You are not logged in!");
+        window.location.href = "login.html"; // Redirect to login page
+        return;
+    }
 
-            fetch(scriptURL, {
-                method: "POST",
-                body: JSON.stringify({ action: "fetchPrescriptions", username: username })
-            })
-            .then(response => response.json())
-            .then(result => {
-                console.log("Fetched data:", result); // Debugging: Log the fetched data
-                if (result.status === "success") {
-                    displayPrescriptions(result.data);
-                } else {
-                    alert("No prescriptions found!");
-                }
-            })
-            .catch(error => {
-                console.error("Error:", error);
-                alert("Failed to fetch prescriptions. Please check your internet connection.");
-            });
+    console.log("Username:", username); // Debugging
+
+    fetch(scriptURL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }, // Ensure correct headers
+        body: JSON.stringify({ action: "fetchPrescriptions", username: username })
+    })
+    .then(response => response.json())
+    .then(result => {
+        console.log("Fetched data:", result); // Debugging
+        if (result.status === "success") {
+            displayPrescriptions(result.data);
+        } else {
+            alert("No prescriptions found!");
         }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        alert("Failed to fetch prescriptions. Please check your internet connection.");
+    });
+}
 
         function filterTable() {
             let input = document.getElementById("searchInput").value.toLowerCase();
