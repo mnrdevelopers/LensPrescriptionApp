@@ -245,7 +245,7 @@
             fetchPrescriptions();
         });
 
-        function fetchPrescriptions() {
+       function fetchPrescriptions() {
   const username = localStorage.getItem("username");
   console.log("Username:", username); // Debugging: Log the username
 
@@ -255,11 +255,11 @@
     return;
   }
 
-  fetch(scriptURL, {
-    method: "POST",
-    body: JSON.stringify({ action: "fetchPrescriptions", username: username }),
+  const url = `${scriptURL}?action=fetchPrescriptions&username=${encodeURIComponent(username)}`;
+  fetch(url, {
+    method: "GET",
     headers: {
-      "Content-Type": "application/json" // Ensure the content type is set
+      "Content-Type": "application/json"
     }
   })
   .then(response => {
