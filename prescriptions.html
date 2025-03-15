@@ -234,35 +234,49 @@
             fetchPrescriptions();
         });
 
-        function fetchPrescriptions() {
-            const username = localStorage.getItem("username");
-            console.log("Username:", username); // Debugging: Log the username
-            
-            if (!username) {
-                alert("You are not logged in!");
-                window.location.href = "login.html";
-                return;
-            }
+       function fetchPrescriptions() {
+    const username = localStorage.getItem("username");
+    console.log("Username:", username); // Debugging: Log the username
 
-            fetch(scriptURL, {
-                method: "POST",
-                body: JSON.stringify({ action: "fetchPrescriptions", username: username })
-            })
-            .then(response => response.json())
-            .then(result => {
-                console.log("Fetched data:", result); // Debugging: Log the fetched data
-                if (result.status === "success") {
-                    displayPrescriptions(result.data);
+    if (!username) {
+        alert("You are not logged in!");
+        window.location.href = "login.html";
+        return;
+    }
+
+    fetch(scriptURL, {
+        method: "POST",
+        body: JSON.stringify({ action: "fetchPrescriptions", username: username })
+    })
+    .then(response => response.json())
+    .then(result => {
+        console.log("Fetched data:", result); // Debugging: Log the fetched data
+        if (result.status === "success") {
+            // Parse the JSON string in the Prescription Data (JSON) column
+            const parsedData = result.data.map(row => {
+                if (row.prescriptionData) {
+                    try {
+                        row.prescriptionData = JSON.parse(row.prescriptionData);
+                    } catch (error) {
+                        console.error("Error parsing prescription data:", error);
+                        row.prescriptionData = {};
+                    }
                 } else {
-                    alert("No prescriptions found!");
+                    row.prescriptionData = {};
                 }
-            })
-            .catch(error => {
-                console.error("Error:", error);
-                alert("Failed to fetch prescriptions. Please check your internet connection.");
+                return row;
             });
-        }
 
+            displayPrescriptions(parsedData);
+        } else {
+            alert("No prescriptions found!");
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        alert("Failed to fetch prescriptions. Please check your internet connection.");
+    });
+}
         function filterTable() {
             let input = document.getElementById("searchInput").value.toLowerCase();
             let table = document.getElementById("prescriptionTable");
