@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - Lens Prescription</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        /* Responsive Table */
+        @media (max-width: 600px) {
+            table, thead, tbody, th, td, tr {
+                display: block;
+            }
+
+            th {
+                position: absolute;
+                top: -9999px;
+                left: -9999px;
+            }
+
+            tr {
+                border: 1px solid #ddd;
+                margin-bottom: 10px;
+            }
+
+            td {
+                border: none;
+                position: relative;
+                padding-left: 50%;
+            }
+
+            td:before {
+                position: absolute;
+                left: 10px;
+                width: 45%;
+                padding-right: 10px;
+                white-space: nowrap;
+                content: attr(data-label);
+                font-weight: bold;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="navbar-brand">Lens Prescription</div>
+        <div class="navbar-right">
+            <button onclick="window.location.href='dashboard.html'" class="btn btn-back">Back</button>
+            <button onclick="logoutUser()" class="btn btn-logout">Logout</button>
+        </div>
+    </nav>
+
+    <!-- Reports Content -->
+    <main class="container">
+        <h2>Reports</h2>
+        <div class="button-group">
+            <button onclick="fetchDailyReport()" class="btn btn-primary">Daily Report</button>
+            <button onclick="fetchWeeklyReport()" class="btn btn-secondary">Weekly Report</button>
+            <button onclick="fetchMonthlyReport()" class="btn btn-tertiary">Monthly Report</button>
+        </div>
+
+        <!-- Report Table -->
+        <table id="reportTable">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Prescriptions</th>
+                    <th>Amount Earned</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </main>
+
+    <script>
+        const scriptURL = "https://script.google.com/macros/s/AKfycbxXx0Jy7AmSljFYOuXs00Mxj4aiGpSHz92L5sa903Hp09lEQXrVbfNXByZoAOSogwUm/exec";
+
+        // Fetch Daily Report
+        function fetchDailyReport() {
+            fetch(scriptURL, {
+                method: "POST",
+                body: JSON.stringify({ action: "getDailyReport", username: localStorage.getItem("username") })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.status === "success") {
+                    displayReport(result.data);
+                } else {
+                    alert("No data found for the daily report.");
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+        // Fetch Weekly Report
+        function fetchWeeklyReport() {
+            fetch(scriptURL, {
+                method: "POST",
+                body: JSON.stringify({ action: "getWeeklyReport", username: localStorage.getItem("username") })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.status === "success") {
+                    displayReport(result.data);
+                } else {
+                    alert("No data found for the weekly report.");
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+        // Fetch Monthly Report
+        function fetchMonthlyReport() {
+            fetch(scriptURL, {
+                method: "POST",
+                body: JSON.stringify({ action: "getMonthlyReport", username: localStorage.getItem("username") })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.status === "success") {
+                    displayReport(result.data);
+                } else {
+                    alert("No data found for the monthly report.");
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+        // Display Report Data in Table
+        function displayReport(data) {
+            const tbody = document.getElementById("reportTable").getElementsByTagName("tbody")[0];
+            tbody.innerHTML = ""; // Clear existing rows
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = "<tr><td colspan='3'>No data available.</td></tr>";
+                return;
+            }
+
+            Object.entries(data).forEach(([date, report]) => {
+                const row = tbody.insertRow();
+                row.insertCell().textContent = date;
+                row.insertCell().textContent = report.prescriptions;
+                row.insertCell().textContent = report.totalAmount.toFixed(2);
+            });
+        }
+
+        // Logout Function
+        function logoutUser() {
+            localStorage.removeItem("username");
+            window.location.href = "login.html";
+        }
+    </script>
+</body>
+</html>
