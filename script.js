@@ -219,12 +219,6 @@ function submitForm() {
                 prescriptionData
             });
 
-            // Increment prescription count and earnings
-            prescriptionCount++;
-            amountEarned += parseFloat(amount);
-            updateStats();
-            saveCounters();
-
             // Reset the form for the next prescription
             resetForm();
 
