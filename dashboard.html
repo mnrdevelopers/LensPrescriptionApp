@@ -9,7 +9,6 @@
 <body>
     <!-- Navigation Bar -->
     <nav class="navbar">
-        <div class="navbar-brand">Lens Web App</div>
         <div class="navbar-right">
             <button onclick="logoutUser()" class="btn btn-logout">Logout</button>
         </div>
@@ -17,7 +16,7 @@
 
     <!-- Dashboard Content -->
     <main class="dashboard-container">
-        <h2>Welcome to Lens Prescription Dashboard</h2>
+        <h2>Welcome to Lens Prescription</h2>
         <div class="button-group">
             <button onclick="location.href='app.html'" class="btn btn-primary">➕ Add New Prescription</button>
             <button onclick="location.href='prescriptions.html'" class="btn btn-secondary">📋 View Prescriptions</button>
@@ -136,7 +135,7 @@
         }
 
         /* Mobile Responsive */
-        @media (max-width: 500px) {
+        @media (max-width: 768px) {
             .dashboard-container {
                 width: 90%;
             }
