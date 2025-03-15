@@ -111,44 +111,6 @@ document.getElementById("install-btn").addEventListener("click", () => {
     }
 });
 
-// Initialize counters
-let prescriptionCount = 0;
-let amountEarned = 0;
-
-// Function to update prescription count and amount earned
-function updateStats() {
-    document.getElementById("prescriptionCount").textContent = prescriptionCount;
-    document.getElementById("amountEarned").textContent = amountEarned.toFixed(2); // Format to 2 decimal places
-}
-
-// Function to check if the day has changed
-function checkDayChange() {
-    const today = new Date().toLocaleDateString(); // Get current date in "MM/DD/YYYY" format
-    const lastUpdatedDate = localStorage.getItem("lastUpdatedDate");
-
-    if (lastUpdatedDate !== today) {
-        // Day has changed, reset counters
-        prescriptionCount = 0;
-        amountEarned = 0;
-        localStorage.setItem("lastUpdatedDate", today); // Update the last updated date
-    } else {
-        // Day has not changed, load existing counters from localStorage
-        prescriptionCount = parseInt(localStorage.getItem("prescriptionCount")) || 0;
-        amountEarned = parseFloat(localStorage.getItem("amountEarned")) || 0;
-    }
-
-    updateStats(); // Update the UI with the current counters
-}
-
-// Function to save counters to localStorage
-function saveCounters() {
-    localStorage.setItem("prescriptionCount", prescriptionCount);
-    localStorage.setItem("amountEarned", amountEarned);
-}
-
-// Check for day change when the page loads
-checkDayChange();
-
 function submitForm() {
     const scriptURL = "https://script.google.com/macros/s/AKfycbxXx0Jy7AmSljFYOuXs00Mxj4aiGpSHz92L5sa903Hp09lEQXrVbfNXByZoAOSogwUm/exec";
     const username = localStorage.getItem("username");
