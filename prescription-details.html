@@ -104,13 +104,6 @@
             background-color: #007bff;
             color: white;
         }
-
-        pre {
-            background-color: #f8f9fa;
-            padding: 10px;
-            border-radius: 5px;
-            overflow-x: auto;
-        }
     </style>
 </head>
 <body>
@@ -134,7 +127,22 @@
                 <tr>
                     <th>Patient Name</th>
                     <th>Mobile</th>
-                    <th>Prescription Details</th>
+                    <th>Right Dist SPH</th>
+                    <th>Right Dist CYL</th>
+                    <th>Right Dist AXIS</th>
+                    <th>Right Dist VA</th>
+                    <th>Left Dist SPH</th>
+                    <th>Left Dist CYL</th>
+                    <th>Left Dist AXIS</th>
+                    <th>Left Dist VA</th>
+                    <th>Right Add SPH</th>
+                    <th>Right Add CYL</th>
+                    <th>Right Add AXIS</th>
+                    <th>Right Add VA</th>
+                    <th>Left Add SPH</th>
+                    <th>Left Add CYL</th>
+                    <th>Left Add AXIS</th>
+                    <th>Left Add VA</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -200,12 +208,19 @@
                 mobileTd.textContent = prescription.mobile;
                 tr.appendChild(mobileTd);
 
-                // Prescription Details (JSON)
-                let prescriptionTd = document.createElement("td");
-                let pre = document.createElement("pre");
-                pre.textContent = JSON.stringify(prescription.prescriptionData, null, 2);
-                prescriptionTd.appendChild(pre);
-                tr.appendChild(prescriptionTd);
+                // Prescription Details
+                const prescriptionFields = [
+                    "rightDistSPH", "rightDistCYL", "rightDistAXIS", "rightDistVA",
+                    "leftDistSPH", "leftDistCYL", "leftDistAXIS", "leftDistVA",
+                    "rightAddSPH", "rightAddCYL", "rightAddAXIS", "rightAddVA",
+                    "leftAddSPH", "leftAddCYL", "leftAddAXIS", "leftAddVA"
+                ];
+
+                prescriptionFields.forEach(field => {
+                    let td = document.createElement("td");
+                    td.textContent = prescription.prescriptionData[field] || "-"; // Use "-" for missing values
+                    tr.appendChild(td);
+                });
 
                 tbody.appendChild(tr);
             });
