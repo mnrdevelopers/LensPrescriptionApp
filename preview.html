@@ -198,25 +198,23 @@
 
     // Prescription fields
     const prescriptionFields = [
-        "RightDistSPH", "RightDistCYL", "RightDistAXIS", "RightDistVA",
-        "LeftDistSPH", "LeftDistCYL", "LeftDistAXIS", "LeftDistVA",
-        "RightAddSPH", "RightAddCYL", "RightAddAXIS", "RightAddVA",
-        "LeftAddSPH", "LeftAddCYL", "LeftAddAXIS", "LeftAddVA",
+        "previewRightDistSPH", "previewRightDistCYL", "previewRightDistAXIS", "previewRightDistVA",
+        "previewLeftDistSPH", "previewLeftDistCYL", "previewLeftDistAXIS", "previewLeftDistVA",
+        "previewRightAddSPH", "previewRightAddCYL", "previewRightAddAXIS", "previewRightAddVA",
+        "previewLeftAddSPH", "previewLeftAddCYL", "previewLeftAddAXIS", "previewLeftAddVA",
     ];
 
     prescriptionFields.forEach((field) => {
-        const elementId = `preview${field}`;
-        const element = document.getElementById(elementId);
+        const element = document.getElementById(field);
         const value = localStorage.getItem(field);
 
         if (element && value) {
             element.textContent = value;
         } else {
-            console.error(`Element with ID "${elementId}" not found or value is null.`);
+            console.error(`Element with ID "${field}" not found or value is null.`);
         }
     });
 });
-
         // Function to generate PDF
         function generatePDF() {
             const element = document.getElementById("prescriptionPreview");
