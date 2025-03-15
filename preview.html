@@ -158,6 +158,9 @@
         return;
     }
 
+    // Define the scriptURL (replace with your actual Google Apps Script URL)
+    const scriptURL = "https://script.google.com/macros/s/AKfycbxXx0Jy7AmSljFYOuXs00Mxj4aiGpSHz92L5sa903Hp09lEQXrVbfNXByZoAOSogwUm/exec";
+
     // Fetch user details from Google Sheets
     fetch(scriptURL, {
         method: "POST",
@@ -196,28 +199,15 @@
     document.getElementById("previewFrameType").textContent = localStorage.getItem("frameType");
     document.getElementById("previewPaymentMode").textContent = localStorage.getItem("paymentMode");
 
-    // Prescription fields
-    document.getElementById("previewRightDistSPH").textContent = localStorage.getItem("rightDistSPH");
-    document.getElementById("previewRightDistCYL").textContent = localStorage.getItem("rightDistCYL");
-    document.getElementById("previewRightDistAXIS").textContent = localStorage.getItem("rightDistAXIS");
-    document.getElementById("previewRightDistVA").textContent = localStorage.getItem("rightDistVA");
+    // Define prescription fields
+    const prescriptionFields = [
+        "previewRightDistSPH", "previewRightDistCYL", "previewRightDistAXIS", "previewRightDistVA",
+        "previewLeftDistSPH", "previewLeftDistCYL", "previewLeftDistAXIS", "previewLeftDistVA",
+        "previewRightAddSPH", "previewRightAddCYL", "previewRightAddAXIS", "previewRightAddVA",
+        "previewLeftAddSPH", "previewLeftAddCYL", "previewLeftAddAXIS", "previewLeftAddVA"
+    ];
 
-    document.getElementById("previewLeftDistSPH").textContent = localStorage.getItem("leftDistSPH");
-    document.getElementById("previewLeftDistCYL").textContent = localStorage.getItem("leftDistCYL");
-    document.getElementById("previewLeftDistAXIS").textContent = localStorage.getItem("leftDistAXIS");
-    document.getElementById("previewLeftDistVA").textContent = localStorage.getItem("leftDistVA");
-
-    document.getElementById("previewRightAddSPH").textContent = localStorage.getItem("rightAddSPH");
-    document.getElementById("previewRightAddCYL").textContent = localStorage.getItem("rightAddCYL");
-    document.getElementById("previewRightAddAXIS").textContent = localStorage.getItem("rightAddAXIS");
-    document.getElementById("previewRightAddVA").textContent = localStorage.getItem("rightAddVA");
-
-    document.getElementById("previewLeftAddSPH").textContent = localStorage.getItem("leftAddSPH");
-    document.getElementById("previewLeftAddCYL").textContent = localStorage.getItem("leftAddCYL");
-    document.getElementById("previewLeftAddAXIS").textContent = localStorage.getItem("leftAddAXIS");
-    document.getElementById("previewLeftAddVA").textContent = localStorage.getItem("leftAddVA");
-});
-
+    // Load prescription fields from localStorage
     prescriptionFields.forEach((field) => {
         const element = document.getElementById(field);
         const value = localStorage.getItem(field);
