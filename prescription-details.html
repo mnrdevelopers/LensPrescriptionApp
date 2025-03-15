@@ -92,8 +92,6 @@
             border-collapse: collapse;
             background-color: white;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            margin-top: 20px;
-            display: none; /* Hide table by default */
         }
 
         th, td {
@@ -120,18 +118,39 @@
         <h2>Prescription Details</h2>
         
         <div class="search-bar">
-            <input type="text" id="searchInput" placeholder="Search by Name or Mobile">
-            <button onclick="searchPrescription()" class="btn-search">Search</button>
+            <input type="text" id="searchInput" placeholder="Search by Name or Mobile" onkeyup="filterTable()">
+            <button class="btn-search">Search</button>
         </div>
 
-        <!-- Table will be dynamically generated here -->
-        <div id="prescriptionTableContainer"></div>
+        <table id="prescriptionTable">
+            <thead>
+                <tr>
+                    <th>Patient Name</th>
+                    <th>Mobile</th>
+                    <th>Right Dist SPH</th>
+                    <th>Right Dist CYL</th>
+                    <th>Right Dist AXIS</th>
+                    <th>Right Dist VA</th>
+                    <th>Left Dist SPH</th>
+                    <th>Left Dist CYL</th>
+                    <th>Left Dist AXIS</th>
+                    <th>Left Dist VA</th>
+                    <th>Right Add SPH</th>
+                    <th>Right Add CYL</th>
+                    <th>Right Add AXIS</th>
+                    <th>Right Add VA</th>
+                    <th>Left Add SPH</th>
+                    <th>Left Add CYL</th>
+                    <th>Left Add AXIS</th>
+                    <th>Left Add VA</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
     </main>
 
     <script>
         const scriptURL = "https://script.google.com/macros/s/AKfycbxXx0Jy7AmSljFYOuXs00Mxj4aiGpSHz92L5sa903Hp09lEQXrVbfNXByZoAOSogwUm/exec";
-
-        let allPrescriptions = []; // Store all prescriptions for filtering
 
         document.addEventListener("DOMContentLoaded", function () {
             console.log("Page loaded. Fetching prescriptions...");
@@ -139,141 +158,85 @@
         });
 
         function fetchPrescriptions() {
-    const username = localStorage.getItem("username");
-    console.log("Username:", username); // Debugging: Log the username
+            const username = localStorage.getItem("username");
+            console.log("Username:", username); // Debugging: Log the username
 
-    if (!username) {
-        alert("You are not logged in!");
-        window.location.href = "login.html";
-        return;
-    }
+            if (!username) {
+                alert("You are not logged in!");
+                window.location.href = "login.html";
+                return;
+            }
 
-    fetch(scriptURL, {
-        method: "POST",
-        body: JSON.stringify({ action: "fetchPrescriptions", username: username })
-    })
-    .then(response => response.json())
-    .then(result => {
-        console.log("Fetched data:", result); // Debugging: Log the fetched data
-        if (result.status === "success") {
-            allPrescriptions = result.data; // Store all prescriptions
-            console.log("All prescriptions:", allPrescriptions); // Debugging: Log all prescriptions
-        } else {
-            alert("No prescriptions found!");
+            fetch(scriptURL, {
+                method: "POST",
+                body: JSON.stringify({ action: "fetchPrescriptions", username: username })
+            })
+            .then(response => response.json())
+            .then(result => {
+                console.log("Fetched data:", result); // Debugging: Log the fetched data
+                if (result.status === "success") {
+                    displayPrescriptions(result.data);
+                } else {
+                    alert("No prescriptions found!");
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("Failed to fetch prescriptions. Please check your internet connection.");
+            });
         }
-    })
-    .catch(error => {
-        console.error("Error:", error);
-        alert("Failed to fetch prescriptions. Please check your internet connection.");
-    });
-}
-       function searchPrescription() {
-    const searchInput = document.getElementById("searchInput").value.toLowerCase();
-    const container = document.getElementById("prescriptionTableContainer");
-    container.innerHTML = ""; // Clear previous results
 
-    if (!searchInput) {
-        alert("Please enter a name or mobile number to search.");
-        return;
-    }
+        function displayPrescriptions(data) {
+            const tbody = document.getElementById("prescriptionTable").getElementsByTagName("tbody")[0];
+            tbody.innerHTML = ""; // Clear existing rows
 
-    const filteredPrescriptions = allPrescriptions.filter(prescription => {
-        const name = prescription.patientName?.toLowerCase() || ""; // Handle undefined name
-        const mobile = String(prescription.mobile || "").toLowerCase(); // Convert mobile to string
-        return name.includes(searchInput) || mobile.includes(searchInput);
-    });
+            if (!data || data.length === 0) {
+                console.log("No data to display.");
+                return;
+            }
 
-    if (filteredPrescriptions.length === 0) {
-        alert("No matching prescriptions found.");
-        return;
-    }
+            data.forEach(prescription => {
+                let tr = document.createElement("tr");
 
-    // Display the first matching prescription (you can modify this to show all matches)
-    const prescription = filteredPrescriptions[0];
-    displayPrescription(prescription);
-}
+                // Patient Name
+                let nameTd = document.createElement("td");
+                nameTd.textContent = prescription.patientName;
+                tr.appendChild(nameTd);
 
-       function displayPrescription(prescription) {
-    console.log("Prescription to display:", prescription); // Debugging: Log the prescription object
-    console.log("Prescription Data:", prescription.prescriptionData); // Debugging: Log the prescription data
+                // Mobile
+                let mobileTd = document.createElement("td");
+                mobileTd.textContent = prescription.mobile;
+                tr.appendChild(mobileTd);
 
-    const container = document.getElementById("prescriptionTableContainer");
-    container.innerHTML = ""; // Clear previous results
+                // Prescription Details
+                const prescriptionFields = [
+                    "rightDistSPH", "rightDistCYL", "rightDistAXIS", "rightDistVA",
+                    "leftDistSPH", "leftDistCYL", "leftDistAXIS", "leftDistVA",
+                    "rightAddSPH", "rightAddCYL", "rightAddAXIS", "rightAddVA",
+                    "leftAddSPH", "leftAddCYL", "leftAddAXIS", "leftAddVA"
+                ];
 
-    // Create the table
-    const table = document.createElement("table");
+                prescriptionFields.forEach(field => {
+                    let td = document.createElement("td");
+                    td.textContent = prescription.prescriptionData[field] || "-"; // Use "-" for missing values
+                    tr.appendChild(td);
+                });
 
-    // Add table headers
-    const thead = document.createElement("thead");
-    const headerRow = document.createElement("tr");
-    ["RIGHT EYE (OD)", "LEFT EYE (OS)"].forEach(section => {
-        const th = document.createElement("th");
-        th.colSpan = 4;
-        th.textContent = section;
-        headerRow.appendChild(th);
-    });
-    thead.appendChild(headerRow);
-    table.appendChild(thead);
+                tbody.appendChild(tr);
+            });
+        }
 
-    // Add table body
-    const tbody = document.createElement("tbody");
+        function filterTable() {
+            let input = document.getElementById("searchInput").value.toLowerCase();
+            let table = document.getElementById("prescriptionTable");
+            let rows = table.getElementsByTagName("tr");
 
-    // Add DIST row
-    const distRow = document.createElement("tr");
-    ["DIST", "DIST"].forEach(section => {
-        const td = document.createElement("td");
-        td.textContent = section;
-        distRow.appendChild(td);
-    });
-    tbody.appendChild(distRow);
-
-    // Add SPH, CYL, AXIS, VA rows
-    const fields = ["SPH", "CYL", "AXIS", "VA"];
-    fields.forEach(field => {
-        const row = document.createElement("tr");
-
-        // Right Eye (OD)
-        const rightTd = document.createElement("td");
-        rightTd.textContent = prescription.prescriptionData[`rightDist${field}`] || "-";
-        row.appendChild(rightTd);
-
-        // Left Eye (OS)
-        const leftTd = document.createElement("td");
-        leftTd.textContent = prescription.prescriptionData[`leftDist${field}`] || "-";
-        row.appendChild(leftTd);
-
-        tbody.appendChild(row);
-    });
-
-    // Add ADD row
-    const addRow = document.createElement("tr");
-    ["ADD", "ADD"].forEach(section => {
-        const td = document.createElement("td");
-        td.textContent = section;
-        addRow.appendChild(td);
-    });
-    tbody.appendChild(addRow);
-
-    // Add SPH, CYL, AXIS, VA rows for ADD
-    fields.forEach(field => {
-        const row = document.createElement("tr");
-
-        // Right Eye (OD)
-        const rightTd = document.createElement("td");
-        rightTd.textContent = prescription.prescriptionData[`rightAdd${field}`] || "-";
-        row.appendChild(rightTd);
-
-        // Left Eye (OS)
-        const leftTd = document.createElement("td");
-        leftTd.textContent = prescription.prescriptionData[`leftAdd${field}`] || "-";
-        row.appendChild(leftTd);
-
-        tbody.appendChild(row);
-    });
-
-    table.appendChild(tbody);
-    container.appendChild(table);
-}
+            for (let i = 1; i < rows.length; i++) {
+                let name = rows[i].getElementsByTagName("td")[0]?.textContent.toLowerCase() || "";
+                let mobile = rows[i].getElementsByTagName("td")[1]?.textContent.toLowerCase() || "";
+                rows[i].style.display = name.includes(input) || mobile.includes(input) ? "" : "none";
+            }
+        }
     </script>
 </body>
 </html>
