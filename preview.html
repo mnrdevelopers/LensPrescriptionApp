@@ -208,16 +208,16 @@
     ];
 
     // Load prescription fields from localStorage
-    prescriptionFields.forEach((field) => {
-        const element = document.getElementById(field);
-        const value = localStorage.getItem(field);
-
-        if (element && value) {
-            element.textContent = value;
-        } else {
-            console.error(`Element with ID "${field}" not found or value is null.`);
-        }
-    });
+   prescriptionFields.forEach((field) => {
+    const element = document.getElementById(field);
+    const value = localStorage.getItem(field);
+    console.log(`Field: ${field}, Value: ${value}`); // Log each field and its value
+    if (element && value) {
+        element.textContent = value;
+    } else {
+        console.error(`Element with ID "${field}" not found or value is null.`);
+    }
+});
 
     // Log retrieved data for debugging
     console.log("Data retrieved from localStorage:", {
