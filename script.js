@@ -213,6 +213,9 @@ function submitForm() {
         prescription: prescriptionData
     };
 
+    // Log data being sent to Google Sheets
+    console.log("Data being sent to Google Sheets:", data);
+
     // Send data to Google Sheets
     fetch(scriptURL, {
         method: "POST",
@@ -220,6 +223,7 @@ function submitForm() {
     })
     .then(response => response.json())
     .then(result => {
+        console.log("Response from Google Sheets:", result);
         alert(result.message);
         if (result.status === "success") {
             // Save data to localStorage for preview page
