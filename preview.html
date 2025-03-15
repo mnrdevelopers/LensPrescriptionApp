@@ -149,73 +149,73 @@
     <script>
         const scriptURL = "https://script.google.com/macros/s/AKfycbxXx0Jy7AmSljFYOuXs00Mxj4aiGpSHz92L5sa903Hp09lEQXrVbfNXByZoAOSogwUm/exec"; // Replace with your Google Apps Script URL
 
-        document.addEventListener("DOMContentLoaded", function () {
-            const username = localStorage.getItem("username");
+       document.addEventListener("DOMContentLoaded", function () {
+    const username = localStorage.getItem("username");
 
-            if (!username) {
-                // Redirect to login page if no user is logged in
+    if (!username) {
+        // Redirect to login page if no user is logged in
+        window.location.href = "login.html";
+        return;
+    }
+
+    // Fetch user details from Google Sheets
+    fetch(scriptURL, {
+        method: "POST",
+        body: JSON.stringify({ action: "getDetails", username: username }),
+    })
+        .then((response) => response.json())
+        .then((result) => {
+            if (result.status === "success") {
+                // Update Clinic Details in Prescription Preview
+                document.getElementById("previewClinicName").textContent = result.clinicName;
+                document.getElementById("previewClinicAddress").textContent = result.address;
+                document.getElementById("previewOptometristName").textContent = result.optometristName;
+                document.getElementById("previewContactNumber").textContent = result.contactNumber;
+            } else {
+                alert("Error fetching clinic details. Please log in again.");
+                localStorage.removeItem("username");
                 window.location.href = "login.html";
-                return;
             }
-
-            // Fetch user details from Google Sheets
-            fetch(scriptURL, {
-                method: "POST",
-                body: JSON.stringify({ action: "getDetails", username: username }),
-            })
-                .then((response) => response.json())
-                .then((result) => {
-                    if (result.status === "success") {
-                        // Update Clinic Details in Prescription Preview
-                        document.getElementById("previewClinicName").textContent = result.clinicName;
-                        document.getElementById("previewClinicAddress").textContent = result.address;
-                        document.getElementById("previewOptometristName").textContent = result.optometristName;
-                        document.getElementById("previewContactNumber").textContent = result.contactNumber;
-                    } else {
-                        alert("Error fetching clinic details. Please log in again.");
-                        localStorage.removeItem("username");
-                        window.location.href = "login.html";
-                    }
-                })
-                .catch((error) => {
-                    console.error("Error:", error);
-                    alert("Failed to fetch clinic details. Please check your internet connection.");
-                });
-
-            // Set Current Date
-            document.getElementById("previewcurrentDate").textContent = new Date().toLocaleDateString();
-
-            // Load data from localStorage
-            document.getElementById("previewPatientName").textContent = localStorage.getItem("patientName");
-            document.getElementById("previewAge").textContent = localStorage.getItem("age");
-            document.getElementById("previewGender").textContent = localStorage.getItem("gender");
-            document.getElementById("previewMobile").textContent = localStorage.getItem("patientMobile");
-            document.getElementById("previewAmount").textContent = localStorage.getItem("amount");
-            document.getElementById("previewVisionType").textContent = localStorage.getItem("visionType");
-            document.getElementById("previewLensType").textContent = localStorage.getItem("lensType");
-            document.getElementById("previewFrameType").textContent = localStorage.getItem("frameType");
-            document.getElementById("previewPaymentMode").textContent = localStorage.getItem("paymentMode");
-
-            // Prescription fields
-            const prescriptionFields = [
-                "rightDistSPH", "rightDistCYL", "rightDistAXIS", "rightDistVA",
-                "leftDistSPH", "leftDistCYL", "leftDistAXIS", "leftDistVA",
-                "rightAddSPH", "rightAddCYL", "rightAddAXIS", "rightAddVA",
-                "leftAddSPH", "leftAddCYL", "leftAddAXIS", "leftAddVA",
-            ];
-
-            prescriptionFields.forEach((field) => {
-                const elementId = `preview${field}`;
-                const element = document.getElementById(elementId);
-                const value = localStorage.getItem(field);
-
-                if (element && value) {
-                    element.textContent = value;
-                } else {
-                    console.error(`Element with ID "${elementId}" not found or value is null.`);
-                }
-            });
+        })
+        .catch((error) => {
+            console.error("Error:", error);
+            alert("Failed to fetch clinic details. Please check your internet connection.");
         });
+
+    // Set Current Date
+    document.getElementById("previewcurrentDate").textContent = new Date().toLocaleDateString();
+
+    // Load data from localStorage
+    document.getElementById("previewPatientName").textContent = localStorage.getItem("patientName");
+    document.getElementById("previewAge").textContent = localStorage.getItem("age");
+    document.getElementById("previewGender").textContent = localStorage.getItem("gender");
+    document.getElementById("previewMobile").textContent = localStorage.getItem("patientMobile");
+    document.getElementById("previewAmount").textContent = localStorage.getItem("amount");
+    document.getElementById("previewVisionType").textContent = localStorage.getItem("visionType");
+    document.getElementById("previewLensType").textContent = localStorage.getItem("lensType");
+    document.getElementById("previewFrameType").textContent = localStorage.getItem("frameType");
+    document.getElementById("previewPaymentMode").textContent = localStorage.getItem("paymentMode");
+
+    // Prescription fields
+    const prescriptionFields = [
+        "RightDistSPH", "RightDistCYL", "RightDistAXIS", "RightDistVA",
+        "LeftDistSPH", "LeftDistCYL", "LeftDistAXIS", "LeftDistVA",
+        "RightAddSPH", "RightAddCYL", "RightAddAXIS", "RightAddVA",
+        "LeftAddSPH", "LeftAddCYL", "LeftAddAXIS", "LeftAddVA",
+    ];
+
+    prescriptionFields.forEach((field) => {
+        const elementId = `preview${field}`;
+        const element = document.getElementById(elementId);
+        const value = localStorage.getItem(field);
+
+        if (element && value) {
+            element.textContent = value;
+        } else {
+            console.error(`Element with ID "${elementId}" not found or value is null.`);
+        }
+    });
+});
 
         // Function to generate PDF
         function generatePDF() {
