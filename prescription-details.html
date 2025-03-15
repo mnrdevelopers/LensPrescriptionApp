@@ -139,59 +139,59 @@
         });
 
         function fetchPrescriptions() {
-            const username = localStorage.getItem("username");
-            console.log("Username:", username); // Debugging: Log the username
+    const username = localStorage.getItem("username");
+    console.log("Username:", username); // Debugging: Log the username
 
-            if (!username) {
-                alert("You are not logged in!");
-                window.location.href = "login.html";
-                return;
-            }
+    if (!username) {
+        alert("You are not logged in!");
+        window.location.href = "login.html";
+        return;
+    }
 
-            fetch(scriptURL, {
-                method: "POST",
-                body: JSON.stringify({ action: "fetchPrescriptions", username: username })
-            })
-            .then(response => response.json())
-            .then(result => {
-                console.log("Fetched data:", result); // Debugging: Log the fetched data
-                if (result.status === "success") {
-                    allPrescriptions = result.data; // Store all prescriptions
-                } else {
-                    alert("No prescriptions found!");
-                }
-            })
-            .catch(error => {
-                console.error("Error:", error);
-                alert("Failed to fetch prescriptions. Please check your internet connection.");
-            });
+    fetch(scriptURL, {
+        method: "POST",
+        body: JSON.stringify({ action: "fetchPrescriptions", username: username })
+    })
+    .then(response => response.json())
+    .then(result => {
+        console.log("Fetched data:", result); // Debugging: Log the fetched data
+        if (result.status === "success") {
+            allPrescriptions = result.data; // Store all prescriptions
+            console.log("All prescriptions:", allPrescriptions); // Debugging: Log all prescriptions
+        } else {
+            alert("No prescriptions found!");
         }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        alert("Failed to fetch prescriptions. Please check your internet connection.");
+    });
+}
+       function searchPrescription() {
+    const searchInput = document.getElementById("searchInput").value.toLowerCase();
+    const container = document.getElementById("prescriptionTableContainer");
+    container.innerHTML = ""; // Clear previous results
 
-        function searchPrescription() {
-            const searchInput = document.getElementById("searchInput").value.toLowerCase();
-            const container = document.getElementById("prescriptionTableContainer");
-            container.innerHTML = ""; // Clear previous results
+    if (!searchInput) {
+        alert("Please enter a name or mobile number to search.");
+        return;
+    }
 
-            if (!searchInput) {
-                alert("Please enter a name or mobile number to search.");
-                return;
-            }
+    const filteredPrescriptions = allPrescriptions.filter(prescription => {
+        const name = prescription.patientName?.toLowerCase() || ""; // Handle undefined name
+        const mobile = String(prescription.mobile || "").toLowerCase(); // Convert mobile to string
+        return name.includes(searchInput) || mobile.includes(searchInput);
+    });
 
-            const filteredPrescriptions = allPrescriptions.filter(prescription => {
-                const name = prescription.patientName.toLowerCase();
-                const mobile = prescription.mobile.toLowerCase();
-                return name.includes(searchInput) || mobile.includes(searchInput);
-            });
+    if (filteredPrescriptions.length === 0) {
+        alert("No matching prescriptions found.");
+        return;
+    }
 
-            if (filteredPrescriptions.length === 0) {
-                alert("No matching prescriptions found.");
-                return;
-            }
-
-            // Display the first matching prescription (you can modify this to show all matches)
-            const prescription = filteredPrescriptions[0];
-            displayPrescription(prescription);
-        }
+    // Display the first matching prescription (you can modify this to show all matches)
+    const prescription = filteredPrescriptions[0];
+    displayPrescription(prescription);
+}
 
         function displayPrescription(prescription) {
             const container = document.getElementById("prescriptionTableContainer");
