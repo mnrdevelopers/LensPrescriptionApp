@@ -197,12 +197,26 @@
     document.getElementById("previewPaymentMode").textContent = localStorage.getItem("paymentMode");
 
     // Prescription fields
-    const prescriptionFields = [
-        "previewRightDistSPH", "previewRightDistCYL", "previewRightDistAXIS", "previewRightDistVA",
-        "previewLeftDistSPH", "previewLeftDistCYL", "previewLeftDistAXIS", "previewLeftDistVA",
-        "previewRightAddSPH", "previewRightAddCYL", "previewRightAddAXIS", "previewRightAddVA",
-        "previewLeftAddSPH", "previewLeftAddCYL", "previewLeftAddAXIS", "previewLeftAddVA",
-    ];
+    document.getElementById("previewRightDistSPH").textContent = localStorage.getItem("rightDistSPH");
+    document.getElementById("previewRightDistCYL").textContent = localStorage.getItem("rightDistCYL");
+    document.getElementById("previewRightDistAXIS").textContent = localStorage.getItem("rightDistAXIS");
+    document.getElementById("previewRightDistVA").textContent = localStorage.getItem("rightDistVA");
+
+    document.getElementById("previewLeftDistSPH").textContent = localStorage.getItem("leftDistSPH");
+    document.getElementById("previewLeftDistCYL").textContent = localStorage.getItem("leftDistCYL");
+    document.getElementById("previewLeftDistAXIS").textContent = localStorage.getItem("leftDistAXIS");
+    document.getElementById("previewLeftDistVA").textContent = localStorage.getItem("leftDistVA");
+
+    document.getElementById("previewRightAddSPH").textContent = localStorage.getItem("rightAddSPH");
+    document.getElementById("previewRightAddCYL").textContent = localStorage.getItem("rightAddCYL");
+    document.getElementById("previewRightAddAXIS").textContent = localStorage.getItem("rightAddAXIS");
+    document.getElementById("previewRightAddVA").textContent = localStorage.getItem("rightAddVA");
+
+    document.getElementById("previewLeftAddSPH").textContent = localStorage.getItem("leftAddSPH");
+    document.getElementById("previewLeftAddCYL").textContent = localStorage.getItem("leftAddCYL");
+    document.getElementById("previewLeftAddAXIS").textContent = localStorage.getItem("leftAddAXIS");
+    document.getElementById("previewLeftAddVA").textContent = localStorage.getItem("leftAddVA");
+});
 
     prescriptionFields.forEach((field) => {
         const element = document.getElementById(field);
