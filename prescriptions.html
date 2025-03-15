@@ -237,210 +237,223 @@
         </table>
     </main>
 
-    <script>
-        const scriptURL = "https://script.google.com/macros/s/AKfycbxXx0Jy7AmSljFYOuXs00Mxj4aiGpSHz92L5sa903Hp09lEQXrVbfNXByZoAOSogwUm/exec";
+   <script>
+    const scriptURL = "https://script.google.com/macros/s/AKfycbxXx0Jy7AmSljFYOuXs00Mxj4aiGpSHz92L5sa903Hp09lEQXrVbfNXByZoAOSogwUm/exec";
 
-        document.addEventListener("DOMContentLoaded", function () {
-            console.log("Page loaded. Fetching prescriptions...");
-            fetchPrescriptions();
+    document.addEventListener("DOMContentLoaded", function () {
+        console.log("Page loaded. Fetching prescriptions...");
+        fetchPrescriptions();
+    });
+
+    function fetchPrescriptions() {
+        const username = localStorage.getItem("username");
+        console.log("Username:", username); // Debugging: Log the username
+
+        if (!username) {
+            alert("You are not logged in!");
+            window.location.href = "login.html";
+            return;
+        }
+
+        fetch(scriptURL, {
+            method: "POST",
+            body: JSON.stringify({ action: "fetchPrescriptions", username: username }),
+            headers: {
+                "Content-Type": "application/json" // Add this header
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Network response was not ok: " + response.statusText);
+            }
+            return response.json();
+        })
+        .then(result => {
+            console.log("Fetched data:", result); // Debugging: Log the fetched data
+            if (result.status === "success") {
+                displayPrescriptions(result.data);
+            } else {
+                alert("No prescriptions found!");
+            }
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            alert("Failed to fetch prescriptions. Please check your internet connection.");
+        });
+    }
+
+    function filterTable() {
+        let input = document.getElementById("searchInput").value.toLowerCase();
+        let table = document.getElementById("prescriptionTable");
+        let rows = table.getElementsByTagName("tr");
+
+        for (let i = 1; i < rows.length; i++) {
+            let name = rows[i].getElementsByTagName("td")[1]?.textContent.toLowerCase() || "";
+            let mobile = rows[i].getElementsByTagName("td")[4]?.textContent.toLowerCase() || "";
+            rows[i].style.display = name.includes(input) || mobile.includes(input) ? "" : "none";
+        }
+    }
+
+    function searchPrescription() {
+        const startDate = document.getElementById("startDate").value;
+        const endDate = document.getElementById("endDate").value;
+
+        if (!startDate || !endDate) {
+            alert("Please select both start and end dates.");
+            return;
+        }
+
+        fetch(scriptURL, {
+            method: "POST",
+            body: JSON.stringify({ action: "searchPrescription", startDate: startDate, endDate: endDate }),
+            headers: {
+                "Content-Type": "application/json" // Add this header
+            }
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.status === "success" && result.data.length > 0) {
+                displayPrescriptions(result.data);
+            } else {
+                alert("No records found for the given date range.");
+            }
+        })
+        .catch(error => console.error("Error:", error));
+    }
+
+    function displayPrescriptions(data) {
+        const tbody = document.getElementById("prescriptionTable").getElementsByTagName("tbody")[0];
+        tbody.innerHTML = ""; // Clear existing rows
+
+        if (!data || data.length === 0) {
+            console.log("No data to display.");
+            return;
+        }
+
+        const today = new Date().toLocaleDateString();
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayFormatted = yesterday.toLocaleDateString();
+
+        const groupedPrescriptions = { today: [], yesterday: [], older: [] };
+
+        data.forEach(prescription => {
+            const prescriptionDate = new Date(Date.parse(prescription.date)).toLocaleDateString();
+            if (prescriptionDate === today) {
+                groupedPrescriptions.today.push(prescription);
+            } else if (prescriptionDate === yesterdayFormatted) {
+                groupedPrescriptions.yesterday.push(prescription);
+            } else {
+                groupedPrescriptions.older.push(prescription);
+            }
         });
 
-        function fetchPrescriptions() {
-            const username = localStorage.getItem("username");
-            console.log("Username:", username); // Debugging: Log the username
-            
-            if (!username) {
-                alert("You are not logged in!");
-                window.location.href = "login.html";
-                return;
-            }
-
-            fetch(scriptURL, {
-                method: "POST",
-                body: JSON.stringify({ action: "fetchPrescriptions", username: username })
-            })
-            .then(response => response.json())
-            .then(result => {
-                console.log("Fetched data:", result); // Debugging: Log the fetched data
-                if (result.status === "success") {
-                    displayPrescriptions(result.data);
-                } else {
-                    alert("No prescriptions found!");
-                }
-            })
-            .catch(error => {
-                console.error("Error:", error);
-                alert("Failed to fetch prescriptions. Please check your internet connection.");
-            });
+        if (groupedPrescriptions.today.length > 0) {
+            addHeadingRow(tbody, "Today");
+            groupedPrescriptions.today.forEach(prescription => addPrescriptionRow(tbody, prescription));
         }
 
-        function filterTable() {
-            let input = document.getElementById("searchInput").value.toLowerCase();
-            let table = document.getElementById("prescriptionTable");
-            let rows = table.getElementsByTagName("tr");
-
-            for (let i = 1; i < rows.length; i++) {
-                let name = rows[i].getElementsByTagName("td")[1]?.textContent.toLowerCase() || "";
-                let mobile = rows[i].getElementsByTagName("td")[4]?.textContent.toLowerCase() || "";
-                rows[i].style.display = name.includes(input) || mobile.includes(input) ? "" : "none";
-            }
+        if (groupedPrescriptions.yesterday.length > 0) {
+            addHeadingRow(tbody, "Yesterday");
+            groupedPrescriptions.yesterday.forEach(prescription => addPrescriptionRow(tbody, prescription));
         }
 
-        function searchPrescription() {
-            const startDate = document.getElementById("startDate").value;
-            const endDate = document.getElementById("endDate").value;
-
-            if (!startDate || !endDate) {
-                alert("Please select both start and end dates.");
-                return;
-            }
-
-            fetch(scriptURL, {
-                method: "POST",
-                body: JSON.stringify({ action: "searchPrescription", startDate: startDate, endDate: endDate })
-            })
-            .then(response => response.json())
-            .then(result => {
-                if (result.status === "success" && result.data.length > 0) {
-                    displayPrescriptions(result.data);
-                } else {
-                    alert("No records found for the given date range.");
-                }
-            })
-            .catch(error => console.error("Error:", error));
+        if (groupedPrescriptions.older.length > 0) {
+            addHeadingRow(tbody, "Older");
+            groupedPrescriptions.older.forEach(prescription => addPrescriptionRow(tbody, prescription));
         }
+    }
 
-        function displayPrescriptions(data) {
-            const tbody = document.getElementById("prescriptionTable").getElementsByTagName("tbody")[0];
-            tbody.innerHTML = ""; // Clear existing rows
+    function addHeadingRow(tbody, heading) {
+        let tr = document.createElement("tr");
+        let td = document.createElement("td");
+        td.colSpan = 11;
+        td.textContent = heading;
+        td.style.fontWeight = "bold";
+        td.style.backgroundColor = "#f0f0f0";
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+    }
 
-            if (!data || data.length === 0) {
-                console.log("No data to display.");
-                return;
-            }
+    function addPrescriptionRow(tbody, prescription) {
+        let tr = document.createElement("tr");
+        const formattedDate = new Date(Date.parse(prescription.date)).toLocaleString();
 
-            const today = new Date().toLocaleDateString();
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            const yesterdayFormatted = yesterday.toLocaleDateString();
+        let dateTd = document.createElement("td");
+        dateTd.textContent = formattedDate;
+        dateTd.setAttribute("data-label", "Date");
+        tr.appendChild(dateTd);
 
-            const groupedPrescriptions = { today: [], yesterday: [], older: [] };
-
-            data.forEach(prescription => {
-                const prescriptionDate = new Date(Date.parse(prescription.date)).toLocaleDateString();
-                if (prescriptionDate === today) {
-                    groupedPrescriptions.today.push(prescription);
-                } else if (prescriptionDate === yesterdayFormatted) {
-                    groupedPrescriptions.yesterday.push(prescription);
-                } else {
-                    groupedPrescriptions.older.push(prescription);
-                }
-            });
-
-            if (groupedPrescriptions.today.length > 0) {
-                addHeadingRow(tbody, "Today");
-                groupedPrescriptions.today.forEach(prescription => addPrescriptionRow(tbody, prescription));
-            }
-
-            if (groupedPrescriptions.yesterday.length > 0) {
-                addHeadingRow(tbody, "Yesterday");
-                groupedPrescriptions.yesterday.forEach(prescription => addPrescriptionRow(tbody, prescription));
-            }
-
-            if (groupedPrescriptions.older.length > 0) {
-                addHeadingRow(tbody, "Older");
-                groupedPrescriptions.older.forEach(prescription => addPrescriptionRow(tbody, prescription));
-            }
-        }
-
-        function addHeadingRow(tbody, heading) {
-            let tr = document.createElement("tr");
+        const fields = ["patientName", "age", "gender", "mobile", "amount", "visionType", "lensType", "frameType", "paymentMode"];
+        fields.forEach(field => {
             let td = document.createElement("td");
-            td.colSpan = 11;
-            td.textContent = heading;
-            td.style.fontWeight = "bold";
-            td.style.backgroundColor = "#f0f0f0";
+            td.textContent = prescription[field];
+            td.setAttribute("data-label", field);
             tr.appendChild(td);
-            tbody.appendChild(tr);
-        }
+        });
 
-        function addPrescriptionRow(tbody, prescription) {
-            let tr = document.createElement("tr");
-            const formattedDate = new Date(Date.parse(prescription.date)).toLocaleString();
+        let actionsTd = document.createElement("td");
 
-            let dateTd = document.createElement("td");
-            dateTd.textContent = formattedDate;
-            dateTd.setAttribute("data-label", "Date");
-            tr.appendChild(dateTd);
+        let previewButton = document.createElement("button");
+        previewButton.innerHTML = "&#128065;"; // Eye icon for preview
+        previewButton.className = "btn-preview";
+        previewButton.onclick = () => previewPrescription(prescription);
+        actionsTd.appendChild(previewButton);
 
-            const fields = ["patientName", "age", "gender", "mobile", "amount", "visionType", "lensType", "frameType", "paymentMode"];
-            fields.forEach(field => {
-                let td = document.createElement("td");
-                td.textContent = prescription[field];
-                td.setAttribute("data-label", field);
-                tr.appendChild(td);
-            });
+        let deleteButton = document.createElement("button");
+        deleteButton.innerHTML = "&#128465;"; // Trash icon for delete
+        deleteButton.className = "btn-delete";
+        deleteButton.onclick = () => deletePrescription(prescription);
+        actionsTd.appendChild(deleteButton);
 
-            let actionsTd = document.createElement("td");
+        tr.appendChild(actionsTd);
+        tbody.appendChild(tr);
+    }
 
-            let previewButton = document.createElement("button");
-            previewButton.innerHTML = "&#128065;"; // Eye icon for preview
-            previewButton.className = "btn-preview";
-            previewButton.onclick = () => previewPrescription(prescription);
-            actionsTd.appendChild(previewButton);
+    function previewPrescription(row) {
+        // Redirect to preview page with the selected prescription data
+        localStorage.setItem("patientName", row.patientName);
+        localStorage.setItem("age", row.age);
+        localStorage.setItem("gender", row.gender);
+        localStorage.setItem("patientMobile", row.mobile);
+        localStorage.setItem("amount", row.amount);
+        localStorage.setItem("visionType", row.visionType);
+        localStorage.setItem("lensType", row.lensType);
+        localStorage.setItem("frameType", row.frameType);
+        localStorage.setItem("paymentMode", row.paymentMode);
+        window.location.href = "preview.html";
+    }
 
-            let deleteButton = document.createElement("button");
-            deleteButton.innerHTML = "&#128465;"; // Trash icon for delete
-            deleteButton.className = "btn-delete";
-            deleteButton.onclick = () => deletePrescription(prescription);
-            actionsTd.appendChild(deleteButton);
+    function deletePrescription(row) {
+        const username = localStorage.getItem("username");
 
-            tr.appendChild(actionsTd);
-            tbody.appendChild(tr);
-        }
+        fetch(scriptURL, {
+            method: "POST",
+            body: JSON.stringify({ 
+                action: "deletePrescription", 
+                username: username, 
+                mobile: row.mobile // Access the mobile property from the row object
+            }),
+            headers: {
+                "Content-Type": "application/json" // Add this header
+            }
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.status === "success") {
+                alert("Prescription deleted successfully!");
+                fetchPrescriptions(); // Refresh the table
+            } else {
+                alert("Failed to delete prescription.");
+            }
+        })
+        .catch(error => console.error("Error:", error));
+    }
 
-        function previewPrescription(row) {
-            // Redirect to preview page with the selected prescription data
-            localStorage.setItem("patientName", row.patientName);
-            localStorage.setItem("age", row.age);
-            localStorage.setItem("gender", row.gender);
-            localStorage.setItem("patientMobile", row.mobile);
-            localStorage.setItem("amount", row.amount);
-            localStorage.setItem("visionType", row.visionType);
-            localStorage.setItem("lensType", row.lensType);
-            localStorage.setItem("frameType", row.frameType);
-            localStorage.setItem("paymentMode", row.paymentMode);
-            window.location.href = "preview.html";
-        }
-
-        function deletePrescription(row) {
-            const scriptURL = "https://script.google.com/macros/s/AKfycbxXx0Jy7AmSljFYOuXs00Mxj4aiGpSHz92L5sa903Hp09lEQXrVbfNXByZoAOSogwUm/exec";
-            const username = localStorage.getItem("username");
-
-            fetch(scriptURL, {
-                method: "POST",
-                body: JSON.stringify({ 
-                    action: "deletePrescription", 
-                    username: username, 
-                    mobile: row.mobile // Access the mobile property from the row object
-                })
-            })
-            .then(response => response.json())
-            .then(result => {
-                if (result.status === "success") {
-                    alert("Prescription deleted successfully!");
-                    fetchPrescriptions(); // Refresh the table
-                } else {
-                    alert("Failed to delete prescription.");
-                }
-            })
-            .catch(error => console.error("Error:", error));
-        }
-
-        function logoutUser() {
-            localStorage.removeItem("username");
-            window.location.href = "login.html";
-        }
-    </script>
+    function logoutUser() {
+        localStorage.removeItem("username");
+        window.location.href = "login.html";
+    }
+</script>
 </body>
 </html>
