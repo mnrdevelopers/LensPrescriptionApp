@@ -354,54 +354,73 @@
         }
 
         function addPrescriptionRow(tbody, prescription) {
-            let tr = document.createElement("tr");
-            const formattedDate = new Date(Date.parse(prescription.date)).toLocaleString();
+    console.log("Prescription data:", prescription); // Debugging: Log the prescription object
 
-            let dateTd = document.createElement("td");
-            dateTd.textContent = formattedDate;
-            dateTd.setAttribute("data-label", "Date");
-            tr.appendChild(dateTd);
+    let tr = document.createElement("tr");
+    const formattedDate = new Date(Date.parse(prescription.date)).toLocaleString();
 
-            const fields = ["patientName", "age", "gender", "mobile", "amount", "visionType", "lensType", "frameType", "paymentMode"];
-            fields.forEach(field => {
-                let td = document.createElement("td");
-                td.textContent = prescription[field];
-                td.setAttribute("data-label", field);
-                tr.appendChild(td);
-            });
+    let dateTd = document.createElement("td");
+    dateTd.textContent = formattedDate;
+    dateTd.setAttribute("data-label", "Date");
+    tr.appendChild(dateTd);
 
-            let actionsTd = document.createElement("td");
+    const fields = ["patientName", "age", "gender", "mobile", "amount", "visionType", "lensType", "frameType", "paymentMode"];
+    fields.forEach(field => {
+        let td = document.createElement("td");
+        td.textContent = prescription[field];
+        td.setAttribute("data-label", field);
+        tr.appendChild(td);
+    });
 
-            let previewButton = document.createElement("button");
-            previewButton.innerHTML = "&#128065;"; // Eye icon for preview
-            previewButton.className = "btn-preview";
-            previewButton.onclick = () => previewPrescription(prescription);
-            actionsTd.appendChild(previewButton);
+    let actionsTd = document.createElement("td");
 
-            let deleteButton = document.createElement("button");
-            deleteButton.innerHTML = "&#128465;"; // Trash icon for delete
-            deleteButton.className = "btn-delete";
-            deleteButton.onclick = () => deletePrescription(prescription);
-            actionsTd.appendChild(deleteButton);
+    let previewButton = document.createElement("button");
+    previewButton.innerHTML = "&#128065;"; // Eye icon for preview
+    previewButton.className = "btn-preview";
+    previewButton.onclick = () => previewPrescription(prescription);
+    actionsTd.appendChild(previewButton);
 
-            tr.appendChild(actionsTd);
-            tbody.appendChild(tr);
-        }
+    let deleteButton = document.createElement("button");
+    deleteButton.innerHTML = "&#128465;"; // Trash icon for delete
+    deleteButton.className = "btn-delete";
+    deleteButton.onclick = () => deletePrescription(prescription);
+    actionsTd.appendChild(deleteButton);
 
-        function previewPrescription(row) {
-            // Redirect to preview page with the selected prescription data
-            localStorage.setItem("patientName", row.patientName);
-            localStorage.setItem("age", row.age);
-            localStorage.setItem("gender", row.gender);
-            localStorage.setItem("patientMobile", row.mobile);
-            localStorage.setItem("amount", row.amount);
-            localStorage.setItem("visionType", row.visionType);
-            localStorage.setItem("lensType", row.lensType);
-            localStorage.setItem("frameType", row.frameType);
-            localStorage.setItem("paymentMode", row.paymentMode);
-            window.location.href = "preview.html";
-        }
+    tr.appendChild(actionsTd);
+    tbody.appendChild(tr);
+}
+        
+       function previewPrescription(row) {
+    console.log("Row data for preview:", row); // Debugging: Log the row object
 
+    // Save patient details to localStorage
+    localStorage.setItem("patientName", row.patientName);
+    localStorage.setItem("age", row.age);
+    localStorage.setItem("gender", row.gender);
+    localStorage.setItem("patientMobile", row.mobile);
+    localStorage.setItem("amount", row.amount);
+    localStorage.setItem("visionType", row.visionType);
+    localStorage.setItem("lensType", row.lensType);
+    localStorage.setItem("frameType", row.frameType);
+    localStorage.setItem("paymentMode", row.paymentMode);
+
+    // Save prescription-specific fields to localStorage
+    const prescriptionFields = [
+        "rightDistSPH", "rightDistCYL", "rightDistAXIS", "rightDistVA",
+        "leftDistSPH", "leftDistCYL", "leftDistAXIS", "leftDistVA",
+        "rightAddSPH", "rightAddCYL", "rightAddAXIS", "rightAddVA",
+        "leftAddSPH", "leftAddCYL", "leftAddAXIS", "leftAddVA"
+    ];
+
+    prescriptionFields.forEach(field => {
+        localStorage.setItem(`preview${field}`, row[field]);
+        console.log(`Saved ${field}:`, row[field]); // Debugging: Log each field and its value
+    });
+
+    // Redirect to preview page
+    window.location.href = "preview.html";
+}
+        
         function deletePrescription(row) {
             const scriptURL = "https://script.google.com/macros/s/AKfycbxXx0Jy7AmSljFYOuXs00Mxj4aiGpSHz92L5sa903Hp09lEQXrVbfNXByZoAOSogwUm/exec";
             const username = localStorage.getItem("username");
