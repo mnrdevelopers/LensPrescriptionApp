@@ -218,6 +218,23 @@
             console.error(`Element with ID "${field}" not found or value is null.`);
         }
     });
+
+    // Log retrieved data for debugging
+    console.log("Data retrieved from localStorage:", {
+        patientName: localStorage.getItem("patientName"),
+        age: localStorage.getItem("age"),
+        gender: localStorage.getItem("gender"),
+        mobile: localStorage.getItem("patientMobile"),
+        amount: localStorage.getItem("amount"),
+        visionType: localStorage.getItem("visionType"),
+        lensType: localStorage.getItem("lensType"),
+        frameType: localStorage.getItem("frameType"),
+        paymentMode: localStorage.getItem("paymentMode"),
+        prescriptionFields: prescriptionFields.map(field => ({
+            field,
+            value: localStorage.getItem(field)
+        }))
+    });
 });
         // Function to generate PDF
         function generatePDF() {
