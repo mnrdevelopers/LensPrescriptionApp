@@ -9,11 +9,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
-
     <button onclick="window.location.href = 'app.html';" class="btn btn-back">
-    <i class="fas fa-arrow-left"></i> Back
-</button>
-    
+        <i class="fas fa-arrow-left"></i> Back
+    </button>
+
+    <!-- Prescription Preview Container -->
     <div id="prescriptionPreview" style="display: block; width: 58mm; padding: 5px; font-family: Times New Roman, sans-serif; font-size: 8px;">
         <!-- Clinic Details -->
         <div style="text-align: center; margin-bottom: 5px;">
@@ -41,68 +41,68 @@
 
         <!-- Prescription Details -->
         <div style="margin-bottom: 5px;">
-            <h3 style="font-size: 9px; margin: 5px 0; text-align: center;">Prescription Details</h3>
+            <h3 style="font-size: 9px; margin: 5px 0; text-align: center; color: black;">Prescription Details</h3>
 
             <!-- Right Eye Table -->
-            <table style="width: 100%; border-collapse: collapse; font-size: 8px; margin-bottom: 10px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 8px; margin-bottom: 10px; color: black;">
                 <thead>
                     <tr>
-                        <th colspan="5">RIGHT EYE (OD)</th>
+                        <th colspan="5" style="color: black;">RIGHT EYE (OD)</th>
                     </tr>
                     <tr>
-                        <th></th>
-                        <th>SPH</th>
-                        <th>CYL</th>
-                        <th>AXIS</th>
-                        <th>V/A</th>
+                        <th style="color: black;"></th>
+                        <th style="color: black;">SPH</th>
+                        <th style="color: black;">CYL</th>
+                        <th style="color: black;">AXIS</th>
+                        <th style="color: black;">V/A</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td><strong>DIST</strong></td>
-                        <td><span id="previewRightDistSPH"></span></td>
-                        <td><span id="previewRightDistCYL"></span></td>
-                        <td><span id="previewRightDistAXIS"></span></td>
-                        <td><span id="previewRightDistVA"></span></td>
+                        <td style="color: black;"><strong>DIST</strong></td>
+                        <td style="color: black;"><span id="previewRightDistSPH"></span></td>
+                        <td style="color: black;"><span id="previewRightDistCYL"></span></td>
+                        <td style="color: black;"><span id="previewRightDistAXIS"></span></td>
+                        <td style="color: black;"><span id="previewRightDistVA"></span></td>
                     </tr>
                     <tr>
-                        <td><strong>ADD</strong></td>
-                        <td><span id="previewRightAddSPH"></span></td>
-                        <td><span id="previewRightAddCYL"></span></td>
-                        <td><span id="previewRightAddAXIS"></span></td>
-                        <td><span id="previewRightAddVA"></span></td>
+                        <td style="color: black;"><strong>ADD</strong></td>
+                        <td style="color: black;"><span id="previewRightAddSPH"></span></td>
+                        <td style="color: black;"><span id="previewRightAddCYL"></span></td>
+                        <td style="color: black;"><span id="previewRightAddAXIS"></span></td>
+                        <td style="color: black;"><span id="previewRightAddVA"></span></td>
                     </tr>
                 </tbody>
             </table>
 
             <!-- Left Eye Table -->
-            <table style="width: 100%; border-collapse: collapse; font-size: 8px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 8px; color: black;">
                 <thead>
                     <tr>
-                        <th colspan="5">LEFT EYE (OS)</th>
+                        <th colspan="5" style="color: black;">LEFT EYE (OS)</th>
                     </tr>
                     <tr>
-                        <th></th>
-                        <th>SPH</th>
-                        <th>CYL</th>
-                        <th>AXIS</th>
-                        <th>V/A</th>
+                        <th style="color: black;"></th>
+                        <th style="color: black;">SPH</th>
+                        <th style="color: black;">CYL</th>
+                        <th style="color: black;">AXIS</th>
+                        <th style="color: black;">V/A</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td><strong>DIST</strong></td>
-                        <td><span id="previewLeftDistSPH"></span></td>
-                        <td><span id="previewLeftDistCYL"></span></td>
-                        <td><span id="previewLeftDistAXIS"></span></td>
-                        <td><span id="previewLeftDistVA"></span></td>
+                        <td style="color: black;"><strong>DIST</strong></td>
+                        <td style="color: black;"><span id="previewLeftDistSPH"></span></td>
+                        <td style="color: black;"><span id="previewLeftDistCYL"></span></td>
+                        <td style="color: black;"><span id="previewLeftDistAXIS"></span></td>
+                        <td style="color: black;"><span id="previewLeftDistVA"></span></td>
                     </tr>
                     <tr>
-                        <td><strong>ADD</strong></td>
-                        <td><span id="previewLeftAddSPH"></span></td>
-                        <td><span id="previewLeftAddCYL"></span></td>
-                        <td><span id="previewLeftAddAXIS"></span></td>
-                        <td><span id="previewLeftAddVA"></span></td>
+                        <td style="color: black;"><strong>ADD</strong></td>
+                        <td style="color: black;"><span id="previewLeftAddSPH"></span></td>
+                        <td style="color: black;"><span id="previewLeftAddCYL"></span></td>
+                        <td style="color: black;"><span id="previewLeftAddAXIS"></span></td>
+                        <td style="color: black;"><span id="previewLeftAddVA"></span></td>
                     </tr>
                 </tbody>
             </table>
@@ -146,152 +146,158 @@
         </button>
     </div>
 
-  <script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycbxXx0Jy7AmSljFYOuXs00Mxj4aiGpSHz92L5sa903Hp09lEQXrVbfNXByZoAOSogwUm/exec"; // Replace with your Google Apps Script URL
+    <script>
+        const scriptURL = "https://script.google.com/macros/s/AKfycbxXx0Jy7AmSljFYOuXs00Mxj4aiGpSHz92L5sa903Hp09lEQXrVbfNXByZoAOSogwUm/exec"; // Replace with your Google Apps Script URL
 
-    document.addEventListener("DOMContentLoaded", function() {
-        const username = localStorage.getItem("username");
+        document.addEventListener("DOMContentLoaded", function () {
+            const username = localStorage.getItem("username");
 
-        if (!username) {
-            // Redirect to login page if no user is logged in
-            window.location.href = "login.html";
-            return;
-        }
-
-        // Fetch user details from Google Sheets
-        fetch(scriptURL, {
-            method: "POST",
-            body: JSON.stringify({ action: "getDetails", username: username })
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.status === "success") {
-                // Update Clinic Details in Prescription Preview
-                document.getElementById("previewClinicName").textContent = result.clinicName;
-                document.getElementById("previewClinicAddress").textContent = result.address;
-                document.getElementById("previewOptometristName").textContent = result.optometristName;
-                document.getElementById("previewContactNumber").textContent = result.contactNumber;
-            } else {
-                alert("Error fetching clinic details. Please log in again.");
-                localStorage.removeItem("username");
+            if (!username) {
+                // Redirect to login page if no user is logged in
                 window.location.href = "login.html";
+                return;
             }
-        })
-        .catch(error => {
-            console.error("Error:", error);
-            alert("Failed to fetch clinic details. Please check your internet connection.");
+
+            // Fetch user details from Google Sheets
+            fetch(scriptURL, {
+                method: "POST",
+                body: JSON.stringify({ action: "getDetails", username: username }),
+            })
+                .then((response) => response.json())
+                .then((result) => {
+                    if (result.status === "success") {
+                        // Update Clinic Details in Prescription Preview
+                        document.getElementById("previewClinicName").textContent = result.clinicName;
+                        document.getElementById("previewClinicAddress").textContent = result.address;
+                        document.getElementById("previewOptometristName").textContent = result.optometristName;
+                        document.getElementById("previewContactNumber").textContent = result.contactNumber;
+                    } else {
+                        alert("Error fetching clinic details. Please log in again.");
+                        localStorage.removeItem("username");
+                        window.location.href = "login.html";
+                    }
+                })
+                .catch((error) => {
+                    console.error("Error:", error);
+                    alert("Failed to fetch clinic details. Please check your internet connection.");
+                });
+
+            // Set Current Date
+            document.getElementById("previewcurrentDate").textContent = new Date().toLocaleDateString();
+
+            // Load data from localStorage
+            document.getElementById("previewPatientName").textContent = localStorage.getItem("patientName");
+            document.getElementById("previewAge").textContent = localStorage.getItem("age");
+            document.getElementById("previewGender").textContent = localStorage.getItem("gender");
+            document.getElementById("previewMobile").textContent = localStorage.getItem("patientMobile");
+            document.getElementById("previewAmount").textContent = localStorage.getItem("amount");
+            document.getElementById("previewVisionType").textContent = localStorage.getItem("visionType");
+            document.getElementById("previewLensType").textContent = localStorage.getItem("lensType");
+            document.getElementById("previewFrameType").textContent = localStorage.getItem("frameType");
+            document.getElementById("previewPaymentMode").textContent = localStorage.getItem("paymentMode");
+
+            // Prescription fields
+            const prescriptionFields = [
+                "rightDistSPH", "rightDistCYL", "rightDistAXIS", "rightDistVA",
+                "leftDistSPH", "leftDistCYL", "leftDistAXIS", "leftDistVA",
+                "rightAddSPH", "rightAddCYL", "rightAddAXIS", "rightAddVA",
+                "leftAddSPH", "leftAddCYL", "leftAddAXIS", "leftAddVA",
+            ];
+
+            prescriptionFields.forEach((field) => {
+                const elementId = `preview${field}`;
+                const element = document.getElementById(elementId);
+                const value = localStorage.getItem(field);
+
+                if (element && value) {
+                    element.textContent = value;
+                } else {
+                    console.error(`Element with ID "${elementId}" not found or value is null.`);
+                }
+            });
         });
 
-        // Set Current Date
-        document.getElementById("previewcurrentDate").textContent = new Date().toLocaleDateString();
-    });
-
-    // Function to generate PDF
-    function generatePDF() {
-        const element = document.getElementById('prescriptionPreview');
-        html2pdf()
-            .set({
-                margin: 5,
-                filename: 'Lens_Prescription.pdf',
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            })
-            .from(element)
-            .save();
-    }
-
-    // Function to send via WhatsApp
-    function sendWhatsApp() {
-        const mobileNumber = localStorage.getItem("patientMobile");
-        if (!mobileNumber) {
-            alert("Please enter a valid mobile number before sending.");
-            return;
+        // Function to generate PDF
+        function generatePDF() {
+            const element = document.getElementById("prescriptionPreview");
+            html2pdf()
+                .set({
+                    margin: 5,
+                    filename: "Lens_Prescription.pdf",
+                    image: { type: "jpeg", quality: 0.98 },
+                    html2canvas: { scale: 2 },
+                    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+                })
+                .from(element)
+                .save();
         }
 
-        html2canvas(document.getElementById('prescriptionPreview'), { scale: 2 }).then(canvas => {
-            const imageData = canvas.toDataURL("image/png");
-            uploadImageToImgBB(imageData, mobileNumber);
-        });
-    }
-
-    // Function to upload image to ImgBB and send via WhatsApp
-    function uploadImageToImgBB(base64Image, mobileNumber) {
-        const apiKey = "bbfde58b1da5fc9ee9d7d6a591852f71"; // Your ImgBB API Key
-        const formData = new FormData();
-        formData.append("image", base64Image.split(',')[1]);
-
-        fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
-            method: "POST",
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const imageURL = data.data.url;
-                const message = "Here is your digital prescription from Lens Prescription App: " + imageURL;
-                const whatsappURL = `https://wa.me/${mobileNumber}?text=${encodeURIComponent(message)}`;
-                window.open(whatsappURL, "_blank");
-            } else {
-                alert("Image upload failed. Please try again.");
+        // Function to send via WhatsApp
+        function sendWhatsApp() {
+            const mobileNumber = localStorage.getItem("patientMobile");
+            if (!mobileNumber) {
+                alert("Please enter a valid mobile number before sending.");
+                return;
             }
-        })
-        .catch(error => {
-            console.error("Image upload error:", error);
-            alert("Error uploading image. Please check your internet connection.");
+
+            html2canvas(document.getElementById("prescriptionPreview"), { scale: 2 }).then((canvas) => {
+                const imageData = canvas.toDataURL("image/png");
+                uploadImageToImgBB(imageData, mobileNumber);
+            });
+        }
+
+        // Function to upload image to ImgBB and send via WhatsApp
+        function uploadImageToImgBB(base64Image, mobileNumber) {
+            const apiKey = "bbfde58b1da5fc9ee9d7d6a591852f71"; // Your ImgBB API Key
+            const formData = new FormData();
+            formData.append("image", base64Image.split(",")[1]);
+
+            fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+                method: "POST",
+                body: formData,
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.success) {
+                        const imageURL = data.data.url;
+                        const message = "Here is your digital prescription from Lens Prescription App: " + imageURL;
+                        const whatsappURL = `https://wa.me/${mobileNumber}?text=${encodeURIComponent(message)}`;
+                        window.open(whatsappURL, "_blank");
+                    } else {
+                        alert("Image upload failed. Please try again.");
+                    }
+                })
+                .catch((error) => {
+                    console.error("Image upload error:", error);
+                    alert("Error uploading image. Please check your internet connection.");
+                });
+        }
+
+        // Clear localStorage on page unload
+        window.addEventListener("beforeunload", function () {
+            localStorage.removeItem("patientName");
+            localStorage.removeItem("age");
+            localStorage.removeItem("gender");
+            localStorage.removeItem("patientMobile");
+            localStorage.removeItem("amount");
+            localStorage.removeItem("visionType");
+            localStorage.removeItem("lensType");
+            localStorage.removeItem("frameType");
+            localStorage.removeItem("paymentMode");
+            localStorage.removeItem("currentDate");
+
+            // Clear prescription fields
+            const prescriptionFields = [
+                "rightDistSPH", "rightDistCYL", "rightDistAXIS", "rightDistVA",
+                "leftDistSPH", "leftDistCYL", "leftDistAXIS", "leftDistVA",
+                "rightAddSPH", "rightAddCYL", "rightAddAXIS", "rightAddVA",
+                "leftAddSPH", "leftAddCYL", "leftAddAXIS", "leftAddVA",
+            ];
+
+            prescriptionFields.forEach((field) => {
+                localStorage.removeItem(field);
+            });
         });
-    }
-
-    // Load data from localStorage
-    document.addEventListener("DOMContentLoaded", function() {
-        document.getElementById("previewPatientName").textContent = localStorage.getItem("patientName");
-        document.getElementById("previewAge").textContent = localStorage.getItem("age");
-        document.getElementById("previewGender").textContent = localStorage.getItem("gender");
-        document.getElementById("previewMobile").textContent = localStorage.getItem("patientMobile");
-        document.getElementById("previewAmount").textContent = localStorage.getItem("amount");
-        document.getElementById("previewVisionType").textContent = localStorage.getItem("visionType");
-        document.getElementById("previewLensType").textContent = localStorage.getItem("lensType");
-        document.getElementById("previewFrameType").textContent = localStorage.getItem("frameType");
-        document.getElementById("previewPaymentMode").textContent = localStorage.getItem("paymentMode");
-
-        // Prescription fields
-        const prescriptionFields = [
-            "rightDistSPH", "rightDistCYL", "rightDistAXIS", "rightDistVA",
-            "leftDistSPH", "leftDistCYL", "leftDistAXIS", "leftDistVA",
-            "rightAddSPH", "rightAddCYL", "rightAddAXIS", "rightAddVA",
-            "leftAddSPH", "leftAddCYL", "leftAddAXIS", "leftAddVA"
-        ];
-
-        prescriptionFields.forEach(field => {
-            document.getElementById(`preview${field}`).textContent = localStorage.getItem(field);
-        });
-    });
-
-window.addEventListener("beforeunload", function() {
-    localStorage.removeItem("patientName");
-    localStorage.removeItem("age");
-    localStorage.removeItem("gender");
-    localStorage.removeItem("patientMobile");
-    localStorage.removeItem("amount");
-    localStorage.removeItem("visionType");
-    localStorage.removeItem("lensType");
-    localStorage.removeItem("frameType");
-    localStorage.removeItem("paymentMode");
-    localStorage.removeItem("currentDate");
-
-    // Clear prescription fields
-    const prescriptionFields = [
-        "rightDistSPH", "rightDistCYL", "rightDistAXIS", "rightDistVA",
-        "leftDistSPH", "leftDistCYL", "leftDistAXIS", "leftDistVA",
-        "rightAddSPH", "rightAddCYL", "rightAddAXIS", "rightAddVA",
-        "leftAddSPH", "leftAddCYL", "leftAddAXIS", "leftAddVA"
-    ];
-
-    prescriptionFields.forEach(field => {
-        localStorage.removeItem(field);
-    });
-});
-      
-</script>
+    </script>
 </body>
 </html>
