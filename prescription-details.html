@@ -193,83 +193,87 @@
     displayPrescription(prescription);
 }
 
-        function displayPrescription(prescription) {
-            const container = document.getElementById("prescriptionTableContainer");
+       function displayPrescription(prescription) {
+    console.log("Prescription to display:", prescription); // Debugging: Log the prescription object
+    console.log("Prescription Data:", prescription.prescriptionData); // Debugging: Log the prescription data
 
-            // Create the table
-            const table = document.createElement("table");
+    const container = document.getElementById("prescriptionTableContainer");
+    container.innerHTML = ""; // Clear previous results
 
-            // Add table headers
-            const thead = document.createElement("thead");
-            const headerRow = document.createElement("tr");
-            ["RIGHT EYE (OD)", "LEFT EYE (OS)"].forEach(section => {
-                const th = document.createElement("th");
-                th.colSpan = 4;
-                th.textContent = section;
-                headerRow.appendChild(th);
-            });
-            thead.appendChild(headerRow);
-            table.appendChild(thead);
+    // Create the table
+    const table = document.createElement("table");
 
-            // Add table body
-            const tbody = document.createElement("tbody");
+    // Add table headers
+    const thead = document.createElement("thead");
+    const headerRow = document.createElement("tr");
+    ["RIGHT EYE (OD)", "LEFT EYE (OS)"].forEach(section => {
+        const th = document.createElement("th");
+        th.colSpan = 4;
+        th.textContent = section;
+        headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
 
-            // Add DIST row
-            const distRow = document.createElement("tr");
-            ["DIST", "DIST"].forEach(section => {
-                const td = document.createElement("td");
-                td.textContent = section;
-                distRow.appendChild(td);
-            });
-            tbody.appendChild(distRow);
+    // Add table body
+    const tbody = document.createElement("tbody");
 
-            // Add SPH, CYL, AXIS, VA rows
-            const fields = ["SPH", "CYL", "AXIS", "VA"];
-            fields.forEach(field => {
-                const row = document.createElement("tr");
+    // Add DIST row
+    const distRow = document.createElement("tr");
+    ["DIST", "DIST"].forEach(section => {
+        const td = document.createElement("td");
+        td.textContent = section;
+        distRow.appendChild(td);
+    });
+    tbody.appendChild(distRow);
 
-                // Right Eye (OD)
-                const rightTd = document.createElement("td");
-                rightTd.textContent = prescription.prescriptionData[`rightDist${field}`] || "-";
-                row.appendChild(rightTd);
+    // Add SPH, CYL, AXIS, VA rows
+    const fields = ["SPH", "CYL", "AXIS", "VA"];
+    fields.forEach(field => {
+        const row = document.createElement("tr");
 
-                // Left Eye (OS)
-                const leftTd = document.createElement("td");
-                leftTd.textContent = prescription.prescriptionData[`leftDist${field}`] || "-";
-                row.appendChild(leftTd);
+        // Right Eye (OD)
+        const rightTd = document.createElement("td");
+        rightTd.textContent = prescription.prescriptionData[`rightDist${field}`] || "-";
+        row.appendChild(rightTd);
 
-                tbody.appendChild(row);
-            });
+        // Left Eye (OS)
+        const leftTd = document.createElement("td");
+        leftTd.textContent = prescription.prescriptionData[`leftDist${field}`] || "-";
+        row.appendChild(leftTd);
 
-            // Add ADD row
-            const addRow = document.createElement("tr");
-            ["ADD", "ADD"].forEach(section => {
-                const td = document.createElement("td");
-                td.textContent = section;
-                addRow.appendChild(td);
-            });
-            tbody.appendChild(addRow);
+        tbody.appendChild(row);
+    });
 
-            // Add SPH, CYL, AXIS, VA rows for ADD
-            fields.forEach(field => {
-                const row = document.createElement("tr");
+    // Add ADD row
+    const addRow = document.createElement("tr");
+    ["ADD", "ADD"].forEach(section => {
+        const td = document.createElement("td");
+        td.textContent = section;
+        addRow.appendChild(td);
+    });
+    tbody.appendChild(addRow);
 
-                // Right Eye (OD)
-                const rightTd = document.createElement("td");
-                rightTd.textContent = prescription.prescriptionData[`rightAdd${field}`] || "-";
-                row.appendChild(rightTd);
+    // Add SPH, CYL, AXIS, VA rows for ADD
+    fields.forEach(field => {
+        const row = document.createElement("tr");
 
-                // Left Eye (OS)
-                const leftTd = document.createElement("td");
-                leftTd.textContent = prescription.prescriptionData[`leftAdd${field}`] || "-";
-                row.appendChild(leftTd);
+        // Right Eye (OD)
+        const rightTd = document.createElement("td");
+        rightTd.textContent = prescription.prescriptionData[`rightAdd${field}`] || "-";
+        row.appendChild(rightTd);
 
-                tbody.appendChild(row);
-            });
+        // Left Eye (OS)
+        const leftTd = document.createElement("td");
+        leftTd.textContent = prescription.prescriptionData[`leftAdd${field}`] || "-";
+        row.appendChild(leftTd);
 
-            table.appendChild(tbody);
-            container.appendChild(table);
-        }
+        tbody.appendChild(row);
+    });
+
+    table.appendChild(tbody);
+    container.appendChild(table);
+}
     </script>
 </body>
 </html>
