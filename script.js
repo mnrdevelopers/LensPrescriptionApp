@@ -234,9 +234,9 @@ function submitForm() {
             localStorage.setItem("paymentMode", paymentMode);
             localStorage.setItem("currentDate", new Date().toLocaleDateString());
 
-            // Save prescription fields
+            // Save prescription fields with "preview" prefix
             for (const key in prescriptionData) {
-                localStorage.setItem(key, prescriptionData[key]);
+                localStorage.setItem(`preview${key}`, prescriptionData[key]);
             }
 
             // Increment prescription count and earnings
