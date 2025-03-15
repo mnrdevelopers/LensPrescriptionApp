@@ -239,6 +239,20 @@ function submitForm() {
                 localStorage.setItem(`preview${key}`, prescriptionData[key]);
             }
 
+            // Log saved data for debugging
+            console.log("Data saved to localStorage:", {
+                patientName,
+                age,
+                gender,
+                mobile,
+                amount,
+                visionType,
+                lensType,
+                frameType,
+                paymentMode,
+                prescriptionData
+            });
+
             // Increment prescription count and earnings
             prescriptionCount++;
             amountEarned += parseFloat(amount);
