@@ -353,7 +353,7 @@
             tbody.appendChild(tr);
         }
 
-        function addPrescriptionRow(tbody, prescription) {
+       function addPrescriptionRow(tbody, prescription) {
     console.log("Prescription data:", prescription); // Debugging: Log the prescription object
 
     let tr = document.createElement("tr");
@@ -404,23 +404,26 @@
     localStorage.setItem("frameType", row.frameType);
     localStorage.setItem("paymentMode", row.paymentMode);
 
-    // Save prescription-specific fields to localStorage
-    const prescriptionFields = [
-        "rightDistSPH", "rightDistCYL", "rightDistAXIS", "rightDistVA",
-        "leftDistSPH", "leftDistCYL", "leftDistAXIS", "leftDistVA",
-        "rightAddSPH", "rightAddCYL", "rightAddAXIS", "rightAddVA",
-        "leftAddSPH", "leftAddCYL", "leftAddAXIS", "leftAddVA"
-    ];
+    // Save prescription-specific fields from the parsed JSON object
+    if (row.prescriptionData) {
+        const prescriptionFields = [
+            "rightDistSPH", "rightDistCYL", "rightDistAXIS", "rightDistVA",
+            "leftDistSPH", "leftDistCYL", "leftDistAXIS", "leftDistVA",
+            "rightAddSPH", "rightAddCYL", "rightAddAXIS", "rightAddVA",
+            "leftAddSPH", "leftAddCYL", "leftAddAXIS", "leftAddVA"
+        ];
 
-    prescriptionFields.forEach(field => {
-        localStorage.setItem(`preview${field}`, row[field]);
-        console.log(`Saved ${field}:`, row[field]); // Debugging: Log each field and its value
-    });
+        prescriptionFields.forEach(field => {
+            localStorage.setItem(`preview${field}`, row.prescriptionData[field] || "");
+            console.log(`Saved ${field}:`, row.prescriptionData[field]); // Debugging: Log each field and its value
+        });
+    }
 
     // Redirect to preview page
     window.location.href = "preview.html";
 }
-        
+
+
         function deletePrescription(row) {
             const scriptURL = "https://script.google.com/macros/s/AKfycbxXx0Jy7AmSljFYOuXs00Mxj4aiGpSHz92L5sa903Hp09lEQXrVbfNXByZoAOSogwUm/exec";
             const username = localStorage.getItem("username");
