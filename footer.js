@@ -5,8 +5,8 @@ document.addEventListener("DOMContentLoaded", function () {
             margin-top: 220px; 
             font-size: 12px;
             font-weight: bolder;
-            color: white; 
-            background-color: #333; 
+            color: black; 
+            background-color: white; 
             padding: 15px; 
             position: relative;
             bottom: 0;
