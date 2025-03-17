@@ -33,3 +33,42 @@
         </div>
     </div>
 </nav>
+
+<script>
+     // Function to highlight the active link
+    function highlightActiveLink() {
+        const currentUrl = window.location.href;
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(link => {
+            if (link.href === currentUrl) {
+                link.classList.add('active');
+            } else {
+                link.classList.remove('active');
+            }
+        });
+    }
+
+    // Call the function when the page loads
+    document.addEventListener('DOMContentLoaded', highlightActiveLink);
+
+    // Add footer inside the offcanvas body
+    document.addEventListener("DOMContentLoaded", function () {
+        const footerHTML = `
+            <div style="
+                text-align: center; 
+                margin-top: auto; 
+                font-size: 12px;
+                font-weight: bolder;
+                color: black; 
+                background-color: white; 
+                padding: 15px; 
+                position: relative;
+                bottom: 0;
+                width: 100%;">
+                @2025 Lens-Prescription-App developed by <strong>MANITEJA (MNR DEVELOPERS)</strong>
+            </div>
+        `;
+        const offcanvasBody = document.querySelector('.offcanvas-body');
+        offcanvasBody.insertAdjacentHTML('beforeend', footerHTML);
+    });
+</script>
