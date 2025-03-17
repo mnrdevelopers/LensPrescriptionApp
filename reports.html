@@ -18,7 +18,7 @@
             padding-top: 70px; /* Prevent navbar overlap */
         }
 
-        .dashboard-container {
+        .reports-container {
             max-width: 800px; /* Slightly wider for the table */
             margin: 50px auto;
             padding: 20px;
@@ -104,8 +104,8 @@
 
         /* Mobile Responsive */
         @media (max-width: 768px) {
-            .dashboard-container {
-                width: 90%;
+            .reports-container {
+                width: 95%;
             }
 
             .button-group {
@@ -129,7 +129,7 @@
     <header></header>
 
     <!-- Reports Content -->
-    <main class="dashboard-container">
+    <main class="reports-container">
         <h2>Reports</h2>
         <div class="button-group">
             <button onclick="fetchDailyReport()" class="btn btn-primary">Daily Report</button>
