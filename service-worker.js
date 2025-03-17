@@ -5,9 +5,16 @@ const ASSETS = [
   '/index.html',
   '/login.html',
   '/register.html',
+  '/dashboard.html',
   '/app.html',
+  '/prescriptions.html',
+  '/reports.html',
+  '/forgot-password.html',
+  '/navbar.html',
   '/style.css',
   '/script.js',
+  '/loadNavbar.js',
+  '/footer.js',
   '/manifest.json'
 ];
 
