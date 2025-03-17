@@ -4,59 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>View Prescriptions</title>
-    <link rel="stylesheet" href="style.css">
-     <!-- Bootstrap CSS -->
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        /* General Styles */
+        /* Custom CSS for Dashboard */
         body {
-            font-family: 'Times New Roman', Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f4;
-        }
-
-        .btn {
-            padding: 8px 16px;
-            font-size: 14px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background 0.3s ease;
-        }
-
-        .btn-logout {
-            background-color: #ff4757;
-            color: white;
-        }
-
-        .btn-logout:hover {
-            background-color: #e84118;
-        }
-
-        .btn-add {
-            background-color: #28a745;
-            color: white;
-            margin-right: 10px;
-        }
-
-        .btn-add:hover {
-            background-color: #218838;
-        }
-
-        .btn-search {
-            background-color: #007bff;
-            color: white;
-        }
-
-        .btn-search:hover {
-            background-color: #0056b3;
+            font-family: 'Times New Roman', serif;
+            font-weight: bold;
+            background: linear-gradient(135deg, #FFD700 0%, #1E90FF 50%, #32CD32 100%);
+            background-attachment: fixed;
+            background-size: cover;
+            background-repeat: no-repeat;
+            padding-top: 70px; /* Prevent navbar overlap */
         }
 
         .container {
-            padding: 20px;
             max-width: 1200px;
-            margin: 0 auto;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            color: #007bff;
+            margin-bottom: 20px;
         }
 
         .search-bar {
@@ -67,24 +40,18 @@
 
         .search-bar input {
             flex: 1;
-            padding: 12px;
-            font-size: 14px;
+            padding: 10px;
             border: 1px solid #ccc;
-            border-radius: 25px;
+            border-radius: 5px;
             outline: none;
-            transition: border-color 0.3s ease;
-        }
-
-        .search-bar input:focus {
-            border-color: #007bff;
         }
 
         .search-bar button {
-            padding: 12px 20px;
-            border-radius: 25px;
+            padding: 10px 20px;
             background-color: #007bff;
             color: white;
             border: none;
+            border-radius: 5px;
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
@@ -99,6 +66,8 @@
             border-collapse: collapse;
             background-color: white;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
         }
 
         th, td {
@@ -112,7 +81,10 @@
             color: white;
         }
 
-        /* Button Icons */
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
         .btn-preview, .btn-delete {
             background: none;
             border: none;
@@ -134,8 +106,8 @@
             color: #e84118;
         }
 
-        /* Mobile Styles */
-        @media (max-width: 600px) {
+        /* Mobile Responsive Table */
+        @media (max-width: 768px) {
             table, thead, tbody, th, td, tr {
                 display: block;
             }
@@ -171,11 +143,15 @@
                 font-weight: bold;
                 color: #007bff;
             }
+
+            .btn-preview, .btn-delete {
+                font-size: 16px;
+            }
         }
     </style>
 </head>
 <body>
-     <!-- Placeholder for the navbar -->
+    <!-- Placeholder for the navbar -->
     <header></header>
 
     <main class="container">
@@ -220,49 +196,49 @@
             fetchPrescriptions();
         });
 
-       function fetchPrescriptions() {
-    const username = localStorage.getItem("username");
-    console.log("Username:", username); // Debugging: Log the username
+        function fetchPrescriptions() {
+            const username = localStorage.getItem("username");
+            console.log("Username:", username); // Debugging: Log the username
 
-    if (!username) {
-        alert("You are not logged in!");
-        window.location.href = "login.html";
-        return;
-    }
+            if (!username) {
+                alert("You are not logged in!");
+                window.location.href = "login.html";
+                return;
+            }
 
-    fetch(scriptURL, {
-        method: "POST",
-        body: JSON.stringify({ action: "fetchPrescriptions", username: username })
-    })
-    .then(response => response.json())
-    .then(result => {
-        console.log("Fetched data:", result); // Debugging: Log the fetched data
-        if (result.status === "success") {
-            // Parse the JSON string in the Prescription Data (JSON) column
-            const parsedData = result.data.map(row => {
-                if (row.prescriptionData) {
-                    try {
-                        row.prescriptionData = JSON.parse(row.prescriptionData);
-                    } catch (error) {
-                        console.error("Error parsing prescription data:", error);
-                        row.prescriptionData = {};
-                    }
+            fetch(scriptURL, {
+                method: "POST",
+                body: JSON.stringify({ action: "fetchPrescriptions", username: username })
+            })
+            .then(response => response.json())
+            .then(result => {
+                console.log("Fetched data:", result); // Debugging: Log the fetched data
+                if (result.status === "success") {
+                    const parsedData = result.data.map(row => {
+                        if (row.prescriptionData) {
+                            try {
+                                row.prescriptionData = JSON.parse(row.prescriptionData);
+                            } catch (error) {
+                                console.error("Error parsing prescription data:", error);
+                                row.prescriptionData = {};
+                            }
+                        } else {
+                            row.prescriptionData = {};
+                        }
+                        return row;
+                    });
+
+                    displayPrescriptions(parsedData);
                 } else {
-                    row.prescriptionData = {};
+                    alert("No prescriptions found!");
                 }
-                return row;
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("Failed to fetch prescriptions. Please check your internet connection.");
             });
-
-            displayPrescriptions(parsedData);
-        } else {
-            alert("No prescriptions found!");
         }
-    })
-    .catch(error => {
-        console.error("Error:", error);
-        alert("Failed to fetch prescriptions. Please check your internet connection.");
-    });
-}
+
         function filterTable() {
             let input = document.getElementById("searchInput").value.toLowerCase();
             let table = document.getElementById("prescriptionTable");
@@ -273,30 +249,6 @@
                 let mobile = rows[i].getElementsByTagName("td")[4]?.textContent.toLowerCase() || "";
                 rows[i].style.display = name.includes(input) || mobile.includes(input) ? "" : "none";
             }
-        }
-
-        function searchPrescription() {
-            const startDate = document.getElementById("startDate").value;
-            const endDate = document.getElementById("endDate").value;
-
-            if (!startDate || !endDate) {
-                alert("Please select both start and end dates.");
-                return;
-            }
-
-            fetch(scriptURL, {
-                method: "POST",
-                body: JSON.stringify({ action: "searchPrescription", startDate: startDate, endDate: endDate })
-            })
-            .then(response => response.json())
-            .then(result => {
-                if (result.status === "success" && result.data.length > 0) {
-                    displayPrescriptions(result.data);
-                } else {
-                    alert("No records found for the given date range.");
-                }
-            })
-            .catch(error => console.error("Error:", error));
         }
 
         function displayPrescriptions(data) {
@@ -353,79 +305,69 @@
             tbody.appendChild(tr);
         }
 
-       function addPrescriptionRow(tbody, prescription) {
-    console.log("Prescription data:", prescription); // Debugging: Log the prescription object
+        function addPrescriptionRow(tbody, prescription) {
+            let tr = document.createElement("tr");
+            const formattedDate = new Date(Date.parse(prescription.date)).toLocaleString();
 
-    let tr = document.createElement("tr");
-    const formattedDate = new Date(Date.parse(prescription.date)).toLocaleString();
+            let dateTd = document.createElement("td");
+            dateTd.textContent = formattedDate;
+            dateTd.setAttribute("data-label", "Date");
+            tr.appendChild(dateTd);
 
-    let dateTd = document.createElement("td");
-    dateTd.textContent = formattedDate;
-    dateTd.setAttribute("data-label", "Date");
-    tr.appendChild(dateTd);
+            const fields = ["patientName", "age", "gender", "mobile", "amount", "visionType", "lensType", "frameType", "paymentMode"];
+            fields.forEach(field => {
+                let td = document.createElement("td");
+                td.textContent = prescription[field];
+                td.setAttribute("data-label", field);
+                tr.appendChild(td);
+            });
 
-    const fields = ["patientName", "age", "gender", "mobile", "amount", "visionType", "lensType", "frameType", "paymentMode"];
-    fields.forEach(field => {
-        let td = document.createElement("td");
-        td.textContent = prescription[field];
-        td.setAttribute("data-label", field);
-        tr.appendChild(td);
-    });
+            let actionsTd = document.createElement("td");
 
-    let actionsTd = document.createElement("td");
+            let previewButton = document.createElement("button");
+            previewButton.innerHTML = "&#128065;"; // Eye icon for preview
+            previewButton.className = "btn-preview";
+            previewButton.onclick = () => previewPrescription(prescription);
+            actionsTd.appendChild(previewButton);
 
-    let previewButton = document.createElement("button");
-    previewButton.innerHTML = "&#128065;"; // Eye icon for preview
-    previewButton.className = "btn-preview";
-    previewButton.onclick = () => previewPrescription(prescription);
-    actionsTd.appendChild(previewButton);
+            let deleteButton = document.createElement("button");
+            deleteButton.innerHTML = "&#128465;"; // Trash icon for delete
+            deleteButton.className = "btn-delete";
+            deleteButton.onclick = () => deletePrescription(prescription);
+            actionsTd.appendChild(deleteButton);
 
-    let deleteButton = document.createElement("button");
-    deleteButton.innerHTML = "&#128465;"; // Trash icon for delete
-    deleteButton.className = "btn-delete";
-    deleteButton.onclick = () => deletePrescription(prescription);
-    actionsTd.appendChild(deleteButton);
+            tr.appendChild(actionsTd);
+            tbody.appendChild(tr);
+        }
 
-    tr.appendChild(actionsTd);
-    tbody.appendChild(tr);
-}
-        
-       function previewPrescription(row) {
-    console.log("Row data for preview:", row); // Debugging: Log the row object
+        function previewPrescription(row) {
+            localStorage.setItem("patientName", row.patientName);
+            localStorage.setItem("age", row.age);
+            localStorage.setItem("gender", row.gender);
+            localStorage.setItem("patientMobile", row.mobile);
+            localStorage.setItem("amount", row.amount);
+            localStorage.setItem("visionType", row.visionType);
+            localStorage.setItem("lensType", row.lensType);
+            localStorage.setItem("frameType", row.frameType);
+            localStorage.setItem("paymentMode", row.paymentMode);
 
-    // Save patient details to localStorage
-    localStorage.setItem("patientName", row.patientName);
-    localStorage.setItem("age", row.age);
-    localStorage.setItem("gender", row.gender);
-    localStorage.setItem("patientMobile", row.mobile);
-    localStorage.setItem("amount", row.amount);
-    localStorage.setItem("visionType", row.visionType);
-    localStorage.setItem("lensType", row.lensType);
-    localStorage.setItem("frameType", row.frameType);
-    localStorage.setItem("paymentMode", row.paymentMode);
+            if (row.prescriptionData) {
+                const prescriptionFields = [
+                    "rightDistSPH", "rightDistCYL", "rightDistAXIS", "rightDistVA",
+                    "leftDistSPH", "leftDistCYL", "leftDistAXIS", "leftDistVA",
+                    "rightAddSPH", "rightAddCYL", "rightAddAXIS", "rightAddVA",
+                    "leftAddSPH", "leftAddCYL", "leftAddAXIS", "leftAddVA"
+                ];
 
-    // Save prescription-specific fields from the parsed JSON object
-    if (row.prescriptionData) {
-        const prescriptionFields = [
-            "rightDistSPH", "rightDistCYL", "rightDistAXIS", "rightDistVA",
-            "leftDistSPH", "leftDistCYL", "leftDistAXIS", "leftDistVA",
-            "rightAddSPH", "rightAddCYL", "rightAddAXIS", "rightAddVA",
-            "leftAddSPH", "leftAddCYL", "leftAddAXIS", "leftAddVA"
-        ];
+                prescriptionFields.forEach(field => {
+                    localStorage.setItem(`preview${field}`, row.prescriptionData[field] || "");
+                });
+            }
 
-        prescriptionFields.forEach(field => {
-            localStorage.setItem(`preview${field}`, row.prescriptionData[field] || "");
-            console.log(`Saved ${field}:`, row.prescriptionData[field]); // Debugging: Log each field and its value
-        });
-    }
-
-    // Redirect to preview page
-    window.location.href = "preview.html";
-}
-
+            window.location.href = "preview.html";
+        }
 
         function deletePrescription(row) {
-            const scriptURL = "https://script.google.com/macros/s/AKfycbxXx0Jy7AmSljFYOuXs00Mxj4aiGpSHz92L5sa903Hp09lEQXrVbfNXByZoAOSogwUm/exec";
             const username = localStorage.getItem("username");
 
             fetch(scriptURL, {
@@ -433,7 +375,7 @@
                 body: JSON.stringify({ 
                     action: "deletePrescription", 
                     username: username, 
-                    mobile: row.mobile // Access the mobile property from the row object
+                    mobile: row.mobile
                 })
             })
             .then(response => response.json())
