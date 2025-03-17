@@ -33,7 +33,7 @@ function insertFooter() {
     const footerHTML = `
         <div style="
             text-align: center; 
-            margin-top: auto; 
+            margin-top: 100px; 
             font-size: 12px;
             font-weight: bolder;
             color: black; 
