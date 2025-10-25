@@ -22,7 +22,7 @@ function initializeAuth() {
     auth.onAuthStateChanged((user) => {
         if (user) {
             // User is signed in, redirect to dashboard
-            window.location.href = 'dashboard.html';
+            window.location.href = 'app.html';
         }
     });
 
@@ -78,7 +78,7 @@ async function handleLogin(event) {
         localStorage.setItem('userId', user.uid);
 
         // Redirect to dashboard
-        window.location.href = 'dashboard.html';
+        window.location.href = 'app.html';
 
     } catch (error) {
         console.error('Login error:', error);
@@ -135,7 +135,7 @@ async function handleRegister(event) {
         
         // Redirect after short delay
         setTimeout(() => {
-            window.location.href = 'dashboard.html';
+            window.location.href = 'app.html';
         }, 2000);
 
     } catch (error) {
