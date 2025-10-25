@@ -5,30 +5,30 @@ let currentPrescriptionData = null;
 let isFormFilled = false;
 let deferredPrompt;
 
-// Check authentication state immediately on load before setting up event listeners
-// This prevents the infinite loop when coming from auth.html
-if (typeof firebase !== 'undefined' && firebase.auth().currentUser === null) {
-    // If Firebase is initialized but no user is logged in, redirect to auth page
-    window.location.href = 'auth.html';
-} else {
-    // If user is already logged in (auth.currentUser is not null or Firebase hasn't loaded yet)
-    // We proceed with application initialization
-    document.addEventListener('DOMContentLoaded', function() {
-        initializeApp();
-        setupEventListeners();
-        setupPWA();
-    });
-}
+// 🛑 CRITICAL FIX: Use onAuthStateChanged to prevent the redirect loop.
+// This listener waits until Firebase confirms the user's state (logged in or logged out)
+// before deciding whether to initialize the app or redirect to auth.
+firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+        // User is confirmed signed in. Initialize the application once the DOM is ready.
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+            setupEventListeners();
+            setupPWA();
+        });
+    } else {
+        // User is confirmed signed out. Redirect to the login page immediately.
+        // Use window.location.replace to prevent the back button leading to app.html.
+        window.location.replace('auth.html');
+    }
+});
+
 
 function initializeApp() {
-    // We assume the user is logged in here, if not, the immediate check above handled it.
+    // The user is guaranteed to be logged in here due to the check above.
     const user = auth.currentUser;
-    if (!user) {
-        // This case should not be hit if the top-level check works correctly, 
-        // but included as a safety net.
-        window.location.href = 'auth.html';
-        return;
-    }
+    // We remove the redundant 'if (!user) { window.location.href = 'auth.html'; return; }' 
+    // check from here as the onAuthStateChanged handles it more safely at the entry point.
 
     // Load user profile
     loadUserProfile();
@@ -39,7 +39,7 @@ function initializeApp() {
     const previewCurrentDateElement = document.getElementById('previewcurrentDate');
     
     if (currentDateElement) currentDateElement.textContent = todayDate;
-    if (previewCurrentDateElement) previewCurrentDateElement.textContent = todayDate;
+    if (previewCurrentDateElement) previewCurrentElement.textContent = todayDate;
     
     // Show dashboard by default
     showDashboard();
@@ -211,7 +211,7 @@ function openEditProfile() {
     const editContactNumber = document.getElementById('editContactNumber');
     
     if (editClinicName) editClinicName.value = clinicName === 'Loading...' ? '' : clinicName;
-    if (editOptometristName) editOptometristName.value = optometristName === 'Loading...' ? '' : optometometristName;
+    if (editOptometristName) editOptometristName.value = optometristName === 'Loading...' ? '' : optometristName;
     if (editAddress) editAddress.value = address === 'Please wait...' ? '' : address;
     if (editContactNumber) editContactNumber.value = contactNumber === 'Please wait...' ? '' : contactNumber;
 }
