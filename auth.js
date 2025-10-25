@@ -13,6 +13,7 @@ const forgotPasswordFormElement = document.getElementById('forgotPasswordFormEle
 
 // Initialize the authentication system
 document.addEventListener('DOMContentLoaded', function() {
+    // Wait for auth initialization, but proceed with local checks first
     initializeAuth();
     loadRememberedUser();
 });
@@ -27,9 +28,9 @@ function initializeAuth() {
     });
 
     // Add form event listeners
-    loginFormElement.addEventListener('submit', handleLogin);
-    registerFormElement.addEventListener('submit', handleRegister);
-    forgotPasswordFormElement.addEventListener('submit', handleForgotPassword);
+    if (loginFormElement) loginFormElement.addEventListener('submit', handleLogin);
+    if (registerFormElement) registerFormElement.addEventListener('submit', handleRegister);
+    if (forgotPasswordFormElement) forgotPasswordFormElement.addEventListener('submit', handleForgotPassword);
 }
 
 function loadRememberedUser() {
@@ -37,8 +38,12 @@ function loadRememberedUser() {
     const rememberMe = localStorage.getItem('rememberMe');
 
     if (rememberMe === 'true' && rememberedUsername) {
-        document.getElementById('loginUsername').value = rememberedUsername;
-        document.getElementById('rememberMe').checked = true;
+        // Renamed 'loginUsername' to reflect that it is an Email
+        const loginUsernameInput = document.getElementById('loginUsername');
+        if (loginUsernameInput) loginUsernameInput.value = rememberedUsername;
+        
+        const rememberMeCheckbox = document.getElementById('rememberMe');
+        if (rememberMeCheckbox) rememberMeCheckbox.checked = true;
     }
 }
 
@@ -46,27 +51,28 @@ function loadRememberedUser() {
 async function handleLogin(event) {
     event.preventDefault();
     
-    const username = document.getElementById('loginUsername').value.trim();
+    // Note: 'username' is actually the Email Address for Firebase Auth
+    const email = document.getElementById('loginUsername').value.trim();
     const password = document.getElementById('loginPassword').value.trim();
     const rememberMe = document.getElementById('rememberMe').checked;
 
     // Validate inputs
-    if (!username || !password) {
+    if (!email || !password) {
         showError('Please fill in all fields');
         return;
     }
 
     const loginButton = loginFormElement.querySelector('button[type="submit"]');
-    setButtonLoading(loginButton, true);
+    setButtonLoading(loginButton, true, 'Login');
 
     try {
-        // Sign in with email/password (using username as email)
-        const userCredential = await auth.signInWithEmailAndPassword(username, password);
+        // Sign in with email/password
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
         const user = userCredential.user;
 
         // Handle "Remember Me"
         if (rememberMe) {
-            localStorage.setItem('rememberedUsername', username);
+            localStorage.setItem('rememberedUsername', email);
             localStorage.setItem('rememberMe', true);
         } else {
             localStorage.removeItem('rememberedUsername');
@@ -74,7 +80,7 @@ async function handleLogin(event) {
         }
 
         // Save user data
-        localStorage.setItem('username', username);
+        localStorage.setItem('username', email); // Storing email as "username"
         localStorage.setItem('userId', user.uid);
 
         // Redirect to dashboard
@@ -84,14 +90,15 @@ async function handleLogin(event) {
         console.error('Login error:', error);
         handleAuthError(error);
     } finally {
-        setButtonLoading(loginButton, false);
+        setButtonLoading(loginButton, false, 'Login');
     }
 }
 
 async function handleRegister(event) {
     event.preventDefault();
     
-    const username = document.getElementById('registerUsername').value.trim();
+    // Note: 'username' is actually the Email Address for Firebase Auth
+    const email = document.getElementById('registerUsername').value.trim();
     const password = document.getElementById('registerPassword').value.trim();
     const clinicName = document.getElementById('clinicName').value.trim();
     const optometristName = document.getElementById('optometristName').value.trim();
@@ -99,7 +106,7 @@ async function handleRegister(event) {
     const contactNumber = document.getElementById('contactNumber').value.trim();
 
     // Validate inputs
-    if (!username || !password || !clinicName || !optometristName || !address || !contactNumber) {
+    if (!email || !password || !clinicName || !optometristName || !address || !contactNumber) {
         showError('Please fill in all fields');
         return;
     }
@@ -110,16 +117,16 @@ async function handleRegister(event) {
     }
 
     const registerButton = registerFormElement.querySelector('button[type="submit"]');
-    setButtonLoading(registerButton, true);
+    setButtonLoading(registerButton, true, 'Register');
 
     try {
         // Create user with email and password
-        const userCredential = await auth.createUserWithEmailAndPassword(username, password);
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
         const user = userCredential.user;
 
         // Save user details to Firestore
         await db.collection('users').doc(user.uid).set({
-            username: username,
+            email: email, // Changed from username to email
             clinicName: clinicName,
             optometristName: optometristName,
             address: address,
@@ -128,7 +135,7 @@ async function handleRegister(event) {
         });
 
         // Save user data to localStorage
-        localStorage.setItem('username', username);
+        localStorage.setItem('username', email); // Storing email as "username"
         localStorage.setItem('userId', user.uid);
 
         showSuccess('Registration successful! Redirecting...');
@@ -142,96 +149,108 @@ async function handleRegister(event) {
         console.error('Registration error:', error);
         handleAuthError(error);
     } finally {
-        setButtonLoading(registerButton, false);
+        setButtonLoading(registerButton, false, 'Register');
     }
 }
 
 async function handleForgotPassword(event) {
     event.preventDefault();
     
-    const username = document.getElementById('forgotUsername').value.trim();
+    const email = document.getElementById('forgotUsername').value.trim();
 
-    if (!username) {
-        showError('Please enter your username');
+    if (!email) {
+        showError('Please enter your email address');
         return;
     }
 
     const resetButton = forgotPasswordFormElement.querySelector('button[type="submit"]');
-    setButtonLoading(resetButton, true);
+    setButtonLoading(resetButton, true, 'Reset Password');
 
     try {
-        await auth.sendPasswordResetEmail(username);
+        await auth.sendPasswordResetEmail(email);
         showSuccessMessage('Password reset email sent! Check your inbox.');
     } catch (error) {
         console.error('Password reset error:', error);
         handleAuthError(error);
     } finally {
-        setButtonLoading(resetButton, false);
+        setButtonLoading(resetButton, false, 'Reset Password');
     }
 }
 
 // UI Management Functions
 function showLogin() {
     hideAllForms();
-    loginForm.classList.add('active');
+    if (loginForm) loginForm.classList.add('active');
     clearFormErrors();
 }
 
 function showRegister() {
     hideAllForms();
-    registerForm.classList.add('active');
+    if (registerForm) registerForm.classList.add('active');
     clearFormErrors();
 }
 
 function showForgotPassword() {
     hideAllForms();
-    forgotPasswordForm.classList.add('active');
+    if (forgotPasswordForm) forgotPasswordForm.classList.add('active');
     clearFormErrors();
 }
 
 function hideAllForms() {
-    loginForm.classList.remove('active');
-    registerForm.classList.remove('active');
-    forgotPasswordForm.classList.remove('active');
-    successMessage.classList.add('hidden');
+    if (loginForm) loginForm.classList.remove('active');
+    if (registerForm) registerForm.classList.remove('active');
+    if (forgotPasswordForm) forgotPasswordForm.classList.remove('active');
+    if (successMessage) successMessage.classList.add('hidden');
 }
 
 function showSuccessMessage(message) {
     hideAllForms();
-    document.getElementById('successText').textContent = message;
-    successMessage.classList.remove('hidden');
+    const successText = document.getElementById('successText');
+    if (successText) successText.textContent = message;
+    if (successMessage) successMessage.classList.remove('hidden');
 }
 
 // Utility Functions
 function togglePassword(inputId) {
     const passwordInput = document.getElementById(inputId);
+    if (!passwordInput) return;
+
     const toggleButton = passwordInput.parentElement.querySelector('.toggle-password');
 
     if (passwordInput.type === 'password') {
         passwordInput.type = 'text';
-        toggleButton.textContent = '🙈';
+        if (toggleButton) toggleButton.textContent = '🙈';
     } else {
         passwordInput.type = 'password';
-        toggleButton.textContent = '👁️';
+        if (toggleButton) toggleButton.textContent = '👁️';
     }
 }
 
-function setButtonLoading(button, isLoading) {
+/**
+ * Sets the loading state of a button.
+ * @param {HTMLElement} button - The button element.
+ * @param {boolean} isLoading - Whether to set the loading state.
+ * @param {string} originalText - The original text of the button.
+ */
+function setButtonLoading(button, isLoading, originalText) {
+    if (!button) return;
+    
     if (isLoading) {
         button.disabled = true;
         button.classList.add('loading');
         button.innerHTML = 'Processing...';
+        button.dataset.originalText = originalText;
     } else {
         button.disabled = false;
         button.classList.remove('loading');
-        button.innerHTML = button === loginFormElement.querySelector('button') ? 'Login' : 
-                          button === registerFormElement.querySelector('button') ? 'Register' : 'Reset Password';
+        button.innerHTML = button.dataset.originalText || originalText;
+        delete button.dataset.originalText;
     }
 }
 
 function showError(message) {
-    // Simple error display - you can enhance this with better UI
-    alert('Error: ' + message);
+    // Replaced alert() with a console log for better UX and compliance
+    console.error('Authentication Error:', message);
 }
 
 function clearFormErrors() {
@@ -253,13 +272,11 @@ function handleAuthError(error) {
             errorMessage = 'This account has been disabled.';
             break;
         case 'auth/user-not-found':
-            errorMessage = 'No account found with this username.';
-            break;
         case 'auth/wrong-password':
-            errorMessage = 'Incorrect password.';
+            errorMessage = 'Invalid email or password.';
             break;
         case 'auth/email-already-in-use':
-            errorMessage = 'An account with this username already exists.';
+            errorMessage = 'An account with this email already exists.';
             break;
         case 'auth/weak-password':
             errorMessage = 'Password is too weak. Please use at least 6 characters.';
@@ -272,12 +289,15 @@ function handleAuthError(error) {
             break;
     }
     
+    // Display error message (using console and fallback)
     showError(errorMessage);
+    
+    // In a production app, you would update an element on the screen here
 }
 
 function showSuccess(message) {
-    // Simple success display - you can enhance this with better UI
-    alert('Success: ' + message);
+    // Replaced alert() with a console log
+    console.log('Success:', message);
 }
 
 // Export functions for global access
@@ -285,3 +305,4 @@ window.showLogin = showLogin;
 window.showRegister = showRegister;
 window.showForgotPassword = showForgotPassword;
 window.togglePassword = togglePassword;
+window.showError = showError;
