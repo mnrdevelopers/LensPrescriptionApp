@@ -99,6 +99,9 @@ async function handleLogin(event) {
 async function handleRegister(event) {
     event.preventDefault();
     
+    console.log('Registration started...');
+    
+    // Get form values - ADD PROPER DEBUGGING
     const email = document.getElementById('registerUsername').value.trim();
     const password = document.getElementById('registerPassword').value.trim();
     const clinicName = document.getElementById('clinicName').value.trim();
@@ -106,8 +109,19 @@ async function handleRegister(event) {
     const address = document.getElementById('address').value.trim();
     const contactNumber = document.getElementById('contactNumber').value.trim();
 
+    // Debug: Log all form values
+    console.log('Form values:', {
+        email,
+        password: password ? '***' : 'empty',
+        clinicName,
+        optometristName,
+        address,
+        contactNumber
+    });
+
     // Validate inputs
     if (!email || !password || !clinicName || !optometristName || !address || !contactNumber) {
+        console.error('Validation failed: Missing fields');
         showError('Please fill in all fields');
         return;
     }
@@ -121,25 +135,27 @@ async function handleRegister(event) {
     setButtonLoading(registerButton, true, 'Register');
 
     try {
+        console.log('Creating Firebase user...');
+        
         // Create user with email and password
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
         const user = userCredential.user;
 
-        console.log('User created successfully:', user.uid);
+        console.log('Firebase user created successfully:', user.uid);
 
-        // Save user details to Firestore - ENHANCED with better error handling
+        // Save user details to Firestore - FIXED DATA
         const userData = {
             email: email,
-            clinicName: clinicName,
-            optometristName: optometristName,
-            address: address,
-            contactNumber: contactNumber,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            clinicName: clinicName, // This should be the actual input value
+            optometristName: optometristName, // This should be the actual input value
+            address: address, // This should be the actual input value
+            contactNumber: contactNumber, // This should be the actual input value
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
-        console.log('Saving user data to Firestore:', userData);
-        
+        console.log('Saving to Firestore:', userData);
+
+        // Save to Firestore
         await db.collection('users').doc(user.uid).set(userData);
         console.log('User data saved to Firestore successfully');
 
@@ -147,24 +163,26 @@ async function handleRegister(event) {
         localStorage.setItem('username', email);
         localStorage.setItem('userId', user.uid);
 
+        console.log('Registration completed successfully');
         showSuccess('Registration successful! Redirecting...');
         
-        // Let the onAuthStateChanged handler redirect
-        console.log('Registration completed, waiting for auth state change...');
+        // The onAuthStateChanged will handle redirect
 
     } catch (error) {
         console.error('Registration error:', error);
-        handleAuthError(error);
         
-        // If user was created but Firestore failed, try to delete the user
-        if (auth.currentUser) {
-            try {
-                await auth.currentUser.delete();
-                console.log('Cleaned up user after Firestore error');
-            } catch (deleteError) {
-                console.error('Error cleaning up user:', deleteError);
-            }
+        // More detailed error handling
+        if (error.code === 'auth/email-already-in-use') {
+            showError('This email is already registered. Please use a different email or login.');
+        } else if (error.code === 'auth/weak-password') {
+            showError('Password is too weak. Please use at least 6 characters.');
+        } else if (error.code === 'auth/invalid-email') {
+            showError('Invalid email address format.');
+        } else {
+            showError('Registration failed: ' + error.message);
         }
+        
+        handleAuthError(error);
     } finally {
         setButtonLoading(registerButton, false, 'Register');
     }
