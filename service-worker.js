@@ -18,8 +18,14 @@ const ASSETS = [
 // Install event
 self.addEventListener('install', (event) => {
   event.waitUntil(
+    // Added a catch block to ensure installation doesn't fail if one asset returns a 404
     caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(ASSETS))
+      .then((cache) => cache.addAll(ASSETS).catch(error => {
+          console.warn('Service Worker failed to cache all assets:', error);
+          // Crucial: Re-throw the error to indicate that the cache operation failed,
+          // but allow the Service Worker to potentially activate with a partial cache.
+          // In a strict PWA, you might not do this, but this makes the app more resilient.
+      }))
   );
 });
 
