@@ -1,21 +1,18 @@
 // service-worker.js
 const CACHE_NAME = 'lens-prescription-v2';
+// Updated ASSETS list to reflect the actual files in the application structure
 const ASSETS = [
   '/',
   '/index.html',
-  '/login.html',
-  '/register.html',
-  '/dashboard.html',
+  '/auth.html',
   '/app.html',
-  '/prescriptions.html',
-  '/reports.html',
-  '/forgot-password.html',
-  '/navbar.html',
-  '/style.css',
-  '/script.js',
-  '/loadNavbar.js',
-  '/footer.js',
+  '/app.css',
+  '/auth.css',
+  '/app.js',
+  '/auth.js',
+  '/firebase-config.js',
   '/manifest.json'
+  // Note: External CDN files (bootstrap, firebase sdk) are usually not cached here
 ];
 
 // Install event
