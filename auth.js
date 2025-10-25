@@ -11,9 +11,11 @@ const loginFormElement = document.getElementById('loginFormElement');
 const registerFormElement = document.getElementById('registerFormElement');
 const forgotPasswordFormElement = document.getElementById('forgotPasswordFormElement');
 
+// Flag to ensure we don't redirect multiple times
+let isRedirecting = false; 
+
 // Initialize the authentication system
 document.addEventListener('DOMContentLoaded', function() {
-    // Wait for auth initialization, but proceed with local checks first
     initializeAuth();
     loadRememberedUser();
 });
@@ -21,8 +23,9 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeAuth() {
     // Check if user is already logged in
     auth.onAuthStateChanged((user) => {
-        if (user) {
+        if (user && !isRedirecting) {
             // User is signed in, redirect to dashboard
+            isRedirecting = true;
             window.location.href = 'app.html';
         }
     });
@@ -79,12 +82,11 @@ async function handleLogin(event) {
             localStorage.removeItem('rememberMe');
         }
 
-        // Save user data
+        // Save user data (This is now redundant as onAuthStateChanged handles redirect, but kept for local storage)
         localStorage.setItem('username', email); // Storing email as "username"
         localStorage.setItem('userId', user.uid);
-
-        // Redirect to dashboard
-        window.location.href = 'app.html';
+        
+        // Let the onAuthStateChanged handler redirect
 
     } catch (error) {
         console.error('Login error:', error);
@@ -140,10 +142,7 @@ async function handleRegister(event) {
 
         showSuccess('Registration successful! Redirecting...');
         
-        // Redirect after short delay
-        setTimeout(() => {
-            window.location.href = 'app.html';
-        }, 2000);
+        // Let the onAuthStateChanged handler redirect
 
     } catch (error) {
         console.error('Registration error:', error);
