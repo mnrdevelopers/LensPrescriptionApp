@@ -39,7 +39,7 @@ function initializeApp() {
     const previewCurrentDateElement = document.getElementById('previewcurrentDate');
     
     if (currentDateElement) currentDateElement.textContent = todayDate;
-    if (previewCurrentDateElement) previewCurrentElement.textContent = todayDate;
+    if (previewCurrentDateElement) previewCurrentDateElement.textContent = todayDate;
     
     // Show dashboard by default
     showDashboard();
@@ -158,30 +158,59 @@ function updateActiveNavLink(activeSection) {
 // User Profile Management
 async function loadUserProfile() {
     const user = auth.currentUser;
-    if (!user) return;
+    if (!user) {
+        console.error('No user logged in');
+        return;
+    }
 
     try {
         const doc = await db.collection('users').doc(user.uid).get();
+        
         if (doc.exists) {
             const userData = doc.data();
+            console.log('Loaded user profile:', userData);
             updateProfileUI(userData);
+        } else {
+            console.log('No user profile found, creating default...');
+            // Create a default profile if none exists
+            const defaultProfile = {
+                clinicName: 'Your Clinic Name',
+                optometristName: 'Optometrist Name',
+                address: 'Clinic Address',
+                contactNumber: 'Contact Number',
+                email: user.email,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            
+            await db.collection('users').doc(user.uid).set(defaultProfile);
+            updateProfileUI(defaultProfile);
         }
     } catch (error) {
         console.error('Error loading user profile:', error);
+        // Fallback to default values
+        const fallbackData = {
+            clinicName: 'Your Clinic Name',
+            optometristName: 'Optometrist Name', 
+            address: 'Clinic Address',
+            contactNumber: 'Contact Number'
+        };
+        updateProfileUI(fallbackData);
     }
 }
 
 function updateProfileUI(userData) {
+    console.log('Updating UI with:', userData);
+    
     // Update main form
     const clinicName = document.getElementById('clinicName');
     const clinicAddress = document.getElementById('clinicAddress');
     const optometristName = document.getElementById('optometristName');
     const contactNumber = document.getElementById('contactNumber');
     
-    if (clinicName) clinicName.textContent = userData.clinicName || 'N/A';
-    if (clinicAddress) clinicAddress.textContent = userData.address || 'N/A';
-    if (optometristName) optometristName.textContent = userData.optometristName || 'N/A';
-    if (contactNumber) contactNumber.textContent = userData.contactNumber || 'N/A';
+    if (clinicName) clinicName.textContent = userData.clinicName || 'Your Clinic Name';
+    if (clinicAddress) clinicAddress.textContent = userData.address || 'Clinic Address';
+    if (optometristName) optometristName.textContent = userData.optometristName || 'Optometrist Name';
+    if (contactNumber) contactNumber.textContent = userData.contactNumber || 'Contact Number';
 
     // Update preview section
     const previewClinicName = document.getElementById('previewClinicName');
@@ -189,17 +218,19 @@ function updateProfileUI(userData) {
     const previewOptometristName = document.getElementById('previewOptometristName');
     const previewContactNumber = document.getElementById('previewContactNumber');
     
-    if (previewClinicName) previewClinicName.textContent = userData.clinicName || 'N/A';
-    if (previewClinicAddress) previewClinicAddress.textContent = userData.address || 'N/A';
-    if (previewOptometristName) previewOptometristName.textContent = userData.optometristName || 'N/A';
-    if (previewContactNumber) previewContactNumber.textContent = userData.contactNumber || 'N/A';
+    if (previewClinicName) previewClinicName.textContent = userData.clinicName || 'Your Clinic Name';
+    if (previewClinicAddress) previewClinicAddress.textContent = userData.address || 'Clinic Address';
+    if (previewOptometristName) previewOptometristName.textContent = userData.optometristName || 'Optometrist Name';
+    if (previewContactNumber) previewContactNumber.textContent = userData.contactNumber || 'Contact Number';
+    
+    console.log('UI update completed');
 }
 
 function openEditProfile() {
     const modal = document.getElementById('editProfileModal');
     if (modal) modal.style.display = 'flex';
     
-    // Pre-fill with current data
+    // Get current values from the displayed UI, not from Firestore
     const clinicName = document.getElementById('clinicName')?.textContent;
     const optometristName = document.getElementById('optometristName')?.textContent;
     const address = document.getElementById('clinicAddress')?.textContent;
@@ -210,10 +241,11 @@ function openEditProfile() {
     const editAddress = document.getElementById('editAddress');
     const editContactNumber = document.getElementById('editContactNumber');
     
-    if (editClinicName) editClinicName.value = clinicName === 'Loading...' ? '' : clinicName;
-    if (editOptometristName) editOptometristName.value = optometristName === 'Loading...' ? '' : optometristName;
-    if (editAddress) editAddress.value = address === 'Please wait...' ? '' : address;
-    if (editContactNumber) editContactNumber.value = contactNumber === 'Please wait...' ? '' : contactNumber;
+    // Set values, filtering out placeholder text
+    if (editClinicName) editClinicName.value = (clinicName === 'Loading...' || clinicName === 'Your Clinic Name') ? '' : clinicName;
+    if (editOptometristName) editOptometristName.value = (optometristName === 'Loading...' || optometristName === 'Optometrist Name') ? '' : optometristName;
+    if (editAddress) editAddress.value = (address === 'Please wait...' || address === 'Clinic Address') ? '' : address;
+    if (editContactNumber) editContactNumber.value = (contactNumber === 'Please wait...' || contactNumber === 'Contact Number') ? '' : contactNumber;
 }
 
 function closeEditProfile() {
@@ -223,28 +255,43 @@ function closeEditProfile() {
 
 async function saveProfile() {
     const user = auth.currentUser;
-    if (!user) return;
+    if (!user) {
+        console.error('No user logged in');
+        return;
+    }
 
     const updatedData = {
         clinicName: document.getElementById('editClinicName').value.trim(),
         optometristName: document.getElementById('editOptometristName').value.trim(),
         address: document.getElementById('editAddress').value.trim(),
-        contactNumber: document.getElementById('editContactNumber').value.trim()
+        contactNumber: document.getElementById('editContactNumber').value.trim(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
     
-    // Simple validation
+    // Enhanced validation
     if (!updatedData.clinicName || !updatedData.optometristName) {
         console.error('Profile Update Error: Clinic Name and Optometrist Name are required.');
+        alert('Clinic Name and Optometrist Name are required.');
         return;
     }
 
     try {
-        await db.collection('users').doc(user.uid).update(updatedData);
-        updateProfileUI(updatedData);
+        // Use set with merge: true to update or create the document
+        await db.collection('users').doc(user.uid).set(updatedData, { merge: true });
+        
         console.log('Profile updated successfully!');
+        
+        // Reload the profile data to ensure UI is updated
+        await loadUserProfile();
+        
         closeEditProfile();
+        
+        // Show success message
+        alert('Profile updated successfully!');
+        
     } catch (error) {
         console.error('Error updating profile:', error);
+        alert('Error updating profile: ' + error.message);
     }
 }
 
