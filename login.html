@@ -3,198 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Lens Prescription</title>
-    <link rel="stylesheet" href="style.css">
-    <style>
-        /* Center the container vertically and horizontally */
-        body {
-            margin: 0;
-            height: 100vh; /* Full viewport height */
-            display: flex;
-            justify-content: center; /* Center horizontally */
-            align-items: center; /* Center vertically */
-            font-family: "Times New Roman", Times, serif;
-            background-color: #f5f5f5; /* Optional: Add a light background */
-        }
-
-        .container {
-            max-width: 400px;
-            width: 100%; /* Ensure it doesn't overflow on small screens */
-            padding: 20px;
-            border: 1px solid #ccc;
-            border-radius: 10px;
-            background-color: white; /* Optional: Add a white background */
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Optional: Add a subtle shadow */
-        }
-
-        .logo {
-            justify-content: center;
-            width: 100px;
-            margin-bottom: 20px;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-            text-align: left;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 8px;
-            box-sizing: border-box;
-            font-family: "Times New Roman", Times, serif;
-        }
-
-        .password-container {
-            position: relative;
-        }
-
-        .password-container input {
-            padding-right: 40px;
-        }
-
-        .password-container .toggle-password {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            cursor: pointer;
-            color: #007bff;
-        }
-
-        .btn-submit {
-            width: 100%;
-            padding: 10px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        .btn-submit:hover {
-            background-color: #0056b3;
-        }
-
-        .form-text {
-            margin-top: 10px;
-        }
-
-        .remember-me {
-            display: flex;
-            justify-content: center; /* Center the checkbox and text */
-            align-items: center; /* Align items vertically */
-            gap: 5px; /* Space between checkbox and text */
-            margin-bottom: 15px; /* Add spacing below */
-        }
-    </style>
+    <title>Authentication - Lens Prescription</title>
+    <link rel="stylesheet" href="auth.css">    
 </head>
 <body>
-<button id="install-btn" class="btn btn-install" style="display: none;">Install App</button>
-
-<div class="container">
-    <img src="https://i.postimg.cc/2S2Pcrt6/glasses-220002.png" alt="Clinic Logo" class="logo"> <!-- Replace with your logo path -->
-    <h2>Welcome to Lens Prescription</h2>
-    <form id="loginForm">
-        <div class="form-group">
-            <label for="username">Username</label>
-            <input type="text" id="username" placeholder="Enter Username" required>
+    <div class="auth-container">
+        <!-- Logo Section -->
+        <div class="logo-section">
+            <img src="https://i.postimg.cc/2S2Pcrt6/glasses-220002.png" alt="Clinic Logo" class="logo">
+            <h1 class="app-title">Lens Prescription</h1>
         </div>
 
-        <div class="form-group">
-            <label for="password">Password</label>
-            <div class="password-container">
-                <input type="password" id="password" placeholder="Enter Password" required>
-                <span class="toggle-password" onclick="togglePasswordVisibility()">👁️</span>
-            </div>
+        <!-- Login Form -->
+        <div id="loginForm" class="form-container active">
+            <h2>Welcome Back</h2>
+            <form id="loginFormElement">
+                <div class="form-group">
+                    <label for="loginUsername">Username</label>
+                    <input type="text" id="loginUsername" placeholder="Enter Username" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <div class="password-container">
+                        <input type="password" id="loginPassword" placeholder="Enter Password" required>
+                        <span class="toggle-password" onclick="togglePassword('loginPassword')">👁️</span>
+                    </div>
+                </div>
+
+                <div class="remember-me">
+                    <label for="rememberMe">
+                        <input type="checkbox" id="rememberMe"> Remember Me
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Login</button>
+                
+                <div class="form-links">
+                    <p>Don't have an account? <a href="#" onclick="showRegister()">Register</a></p>
+                    <p><a href="#" onclick="showForgotPassword()">Forgot Password?</a></p>
+                </div>
+            </form>
         </div>
 
-        <div class="remember-me">
-    <label for="rememberMe">
-        <input type="checkbox" id="rememberMe"> Remember Me
-    </label>
-</div>
+        <!-- Register Form -->
+        <div id="registerForm" class="form-container">
+            <h2>Register Your Clinic</h2>
+            <form id="registerFormElement">
+                <div class="form-group">
+                    <label for="registerUsername">Username</label>
+                    <input type="text" id="registerUsername" placeholder="Enter Username" required>
+                </div>
 
-<div class="form-text">
-    <p>Don't have an account? <a href="register.html">Register</a></p>
-    <p><a href="forgot-password.html">Forgot Password?</a></p>
-</div>
+                <div class="form-group">
+                    <label for="registerPassword">Password</label>
+                    <div class="password-container">
+                        <input type="password" id="registerPassword" placeholder="Enter Password" required>
+                        <span class="toggle-password" onclick="togglePassword('registerPassword')">👁️</span>
+                    </div>
+                </div>
 
+                <div class="form-group">
+                    <label for="clinicName">Clinic Name</label>
+                    <input type="text" id="clinicName" placeholder="Enter Clinic Name" required>
+                </div>
 
-        <button type="submit" class="btn btn-submit">Login</button>
-    </form>
-</div>
-<script src="script.js"></script>
-<script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycbxXx0Jy7AmSljFYOuXs00Mxj4aiGpSHz92L5sa903Hp09lEQXrVbfNXByZoAOSogwUm/exec"; // Replace with your Apps Script URL
+                <div class="form-group">
+                    <label for="optometristName">Optometrist Name</label>
+                    <input type="text" id="optometristName" placeholder="Enter Optometrist Name" required>
+                </div>
 
-    // Load saved username and password if "Remember Me" was checked
-    window.onload = function() {
-        const rememberedUsername = localStorage.getItem("rememberedUsername");
-        const rememberedPassword = localStorage.getItem("rememberedPassword");
-        const rememberMe = localStorage.getItem("rememberMe");
+                <div class="form-group">
+                    <label for="address">Clinic Address</label>
+                    <input type="text" id="address" placeholder="Enter Address" required>
+                </div>
 
-        if (rememberMe === "true" && rememberedUsername && rememberedPassword) {
-            document.getElementById("username").value = rememberedUsername;
-            document.getElementById("password").value = atob(rememberedPassword);
-            document.getElementById("rememberMe").checked = true;
-        }
-    };
+                <div class="form-group">
+                    <label for="contactNumber">Contact Number</label>
+                    <input type="tel" id="contactNumber" placeholder="Enter Contact Number" required>
+                </div>
 
-    document.getElementById("loginForm").addEventListener("submit", function(event) {
-        event.preventDefault();
+                <button type="submit" class="btn btn-primary">Register</button>
+                
+                <div class="form-links">
+                    <p>Already have an account? <a href="#" onclick="showLogin()">Login</a></p>
+                </div>
+            </form>
+        </div>
 
-        const username = document.getElementById("username").value.trim();
-        const password = document.getElementById("password").value.trim();
-        const rememberMe = document.getElementById("rememberMe").checked;
+        <!-- Forgot Password Form -->
+        <div id="forgotPasswordForm" class="form-container">
+            <h2>Forgot Password?</h2>
+            <p class="subtitle">Enter your username to reset your password.</p>
+            
+            <form id="forgotPasswordFormElement">
+                <div class="form-group">
+                    <label for="forgotUsername">Username</label>
+                    <input type="text" id="forgotUsername" placeholder="Enter your username" required>
+                </div>
 
-        const data = {
-            action: "login",
-            username,
-            passwordHash: btoa(password)
-        };
+                <button type="submit" class="btn btn-primary">Reset Password</button>
+                
+                <div class="form-links">
+                    <p><a href="#" onclick="showLogin()">Back to Login</a></p>
+                </div>
+            </form>
+        </div>
 
-        fetch(scriptURL, {
-            method: "POST",
-            body: JSON.stringify(data)
-        })
-        .then(response => response.json())
-        .then(result => {
-            alert(result.message);
-            if (result.status === "success") {
-                if (rememberMe) {
-                    localStorage.setItem("rememberedUsername", username);
-                    localStorage.setItem("rememberedPassword", btoa(password));
-                    localStorage.setItem("rememberMe", true);
-                } else {
-                    localStorage.removeItem("rememberedUsername");
-                    localStorage.removeItem("rememberedPassword");
-                    localStorage.removeItem("rememberMe");
-                }
-                localStorage.setItem("username", username);
-                window.location.href = "dashboard.html"; // Redirect to the main app
-            }
-        })
-        .catch(error => console.error("Error:", error));
-    });
+        <!-- Success Message -->
+        <div id="successMessage" class="form-container hidden">
+            <div class="success-icon">✓</div>
+            <h2>Success!</h2>
+            <p id="successText">Password reset email sent! Check your inbox.</p>
+            <button class="btn btn-primary" onclick="showLogin()">Back to Login</button>
+        </div>
+    </div>
 
-    function togglePasswordVisibility() {
-        const passwordInput = document.getElementById("password");
-        const toggleButton = document.querySelector(".toggle-password");
+     <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
-        if (passwordInput.type === "password") {
-            passwordInput.type = "text";
-            toggleButton.textContent = "🙈";
-        } else {
-            passwordInput.type = "password";
-            toggleButton.textContent = "👁️";
-        }
-    }
-</script>
+    <script src="firebase-config.js"></script>
+    <script src="auth.js"></script>
 </body>
 </html>
