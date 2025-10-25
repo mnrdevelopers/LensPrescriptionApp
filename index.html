@@ -26,13 +26,14 @@
             if (isLoggedIn) {
                 window.location.replace("dashboard.html"); // Redirect to dashboard if logged in
             } else {
-                window.location.replace("login.html"); // Redirect to login page if not logged in
+                window.location.replace("auth.html"); // Redirect to login page if not logged in
             }
         }, 3000);
     } else {
-        window.location.replace(isLoggedIn ? "dashboard.html" : "login.html");
+        window.location.replace(isLoggedIn ? "dashboard.html" : "auth.html");
     }
 });
 </script>
 </body>
 </html>
+
