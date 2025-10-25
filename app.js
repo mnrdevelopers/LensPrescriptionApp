@@ -1,13 +1,15 @@
-// app.js
+// app.js - Consolidated from app.js and script.js
 
 // Global Variables
 let currentPrescriptionData = null;
 let isFormFilled = false;
+let deferredPrompt;
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
     setupEventListeners();
+    setupPWA();
 });
 
 function initializeApp() {
@@ -33,15 +35,47 @@ function setupEventListeners() {
     // Form field tracking
     const formFields = ['patientName', 'age', 'patientMobile'];
     formFields.forEach(field => {
-        document.getElementById(field).addEventListener('input', checkFormFilled);
+        const element = document.getElementById(field);
+        if (element) {
+            element.addEventListener('input', checkFormFilled);
+        }
     });
 
     // Exit prompt handlers
-    document.getElementById('confirmExit').addEventListener('click', confirmExit);
-    document.getElementById('cancelExit').addEventListener('click', cancelExit);
+    const confirmExit = document.getElementById('confirmExit');
+    const cancelExit = document.getElementById('cancelExit');
+    if (confirmExit) confirmExit.addEventListener('click', confirmExitAction);
+    if (cancelExit) cancelExit.addEventListener('click', cancelExitAction);
 
     // Input validation
     setupInputValidation();
+
+    // Browser back button handling
+    window.addEventListener('popstate', handleBrowserBack);
+    history.pushState(null, document.title, location.href);
+}
+
+function setupPWA() {
+    // Service Worker Registration
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/service-worker.js')
+            .then(() => console.log("Service Worker Registered"))
+            .catch((error) => console.log("Service Worker Registration Failed", error));
+    }
+
+    // PWA Install Prompt
+    window.addEventListener("beforeinstallprompt", (event) => {
+        event.preventDefault();
+        deferredPrompt = event;
+        const installBtn = document.getElementById("install-btn");
+        if (installBtn) installBtn.style.display = "block";
+    });
+
+    // Handle PWA installed event
+    window.addEventListener("appinstalled", () => {
+        console.log("PWA installed successfully!");
+        deferredPrompt = null;
+    });
 }
 
 // Navigation Functions
@@ -90,8 +124,6 @@ function hideAllSections() {
 function updateActiveNavLink(activeSection) {
     const navLinks = document.querySelectorAll('.nav-link');
     navLinks.forEach(link => link.classList.remove('active'));
-    
-    // You can add logic to highlight the active nav link if needed
 }
 
 // User Profile Management
@@ -305,6 +337,8 @@ async function fetchPrescriptions() {
 
 function displayPrescriptions(data) {
     const tbody = document.getElementById('prescriptionTable').getElementsByTagName('tbody')[0];
+    if (!tbody) return;
+    
     tbody.innerHTML = '';
 
     if (!data || data.length === 0) {
@@ -408,7 +442,10 @@ function addPrescriptionRow(tbody, prescription) {
 function filterPrescriptions() {
     const input = document.getElementById('searchInput').value.toLowerCase();
     const table = document.getElementById('prescriptionTable');
-    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+    const tbody = table.getElementsByTagName('tbody')[0];
+    if (!tbody) return;
+    
+    const rows = tbody.getElementsByTagName('tr');
 
     for (let row of rows) {
         if (row.className === 'prescription-group-header') continue;
@@ -476,6 +513,11 @@ function loadPreviewData(data) {
 // Export Functions
 function generatePDF() {
     const element = document.getElementById('prescriptionPreview');
+    if (!element) {
+        alert("Please submit the form before downloading the PDF.");
+        return;
+    }
+
     html2pdf()
         .set({
             margin: 5,
@@ -500,10 +542,16 @@ async function sendWhatsApp() {
     }
 
     try {
-        const canvas = await html2canvas(document.getElementById('prescriptionPreview'), { scale: 2 });
+        const element = document.getElementById('prescriptionPreview');
+        if (!element) {
+            alert("Please submit the form before sending via WhatsApp.");
+            return;
+        }
+
+        const canvas = await html2canvas(element, { scale: 2 });
         const imageData = canvas.toDataURL('image/png');
         
-        // Upload to ImgBB or similar service
+        // Upload to ImgBB
         const imageUrl = await uploadImageToImgBB(imageData);
         
         const message = `Here is your digital prescription from ${document.getElementById('previewClinicName').textContent}: ${imageUrl}`;
@@ -517,9 +565,26 @@ async function sendWhatsApp() {
 }
 
 async function uploadImageToImgBB(base64Image) {
-    // This is a placeholder - you'll need to implement actual image upload
-    // For now, we'll return a placeholder
-    return 'https://example.com/prescription-image.jpg';
+    const apiKey = "bbfde58b1da5fc9ee9d7d6a591852f71";
+    const formData = new FormData();
+    formData.append("image", base64Image.split(',')[1]);
+
+    try {
+        const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+            method: "POST",
+            body: formData
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            return data.data.url;
+        } else {
+            throw new Error('Image upload failed');
+        }
+    } catch (error) {
+        console.error('Image upload error:', error);
+        throw error;
+    }
 }
 
 // Reports Management
@@ -617,6 +682,8 @@ function processReportData(querySnapshot, period = 'day') {
 
 function displayReport(data) {
     const tbody = document.getElementById('reportTable').getElementsByTagName('tbody')[0];
+    if (!tbody) return;
+    
     tbody.innerHTML = '';
 
     if (!data || Object.keys(data).length === 0) {
@@ -641,20 +708,30 @@ function checkFormFilled() {
     isFormFilled = !!(patientName || age || mobile);
 }
 
-function confirmExit() {
+function confirmExitAction() {
     window.history.back();
 }
 
-function cancelExit() {
+function cancelExitAction() {
     document.getElementById('exitPromptModal').style.display = 'none';
+}
+
+function handleBrowserBack(event) {
+    if (isFormFilled) {
+        document.getElementById('exitPromptModal').style.display = 'flex';
+        history.pushState(null, document.title, location.href);
+    }
 }
 
 // Input Validation
 function setupInputValidation() {
     // Age validation
-    document.getElementById('age').addEventListener('input', function() {
-        this.value = this.value.replace(/[^0-9]/g, '');
-    });
+    const ageInput = document.getElementById('age');
+    if (ageInput) {
+        ageInput.addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+    }
 
     // Prescription fields validation
     const prescriptionInputs = [
@@ -690,6 +767,29 @@ function setupInputValidation() {
     });
 }
 
+// PWA Installation
+function installPWA() {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === "accepted") {
+                console.log("User accepted the install prompt.");
+            } else {
+                console.log("User dismissed the install prompt.");
+            }
+            deferredPrompt = null;
+        });
+    }
+}
+
+// Stats Management
+function resetStats() {
+    localStorage.setItem("prescriptionCount", "0");
+    localStorage.setItem("amountEarned", "0");
+    alert("Prescription count and amount earned have been reset.");
+    location.reload();
+}
+
 // Logout Function
 function logoutUser() {
     auth.signOut().then(() => {
@@ -698,13 +798,32 @@ function logoutUser() {
     });
 }
 
-// Handle browser back button
-window.addEventListener('popstate', (event) => {
+// Handle beforeunload event for closing the PWA
+window.addEventListener("beforeunload", (event) => {
     if (isFormFilled) {
-        document.getElementById('exitPromptModal').style.display = 'flex';
-        history.pushState(null, document.title, location.href);
+        event.preventDefault();
+        event.returnValue = "";
+        return "";
     }
 });
 
-// Initialize history state
-history.pushState(null, document.title, location.href);
+// Make functions globally available
+window.showDashboard = showDashboard;
+window.showPrescriptionForm = showPrescriptionForm;
+window.showPrescriptions = showPrescriptions;
+window.showReports = showReports;
+window.showPreview = showPreview;
+window.openEditProfile = openEditProfile;
+window.closeEditProfile = closeEditProfile;
+window.saveProfile = saveProfile;
+window.submitPrescription = submitPrescription;
+window.filterPrescriptions = filterPrescriptions;
+window.generatePDF = generatePDF;
+window.printPreview = printPreview;
+window.sendWhatsApp = sendWhatsApp;
+window.fetchDailyReport = fetchDailyReport;
+window.fetchWeeklyReport = fetchWeeklyReport;
+window.fetchMonthlyReport = fetchMonthlyReport;
+window.logoutUser = logoutUser;
+window.installPWA = installPWA;
+window.resetStats = resetStats;
