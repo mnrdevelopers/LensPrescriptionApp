@@ -5,17 +5,27 @@ let currentPrescriptionData = null;
 let isFormFilled = false;
 let deferredPrompt;
 
-// Initialize the application
-document.addEventListener('DOMContentLoaded', function() {
-    initializeApp();
-    setupEventListeners();
-    setupPWA();
-});
+// Check authentication state immediately on load before setting up event listeners
+// This prevents the infinite loop when coming from auth.html
+if (typeof firebase !== 'undefined' && firebase.auth().currentUser === null) {
+    // If Firebase is initialized but no user is logged in, redirect to auth page
+    window.location.href = 'auth.html';
+} else {
+    // If user is already logged in (auth.currentUser is not null or Firebase hasn't loaded yet)
+    // We proceed with application initialization
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeApp();
+        setupEventListeners();
+        setupPWA();
+    });
+}
 
 function initializeApp() {
-    // Check authentication
+    // We assume the user is logged in here, if not, the immediate check above handled it.
     const user = auth.currentUser;
     if (!user) {
+        // This case should not be hit if the top-level check works correctly, 
+        // but included as a safety net.
         window.location.href = 'auth.html';
         return;
     }
@@ -201,7 +211,7 @@ function openEditProfile() {
     const editContactNumber = document.getElementById('editContactNumber');
     
     if (editClinicName) editClinicName.value = clinicName === 'Loading...' ? '' : clinicName;
-    if (editOptometristName) editOptometristName.value = optometristName === 'Loading...' ? '' : optometristName;
+    if (editOptometristName) editOptometristName.value = optometristName === 'Loading...' ? '' : optometometristName;
     if (editAddress) editAddress.value = address === 'Please wait...' ? '' : address;
     if (editContactNumber) editContactNumber.value = contactNumber === 'Please wait...' ? '' : contactNumber;
 }
@@ -273,7 +283,7 @@ async function submitPrescription() {
         // Show preview
         showPreview(formData);
         
-        // Reset form and form state
+        // Reset form
         resetForm();
         isFormFilled = false;
 
@@ -731,7 +741,7 @@ function processReportData(querySnapshot, period = 'day') {
         
         // Use the Firestore Timestamp object for date calculation
         const timestamp = data.createdAt; 
-        if (!timestamp) return; // Skip if timestamp is missing
+        if (!timestamp || typeof timestamp.toDate !== 'function') return; // Skip if timestamp is missing or not a Firebase Timestamp
         
         const date = timestamp.toDate();
         let key;
