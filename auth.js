@@ -102,7 +102,7 @@ async function handleRegister(event) {
     console.log('Registration started...');
     
     // Get form values - ADD PROPER DEBUGGING
-    const email = document.getElementById('registerUsername').value.trim();
+    const email = document.getElementById('registerEmail').value.trim();
     const password = document.getElementById('registerPassword').value.trim();
     const clinicName = document.getElementById('clinicName').value.trim();
     const optometristName = document.getElementById('optometristName').value.trim();
