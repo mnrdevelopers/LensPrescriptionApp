@@ -1,4 +1,4 @@
-/* app.css */
+/* app.css - Consolidated from app.css and style.css */
 :root {
     --primary-color: #007bff;
     --secondary-color: #6c757d;
@@ -25,6 +25,13 @@ body {
     background-repeat: no-repeat;
     padding-top: 70px;
     min-height: 100vh;
+    color: #333;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+body.dark-mode {
+    background-color: #1a1a1a;
+    color: #f4f4f4;
 }
 
 /* Navigation */
@@ -252,6 +259,8 @@ body {
 /* Prescription Tables */
 .prescription-table {
     margin: 20px 0;
+    overflow-x: auto;
+    width: 100%;
 }
 
 .prescription-table table {
@@ -262,6 +271,7 @@ body {
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    font-size: 14px;
 }
 
 .prescription-table th {
@@ -285,12 +295,21 @@ body {
     border-radius: 4px;
     text-align: center;
     font-size: 14px;
+    transition: border-color 0.3s ease;
 }
 
 .prescription-table input:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+}
+
+.prescription-table tbody tr:nth-child(odd) {
+    background-color: #f9f9f9;
+}
+
+.prescription-table tbody tr:hover {
+    background-color: #f1f1f1;
 }
 
 /* Options Row */
@@ -651,6 +670,231 @@ body {
     min-width: 100px;
 }
 
+/* Splash Screen Styles */
+#splash-screen {
+    position: fixed;
+    width: 100%;
+    height: 100vh;
+    background: linear-gradient(45deg, #007bff, #0056b3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: white;
+    font-family: 'Arial', sans-serif;
+    z-index: 9999;
+    opacity: 1;
+    transition: opacity 0.5s ease-out;
+}
+
+.logo-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 1.5s ease-in-out;
+}
+
+#splash-logo {
+    width: 80px;
+    height: 80px;
+    animation: popIn 1.2s ease-in-out;
+}
+
+#splash-title {
+    font-size: 24px;
+    font-weight: bold;
+    margin-top: 10px;
+    animation: slideIn 1.5s ease-in-out;
+}
+
+.loader {
+    width: 150px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 5px;
+    overflow: hidden;
+    margin-top: 15px;
+    position: relative;
+}
+
+.loader::before {
+    content: "";
+    display: block;
+    width: 50%;
+    height: 100%;
+    background: white;
+    position: absolute;
+    animation: loaderAnim 1.5s infinite linear;
+}
+
+@keyframes popIn {
+    0% { transform: scale(0.5); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes slideIn {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes loaderAnim {
+    0% { left: -50%; }
+    100% { left: 100%; }
+}
+
+/* Exit Prompt Modal */
+#exitPromptModal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+}
+
+#exitPromptModal div {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+#exitPromptModal button {
+    margin: 10px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#confirmExit {
+    background: #ff4757;
+    color: white;
+}
+
+#cancelExit {
+    background: #2980b9;
+    color: white;
+}
+
+/* Dark Mode Toggle */
+.dark-mode-toggle {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.4s;
+    border-radius: 20px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #4CAF50;
+}
+
+input:checked + .slider:before {
+    transform: translateX(20px);
+}
+
+/* Disabled Button Styling */
+button:disabled {
+    background-color: #ccc !important;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Developer Credit */
+.developer-credit {
+    text-align: center;
+    margin-top: 15px;
+    font-size: 12px;
+    color: #666;
+}
+
+/* Print Styles */
+@media print {
+    .navbar,
+    .preview-buttons,
+    .btn-back {
+        display: none !important;
+    }
+    
+    .main-content {
+        padding: 0;
+    }
+    
+    .page-section {
+        display: block !important;
+    }
+    
+    #prescriptionPreview {
+        box-shadow: none;
+        border: none;
+        margin: 0;
+        padding: 0;
+    }
+    
+    body {
+        background: white !important;
+    }
+    
+    body * {
+        visibility: hidden;
+    }
+    #prescriptionPreview, #prescriptionPreview * {
+        visibility: visible;
+    }
+    #prescriptionPreview {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 58mm;
+        box-shadow: none;
+        border: none;
+        padding: 0;
+        margin: 0;
+    }
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .main-content {
@@ -707,6 +951,19 @@ body {
     .prescription-table {
         overflow-x: auto;
     }
+    
+    .prescription-table table {
+        font-size: 12px;
+    }
+
+    .prescription-table th,
+    .prescription-table td {
+        padding: 8px;
+    }
+
+    .prescription-table input {
+        font-size: 10px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -726,32 +983,13 @@ body {
     .optometrist-details .right {
         text-align: left;
     }
-}
-
-/* Print Styles */
-@media print {
-    .navbar,
-    .preview-buttons,
-    .btn-back {
-        display: none !important;
-    }
     
-    .main-content {
-        padding: 0;
+    .buttons {
+        flex-wrap: wrap;
     }
-    
-    .page-section {
-        display: block !important;
-    }
-    
-    #prescriptionPreview {
-        box-shadow: none;
-        border: none;
-        margin: 0;
-        padding: 0;
-    }
-    
-    body {
-        background: white !important;
+    .btn {
+        min-width: auto;
+        padding: 6px 10px;
+        font-size: 12px;
     }
 }
