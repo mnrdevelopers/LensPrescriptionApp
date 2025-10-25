@@ -1,11 +1,12 @@
 // firebase-config.js
 const firebaseConfig = {
-    apiKey: "your-api-key",
-    authDomain: "your-project.firebaseapp.com",
-    projectId: "your-project-id",
-    storageBucket: "your-project.appspot.com",
-    messagingSenderId: "your-sender-id",
-    appId: "your-app-id"
+  apiKey: "AIzaSyD0qbeB7cPxBu3IGgrLFph8xOwxdwFER7c",
+  authDomain: "lensprescriptionapp-e8f48.firebaseapp.com",
+  projectId: "lensprescriptionapp-e8f48",
+  storageBucket: "lensprescriptionapp-e8f48.firebasestorage.app",
+  messagingSenderId: "96345105670",
+  appId: "1:96345105670:web:a6f3d448aa13663e92aa87",
+  measurementId: "G-GS1MLHFP13"
 };
 
 // Initialize Firebase
