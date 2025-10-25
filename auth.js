@@ -1,4 +1,4 @@
-// auth.js
+// auth.js - UPDATED VERSION
 
 // DOM Elements
 const loginForm = document.getElementById('loginForm');
@@ -24,6 +24,7 @@ function initializeAuth() {
     // Check if user is already logged in
     auth.onAuthStateChanged((user) => {
         if (user && !isRedirecting) {
+            console.log('User authenticated, redirecting to app...');
             // User is signed in, redirect to dashboard
             isRedirecting = true;
             window.location.href = 'app.html';
@@ -41,7 +42,6 @@ function loadRememberedUser() {
     const rememberMe = localStorage.getItem('rememberMe');
 
     if (rememberMe === 'true' && rememberedUsername) {
-        // Renamed 'loginUsername' to reflect that it is an Email
         const loginUsernameInput = document.getElementById('loginUsername');
         if (loginUsernameInput) loginUsernameInput.value = rememberedUsername;
         
@@ -54,7 +54,6 @@ function loadRememberedUser() {
 async function handleLogin(event) {
     event.preventDefault();
     
-    // Note: 'username' is actually the Email Address for Firebase Auth
     const email = document.getElementById('loginUsername').value.trim();
     const password = document.getElementById('loginPassword').value.trim();
     const rememberMe = document.getElementById('rememberMe').checked;
@@ -82,11 +81,11 @@ async function handleLogin(event) {
             localStorage.removeItem('rememberMe');
         }
 
-        // Save user data (This is now redundant as onAuthStateChanged handles redirect, but kept for local storage)
-        localStorage.setItem('username', email); // Storing email as "username"
+        // Save user data to localStorage
+        localStorage.setItem('username', email);
         localStorage.setItem('userId', user.uid);
         
-        // Let the onAuthStateChanged handler redirect
+        console.log('Login successful, user data saved to localStorage');
 
     } catch (error) {
         console.error('Login error:', error);
@@ -101,7 +100,7 @@ async function handleRegister(event) {
     
     console.log('Registration started...');
     
-    // Get form values - ADD PROPER DEBUGGING
+    // Get form values
     const email = document.getElementById('registerEmail').value.trim();
     const password = document.getElementById('registerPassword').value.trim();
     const clinicName = document.getElementById('clinicName').value.trim();
@@ -143,30 +142,33 @@ async function handleRegister(event) {
 
         console.log('Firebase user created successfully:', user.uid);
 
-        // Save user details to Firestore - FIXED DATA
+        // Save user details to Firestore - ENSURE ALL FIELDS ARE CORRECT
         const userData = {
             email: email,
-            clinicName: clinicName, // This should be the actual input value
-            optometristName: optometristName, // This should be the actual input value
-            address: address, // This should be the actual input value
-            contactNumber: contactNumber, // This should be the actual input value
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            clinicName: clinicName,
+            optometristName: optometristName,
+            address: address,
+            contactNumber: contactNumber,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
         console.log('Saving to Firestore:', userData);
 
-        // Save to Firestore
+        // CRITICAL FIX: Use set() with merge: false to ensure all data is written
         await db.collection('users').doc(user.uid).set(userData);
+        
         console.log('User data saved to Firestore successfully');
 
-        // Save user data to localStorage
+        // CRITICAL FIX: Save profile data to localStorage as backup
         localStorage.setItem('username', email);
         localStorage.setItem('userId', user.uid);
+        localStorage.setItem('userProfile', JSON.stringify(userData));
 
-        console.log('Registration completed successfully');
-        showSuccess('Registration successful! Redirecting...');
+        console.log('Registration completed successfully, profile data saved to localStorage');
         
-        // The onAuthStateChanged will handle redirect
+        // Show success message but let onAuthStateChanged handle redirect
+        showSuccess('Registration successful! Redirecting...');
 
     } catch (error) {
         console.error('Registration error:', error);
@@ -261,12 +263,6 @@ function togglePassword(inputId) {
     }
 }
 
-/**
- * Sets the loading state of a button.
- * @param {HTMLElement} button - The button element.
- * @param {boolean} isLoading - Whether to set the loading state.
- * @param {string} originalText - The original text of the button.
- */
 function setButtonLoading(button, isLoading, originalText) {
     if (!button) return;
     
@@ -284,8 +280,38 @@ function setButtonLoading(button, isLoading, originalText) {
 }
 
 function showError(message) {
-    // Replaced alert() with a console log for better UX and compliance
-    console.error('Authentication Error:', message);
+    // Create a temporary error display
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-message';
+    errorDiv.style.cssText = `
+        background: #f8d7da;
+        color: #721c24;
+        padding: 10px;
+        border-radius: 5px;
+        margin: 10px 0;
+        text-align: center;
+        border: 1px solid #f5c6cb;
+    `;
+    errorDiv.textContent = message;
+    
+    // Remove any existing error messages
+    const existingErrors = document.querySelectorAll('.error-message');
+    existingErrors.forEach(error => error.remove());
+    
+    // Insert the error message at the top of the active form
+    const activeForm = document.querySelector('.form-container.active');
+    if (activeForm) {
+        activeForm.insertBefore(errorDiv, activeForm.firstChild);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (errorDiv.parentNode) {
+                errorDiv.remove();
+            }
+        }, 5000);
+    } else {
+        console.error('Authentication Error:', message);
+    }
 }
 
 function clearFormErrors() {
@@ -324,15 +350,42 @@ function handleAuthError(error) {
             break;
     }
     
-    // Display error message (using console and fallback)
     showError(errorMessage);
-    
-    // In a production app, you would update an element on the screen here
 }
 
 function showSuccess(message) {
-    // Replaced alert() with a console log
-    console.log('Success:', message);
+    // Create a temporary success display
+    const successDiv = document.createElement('div');
+    successDiv.className = 'success-message';
+    successDiv.style.cssText = `
+        background: #d4edda;
+        color: #155724;
+        padding: 10px;
+        border-radius: 5px;
+        margin: 10px 0;
+        text-align: center;
+        border: 1px solid #c3e6cb;
+    `;
+    successDiv.textContent = message;
+    
+    // Remove any existing success messages
+    const existingSuccess = document.querySelectorAll('.success-message');
+    existingSuccess.forEach(msg => msg.remove());
+    
+    // Insert the success message at the top of the active form
+    const activeForm = document.querySelector('.form-container.active');
+    if (activeForm) {
+        activeForm.insertBefore(successDiv, activeForm.firstChild);
+        
+        // Auto-remove after 3 seconds
+        setTimeout(() => {
+            if (successDiv.parentNode) {
+                successDiv.remove();
+            }
+        }, 3000);
+    } else {
+        console.log('Success:', message);
+    }
 }
 
 // Export functions for global access
@@ -340,4 +393,3 @@ window.showLogin = showLogin;
 window.showRegister = showRegister;
 window.showForgotPassword = showForgotPassword;
 window.togglePassword = togglePassword;
-window.showError = showError;
