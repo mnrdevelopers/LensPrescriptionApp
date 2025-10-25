@@ -24,16 +24,17 @@
         sessionStorage.setItem("splashShown", "true"); // Mark splash as shown
         setTimeout(() => {
             if (isLoggedIn) {
-                window.location.replace("dashboard.html"); // Redirect to dashboard if logged in
+                window.location.replace("app.html"); // Redirect to dashboard if logged in
             } else {
                 window.location.replace("auth.html"); // Redirect to login page if not logged in
             }
         }, 3000);
     } else {
-        window.location.replace(isLoggedIn ? "dashboard.html" : "auth.html");
+        window.location.replace(isLoggedIn ? "app.html" : "auth.html");
     }
 });
 </script>
 </body>
 </html>
+
 
