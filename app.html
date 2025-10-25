@@ -3,455 +3,509 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lens Prescription</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="manifest" href="manifest.json">
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-           /* Custom CSS for app */
-      body {
-    font-family: 'Times New Roman', serif;
-    font-weight: bold;
-    background: linear-gradient(135deg, #FFD700 0%, #1E90FF 50%, #32CD32 100%);
-    background-attachment: fixed;
-    background-size: cover;
-    background-repeat: no-repeat;
-    padding-top: 70px; /* Prevent navbar overlap */
-}
-        .nav-link.active {
-            font-weight: bold;
-            color: #007bff !important; /* Example: Change the color to blue */
-        }
-
-        .button-group {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .btn {
-            padding: 12px 15px;
-            font-size: 16px;
-            font-weight: bold;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            background: #d4ec0a96;
-        }
-
-        h2 {
-        font-size: 1.5rem;
-        font-weight: bold;
-    }
-
-        .btn:hover {
-            background: #ec0a0a9e;
-            color: white;
-        }
-
-         /* Mobile Responsive */
-        @media (max-width: 800px) {
-            .prescription {
-                width: 95%;
-            }
-
-            h2 {
-    font-size: 1.2rem;
-    font-weight: bold;
-}
-
-            .btn {
-                font-size: 14px;
-                padding: 10px;
-            }
-        }
-        
-        </style>
-</head>
-<body>
-    <!-- Custom Exit Prompt Modal -->
-<div id="exitPromptModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); justify-content: center; align-items: center; z-index: 10000;">
-    <div style="background: white; padding: 20px; border-radius: 10px; text-align: center;">
-        <p>Are you sure you want to leave? Your changes may not be saved.</p>
-        <button id="confirmExit">Yes, Leave</button>
-        <button id="cancelExit">No, Stay</button>
-    </div>
-</div>
+    <title>Lens Prescription App</title>
     
-     <!-- Placeholder for the navbar -->
-    <header></header>
-
-    <!-- Main Content -->
-     <div id="prescription">  
-       <!-- Optical Shop Details -->
-<div class="header">
-    <h2 id="clinicName">Loading...</h2>
-    <p id="clinicAddress">Please wait...</p>
-</div>
-<hr>
-
-<!-- Optometrist Details -->
-<div class="optometrist-details">
-    <div class="left">
-        <p><strong id="optometristName">Loading...</strong></p>
-        <p><strong id="contactNumber">Please wait...</strong></p>
-    </div>
-    <div class="right">
-        <p><strong>Date:</strong> <span id="currentDate"></span></p>
-    </div>
-</div>
-        <button onclick="openEditProfile()" class="btn btn-edit">Edit Profile</button>
-
-<!-- Edit Profile Modal -->
-<div id="editProfileModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); justify-content: center; align-items: center; z-index: 10000;">
-    <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); width: 100%; max-width: 400px; text-align: left;">
-        <!-- Modal Header -->
-        <h2 style="font-size: 20px; font-weight: 600; color: #333; margin-bottom: 20px; text-align: center;">Edit Profile</h2>
-        
-        <!-- Input Fields -->
-        <div style="margin-bottom: 15px;">
-            <label for="editClinicName" style="display: block; font-size: 14px; font-weight: 500; color: #555; margin-bottom: 5px;">Clinic Name</label>
-            <input type="text" id="editClinicName" placeholder="Enter Clinic Name" style="width: 100%; padding: 10px; font-size: 14px; border: 1px solid #ddd; border-radius: 6px; outline: none; transition: border-color 0.3s ease;">
-        </div>
-
-        <div style="margin-bottom: 15px;">
-            <label for="editOptometristName" style="display: block; font-size: 14px; font-weight: 500; color: #555; margin-bottom: 5px;">Optometrist Name</label>
-            <input type="text" id="editOptometristName" placeholder="Enter Optometrist Name" style="width: 100%; padding: 10px; font-size: 14px; border: 1px solid #ddd; border-radius: 6px; outline: none; transition: border-color 0.3s ease;">
-        </div>
-
-        <div style="margin-bottom: 15px;">
-            <label for="editAddress" style="display: block; font-size: 14px; font-weight: 500; color: #555; margin-bottom: 5px;">Clinic Address</label>
-            <input type="text" id="editAddress" placeholder="Enter Clinic Address" style="width: 100%; padding: 10px; font-size: 14px; border: 1px solid #ddd; border-radius: 6px; outline: none; transition: border-color 0.3s ease;">
-        </div>
-
-        <div style="margin-bottom: 20px;">
-            <label for="editContactNumber" style="display: block; font-size: 14px; font-weight: 500; color: #555; margin-bottom: 5px;">Contact Number</label>
-            <input type="tel" id="editContactNumber" placeholder="Enter Contact Number" style="width: 100%; padding: 10px; font-size: 14px; border: 1px solid #ddd; border-radius: 6px; outline: none; transition: border-color 0.3s ease;">
-        </div>
-
-        <!-- Buttons -->
-        <div style="display: flex; justify-content: flex-end; gap: 10px;">
-            <button onclick="closeEditProfile()" style="padding: 10px 20px; font-size: 14px; font-weight: 500; color: #333; background: #f0f0f0; border: none; border-radius: 6px; cursor: pointer; transition: background 0.3s ease;">Cancel</button>
-            <button onclick="saveProfile()" style="padding: 10px 20px; font-size: 14px; font-weight: 500; color: white; background: #007bff; border: none; border-radius: 6px; cursor: pointer; transition: background 0.3s ease;">Save Changes</button>
-        </div>
-    </div>
-</div>
-<hr>
-
-        <!-- Patient Details -->
-        <div class="section-title">Patient Details</div>
-        <div class="patient-details">
-            <div>
-                <label for="patientName">Patient Name</label>
-                <input type="text" id="patientName" placeholder="Enter name" required>
-            </div>
-            <div>
-                <label for="age">Age</label>
-                <input type="number" id="age" placeholder="Age" required>
-            </div>
-            <div>
-                <label for="gender">Gender</label>
-                <select id="gender">
-                    <option>Male</option>
-                    <option>Female</option>
-                    <option>Other</option>
-                </select>
-            </div>
-            <div>
-                <label for="patientMobile">Mobile</label>
-                <input type="tel" id="patientMobile" placeholder="Enter mobile number" required pattern="[0-9]{10}">
-            </div>
-        </div>
-        <hr>
-
-  <!-- Prescription Details -->      
-<div class="section-title">Prescription Details</div>
-<div class="prescription-table">
-    <!-- Right Eye Table -->
-    <table>
-        <thead>
-            <tr>
-                <th colspan="5">RIGHT EYE (OD)</th>
-            </tr>
-            <tr>
-                <th></th>
-                <th>SPH</th>
-                <th>CYL</th>
-                <th>AXIS</th>
-                <th>V/A</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td><strong>DIST</strong></td>
-                <td><input type="text" id="rightDistSPH" placeholder="SPH"></td>
-                <td><input type="text" id="rightDistCYL" placeholder="CYL"></td>
-                <td><input type="text" id="rightDistAXIS" placeholder="AXIS"></td>
-                <td><input type="text" id="rightDistVA" placeholder="V/A"></td>
-            </tr>
-            <tr>
-                <td><strong>ADD</strong></td>
-                <td><input type="text" id="rightAddSPH" placeholder="SPH"></td>
-                <td><input type="text" id="rightAddCYL" placeholder="CYL"></td>
-                <td><input type="text" id="rightAddAXIS" placeholder="AXIS"></td>
-                <td><input type="text" id="rightAddVA" placeholder="V/A"></td>
-            </tr>
-        </tbody>
-    </table>
-
-    <!-- Left Eye Table -->
-    <table>
-        <thead>
-            <tr>
-                <th colspan="5">LEFT EYE (OS)</th>
-            </tr>
-            <tr>
-                <th></th>
-                <th>SPH</th>
-                <th>CYL</th>
-                <th>AXIS</th>
-                <th>V/A</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td><strong>DIST</strong></td>
-                <td><input type="text" id="leftDistSPH" placeholder="SPH"></td>
-                <td><input type="text" id="leftDistCYL" placeholder="CYL"></td>
-                <td><input type="text" id="leftDistAXIS" placeholder="AXIS"></td>
-                <td><input type="text" id="leftDistVA" placeholder="V/A"></td>
-            </tr>
-            <tr>
-                <td><strong>ADD</strong></td>
-                <td><input type="text" id="leftAddSPH" placeholder="SPH"></td>
-                <td><input type="text" id="leftAddCYL" placeholder="CYL"></td>
-                <td><input type="text" id="leftAddAXIS" placeholder="AXIS"></td>
-                <td><input type="text" id="leftAddVA" placeholder="V/A"></td>
-            </tr>
-        </tbody>
-    </table>
-</div>
-        <hr>
-
-        <!-- Vision Type, Lens Type, and Frame Type Side by Side -->
-<div class="section-title">Options</div>
-<div class="options-row">
-    <!-- Vision Type -->
-    <div class="form-group">
-        <label for="visionType">Vision Type</label>
-        <select id="visionType">
-            <option value="Single Vision">Single Vision</option>
-            <option value="Bifocal">Bifocal</option>
-            <option value="Progressive">Progressive</option>
-            <option value="Reading">Reading</option>
-        </select>
-    </div>
-
-    <!-- Lens Type -->
-    <div class="form-group">
-        <label for="lensType">Lens Type</label>
-        <select id="lensType">
-            <option value="Blue Cut">Blue Cut</option>
-            <option value="Progressive">Progressive</option>
-            <option value="Bifocal">Bifocal</option>
-            <option value="Anti-Glare">Anti-Glare</option>
-        </select>
-    </div>
-
-    <!-- Frame Type -->
-    <div class="form-group">
-        <label for="frameType">Frame Type</label>
-        <select id="frameType">
-            <option value="Full Rim">Full Rim</option>
-            <option value="Half Rim">Half Rim</option>
-            <option value="Rimless">Rimless</option>
-            <option value="Metal">Metal</option>
-            <option value="Plastic">Plastic</option>
-        </select>
-    </div>
-</div>
-<hr>
-        
-        <!-- Amount and Payment Mode Combined -->
-<div class="section-title">Amount & Payment Mode</div>
-<div class="amount-payment-row">
-    <!-- Amount -->
-    <div class="form-group">
-        <label for="amount">Amount (₹)</label>
-        <input type="number" id="amount" placeholder="Enter amount" required>
-    </div>
-
-    <!-- Payment Mode -->
-    <div class="form-group">
-        <label for="paymentMode">Payment Mode</label>
-        <select id="paymentMode">
-            <option value="Cash">Cash</option>
-            <option value="Card">Card</option>
-            <option value="UPI">UPI</option>
-            <option value="Online">Online</option>
-        </select>
-    </div>
-</div>
-<hr>
-
-    <button onclick="submitForm()" class="btn btn-submit">
-        <i class="fas fa-paper-plane"></i> Submit
-    </button>
-</div>
-
-    <!-- JavaScript -->
-    <script src="script.js"></script>
+    <!-- Styles -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="app.css">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    
+    <!-- External Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-     <!-- Bootstrap JS and dependencies -->
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar bg-body-tertiary fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#" onclick="showDashboard()">Lens Prescription</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar">
+                <div class="offcanvas-header">
+                    <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+                </div>
+                <div class="offcanvas-body">
+                    <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showDashboard()">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showPrescriptionForm()">
+                                <i class="fas fa-plus-circle"></i> Add Prescription
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showPrescriptions()">
+                                <i class="fas fa-list"></i> View Prescriptions
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showReports()">
+                                <i class="fas fa-chart-bar"></i> Reports
+                            </a>
+                        </li>
+                    </ul>
+                    <div class="mt-3">
+                        <button onclick="logoutUser()" class="btn btn-logout w-100">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </button>
+                    </div>
+                    <div class="footer mt-4">
+                        <small>@2025 Lens-Prescription-App developed by <strong>MANITEJA (MNR DEVELOPERS)</strong></small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <div class="main-content">
+        <!-- Dashboard Section -->
+        <section id="dashboardSection" class="page-section active">
+            <div class="dashboard-container">
+                <h2>Welcome to Lens Prescription</h2>
+                <div class="button-group">
+                    <button onclick="showPrescriptionForm()" class="btn btn-primary">
+                        <i class="fas fa-plus-circle"></i> Add New Prescription
+                    </button>
+                    <button onclick="showPrescriptions()" class="btn btn-secondary">
+                        <i class="fas fa-list"></i> View Prescriptions
+                    </button>
+                    <button onclick="showReports()" class="btn btn-tertiary">
+                        <i class="fas fa-chart-bar"></i> View Reports
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Add Prescription Section -->
+        <section id="prescriptionFormSection" class="page-section">
+            <div class="prescription-container">
+                <!-- Custom Exit Prompt Modal -->
+                <div id="exitPromptModal" class="modal-overlay">
+                    <div class="modal-content">
+                        <p>Are you sure you want to leave? Your changes may not be saved.</p>
+                        <div class="modal-buttons">
+                            <button id="confirmExit" class="btn btn-danger">Yes, Leave</button>
+                            <button id="cancelExit" class="btn btn-secondary">No, Stay</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="prescriptionForm">
+                    <!-- Optical Shop Details -->
+                    <div class="header">
+                        <h2 id="clinicName">Loading...</h2>
+                        <p id="clinicAddress">Please wait...</p>
+                    </div>
+                    <hr>
+
+                    <!-- Optometrist Details -->
+                    <div class="optometrist-details">
+                        <div class="left">
+                            <p><strong id="optometristName">Loading...</strong></p>
+                            <p><strong id="contactNumber">Please wait...</strong></p>
+                        </div>
+                        <div class="right">
+                            <p><strong>Date:</strong> <span id="currentDate"></span></p>
+                        </div>
+                    </div>
+                    <button onclick="openEditProfile()" class="btn btn-edit">Edit Profile</button>
+
+                    <!-- Edit Profile Modal -->
+                    <div id="editProfileModal" class="modal-overlay">
+                        <div class="modal-content large">
+                            <h2>Edit Profile</h2>
+                            <div class="form-group">
+                                <label for="editClinicName">Clinic Name</label>
+                                <input type="text" id="editClinicName" placeholder="Enter Clinic Name">
+                            </div>
+                            <div class="form-group">
+                                <label for="editOptometristName">Optometrist Name</label>
+                                <input type="text" id="editOptometristName" placeholder="Enter Optometrist Name">
+                            </div>
+                            <div class="form-group">
+                                <label for="editAddress">Clinic Address</label>
+                                <input type="text" id="editAddress" placeholder="Enter Clinic Address">
+                            </div>
+                            <div class="form-group">
+                                <label for="editContactNumber">Contact Number</label>
+                                <input type="tel" id="editContactNumber" placeholder="Enter Contact Number">
+                            </div>
+                            <div class="modal-buttons">
+                                <button onclick="closeEditProfile()" class="btn btn-secondary">Cancel</button>
+                                <button onclick="saveProfile()" class="btn btn-primary">Save Changes</button>
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+
+                    <!-- Patient Details -->
+                    <div class="section-title">Patient Details</div>
+                    <div class="patient-details">
+                        <div>
+                            <label for="patientName">Patient Name</label>
+                            <input type="text" id="patientName" placeholder="Enter name" required>
+                        </div>
+                        <div>
+                            <label for="age">Age</label>
+                            <input type="number" id="age" placeholder="Age" required>
+                        </div>
+                        <div>
+                            <label for="gender">Gender</label>
+                            <select id="gender">
+                                <option>Male</option>
+                                <option>Female</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="patientMobile">Mobile</label>
+                            <input type="tel" id="patientMobile" placeholder="Enter mobile number" required pattern="[0-9]{10}">
+                        </div>
+                    </div>
+                    <hr>
+
+                    <!-- Prescription Details -->
+                    <div class="section-title">Prescription Details</div>
+                    <div class="prescription-table">
+                        <!-- Right Eye Table -->
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th colspan="5">RIGHT EYE (OD)</th>
+                                </tr>
+                                <tr>
+                                    <th></th>
+                                    <th>SPH</th>
+                                    <th>CYL</th>
+                                    <th>AXIS</th>
+                                    <th>V/A</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>DIST</strong></td>
+                                    <td><input type="text" id="rightDistSPH" placeholder="SPH"></td>
+                                    <td><input type="text" id="rightDistCYL" placeholder="CYL"></td>
+                                    <td><input type="text" id="rightDistAXIS" placeholder="AXIS"></td>
+                                    <td><input type="text" id="rightDistVA" placeholder="V/A"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>ADD</strong></td>
+                                    <td><input type="text" id="rightAddSPH" placeholder="SPH"></td>
+                                    <td><input type="text" id="rightAddCYL" placeholder="CYL"></td>
+                                    <td><input type="text" id="rightAddAXIS" placeholder="AXIS"></td>
+                                    <td><input type="text" id="rightAddVA" placeholder="V/A"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <!-- Left Eye Table -->
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th colspan="5">LEFT EYE (OS)</th>
+                                </tr>
+                                <tr>
+                                    <th></th>
+                                    <th>SPH</th>
+                                    <th>CYL</th>
+                                    <th>AXIS</th>
+                                    <th>V/A</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>DIST</strong></td>
+                                    <td><input type="text" id="leftDistSPH" placeholder="SPH"></td>
+                                    <td><input type="text" id="leftDistCYL" placeholder="CYL"></td>
+                                    <td><input type="text" id="leftDistAXIS" placeholder="AXIS"></td>
+                                    <td><input type="text" id="leftDistVA" placeholder="V/A"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>ADD</strong></td>
+                                    <td><input type="text" id="leftAddSPH" placeholder="SPH"></td>
+                                    <td><input type="text" id="leftAddCYL" placeholder="CYL"></td>
+                                    <td><input type="text" id="leftAddAXIS" placeholder="AXIS"></td>
+                                    <td><input type="text" id="leftAddVA" placeholder="V/A"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <hr>
+
+                    <!-- Options -->
+                    <div class="section-title">Options</div>
+                    <div class="options-row">
+                        <div class="form-group">
+                            <label for="visionType">Vision Type</label>
+                            <select id="visionType">
+                                <option value="Single Vision">Single Vision</option>
+                                <option value="Bifocal">Bifocal</option>
+                                <option value="Progressive">Progressive</option>
+                                <option value="Reading">Reading</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="lensType">Lens Type</label>
+                            <select id="lensType">
+                                <option value="Blue Cut">Blue Cut</option>
+                                <option value="Progressive">Progressive</option>
+                                <option value="Bifocal">Bifocal</option>
+                                <option value="Anti-Glare">Anti-Glare</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="frameType">Frame Type</label>
+                            <select id="frameType">
+                                <option value="Full Rim">Full Rim</option>
+                                <option value="Half Rim">Half Rim</option>
+                                <option value="Rimless">Rimless</option>
+                                <option value="Metal">Metal</option>
+                                <option value="Plastic">Plastic</option>
+                            </select>
+                        </div>
+                    </div>
+                    <hr>
+                    
+                    <!-- Amount & Payment -->
+                    <div class="section-title">Amount & Payment Mode</div>
+                    <div class="amount-payment-row">
+                        <div class="form-group">
+                            <label for="amount">Amount (₹)</label>
+                            <input type="number" id="amount" placeholder="Enter amount" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="paymentMode">Payment Mode</label>
+                            <select id="paymentMode">
+                                <option value="Cash">Cash</option>
+                                <option value="Card">Card</option>
+                                <option value="UPI">UPI</option>
+                                <option value="Online">Online</option>
+                            </select>
+                        </div>
+                    </div>
+                    <hr>
+
+                    <button onclick="submitPrescription()" class="btn btn-submit">
+                        <i class="fas fa-paper-plane"></i> Submit
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- View Prescriptions Section -->
+        <section id="prescriptionsSection" class="page-section">
+            <div class="container">
+                <h2>Prescription History</h2>
+                
+                <div class="search-bar">
+                    <input type="text" id="searchInput" placeholder="Search by Name or Mobile" onkeyup="filterPrescriptions()">
+                    <button class="btn-search">Search</button>
+                </div>
+
+                <table id="prescriptionTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Patient Name</th>
+                            <th>Age</th>
+                            <th>Gender</th>
+                            <th>Mobile</th>
+                            <th>Amount</th>
+                            <th>Vision Type</th>
+                            <th>Lens Type</th>
+                            <th>Frame Type</th>
+                            <th>Payment Mode</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Reports Section -->
+        <section id="reportsSection" class="page-section">
+            <div class="reports-container">
+                <h2>Reports</h2>
+                <div class="button-group">
+                    <button onclick="fetchDailyReport()" class="btn btn-primary">Daily Report</button>
+                    <button onclick="fetchWeeklyReport()" class="btn btn-secondary">Weekly Report</button>
+                    <button onclick="fetchMonthlyReport()" class="btn btn-tertiary">Monthly Report</button>
+                </div>
+
+                <!-- Report Table -->
+                <table id="reportTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Prescriptions</th>
+                            <th>Amount Earned</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Preview Section -->
+        <section id="previewSection" class="page-section">
+            <div class="preview-container">
+                <button onclick="showPrescriptions()" class="btn btn-back">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+
+                <!-- Prescription Preview Container -->
+                <div id="prescriptionPreview">
+                    <!-- Clinic Details -->
+                    <div class="preview-header">
+                        <h2 id="previewClinicName">Loading...</h2>
+                        <p id="previewClinicAddress">Please wait...</p>
+                    </div>
+                    <hr>
+
+                    <!-- Optometrist Details -->
+                    <div class="preview-details">
+                        <p id="previewOptometristName"><strong>Loading...</strong></p>
+                        <p id="previewContactNumber"><strong>Please wait...</strong></p>
+                        <p><strong>Date:</strong> <span id="previewcurrentDate"></span></p>
+                    </div>
+                    <hr>
+
+                    <!-- Patient Details -->
+                    <div class="preview-details">
+                        <p><strong>Patient Name:</strong> <span id="previewPatientName"></span></p>
+                        <p><strong>Age:</strong> <span id="previewAge"></span></p>
+                        <p><strong>Gender:</strong> <span id="previewGender"></span></p>
+                        <p><strong>Mobile:</strong> <span id="previewMobile"></span></p>
+                    </div>
+                    <hr>
+
+                    <!-- Prescription Details -->
+                    <div class="preview-prescription">
+                        <h3>Prescription Details</h3>
+
+                        <!-- Right Eye Table -->
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th colspan="5">RIGHT EYE (OD)</th>
+                                </tr>
+                                <tr>
+                                    <th></th>
+                                    <th>SPH</th>
+                                    <th>CYL</th>
+                                    <th>AXIS</th>
+                                    <th>V/A</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>DIST</strong></td>
+                                    <td><span id="previewrightDistSPH"></span></td>
+                                    <td><span id="previewrightDistCYL"></span></td>
+                                    <td><span id="previewrightDistAXIS"></span></td>
+                                    <td><span id="previewrightDistVA"></span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>ADD</strong></td>
+                                    <td><span id="previewrightAddSPH"></span></td>
+                                    <td><span id="previewrightAddCYL"></span></td>
+                                    <td><span id="previewrightAddAXIS"></span></td>
+                                    <td><span id="previewrightAddVA"></span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <!-- Left Eye Table -->
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th colspan="5">LEFT EYE (OS)</th>
+                                </tr>
+                                <tr>
+                                    <th></th>
+                                    <th>SPH</th>
+                                    <th>CYL</th>
+                                    <th>AXIS</th>
+                                    <th>V/A</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>DIST</strong></td>
+                                    <td><span id="previewleftDistSPH"></span></td>
+                                    <td><span id="previewleftDistCYL"></span></td>
+                                    <td><span id="previewleftDistAXIS"></span></td>
+                                    <td><span id="previewleftDistVA"></span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>ADD</strong></td>
+                                    <td><span id="previewleftAddSPH"></span></td>
+                                    <td><span id="previewleftAddCYL"></span></td>
+                                    <td><span id="previewleftAddAXIS"></span></td>
+                                    <td><span id="previewleftAddVA"></span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <hr>
+
+                    <!-- Vision Type, Lens Type, Frame Type -->
+                    <div class="preview-details">
+                        <p><strong>Vision Type:</strong> <span id="previewVisionType"></span></p>
+                        <p><strong>Lens Type:</strong> <span id="previewLensType"></span></p>
+                        <p><strong>Frame Type:</strong> <span id="previewFrameType"></span></p>
+                    </div>
+                    <hr>
+
+                    <!-- Amount -->
+                    <div class="preview-details">
+                        <p><strong>Amount:</strong> ₹<span id="previewAmount"></span></p>
+                        <p><strong>Payment Mode:</strong> <span id="previewPaymentMode"></span></p>
+                    </div>
+                    <hr>
+
+                    <!-- Thank You Note -->
+                    <div class="preview-footer">
+                        <p>Thank you for choosing Us</p>
+                        <p>We hope to see you again soon.</p>
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="preview-buttons">
+                    <button onclick="generatePDF()" class="btn btn-download">
+                        <i class="fas fa-file-pdf"></i> PDF
+                    </button>
+                    <button onclick="printPreview()" class="btn btn-print">
+                        <i class="fas fa-print"></i> Print
+                    </button>
+                    <button onclick="sendWhatsApp()" class="btn btn-whatsapp">
+                        <i class="fab fa-whatsapp"></i> WhatsApp
+                    </button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
-    <!-- Load Navbar Script -->
-    <script src="loadNavbar.js"></script>
-
-<script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycbxXx0Jy7AmSljFYOuXs00Mxj4aiGpSHz92L5sa903Hp09lEQXrVbfNXByZoAOSogwUm/exec"; // Replace with your Google Apps Script URL
-
-    document.addEventListener("DOMContentLoaded", function() {
-        const username = localStorage.getItem("username");
-
-        if (!username) {
-            // Redirect to login page if no user is logged in
-            window.location.href = "login.html";
-            return;
-        }
-
-        // Fetch user details from Google Sheets
-        fetch(scriptURL, {
-            method: "POST",
-            body: JSON.stringify({ action: "getDetails", username: username })
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.status === "success") {
-                // ✅ Update Clinic Details in Main Section
-                document.getElementById("clinicName").textContent = result.clinicName;
-                document.getElementById("clinicAddress").textContent = result.address;
-                document.getElementById("optometristName").textContent = result.optometristName;
-                document.getElementById("contactNumber").textContent = result.contactNumber;
-
-                // ✅ Update Clinic Details in Prescription Preview (if elements exist)
-                if (document.getElementById("previewClinicName")) {
-                    document.getElementById("previewClinicName").textContent = result.clinicName;
-                    document.getElementById("previewClinicAddress").textContent = result.address;
-                    document.getElementById("previewOptometristName").textContent = result.optometristName;
-                    document.getElementById("previewContactNumber").textContent = result.contactNumber;
-                }
-            } else {
-                alert("Error fetching clinic details. Please log in again.");
-                localStorage.removeItem("username");
-                window.location.href = "login.html";
-            }
-        })
-        .catch(error => {
-            console.error("Error:", error);
-            alert("Failed to fetch clinic details. Please check your internet connection.");
-        });
-
-        // Set Current Date
-        document.getElementById("currentDate").textContent = new Date().toLocaleDateString();
-        if (document.getElementById("previewcurrentDate")) {
-            document.getElementById("previewcurrentDate").textContent = new Date().toLocaleDateString();
-        }
-    });
-
-    function openEditProfile() {
-        document.getElementById("editProfileModal").style.display = "flex";
-
-        // Pre-fill with current details
-        document.getElementById("editClinicName").value = document.getElementById("clinicName").textContent;
-        document.getElementById("editOptometristName").value = document.getElementById("optometristName").textContent;
-        document.getElementById("editAddress").value = document.getElementById("clinicAddress").textContent;
-        document.getElementById("editContactNumber").value = document.getElementById("contactNumber").textContent;
-    }
-
-    function closeEditProfile() {
-        document.getElementById("editProfileModal").style.display = "none";
-    }
-
-    function saveProfile() {
-        const scriptURL = "https://script.google.com/macros/s/AKfycbxXx0Jy7AmSljFYOuXs00Mxj4aiGpSHz92L5sa903Hp09lEQXrVbfNXByZoAOSogwUm/exec"; // Replace with your Google Apps Script URL
-        const username = localStorage.getItem("username");
-
-        const updatedData = {
-            action: "updateProfile",
-            username: username,
-            clinicName: document.getElementById("editClinicName").value,
-            optometristName: document.getElementById("editOptometristName").value,
-            address: document.getElementById("editAddress").value,
-            contactNumber: document.getElementById("editContactNumber").value
-        };
-
-        fetch(scriptURL, {
-            method: "POST",
-            body: JSON.stringify(updatedData)
-        })
-        .then(response => response.json())
-        .then(result => {
-            alert(result.message);
-            if (result.status === "success") {
-                // Update UI with new details
-                document.getElementById("clinicName").textContent = updatedData.clinicName;
-                document.getElementById("clinicAddress").textContent = updatedData.address;
-                document.getElementById("optometristName").textContent = updatedData.optometristName;
-                document.getElementById("contactNumber").textContent = updatedData.contactNumber;
-
-                // Update preview section (if elements exist)
-                if (document.getElementById("previewClinicName")) {
-                    document.getElementById("previewClinicName").textContent = updatedData.clinicName;
-                    document.getElementById("previewClinicAddress").textContent = updatedData.address;
-                    document.getElementById("previewOptometristName").textContent = updatedData.optometristName;
-                    document.getElementById("previewContactNumber").textContent = updatedData.contactNumber;
-                }
-            }
-        })
-        .catch(error => console.error("Error:", error));
-
-        closeEditProfile();
-    }
-
-    // Logout Function
-    function logoutUser() {
-        // Clear all relevant data from localStorage
-        localStorage.removeItem("username");
-        localStorage.removeItem("patientName");
-        localStorage.removeItem("age");
-        localStorage.removeItem("gender");
-        localStorage.removeItem("patientMobile");
-        localStorage.removeItem("amount");
-        localStorage.removeItem("visionType");
-        localStorage.removeItem("lensType");
-        localStorage.removeItem("frameType");
-        localStorage.removeItem("paymentMode");
-        localStorage.removeItem("currentDate");
-
-        // Clear prescription fields
-        const prescriptionFields = [
-            "rightDistSPH", "rightDistCYL", "rightDistAXIS", "rightDistVA",
-            "leftDistSPH", "leftDistCYL", "leftDistAXIS", "leftDistVA",
-            "rightAddSPH", "rightAddCYL", "rightAddAXIS", "rightAddVA",
-            "leftAddSPH", "leftAddCYL", "leftAddAXIS", "leftAddVA"
-        ];
-
-        prescriptionFields.forEach(field => {
-            localStorage.removeItem(field);
-        });
-
-        // Redirect to login page
-        window.location.href = "login.html";
-    }
-</script>
-</body
+    <script src="app.js"></script>
+    <script src="script.js"></script>
+</body>
 </html>
