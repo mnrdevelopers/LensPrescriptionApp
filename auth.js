@@ -99,6 +99,7 @@ async function handleLogin(event) {
 async function handleRegister(event) {
     event.preventDefault();
     
+    // Note: 'username' is actually the Email Address for Firebase Auth
     const email = document.getElementById('registerUsername').value.trim();
     const password = document.getElementById('registerPassword').value.trim();
     const clinicName = document.getElementById('clinicName').value.trim();
@@ -106,6 +107,7 @@ async function handleRegister(event) {
     const address = document.getElementById('address').value.trim();
     const contactNumber = document.getElementById('contactNumber').value.trim();
 
+    // Validate inputs
     if (!email || !password || !clinicName || !optometristName || !address || !contactNumber) {
         showError('Please fill in all fields');
         return;
@@ -120,27 +122,28 @@ async function handleRegister(event) {
     setButtonLoading(registerButton, true, 'Register');
 
     try {
+        // Create user with email and password
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
         const user = userCredential.user;
 
-        // Save user details to Firestore
-        const userData = {
-            email: email,
+        // FIX: Save user details to Firestore immediately after successful registration
+        // This ensures the profile exists when app.js tries to load it.
+        await db.collection('users').doc(user.uid).set({
+            email: email, // Changed from username to email
             clinicName: clinicName,
             optometristName: optometristName,
             address: address,
             contactNumber: contactNumber,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
+        });
 
-        await db.collection('users').doc(user.uid).set(userData);
-
-        // Save to localStorage
-        localStorage.setItem('username', email);
+        // Save user data to localStorage
+        localStorage.setItem('username', email); // Storing email as "username"
         localStorage.setItem('userId', user.uid);
 
-        // Redirect to app
-        window.location.href = 'app.html';
+        showSuccess('Registration successful! Redirecting...');
+        
+        // Let the onAuthStateChanged handler redirect
 
     } catch (error) {
         console.error('Registration error:', error);
