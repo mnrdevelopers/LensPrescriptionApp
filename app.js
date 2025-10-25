@@ -207,32 +207,59 @@ async function loadUserProfile() {
             const userData = doc.data();
             console.log('Loaded user profile from Firestore:', userData);
             updateProfileUI(userData);
-        } else {
-            console.log('No user profile found in Firestore, creating default...');
-            // Create a default profile if none exists
-            const defaultProfile = {
-                clinicName: 'Your Clinic Name',
-                optometristName: 'Optometrist Name',
-                address: 'Clinic Address',
-                contactNumber: 'Contact Number',
-                email: user.email,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            };
             
-            await db.collection('users').doc(user.uid).set(defaultProfile);
-            console.log('Default profile created:', defaultProfile);
-            updateProfileUI(defaultProfile);
+            // Also update localStorage as backup
+            localStorage.setItem('userProfile', JSON.stringify(userData));
+        } else {
+            console.log('No user profile found in Firestore, checking localStorage...');
+            
+            // CRITICAL FIX: Check localStorage as fallback
+            const localProfile = localStorage.getItem('userProfile');
+            if (localProfile) {
+                console.log('Found profile in localStorage:', localProfile);
+                const userData = JSON.parse(localProfile);
+                updateProfileUI(userData);
+                
+                // Also save this back to Firestore
+                await db.collection('users').doc(user.uid).set(userData, { merge: true });
+                console.log('Profile restored from localStorage to Firestore');
+            } else {
+                console.log('No profile found anywhere, creating default...');
+                // Create a default profile if none exists
+                const defaultProfile = {
+                    clinicName: 'Your Clinic Name',
+                    optometristName: 'Optometrist Name',
+                    address: 'Clinic Address',
+                    contactNumber: 'Contact Number',
+                    email: user.email,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                
+                await db.collection('users').doc(user.uid).set(defaultProfile);
+                console.log('Default profile created:', defaultProfile);
+                updateProfileUI(defaultProfile);
+            }
         }
     } catch (error) {
-        console.error('Error loading user profile:', error);
-        // Fallback to default values
-        const fallbackData = {
-            clinicName: 'Your Clinic Name',
-            optometristName: 'Optometrist Name', 
-            address: 'Clinic Address',
-            contactNumber: 'Contact Number'
-        };
-        updateProfileUI(fallbackData);
+        console.error('Error loading user profile from Firestore:', error);
+        
+        // CRITICAL FIX: Fallback to localStorage if Firestore fails
+        const localProfile = localStorage.getItem('userProfile');
+        if (localProfile) {
+            console.log('Firestore failed, using localStorage backup:', localProfile);
+            const userData = JSON.parse(localProfile);
+            updateProfileUI(userData);
+        } else {
+            console.error('No backup profile available, using defaults');
+            // Fallback to default values
+            const fallbackData = {
+                clinicName: 'Your Clinic Name',
+                optometristName: 'Optometrist Name', 
+                address: 'Clinic Address',
+                contactNumber: 'Contact Number'
+            };
+            updateProfileUI(fallbackData);
+        }
     }
 }
 
