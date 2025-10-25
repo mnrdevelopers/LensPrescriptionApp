@@ -130,6 +130,13 @@ async function handleRegister(event) {
         return;
     }
 
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showError('Please enter a valid email address');
+        return;
+    }
+
     const registerButton = registerFormElement.querySelector('button[type="submit"]');
     setButtonLoading(registerButton, true, 'Register');
 
@@ -141,34 +148,51 @@ async function handleRegister(event) {
         const user = userCredential.user;
 
         console.log('Firebase user created successfully:', user.uid);
+        console.log('User email from auth:', user.email);
 
-        // Save user details to Firestore - ENSURE ALL FIELDS ARE CORRECT
+        // CRITICAL FIX: Save user details to Firestore with proper email field
         const userData = {
-            email: email,
+            // Use the exact email from the form input
+            email: email, // This should match the registered email
             clinicName: clinicName,
             optometristName: optometristName,
             address: address,
             contactNumber: contactNumber,
+            // Add these additional fields for better tracking
+            userId: user.uid, // Store user ID for reference
+            registeredEmail: email, // Explicit email field
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
-        console.log('Saving to Firestore:', userData);
+        console.log('Saving to Firestore with data:', userData);
 
-        // CRITICAL FIX: Use set() with merge: false to ensure all data is written
+        // Save to Firestore with error handling
         await db.collection('users').doc(user.uid).set(userData);
-        
         console.log('User data saved to Firestore successfully');
 
-        // CRITICAL FIX: Save profile data to localStorage as backup
+        // Verify the data was saved correctly
+        const savedDoc = await db.collection('users').doc(user.uid).get();
+        if (savedDoc.exists) {
+            const savedData = savedDoc.data();
+            console.log('Verified Firestore data:', savedData);
+            
+            if (savedData.email !== email) {
+                console.error('EMAIL MISMATCH: Firestore email does not match input email');
+                console.error('Input email:', email);
+                console.error('Saved email:', savedData.email);
+            }
+        }
+
+        // Save user data to localStorage
         localStorage.setItem('username', email);
         localStorage.setItem('userId', user.uid);
         localStorage.setItem('userProfile', JSON.stringify(userData));
 
-        console.log('Registration completed successfully, profile data saved to localStorage');
-        
-        // Show success message but let onAuthStateChanged handle redirect
+        console.log('Registration completed successfully');
         showSuccess('Registration successful! Redirecting...');
+        
+        // The onAuthStateChanged will handle redirect
 
     } catch (error) {
         console.error('Registration error:', error);
@@ -180,11 +204,11 @@ async function handleRegister(event) {
             showError('Password is too weak. Please use at least 6 characters.');
         } else if (error.code === 'auth/invalid-email') {
             showError('Invalid email address format.');
+        } else if (error.code === 'auth/operation-not-allowed') {
+            showError('Email/password accounts are not enabled. Please contact support.');
         } else {
             showError('Registration failed: ' + error.message);
         }
-        
-        handleAuthError(error);
     } finally {
         setButtonLoading(registerButton, false, 'Register');
     }
