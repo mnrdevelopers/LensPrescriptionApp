@@ -99,7 +99,6 @@ async function handleLogin(event) {
 async function handleRegister(event) {
     event.preventDefault();
     
-    // Note: 'username' is actually the Email Address for Firebase Auth
     const email = document.getElementById('registerUsername').value.trim();
     const password = document.getElementById('registerPassword').value.trim();
     const clinicName = document.getElementById('clinicName').value.trim();
@@ -126,28 +125,46 @@ async function handleRegister(event) {
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
         const user = userCredential.user;
 
-        // FIX: Save user details to Firestore immediately after successful registration
-        // This ensures the profile exists when app.js tries to load it.
-        await db.collection('users').doc(user.uid).set({
-            email: email, // Changed from username to email
+        console.log('User created successfully:', user.uid);
+
+        // Save user details to Firestore - ENHANCED with better error handling
+        const userData = {
+            email: email,
             clinicName: clinicName,
             optometristName: optometristName,
             address: address,
             contactNumber: contactNumber,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        console.log('Saving user data to Firestore:', userData);
+        
+        await db.collection('users').doc(user.uid).set(userData);
+        console.log('User data saved to Firestore successfully');
 
         // Save user data to localStorage
-        localStorage.setItem('username', email); // Storing email as "username"
+        localStorage.setItem('username', email);
         localStorage.setItem('userId', user.uid);
 
         showSuccess('Registration successful! Redirecting...');
         
         // Let the onAuthStateChanged handler redirect
+        console.log('Registration completed, waiting for auth state change...');
 
     } catch (error) {
         console.error('Registration error:', error);
         handleAuthError(error);
+        
+        // If user was created but Firestore failed, try to delete the user
+        if (auth.currentUser) {
+            try {
+                await auth.currentUser.delete();
+                console.log('Cleaned up user after Firestore error');
+            } catch (deleteError) {
+                console.error('Error cleaning up user:', deleteError);
+            }
+        }
     } finally {
         setButtonLoading(registerButton, false, 'Register');
     }
