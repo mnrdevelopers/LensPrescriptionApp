@@ -6,45 +6,76 @@ let isFormFilled = false;
 let deferredPrompt;
 
 // 🛑 CRITICAL FIX: Use onAuthStateChanged to prevent the redirect loop.
-// This listener waits until Firebase confirms the user's state (logged in or logged out)
-// before deciding whether to initialize the app or redirect to auth.
 firebase.auth().onAuthStateChanged((user) => {
     if (user) {
         // User is confirmed signed in. Initialize the application once the DOM is ready.
-        document.addEventListener('DOMContentLoaded', function() {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                initializeApp();
+            });
+        } else {
             initializeApp();
-            setupEventListeners();
-            setupPWA();
-        });
+        }
     } else {
         // User is confirmed signed out. Redirect to the login page immediately.
-        // Use window.location.replace to prevent the back button leading to app.html.
         window.location.replace('auth.html');
     }
 });
 
-
 function initializeApp() {
-    // The user is guaranteed to be logged in here due to the check above.
+    console.log('Initializing app...');
     const user = auth.currentUser;
+    
+    if (!user) {
+        console.error('No user found during initialization');
+        return;
+    }
 
+    // Set current date first
+    setCurrentDate();
+    
     // Load user profile
     loadUserProfile();
     
-    // Set current date
-    const todayDate = new Date().toLocaleDateString();
-    const currentDateElement = document.getElementById('currentDate');
-    const previewCurrentDateElement = document.getElementById('previewcurrentDate');
-    
-    if (currentDateElement) currentDateElement.textContent = todayDate;
-    // FIX 3: Corrected the typo in the variable name to display the date properly.
-    if (previewCurrentDateElement) previewCurrentDateElement.textContent = todayDate; 
+    // Setup event listeners
+    setupEventListeners();
+    setupPWA();
     
     // Show dashboard by default
     showDashboard();
+    
+    console.log('App initialized successfully');
+}
+
+function setCurrentDate() {
+    const today = new Date();
+    const options = { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        weekday: 'long'
+    };
+    const todayDate = today.toLocaleDateString('en-US', options);
+    
+    console.log('Setting current date:', todayDate);
+    
+    const currentDateElement = document.getElementById('currentDate');
+    const previewCurrentDateElement = document.getElementById('previewcurrentDate');
+    
+    if (currentDateElement) {
+        currentDateElement.textContent = todayDate;
+        console.log('Current date element updated');
+    }
+    
+    if (previewCurrentDateElement) {
+        previewCurrentDateElement.textContent = todayDate;
+        console.log('Preview date element updated');
+    }
 }
 
 function setupEventListeners() {
+    console.log('Setting up event listeners...');
+    
     // Form field tracking
     const formFields = ['patientName', 'age', 'patientMobile'];
     formFields.forEach(field => {
@@ -65,8 +96,13 @@ function setupEventListeners() {
 
     // Browser back button handling for the form
     window.addEventListener('popstate', handleBrowserBack);
+    
     // Push a non-null state initially to manage the back button history stack
-    history.pushState({ page: 'initial' }, document.title, location.href);
+    if (history.state === null) {
+        history.pushState({ page: 'initial' }, document.title, location.href);
+    }
+    
+    console.log('Event listeners setup completed');
 }
 
 function setupPWA() {
@@ -162,39 +198,36 @@ async function loadUserProfile() {
         return;
     }
 
+    console.log('Loading user profile for:', user.uid);
+
     try {
         const doc = await db.collection('users').doc(user.uid).get();
         
         if (doc.exists) {
             const userData = doc.data();
-            console.log('Loaded user profile:', userData);
+            console.log('Loaded user profile from Firestore:', userData);
             updateProfileUI(userData);
         } else {
-            // FIX 1 & 2: Automatically create a default profile if none exists (for new logins).
-            console.log('No user profile found, creating default...');
-            
-            // Re-fetch data from registration form if possible, otherwise use placeholders
-            // NOTE: The registration data should ideally be available in Firestore already 
-            // from the auth.js handleRegister step. This is a safety fallback.
+            console.log('No user profile found in Firestore, creating default...');
+            // Create a default profile if none exists
             const defaultProfile = {
                 clinicName: 'Your Clinic Name',
                 optometristName: 'Optometrist Name',
                 address: 'Clinic Address',
                 contactNumber: 'Contact Number',
-                email: user.email || 'N/A',
+                email: user.email,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             };
             
-            // Use set() to create the document with the user.uid as the ID
             await db.collection('users').doc(user.uid).set(defaultProfile);
+            console.log('Default profile created:', defaultProfile);
             updateProfileUI(defaultProfile);
         }
     } catch (error) {
-        // This will often catch "Missing or insufficient permissions" error
-        console.error('Error loading user profile. Check Firestore Rules!', error);
-        // Fallback to default values for display if DB read/write fails
+        console.error('Error loading user profile:', error);
+        // Fallback to default values
         const fallbackData = {
-            clinicName: 'Your Clinic Name (DB Error)',
+            clinicName: 'Your Clinic Name',
             optometristName: 'Optometrist Name', 
             address: 'Clinic Address',
             contactNumber: 'Contact Number'
@@ -204,20 +237,40 @@ async function loadUserProfile() {
 }
 
 function updateProfileUI(userData) {
-    console.log('Updating UI with:', userData);
+    console.log('Updating UI with user data:', userData);
     
-    // Update main form
-    const clinicName = document.getElementById('clinicName');
-    const clinicAddress = document.getElementById('clinicAddress');
-    const optometristName = document.getElementById('optometristName');
-    const contactNumber = document.getElementById('contactNumber');
+    if (!userData) {
+        console.error('No user data provided to updateProfileUI');
+        return;
+    }
     
-    if (clinicName) clinicName.textContent = userData.clinicName || 'Your Clinic Name';
-    if (clinicAddress) clinicAddress.textContent = userData.address || 'Clinic Address';
-    if (optometristName) optometristName.textContent = userData.optometristName || 'Optometrist Name';
-    if (contactNumber) contactNumber.textContent = userData.contactNumber || 'Contact Number';
+    // Update main form - FIXED: Using correct element IDs from app.html
+    const clinicNameElement = document.getElementById('clinicName');
+    const clinicAddressElement = document.getElementById('clinicAddress');
+    const optometristNameElement = document.getElementById('optometristName');
+    const contactNumberElement = document.getElementById('contactNumber');
+    
+    if (clinicNameElement) {
+        clinicNameElement.textContent = userData.clinicName || 'Your Clinic Name';
+        console.log('Updated clinic name:', clinicNameElement.textContent);
+    }
+    
+    if (clinicAddressElement) {
+        clinicAddressElement.textContent = userData.address || 'Clinic Address';
+        console.log('Updated clinic address:', clinicAddressElement.textContent);
+    }
+    
+    if (optometristNameElement) {
+        optometristNameElement.textContent = userData.optometristName || 'Optometrist Name';
+        console.log('Updated optometrist name:', optometristNameElement.textContent);
+    }
+    
+    if (contactNumberElement) {
+        contactNumberElement.textContent = userData.contactNumber || 'Contact Number';
+        console.log('Updated contact number:', contactNumberElement.textContent);
+    }
 
-    // Update preview section
+    // Update preview section - FIXED: Using correct element IDs
     const previewClinicName = document.getElementById('previewClinicName');
     const previewClinicAddress = document.getElementById('previewClinicAddress');
     const previewOptometristName = document.getElementById('previewOptometristName');
@@ -262,6 +315,7 @@ async function saveProfile() {
     const user = auth.currentUser;
     if (!user) {
         console.error('No user logged in');
+        alert('Please log in again');
         return;
     }
 
@@ -273,10 +327,12 @@ async function saveProfile() {
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
     
+    console.log('Saving profile data:', updatedData);
+    
     // Enhanced validation
     if (!updatedData.clinicName || !updatedData.optometristName) {
         console.error('Profile Update Error: Clinic Name and Optometrist Name are required.');
-        // FIX: Using console.error instead of alert for compliance
+        alert('Clinic Name and Optometrist Name are required.');
         return;
     }
 
@@ -284,7 +340,7 @@ async function saveProfile() {
         // Use set with merge: true to update or create the document
         await db.collection('users').doc(user.uid).set(updatedData, { merge: true });
         
-        console.log('Profile updated successfully!');
+        console.log('Profile updated successfully in Firestore!');
         
         // Reload the profile data to ensure UI is updated
         await loadUserProfile();
@@ -292,12 +348,11 @@ async function saveProfile() {
         closeEditProfile();
         
         // Show success message
-        // FIX: Using console.log instead of alert for compliance
-        console.log('Profile updated successfully!');
+        alert('Profile updated successfully!');
         
     } catch (error) {
-        console.error('Error updating profile:', error);
-        // FIX: Using console.error instead of alert for compliance
+        console.error('Error updating profile in Firestore:', error);
+        alert('Error updating profile: ' + error.message);
     }
 }
 
@@ -994,28 +1049,20 @@ window.logoutUser = logoutUser;
 window.installPWA = installPWA;
 window.resetStats = resetStats;
 
-// Temporary debug function - call this in browser console
-async function debugUserData() {
+// Add this function to debug Firestore data
+async function debugFirestoreData() {
     const user = auth.currentUser;
-    if (!user) {
-        console.log('No user logged in');
-        return;
-    }
-    
-    console.log('Current user:', user.email, user.uid);
+    if (!user) return;
     
     try {
-        const doc = await db.collection('users').doc(user.uid).get();
-        console.log('User document exists:', doc.exists);
-        if (doc.exists) {
-            console.log('User data:', doc.data());
-        } else {
-            console.log('No user document found in Firestore');
-        }
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        console.log('Firestore User Document:', userDoc.exists ? userDoc.data() : 'No document found');
+        
+        const prescriptions = await db.collection('prescriptions')
+            .where('userId', '==', user.uid)
+            .get();
+        console.log('Firestore Prescriptions:', prescriptions.docs.map(doc => doc.data()));
     } catch (error) {
-        console.error('Debug error:', error);
+        console.error('Debug Firestore Error:', error);
     }
 }
-
-// Make it available globally
-window.debugUserData = debugUserData;
