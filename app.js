@@ -1066,3 +1066,5 @@ async function debugFirestoreData() {
         console.error('Debug Firestore Error:', error);
     }
 }
+
+setTimeout(debugFirestoreData, 3000);
