@@ -27,8 +27,6 @@ firebase.auth().onAuthStateChanged((user) => {
 function initializeApp() {
     // The user is guaranteed to be logged in here due to the check above.
     const user = auth.currentUser;
-    // We remove the redundant 'if (!user) { window.location.href = 'auth.html'; return; }' 
-    // check from here as the onAuthStateChanged handles it more safely at the entry point.
 
     // Load user profile
     loadUserProfile();
@@ -39,7 +37,7 @@ function initializeApp() {
     const previewCurrentDateElement = document.getElementById('previewcurrentDate');
     
     if (currentDateElement) currentDateElement.textContent = todayDate;
-    if (previewCurrentDateElement) previewCurrentDateElement.textContent = todayDate;
+    if (previewCurrentDateElement) previewCurrentDateElement.textContent = todayDate; // FIXED: Changed previewCurrentElement to previewCurrentDateElement
     
     // Show dashboard by default
     showDashboard();
