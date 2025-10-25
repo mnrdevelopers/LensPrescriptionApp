@@ -993,3 +993,29 @@ window.fetchMonthlyReport = fetchMonthlyReport;
 window.logoutUser = logoutUser;
 window.installPWA = installPWA;
 window.resetStats = resetStats;
+
+// Temporary debug function - call this in browser console
+async function debugUserData() {
+    const user = auth.currentUser;
+    if (!user) {
+        console.log('No user logged in');
+        return;
+    }
+    
+    console.log('Current user:', user.email, user.uid);
+    
+    try {
+        const doc = await db.collection('users').doc(user.uid).get();
+        console.log('User document exists:', doc.exists);
+        if (doc.exists) {
+            console.log('User data:', doc.data());
+        } else {
+            console.log('No user document found in Firestore');
+        }
+    } catch (error) {
+        console.error('Debug error:', error);
+    }
+}
+
+// Make it available globally
+window.debugUserData = debugUserData;
