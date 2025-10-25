@@ -1,43 +1,42 @@
-// app.js - Consolidated from app.js and script.js
+// app.js - Corrected and Working Version
 
 // Global Variables
 let currentPrescriptionData = null;
 let isFormFilled = false;
 let deferredPrompt;
 
-// 🛑 CRITICAL FIX: Use onAuthStateChanged to prevent the redirect loop.
-// This listener waits until Firebase confirms the user's state (logged in or logged out)
-// before deciding whether to initialize the app or redirect to auth.
+// Firebase Auth State Listener
 firebase.auth().onAuthStateChanged((user) => {
     if (user) {
-        // User is confirmed signed in. Initialize the application once the DOM is ready.
+        // User is signed in
         document.addEventListener('DOMContentLoaded', function() {
             initializeApp();
             setupEventListeners();
             setupPWA();
         });
     } else {
-        // User is confirmed signed out. Redirect to the login page immediately.
-        // Use window.location.replace to prevent the back button leading to app.html.
+        // User is signed out
         window.location.replace('auth.html');
     }
 });
 
-
 function initializeApp() {
-    // The user is guaranteed to be logged in here due to the check above.
     const user = auth.currentUser;
+    if (!user) {
+        window.location.href = 'auth.html';
+        return;
+    }
 
-    // Load user profile
-    loadUserProfile();
-    
     // Set current date
     const todayDate = new Date().toLocaleDateString();
     const currentDateElement = document.getElementById('currentDate');
     const previewCurrentDateElement = document.getElementById('previewcurrentDate');
     
     if (currentDateElement) currentDateElement.textContent = todayDate;
-    if (previewCurrentDateElement) previewCurrentDateElement.textContent = todayDate; // FIXED: Changed previewCurrentElement to previewCurrentDateElement
+    if (previewCurrentDateElement) previewCurrentDateElement.textContent = todayDate;
+    
+    // Load user profile
+    loadUserProfile();
     
     // Show dashboard by default
     showDashboard();
@@ -62,32 +61,21 @@ function setupEventListeners() {
     // Input validation
     setupInputValidation();
 
-    // Browser back button handling for the form
+    // Browser back button handling
     window.addEventListener('popstate', handleBrowserBack);
-    // Push a non-null state initially to manage the back button history stack
     history.pushState({ page: 'initial' }, document.title, location.href);
 }
 
 function setupPWA() {
-    // Service Worker Registration
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/service-worker.js')
             .then(() => console.log("Service Worker Registered"))
             .catch((error) => console.log("Service Worker Registration Failed", error));
     }
 
-    // PWA Install Prompt
     window.addEventListener("beforeinstallprompt", (event) => {
         event.preventDefault();
         deferredPrompt = event;
-        const installBtn = document.getElementById("install-btn");
-        if (installBtn) installBtn.style.display = "block";
-    });
-
-    // Handle PWA installed event
-    window.addEventListener("appinstalled", () => {
-        console.log("PWA installed successfully!");
-        deferredPrompt = null;
     });
 }
 
@@ -97,7 +85,6 @@ function showDashboard() {
     const dashboardSection = document.getElementById('dashboardSection');
     if (dashboardSection) dashboardSection.classList.add('active');
     updateActiveNavLink('dashboard');
-    // Ensure history state reflects the dashboard
     history.pushState({ page: 'dashboard' }, 'Dashboard', 'app.html#dashboard');
 }
 
@@ -107,7 +94,6 @@ function showPrescriptionForm() {
     if (formSection) formSection.classList.add('active');
     updateActiveNavLink('prescription');
     resetForm();
-    // Ensure history state reflects the form
     history.pushState({ page: 'form' }, 'Add Prescription', 'app.html#form');
 }
 
@@ -117,7 +103,6 @@ function showPrescriptions() {
     if (prescriptionsSection) prescriptionsSection.classList.add('active');
     updateActiveNavLink('prescriptions');
     fetchPrescriptions();
-    // Ensure history state reflects the list
     history.pushState({ page: 'prescriptions' }, 'View Prescriptions', 'app.html#prescriptions');
 }
 
@@ -126,7 +111,6 @@ function showReports() {
     const reportsSection = document.getElementById('reportsSection');
     if (reportsSection) reportsSection.classList.add('active');
     updateActiveNavLink('reports');
-    // Ensure history state reflects the reports
     history.pushState({ page: 'reports' }, 'Reports', 'app.html#reports');
 }
 
@@ -140,7 +124,6 @@ function showPreview(prescriptionData = null) {
     } else {
         loadPreviewFromForm();
     }
-    // No history push needed for preview since it's transient, but ensure back returns to list/form
 }
 
 function hideAllSections() {
@@ -156,21 +139,15 @@ function updateActiveNavLink(activeSection) {
 // User Profile Management
 async function loadUserProfile() {
     const user = auth.currentUser;
-    if (!user) {
-        console.error('No user logged in');
-        return;
-    }
+    if (!user) return;
 
     try {
         const doc = await db.collection('users').doc(user.uid).get();
-        
         if (doc.exists) {
             const userData = doc.data();
-            console.log('Loaded user profile:', userData);
             updateProfileUI(userData);
         } else {
-            console.log('No user profile found, creating default...');
-            // Create a default profile if none exists
+            // Create default profile if doesn't exist
             const defaultProfile = {
                 clinicName: 'Your Clinic Name',
                 optometristName: 'Optometrist Name',
@@ -179,16 +156,14 @@ async function loadUserProfile() {
                 email: user.email,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             };
-            
             await db.collection('users').doc(user.uid).set(defaultProfile);
             updateProfileUI(defaultProfile);
         }
     } catch (error) {
         console.error('Error loading user profile:', error);
-        // Fallback to default values
         const fallbackData = {
-            clinicName: 'Your Clinic Name',
-            optometristName: 'Optometrist Name', 
+            clinicName: 'Your Clinic',
+            optometristName: 'Optometrist',
             address: 'Clinic Address',
             contactNumber: 'Contact Number'
         };
@@ -197,8 +172,6 @@ async function loadUserProfile() {
 }
 
 function updateProfileUI(userData) {
-    console.log('Updating UI with:', userData);
-    
     // Update main form
     const clinicName = document.getElementById('clinicName');
     const clinicAddress = document.getElementById('clinicAddress');
@@ -220,15 +193,13 @@ function updateProfileUI(userData) {
     if (previewClinicAddress) previewClinicAddress.textContent = userData.address || 'Clinic Address';
     if (previewOptometristName) previewOptometristName.textContent = userData.optometristName || 'Optometrist Name';
     if (previewContactNumber) previewContactNumber.textContent = userData.contactNumber || 'Contact Number';
-    
-    console.log('UI update completed');
 }
 
 function openEditProfile() {
     const modal = document.getElementById('editProfileModal');
     if (modal) modal.style.display = 'flex';
     
-    // Get current values from the displayed UI, not from Firestore
+    // Pre-fill with current data
     const clinicName = document.getElementById('clinicName')?.textContent;
     const optometristName = document.getElementById('optometristName')?.textContent;
     const address = document.getElementById('clinicAddress')?.textContent;
@@ -239,11 +210,10 @@ function openEditProfile() {
     const editAddress = document.getElementById('editAddress');
     const editContactNumber = document.getElementById('editContactNumber');
     
-    // Set values, filtering out placeholder text
-    if (editClinicName) editClinicName.value = (clinicName === 'Loading...' || clinicName === 'Your Clinic Name') ? '' : clinicName;
-    if (editOptometristName) editOptometristName.value = (optometristName === 'Loading...' || optometristName === 'Optometrist Name') ? '' : optometristName;
-    if (editAddress) editAddress.value = (address === 'Please wait...' || address === 'Clinic Address') ? '' : address;
-    if (editContactNumber) editContactNumber.value = (contactNumber === 'Please wait...' || contactNumber === 'Contact Number') ? '' : contactNumber;
+    if (editClinicName) editClinicName.value = clinicName === 'Loading...' ? '' : clinicName;
+    if (editOptometristName) editOptometristName.value = optometristName === 'Loading...' ? '' : optometristName;
+    if (editAddress) editAddress.value = address === 'Please wait...' ? '' : address;
+    if (editContactNumber) editContactNumber.value = contactNumber === 'Please wait...' ? '' : contactNumber;
 }
 
 function closeEditProfile() {
@@ -253,10 +223,7 @@ function closeEditProfile() {
 
 async function saveProfile() {
     const user = auth.currentUser;
-    if (!user) {
-        console.error('No user logged in');
-        return;
-    }
+    if (!user) return;
 
     const updatedData = {
         clinicName: document.getElementById('editClinicName').value.trim(),
@@ -266,27 +233,16 @@ async function saveProfile() {
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
     
-    // Enhanced validation
     if (!updatedData.clinicName || !updatedData.optometristName) {
-        console.error('Profile Update Error: Clinic Name and Optometrist Name are required.');
         alert('Clinic Name and Optometrist Name are required.');
         return;
     }
 
     try {
-        // Use set with merge: true to update or create the document
         await db.collection('users').doc(user.uid).set(updatedData, { merge: true });
-        
-        console.log('Profile updated successfully!');
-        
-        // Reload the profile data to ensure UI is updated
-        await loadUserProfile();
-        
+        updateProfileUI(updatedData);
         closeEditProfile();
-        
-        // Show success message
         alert('Profile updated successfully!');
-        
     } catch (error) {
         console.error('Error updating profile:', error);
         alert('Error updating profile: ' + error.message);
@@ -297,54 +253,43 @@ async function saveProfile() {
 async function submitPrescription() {
     const user = auth.currentUser;
     if (!user) {
-        console.error('Authentication Error: User is not logged in.');
         window.location.href = 'auth.html';
         return;
     }
 
-    // Get form values
     const formData = getFormData();
     
-    // Validation
     if (!validateFormData(formData)) {
         return;
     }
 
     try {
-        // Save to Firestore
         const newPrescriptionRef = await db.collection('prescriptions').add({
             userId: user.uid,
             ...formData,
-            // Store date as a human-readable ISO string for accurate queries and sorting
-            date: new Date().toISOString(), 
+            date: new Date().toISOString(),
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
         console.log(`Prescription saved successfully! ID: ${newPrescriptionRef.id}`);
         
-        // Store data for preview
         currentPrescriptionData = formData;
-        
-        // Show preview
         showPreview(formData);
-        
-        // Reset form
         resetForm();
         isFormFilled = false;
 
     } catch (error) {
         console.error('Error saving prescription:', error);
+        alert('Error saving prescription: ' + error.message);
     }
 }
 
 function getFormData() {
-    // Helper function to safely get float/int values
     const getNumberValue = (id) => {
         const value = document.getElementById(id)?.value.trim();
         return value ? parseFloat(value) : 0;
     };
     
-    // Helper function to safely get string values
     const getStringValue = (id) => document.getElementById(id)?.value.trim() || '';
 
     return {
@@ -380,19 +325,19 @@ function getFormData() {
 
 function validateFormData(data) {
     if (!data.patientName) {
-        console.error('Validation Error: Please enter patient name');
+        alert('Please enter patient name');
         return false;
     }
     if (!data.age || data.age <= 0) {
-        console.error('Validation Error: Please enter valid age');
+        alert('Please enter valid age');
         return false;
     }
     if (!data.mobile || !data.mobile.match(/^\d{10}$/)) {
-        console.error('Validation Error: Please enter valid 10-digit mobile number');
+        alert('Please enter valid 10-digit mobile number');
         return false;
     }
     if (!data.amount || data.amount < 0) {
-        console.error('Validation Error: Please enter valid amount');
+        alert('Please enter valid amount');
         return false;
     }
     return true;
@@ -405,7 +350,7 @@ function resetForm() {
             if (element.tagName === 'INPUT') {
                 element.value = '';
             } else if (element.tagName === 'SELECT') {
-                element.selectedIndex = 0; // Reset to the first option
+                element.selectedIndex = 0;
             }
         });
     }
@@ -420,7 +365,7 @@ async function fetchPrescriptions() {
     try {
         const querySnapshot = await db.collection('prescriptions')
             .where('userId', '==', user.uid)
-            .orderBy('createdAt', 'desc') 
+            .orderBy('createdAt', 'desc')
             .get();
 
         const prescriptions = [];
@@ -448,19 +393,15 @@ function displayPrescriptions(data) {
         return;
     }
 
-    // Group by date
     const grouped = groupPrescriptionsByDate(data);
     
-    // Display grouped prescriptions
     Object.keys(grouped).forEach(group => {
-        // Add group header
         const headerRow = tbody.insertRow();
         const headerCell = headerRow.insertCell();
         headerCell.colSpan = 11;
         headerCell.textContent = group;
         headerCell.className = 'prescription-group-header';
         
-        // Add prescriptions for this group
         grouped[group].forEach(prescription => {
             addPrescriptionRow(tbody, prescription);
         });
@@ -480,8 +421,7 @@ function groupPrescriptionsByDate(prescriptions) {
     };
 
     prescriptions.forEach(prescription => {
-        // Use the 'date' field which is an ISO string
-        const prescriptionDate = new Date(prescription.date).toLocaleDateString(); 
+        const prescriptionDate = new Date(prescription.date).toLocaleDateString();
         
         if (prescriptionDate === today) {
             grouped['Today'].push(prescription);
@@ -492,7 +432,6 @@ function groupPrescriptionsByDate(prescriptions) {
         }
     });
 
-    // Remove empty groups
     Object.keys(grouped).forEach(group => {
         if (grouped[group].length === 0) {
             delete grouped[group];
@@ -505,7 +444,6 @@ function groupPrescriptionsByDate(prescriptions) {
 function addPrescriptionRow(tbody, prescription) {
     const row = tbody.insertRow();
     
-    // Format date properly
     const date = new Date(prescription.date).toLocaleString('en-US', { 
         year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
     });
@@ -528,15 +466,13 @@ function addPrescriptionRow(tbody, prescription) {
         cell.textContent = field;
     });
 
-    // Actions cell
     const actionsCell = row.insertCell();
     
     const previewBtn = document.createElement('button');
     previewBtn.innerHTML = '👁️';
     previewBtn.className = 'btn-preview';
     previewBtn.title = 'Preview';
-    // Create a deep copy to avoid mutation issues
-    previewBtn.onclick = () => previewPrescription(JSON.parse(JSON.stringify(prescription))); 
+    previewBtn.onclick = () => previewPrescription(JSON.parse(JSON.stringify(prescription)));
     
     const deleteBtn = document.createElement('button');
     deleteBtn.innerHTML = '🗑️';
@@ -571,20 +507,15 @@ function previewPrescription(prescription) {
 }
 
 async function deletePrescription(prescription) {
-    // ⚠️ CRITICAL FIX: Replaced confirm() with a prompt as alerts/confirms are disallowed.
-    console.warn(`Attempting to delete prescription ID: ${prescription.id}.`);
-    
     const confirmed = window.prompt("Type 'DELETE' to confirm deletion of this prescription:") === 'DELETE';
 
     if (!confirmed) {
-        console.log('Deletion cancelled by user.');
         return;
     }
 
     try {
         await db.collection('prescriptions').doc(prescription.id).delete();
-        console.log('Prescription deleted successfully!');
-        fetchPrescriptions(); // Refresh the list
+        fetchPrescriptions();
     } catch (error) {
         console.error('Error deleting prescription:', error);
     }
@@ -594,7 +525,6 @@ async function deletePrescription(prescription) {
 function loadPreviewFromForm() {
     const formData = getFormData();
     if (!validateFormData(formData)) {
-        // If form is invalid, switch back to form view
         showPrescriptionForm();
         return;
     }
@@ -633,7 +563,7 @@ function loadPreviewData(data) {
 function generatePDF() {
     const element = document.getElementById('prescriptionPreview');
     if (!element) {
-        console.error("PDF Error: Prescription Preview element not found.");
+        alert("PDF Error: Prescription Preview element not found.");
         return;
     }
 
@@ -647,8 +577,6 @@ function generatePDF() {
         })
         .from(element)
         .save();
-    
-    console.log('PDF generation initiated.');
 }
 
 function printPreview() {
@@ -658,21 +586,20 @@ function printPreview() {
 async function sendWhatsApp() {
     const mobile = document.getElementById('previewMobile')?.textContent;
     if (!mobile) {
-        console.error('WhatsApp Error: No mobile number available for preview.');
+        alert('WhatsApp Error: No mobile number available for preview.');
         return;
     }
 
     try {
         const element = document.getElementById('prescriptionPreview');
         if (!element) {
-            console.error("WhatsApp Error: Prescription Preview element not found.");
+            alert("WhatsApp Error: Prescription Preview element not found.");
             return;
         }
 
         const canvas = await html2canvas(element, { scale: 2 });
         const imageData = canvas.toDataURL('image/png');
         
-        // Upload to ImgBB
         const imageUrl = await uploadImageToImgBB(imageData);
         
         const message = `Here is your digital prescription from ${document.getElementById('previewClinicName')?.textContent || 'Your Clinic'}: ${imageUrl}`;
@@ -685,10 +612,7 @@ async function sendWhatsApp() {
 }
 
 async function uploadImageToImgBB(base64Image) {
-    // ⚠️ SECURITY WARNING: This API key is exposed in the client-side code.
-    // In a production environment, this function MUST be moved to a secure backend 
-    // (like Firebase Cloud Functions) to prevent abuse and hide the key.
-    const apiKey = "bbfde58b1da5fc9ee9d7d6a591852f71"; 
+    const apiKey = "bbfde58b1da5fc9ee9d7d6a591852f71";
     const formData = new FormData();
     formData.append("image", base64Image.split(',')[1]);
 
@@ -702,7 +626,6 @@ async function uploadImageToImgBB(base64Image) {
         if (data.success) {
             return data.data.url;
         } else {
-            console.error('ImgBB Upload Failed:', data.error?.message || 'Unknown error');
             throw new Error('Image upload failed');
         }
     } catch (error) {
@@ -722,7 +645,6 @@ async function fetchDailyReport() {
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     try {
-        // Use the Firestore Timestamp field for reliable range query
         const querySnapshot = await db.collection('prescriptions')
             .where('userId', '==', user.uid)
             .where('createdAt', '>=', today)
@@ -783,10 +705,8 @@ function processReportData(querySnapshot, period = 'day') {
     
     querySnapshot.forEach((doc) => {
         const data = doc.data();
-        
-        // Use the Firestore Timestamp object for date calculation
-        const timestamp = data.createdAt; 
-        if (!timestamp || typeof timestamp.toDate !== 'function') return; // Skip if timestamp is missing or not a Firebase Timestamp
+        const timestamp = data.createdAt;
+        if (!timestamp || typeof timestamp.toDate !== 'function') return;
         
         const date = timestamp.toDate();
         let key;
@@ -795,8 +715,7 @@ function processReportData(querySnapshot, period = 'day') {
             key = date.toLocaleDateString();
         } else if (period === 'week') {
             const startOfWeek = new Date(date);
-            // Adjust to Sunday (0) or Monday (1) start of week as preferred
-            startOfWeek.setDate(date.getDate() - date.getDay()); 
+            startOfWeek.setDate(date.getDate() - date.getDay());
             key = `Week of ${startOfWeek.toLocaleDateString()}`;
         } else if (period === 'month') {
             key = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
@@ -807,8 +726,7 @@ function processReportData(querySnapshot, period = 'day') {
         }
         
         reportData[key].prescriptions += 1;
-        // Ensure amount is treated as a number
-        reportData[key].totalAmount += (data.amount || 0); 
+        reportData[key].totalAmount += (data.amount || 0);
     });
     
     return reportData;
@@ -844,38 +762,26 @@ function checkFormFilled() {
 
 function confirmExitAction() {
     document.getElementById('exitPromptModal').style.display = 'none';
-    isFormFilled = false; // Reset flag to prevent re-triggering the modal immediately
-    window.history.back(); // Navigate back
+    isFormFilled = false;
+    window.history.back();
 }
 
 function cancelExitAction() {
     document.getElementById('exitPromptModal').style.display = 'none';
-    // When the user clicks cancel, we restore the history state to the form page
-    // to prevent the user from being stuck in the back button loop.
     history.pushState({ page: 'form' }, 'Add Prescription', 'app.html#form');
 }
 
 function handleBrowserBack(event) {
     const currentState = history.state?.page;
-    // Only show the modal if the user is leaving the form AND the form is filled
     if (currentState === 'form' && isFormFilled) {
-        
         const modal = document.getElementById('exitPromptModal');
         if (modal) modal.style.display = 'flex';
-        
-        // CRITICAL: Prevent the user from navigating away immediately
-        // We must push the current state back to the history stack to keep the user on the page
-        // until they explicitly confirm the exit.
         history.pushState({ page: 'form' }, 'Add Prescription', 'app.html#form');
-    } else {
-        // If the user is on the dashboard, list, or reports, allow navigation naturally
-        // or re-route to dashboard if navigating away from the app base URL.
     }
 }
 
 // Input Validation
 function setupInputValidation() {
-    // Age validation
     const ageInput = document.getElementById('age');
     if (ageInput) {
         ageInput.addEventListener('input', function() {
@@ -883,7 +789,6 @@ function setupInputValidation() {
         });
     }
 
-    // Prescription fields validation
     const prescriptionInputs = [
         { id: 'rightDistSPH', type: 'number' },
         { id: 'rightDistCYL', type: 'number' },
@@ -907,12 +812,9 @@ function setupInputValidation() {
         const element = document.getElementById(field.id);
         if (element) {
             element.addEventListener('input', function() {
-                // Ensure only allowed characters are kept
                 if (field.type === 'number') {
-                    // Allows numbers, decimal point, and sign (for SPH/CYL)
-                    this.value = this.value.replace(/[^0-9.-]/g, ''); 
+                    this.value = this.value.replace(/[^0-9.-]/g, '');
                 } else if (field.type === 'va') {
-                    // Allows numbers, '/', and 'N' (for V/A fields)
                     this.value = this.value.replace(/[^0-9/N]/g, '');
                 }
             });
@@ -927,24 +829,15 @@ function installPWA() {
         deferredPrompt.userChoice.then((choiceResult) => {
             if (choiceResult.outcome === "accepted") {
                 console.log("User accepted the install prompt.");
-            } else {
-                console.log("User dismissed the install prompt.");
             }
             deferredPrompt = null;
         });
     }
 }
 
-// Stats Management
-function resetStats() {
-    // Since Firebase is used for persistent data, local storage stats are obsolete.
-    console.warn("Local stats reset function is deprecated as data is stored in Firebase.");
-}
-
 // Logout Function
 function logoutUser() {
     auth.signOut().then(() => {
-        // Clear only user-specific local storage items, not PWA cache or 'rememberMe'
         localStorage.removeItem('username');
         localStorage.removeItem('userId');
         window.location.href = 'auth.html';
@@ -952,18 +845,6 @@ function logoutUser() {
         console.error('Logout failed:', error);
     });
 }
-
-// Handle beforeunload event for closing the PWA
-window.addEventListener("beforeunload", (event) => {
-    // Only set the flag if the form is actually active to avoid unnecessary prompts
-    const formActive = document.getElementById('prescriptionFormSection')?.classList.contains('active');
-    
-    if (formActive && isFormFilled) {
-        event.preventDefault();
-        event.returnValue = "You have unsaved changes. Are you sure you want to leave?";
-        return "You have unsaved changes. Are you sure you want to leave?";
-    }
-});
 
 // Make functions globally available
 window.showDashboard = showDashboard;
@@ -984,4 +865,3 @@ window.fetchWeeklyReport = fetchWeeklyReport;
 window.fetchMonthlyReport = fetchMonthlyReport;
 window.logoutUser = logoutUser;
 window.installPWA = installPWA;
-window.resetStats = resetStats;
