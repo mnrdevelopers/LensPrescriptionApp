@@ -44,7 +44,7 @@ function initializeApp() {
     
     // Setup event listeners
     setupEventListeners();
-    setupPWA();
+    setupPWA(); // Enhanced PWA setup
     
     console.log('App initialized successfully');
 }
@@ -110,25 +110,218 @@ function setupEventListeners() {
 function setupPWA() {
     // Service Worker Registration
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/service-worker.js')
-            .then(() => console.log("Service Worker Registered"))
-            .catch((error) => console.log("Service Worker Registration Failed", error));
-    }
+        navigator.serviceWorker.register('/LensPrescriptionApp/service-worker.js')
+            .then((registration) => {
+                console.log('Service Worker Registered:', registration);
+                
+                // Check for updates
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing;
+                    console.log('Service Worker update found!', newWorker);
+                    
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            console.log('New content is available; please refresh.');
+                            showUpdateNotification();
+                        }
+                    });
+                });
+            })
+            .catch((error) => {
+                console.log('Service Worker Registration Failed:', error);
+            });
 
-    // PWA Install Prompt
-    window.addEventListener("beforeinstallprompt", (event) => {
+        // Listen for claiming of clients
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            console.log('Service Worker controller changed');
+        });
+    }
+// Enhanced PWA Install Prompt
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (event) => {
+        console.log('PWA install prompt triggered');
         event.preventDefault();
         deferredPrompt = event;
-        const installBtn = document.getElementById("install-btn");
-        if (installBtn) installBtn.style.display = "block";
+        
+        // Show install button
+        showInstallPromotion();
+        
+        // Auto-show install prompt after 10 seconds if not dismissed
+        setTimeout(() => {
+            if (deferredPrompt) {
+                showInstallPromotion();
+            }
+        }, 10000);
     });
 
     // Handle PWA installed event
-    window.addEventListener("appinstalled", () => {
-        console.log("PWA installed successfully!");
+    window.addEventListener('appinstalled', (event) => {
+        console.log('PWA installed successfully!');
         deferredPrompt = null;
+        hideInstallPromotion();
+        
+        // Track installation
+        if (typeof gtag !== 'undefined') {
+            gtag('event', 'install', {
+                'event_category': 'PWA',
+                'event_label': 'App Installation'
+            });
+        }
     });
+
+    // Online/Offline detection
+    window.addEventListener('online', () => {
+        console.log('App is online');
+        showOnlineStatus();
+        syncOfflineData();
+    });
+
+    window.addEventListener('offline', () => {
+        console.log('App is offline');
+        showOfflineStatus();
+    });
+
+    // Initial online status check
+    if (!navigator.onLine) {
+        showOfflineStatus();
+    }
 }
+
+// Install Promotion Functions
+function showInstallPromotion() {
+    // Remove existing install prompt if any
+    hideInstallPromotion();
+    
+    const installPrompt = document.createElement('div');
+    installPrompt.id = 'installPrompt';
+    installPrompt.innerHTML = `
+        <div class="install-prompt">
+            <div class="install-content">
+                <i class="fas fa-download"></i>
+                <div class="install-text">
+                    <strong>Install Lens Prescription App</strong>
+                    <small>Get the full app experience</small>
+                </div>
+                <div class="install-buttons">
+                    <button onclick="installPWA()" class="btn btn-primary btn-sm">
+                        Install
+                    </button>
+                    <button onclick="hideInstallPromotion()" class="btn btn-secondary btn-sm">
+                        Later
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(installPrompt);
+    
+    // Auto-hide after 15 seconds
+    setTimeout(() => {
+        if (document.getElementById('installPrompt')) {
+            hideInstallPromotion();
+        }
+    }, 15000);
+}
+
+function hideInstallPromotion() {
+    const installPrompt = document.getElementById('installPrompt');
+    if (installPrompt) {
+        installPrompt.remove();
+    }
+}
+
+function showUpdateNotification() {
+    const updateNotification = document.createElement('div');
+    updateNotification.id = 'updateNotification';
+    updateNotification.innerHTML = `
+        <div class="update-notification">
+            <div class="update-content">
+                <i class="fas fa-sync-alt"></i>
+                <span>New version available!</span>
+                <button onclick="window.location.reload()" class="btn btn-success btn-sm">
+                    Update
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(updateNotification);
+}
+
+// Online/Offline Status Functions
+function showOnlineStatus() {
+    showStatusMessage('Back online', 'success');
+}
+
+function showOfflineStatus() {
+    showStatusMessage('You are currently offline', 'warning');
+}
+
+function showStatusMessage(message, type) {
+    const statusMessage = document.createElement('div');
+    statusMessage.className = `status-message alert alert-${type}`;
+    statusMessage.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'wifi' : 'exclamation-triangle'}"></i>
+        ${message}
+    `;
+    statusMessage.style.cssText = `
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        z-index: 10000;
+        min-width: 200px;
+        animation: slideInRight 0.3s ease;
+    `;
+    
+    document.body.appendChild(statusMessage);
+    
+    setTimeout(() => {
+        if (statusMessage.parentNode) {
+            statusMessage.remove();
+        }
+    }, 3000);
+}
+
+// Offline Data Sync
+function syncOfflineData() {
+    // Check if there's any offline data to sync
+    const offlinePrescriptions = JSON.parse(localStorage.getItem('offlinePrescriptions') || '[]');
+    
+    if (offlinePrescriptions.length > 0) {
+        console.log('Syncing offline prescriptions:', offlinePrescriptions.length);
+        // Implement your sync logic here
+    }
+}
+
+// Enhanced PWA Installation Function
+function installPWA() {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === "accepted") {
+                console.log("User accepted the install prompt");
+                if (typeof gtag !== 'undefined') {
+                    gtag('event', 'install_prompt_accepted', {
+                        'event_category': 'PWA',
+                        'event_label': 'Install Prompt'
+                    });
+                }
+            } else {
+                console.log("User dismissed the install prompt");
+                if (typeof gtag !== 'undefined') {
+                    gtag('event', 'install_prompt_dismissed', {
+                        'event_category': 'PWA',
+                        'event_label': 'Install Prompt'
+                    });
+                }
+            }
+            deferredPrompt = null;
+            hideInstallPromotion();
+        });
+    }
+}
+
 
 // Navigation Functions
 
