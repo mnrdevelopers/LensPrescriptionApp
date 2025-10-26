@@ -366,3 +366,77 @@ input:invalid + .toggle-password {
 .password-match-error {
     border-color: #dc3545 !important;
 }
+
+/* Add to auth.css - Enhanced Error Styles */
+.error {
+    border-color: #dc3545 !important;
+    background-color: #fff5f5 !important;
+}
+
+.error-message {
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: 5px;
+    display: block;
+}
+
+.password-match-success {
+    border-color: #28a745 !important;
+    background-color: #f8fff9 !important;
+}
+
+.suggestion-message {
+    background: #d1ecf1;
+    color: #0c5460;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+    text-align: center;
+    border: 1px solid #bee5eb;
+    font-size: 13px;
+}
+
+.success-message {
+    background: #d4edda;
+    color: #155724;
+    padding: 12px;
+    border-radius: 8px;
+    margin: 15px 0;
+    text-align: center;
+    border: 1px solid #c3e6cb;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* Enhanced form group spacing */
+.form-group {
+    margin-bottom: 20px;
+    text-align: left;
+    position: relative;
+}
+
+/* Loading state improvements */
+.loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    border-right-color: transparent;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
