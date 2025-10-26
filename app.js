@@ -1083,7 +1083,6 @@ function generatePDF() {
         });
 }
 
-// Alternative: Dedicated Thermal Print Function
 // Dedicated Thermal Print Function for 58mm Printer
 function printPreview() {
     const printWindow = window.open('', '_blank', 'width=350,height=600');
@@ -1190,12 +1189,20 @@ function printPreview() {
                     font-weight: bold;
                 }
                 
-                /* Date and Doctor */
+                /* Name and Date - UPDATED */
                 .header-info {
                     display: flex;
                     justify-content: space-between;
                     margin-bottom: 4px;
                     font-size: 8px;
+                }
+                
+                .name-section {
+                    font-weight: bold;
+                }
+                
+                .date-section {
+                    text-align: right;
                 }
                 
                 /* Prescription Title */
@@ -1407,10 +1414,10 @@ function printPreview() {
                 <div class="clinic-contact">📞 ${contactNumber}</div>
             </div>
             
-            <!-- Date and Doctor -->
+            <!-- Name and Date - UPDATED -->
             <div class="header-info">
-                <div><strong>Date:</strong> ${currentDate}</div>
-                <div><strong>Dr:</strong> ${optometristName}</div>
+                <div class="name-section"><strong>${optometristName}</strong></div>
+                <div class="date-section"><strong>Date:</strong> ${currentDate}</div>
             </div>
             
             <!-- Prescription Title -->
