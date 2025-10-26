@@ -103,25 +103,11 @@ async function handleRegister(event) {
     // Get form values
     const email = document.getElementById('registerEmail').value.trim();
     const password = document.getElementById('registerPassword').value.trim();
-    const clinicName = document.getElementById('clinicName').value.trim();
-    const optometristName = document.getElementById('optometristName').value.trim();
-    const address = document.getElementById('address').value.trim();
-    const contactNumber = document.getElementById('contactNumber').value.trim();
-
-    // Debug: Log all form values
-    console.log('Form values:', {
-        email,
-        password: password ? '***' : 'empty',
-        clinicName,
-        optometristName,
-        address,
-        contactNumber
-    });
-
+    
     // Validate inputs
-    if (!email || !password || !clinicName || !optometristName || !address || !contactNumber) {
-        console.error('Validation failed: Missing fields');
-        showError('Please fill in all fields');
+    if (!email || !password) {
+        console.error('Validation failed: Missing email or password');
+        showError('Please fill in both email and password.');
         return;
     }
 
@@ -142,28 +128,15 @@ async function handleRegister(event) {
 
         console.log('Firebase user created successfully:', user.uid);
 
-        // ✅ FIXED: Use the EXACT same field structure and saving method as saveProfile()
-        const userData = {
-            clinicName: clinicName,
-            optometristName: optometristName,
-            address: address,
-            contactNumber: contactNumber,
-            email: email,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
-
-        console.log('Saving user profile to Firestore:', userData);
-
-        // ✅ FIXED: Use the EXACT same Firestore save method as saveProfile()
-        await db.collection('users').doc(user.uid).set(userData);
-        console.log('User profile saved to Firestore successfully');
-
+        // *** FIX: Set a flag to notify app.js that this is a fresh registration, to force profile setup. ***
+        localStorage.setItem('freshRegistration', 'true');
+        
         // Save user data to localStorage
         localStorage.setItem('username', email);
         localStorage.setItem('userId', user.uid);
 
         console.log('Registration completed successfully');
-        showSuccess('Registration successful! Redirecting...');
+        showSuccess('Registration successful! Redirecting to profile setup...');
         
         // The onAuthStateChanged will handle redirect
 
