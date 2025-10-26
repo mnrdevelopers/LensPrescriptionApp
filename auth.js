@@ -35,6 +35,9 @@ function initializeAuth() {
     if (loginFormElement) loginFormElement.addEventListener('submit', handleLogin);
     if (registerFormElement) registerFormElement.addEventListener('submit', handleRegister);
     if (forgotPasswordFormElement) forgotPasswordFormElement.addEventListener('submit', handleForgotPassword);
+
+    // Setup password validation
+    setupPasswordValidation();
 }
 
 function loadRememberedUser() {
@@ -103,11 +106,28 @@ async function handleRegister(event) {
     // Get form values
     const email = document.getElementById('registerEmail').value.trim();
     const password = document.getElementById('registerPassword').value.trim();
+    const confirmPassword = document.getElementById('registerConfirmPassword').value.trim();
     
+    // Clear previous errors
+    clearFormErrors();
+    const passwordMatchError = document.getElementById('passwordMatchError');
+    if (passwordMatchError) passwordMatchError.style.display = 'none';
+
     // Validate inputs
-    if (!email || !password) {
-        console.error('Validation failed: Missing email or password');
-        showError('Please fill in both email and password.');
+    if (!email || !password || !confirmPassword) {
+        console.error('Validation failed: Missing required fields');
+        showError('Please fill in all fields.');
+        return;
+    }
+
+    // Validate password match
+    if (password !== confirmPassword) {
+        console.error('Validation failed: Passwords do not match');
+        if (passwordMatchError) {
+            passwordMatchError.textContent = 'Passwords do not match';
+            passwordMatchError.style.display = 'block';
+        }
+        showError('Passwords do not match.');
         return;
     }
 
@@ -128,7 +148,7 @@ async function handleRegister(event) {
 
         console.log('Firebase user created successfully:', user.uid);
 
-        // *** FIX: Set a flag to notify app.js that this is a fresh registration, to force profile setup. ***
+        // Set a flag to notify app.js that this is a fresh registration, to force profile setup.
         localStorage.setItem('freshRegistration', 'true');
         
         // Save user data to localStorage
@@ -157,6 +177,36 @@ async function handleRegister(event) {
         handleAuthError(error);
     } finally {
         setButtonLoading(registerButton, false, 'Register');
+    }
+}
+
+function setupPasswordValidation() {
+    const passwordInput = document.getElementById('registerPassword');
+    const confirmPasswordInput = document.getElementById('registerConfirmPassword');
+    const passwordMatchError = document.getElementById('passwordMatchError');
+
+    if (passwordInput && confirmPasswordInput && passwordMatchError) {
+        const validatePasswords = () => {
+            const password = passwordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+
+            if (confirmPassword === '') {
+                passwordMatchError.style.display = 'none';
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                passwordMatchError.textContent = 'Passwords do not match';
+                passwordMatchError.style.display = 'block';
+                confirmPasswordInput.style.borderColor = '#dc3545';
+            } else {
+                passwordMatchError.style.display = 'none';
+                confirmPasswordInput.style.borderColor = '#28a745';
+            }
+        };
+
+        passwordInput.addEventListener('input', validatePasswords);
+        confirmPasswordInput.addEventListener('input', validatePasswords);
     }
 }
 
@@ -290,6 +340,18 @@ function clearFormErrors() {
     
     const errorMessages = document.querySelectorAll('.error-message');
     errorMessages.forEach(error => error.remove());
+    
+    // Clear password match error specifically
+    const passwordMatchError = document.getElementById('passwordMatchError');
+    if (passwordMatchError) {
+        passwordMatchError.style.display = 'none';
+    }
+    
+    // Reset border colors
+    const confirmPasswordInput = document.getElementById('registerConfirmPassword');
+    if (confirmPasswordInput) {
+        confirmPasswordInput.style.borderColor = '';
+    }
 }
 
 function handleAuthError(error) {
