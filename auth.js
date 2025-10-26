@@ -1,4 +1,4 @@
-// auth.js - UPDATED VERSION with Firebase initialization fix
+// auth.js - UPDATED VERSION
 
 // DOM Elements
 const loginForm = document.getElementById('loginForm');
@@ -13,53 +13,14 @@ const forgotPasswordFormElement = document.getElementById('forgotPasswordFormEle
 
 // Flag to ensure we don't redirect multiple times
 let isRedirecting = false; 
-let auth = null;
 
 // Initialize the authentication system
 document.addEventListener('DOMContentLoaded', function() {
-    initializeApp();
-});
-
-async function initializeApp() {
-    console.log('Initializing authentication system...');
-    
-    // Wait for Firebase to be ready
-    await waitForFirebase();
-    
-    // Now initialize auth
     initializeAuth();
     loadRememberedUser();
-}
-
-function waitForFirebase() {
-    return new Promise((resolve) => {
-        const checkFirebase = () => {
-            if (window.auth) {
-                auth = window.auth;
-                console.log('Firebase auth is ready');
-                resolve();
-            } else if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
-                // Fallback: initialize directly if firebase is available
-                auth = firebase.auth();
-                window.auth = auth;
-                console.log('Firebase auth initialized directly');
-                resolve();
-            } else {
-                console.log('Waiting for Firebase auth...');
-                setTimeout(checkFirebase, 100);
-            }
-        };
-        checkFirebase();
-    });
-}
+});
 
 function initializeAuth() {
-    if (!auth) {
-        console.error('Firebase auth not available');
-        showError('Authentication system is not ready. Please refresh the page.');
-        return;
-    }
-
     // Check if user is already logged in
     auth.onAuthStateChanged((user) => {
         if (user && !isRedirecting) {
@@ -77,8 +38,6 @@ function initializeAuth() {
 
     // Setup password validation
     setupPasswordValidation();
-    
-    console.log('Authentication system initialized');
 }
 
 function loadRememberedUser() {
@@ -97,11 +56,6 @@ function loadRememberedUser() {
 // Form Handlers
 async function handleLogin(event) {
     event.preventDefault();
-    
-    if (!auth) {
-        showError('Authentication system is not ready. Please try again.');
-        return;
-    }
     
     const email = document.getElementById('loginUsername').value.trim();
     const password = document.getElementById('loginPassword').value.trim();
@@ -146,11 +100,6 @@ async function handleLogin(event) {
 
 async function handleRegister(event) {
     event.preventDefault();
-    
-    if (!auth) {
-        showError('Authentication system is not ready. Please try again.');
-        return;
-    }
     
     console.log('Registration started...');
     
@@ -263,11 +212,6 @@ function setupPasswordValidation() {
 
 async function handleForgotPassword(event) {
     event.preventDefault();
-    
-    if (!auth) {
-        showError('Authentication system is not ready. Please try again.');
-        return;
-    }
     
     const email = document.getElementById('forgotUsername').value.trim();
 
