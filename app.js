@@ -258,8 +258,8 @@ function showOfflineStatus() {
     showStatusMessage('You are currently offline', 'warning');
 }
 
+// Status message function for PDF feedback
 function showStatusMessage(message, type = 'info') {
-    // Remove existing status messages
     const existingMessages = document.querySelectorAll('.status-message');
     existingMessages.forEach(msg => msg.remove());
 
@@ -1029,55 +1029,494 @@ function loadPreviewData(data) {
     });
 }
 
-// Export Functions
+// Dedicated PDF Generation for 58mm Thermal Printer
 function generatePDF() {
-    const element = document.getElementById('prescriptionPreview');
-    if (!element) {
-        showStatusMessage("PDF Error: Prescription Preview not found", "error");
-        return;
-    }
-
-    // Create a clone for PDF generation to avoid affecting the display
-    const elementClone = element.cloneNode(true);
-    elementClone.style.width = '58mm';
-    elementClone.style.margin = '0 auto';
-    elementClone.style.padding = '10px';
-    elementClone.style.background = 'white';
+    // Get all the data for PDF
+    const clinicName = document.getElementById('previewClinicName')?.textContent || 'Your Clinic';
+    const clinicAddress = document.getElementById('previewClinicAddress')?.textContent || 'Clinic Address';
+    const optometristName = document.getElementById('previewOptometristName')?.textContent || 'Optometrist Name';
+    const contactNumber = document.getElementById('previewContactNumber')?.textContent || 'Contact Number';
     
-    // Hide the clone
-    elementClone.style.position = 'fixed';
-    elementClone.style.left = '-9999px';
-    document.body.appendChild(elementClone);
+    // Get short date with time
+    const now = new Date();
+    const shortDate = now.toLocaleDateString('en-IN', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric' 
+    });
+    const shortTime = now.toLocaleTimeString('en-IN', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: true 
+    });
+    const currentDateTime = `${shortDate} ${shortTime}`;
+    
+    const patientName = document.getElementById('previewPatientName')?.textContent || '';
+    const age = document.getElementById('previewAge')?.textContent || '';
+    const gender = document.getElementById('previewGender')?.textContent || '';
+    const mobile = document.getElementById('previewMobile')?.textContent || '';
+    
+    const visionType = document.getElementById('previewVisionType')?.textContent || '';
+    const lensType = document.getElementById('previewLensType')?.textContent || '';
+    const frameType = document.getElementById('previewFrameType')?.textContent || '';
+    const amount = document.getElementById('previewAmount')?.textContent || '';
+    const paymentMode = document.getElementById('previewPaymentMode')?.textContent || '';
 
+    // Get prescription data
+    const prescriptionData = {
+        rightDist: {
+            SPH: document.getElementById('previewrightDistSPH')?.textContent || '',
+            CYL: document.getElementById('previewrightDistCYL')?.textContent || '',
+            AXIS: document.getElementById('previewrightDistAXIS')?.textContent || '',
+            VA: document.getElementById('previewrightDistVA')?.textContent || ''
+        },
+        rightAdd: {
+            SPH: document.getElementById('previewrightAddSPH')?.textContent || '',
+            CYL: document.getElementById('previewrightAddCYL')?.textContent || '',
+            AXIS: document.getElementById('previewrightAddAXIS')?.textContent || '',
+            VA: document.getElementById('previewrightAddVA')?.textContent || ''
+        },
+        leftDist: {
+            SPH: document.getElementById('previewleftDistSPH')?.textContent || '',
+            CYL: document.getElementById('previewleftDistCYL')?.textContent || '',
+            AXIS: document.getElementById('previewleftDistAXIS')?.textContent || '',
+            VA: document.getElementById('previewleftDistVA')?.textContent || ''
+        },
+        leftAdd: {
+            SPH: document.getElementById('previewleftAddSPH')?.textContent || '',
+            CYL: document.getElementById('previewleftAddCYL')?.textContent || '',
+            AXIS: document.getElementById('previewleftAddAXIS')?.textContent || '',
+            VA: document.getElementById('previewleftAddVA')?.textContent || ''
+        }
+    };
+
+    // Create PDF HTML content
+    const pdfHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                /* PDF Specific Styles for 58mm Thermal Format */
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                    font-family: 'Courier New', monospace;
+                }
+                
+                body {
+                    width: 58mm;
+                    margin: 0 auto;
+                    padding: 3mm;
+                    background: white;
+                    color: black;
+                    font-size: 9px;
+                    line-height: 1.1;
+                }
+                
+                /* Clinic Header */
+                .clinic-header {
+                    text-align: center;
+                    margin-bottom: 4px;
+                    padding-bottom: 3px;
+                    border-bottom: 1px solid #000;
+                }
+                
+                .clinic-name {
+                    font-size: 11px;
+                    font-weight: bold;
+                    margin-bottom: 1px;
+                    text-transform: uppercase;
+                }
+                
+                .clinic-address {
+                    font-size: 8px;
+                    margin-bottom: 1px;
+                }
+                
+                .clinic-contact {
+                    font-size: 8px;
+                    font-weight: bold;
+                }
+                
+                /* Name and Date */
+                .header-info {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-bottom: 4px;
+                    font-size: 8px;
+                }
+                
+                .name-section {
+                    font-weight: bold;
+                }
+                
+                .date-section {
+                    text-align: right;
+                    font-weight: bold;
+                }
+                
+                /* Prescription Title */
+                .prescription-title {
+                    text-align: center;
+                    font-size: 10px;
+                    font-weight: bold;
+                    margin: 4px 0;
+                    text-decoration: underline;
+                }
+                
+                /* Patient Information */
+                .patient-info {
+                    margin-bottom: 4px;
+                    padding: 3px;
+                    border: 1px solid #000;
+                }
+                
+                .patient-row {
+                    display: flex;
+                    margin-bottom: 1px;
+                }
+                
+                .patient-label {
+                    font-weight: bold;
+                    width: 25mm;
+                }
+                
+                .patient-value {
+                    flex: 1;
+                }
+                
+                /* Prescription Tables */
+                .prescription-section {
+                    margin: 4px 0;
+                }
+                
+                .eye-title {
+                    text-align: center;
+                    background: #e0e0e0;
+                    padding: 2px;
+                    font-weight: bold;
+                    font-size: 9px;
+                    border: 1px solid #000;
+                    border-bottom: none;
+                }
+                
+                .prescription-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-bottom: 3px;
+                    font-size: 7px;
+                }
+                
+                .prescription-table th {
+                    background: #f0f0f0;
+                    border: 1px solid #000;
+                    padding: 2px 1px;
+                    text-align: center;
+                    font-weight: bold;
+                }
+                
+                .prescription-table td {
+                    border: 1px solid #000;
+                    padding: 2px 1px;
+                    text-align: center;
+                }
+                
+                .section-heading {
+                    background: #e8e8e8 !important;
+                    font-weight: bold;
+                }
+                
+                /* Options Section */
+                .options-section {
+                    margin: 4px 0;
+                    border: 1px solid #000;
+                }
+                
+                .options-title {
+                    background: #e0e0e0;
+                    padding: 2px;
+                    text-align: center;
+                    font-weight: bold;
+                    font-size: 9px;
+                }
+                
+                .options-content {
+                    padding: 3px;
+                }
+                
+                .option-row {
+                    display: flex;
+                    margin-bottom: 1px;
+                }
+                
+                .option-label {
+                    font-weight: bold;
+                    width: 20mm;
+                }
+                
+                .option-value {
+                    flex: 1;
+                }
+                
+                /* Amount Section */
+                .amount-section {
+                    border: 1px solid #000;
+                    margin: 4px 0;
+                }
+                
+                .amount-row {
+                    display: flex;
+                    padding: 2px 3px;
+                }
+                
+                .amount-label {
+                    font-weight: bold;
+                    width: 25mm;
+                }
+                
+                .amount-value {
+                    flex: 1;
+                    font-weight: bold;
+                    font-size: 10px;
+                }
+                
+                /* Footer */
+                .footer {
+                    margin-top: 6px;
+                    padding-top: 3px;
+                    border-top: 1px solid #000;
+                    text-align: center;
+                    font-size: 7px;
+                }
+                
+                .thank-you {
+                    margin-bottom: 2px;
+                    font-style: italic;
+                }
+                
+                .signature {
+                    margin-top: 8px;
+                    text-align: right;
+                }
+                
+                .signature-line {
+                    border-top: 1px solid #000;
+                    width: 30mm;
+                    margin-left: auto;
+                    padding-top: 1px;
+                    text-align: center;
+                    font-size: 7px;
+                }
+                
+                /* PDF Specific Optimizations */
+                @media print {
+                    body {
+                        margin: 0;
+                        padding: 2mm;
+                        width: 58mm;
+                    }
+                    
+                    @page {
+                        margin: 0;
+                        padding: 0;
+                        size: 58mm auto;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <!-- Clinic Header -->
+            <div class="clinic-header">
+                <div class="clinic-name">${clinicName}</div>
+                <div class="clinic-address">${clinicAddress}</div>
+                <div class="clinic-contact">📞 ${contactNumber}</div>
+            </div>
+            
+            <!-- Name and Date -->
+            <div class="header-info">
+                <div class="name-section"><strong>${optometristName}</strong></div>
+                <div class="date-section"><strong>${currentDateTime}</strong></div>
+            </div>
+            
+            <!-- Prescription Title -->
+            <div class="prescription-title">EYE PRESCRIPTION</div>
+            
+            <!-- Patient Information -->
+            <div class="patient-info">
+                <div class="patient-row">
+                    <div class="patient-label">Patient Name:</div>
+                    <div class="patient-value">${patientName}</div>
+                </div>
+                <div class="patient-row">
+                    <div class="patient-label">Age / Gender:</div>
+                    <div class="patient-value">${age} / ${gender}</div>
+                </div>
+                <div class="patient-row">
+                    <div class="patient-label">Mobile:</div>
+                    <div class="patient-value">${mobile}</div>
+                </div>
+            </div>
+            
+            <!-- Right Eye Prescription -->
+            <div class="prescription-section">
+                <div class="eye-title">RIGHT EYE (OD)</div>
+                <table class="prescription-table">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>SPH</th>
+                            <th>CYL</th>
+                            <th>AXIS</th>
+                            <th>V/A</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="section-heading">DIST</td>
+                            <td>${prescriptionData.rightDist.SPH}</td>
+                            <td>${prescriptionData.rightDist.CYL}</td>
+                            <td>${prescriptionData.rightDist.AXIS}</td>
+                            <td>${prescriptionData.rightDist.VA}</td>
+                        </tr>
+                        <tr>
+                            <td class="section-heading">ADD</td>
+                            <td>${prescriptionData.rightAdd.SPH}</td>
+                            <td>${prescriptionData.rightAdd.CYL}</td>
+                            <td>${prescriptionData.rightAdd.AXIS}</td>
+                            <td>${prescriptionData.rightAdd.VA}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Left Eye Prescription -->
+            <div class="prescription-section">
+                <div class="eye-title">LEFT EYE (OS)</div>
+                <table class="prescription-table">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>SPH</th>
+                            <th>CYL</th>
+                            <th>AXIS</th>
+                            <th>V/A</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="section-heading">DIST</td>
+                            <td>${prescriptionData.leftDist.SPH}</td>
+                            <td>${prescriptionData.leftDist.CYL}</td>
+                            <td>${prescriptionData.leftDist.AXIS}</td>
+                            <td>${prescriptionData.leftDist.VA}</td>
+                        </tr>
+                        <tr>
+                            <td class="section-heading">ADD</td>
+                            <td>${prescriptionData.leftAdd.SPH}</td>
+                            <td>${prescriptionData.leftAdd.CYL}</td>
+                            <td>${prescriptionData.leftAdd.AXIS}</td>
+                            <td>${prescriptionData.leftAdd.VA}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Recommended Options -->
+            <div class="options-section">
+                <div class="options-title">RECOMMENDED OPTIONS</div>
+                <div class="options-content">
+                    <div class="option-row">
+                        <div class="option-label">Vision Type:</div>
+                        <div class="option-value">${visionType}</div>
+                    </div>
+                    <div class="option-row">
+                        <div class="option-label">Lens Type:</div>
+                        <div class="option-value">${lensType}</div>
+                    </div>
+                    <div class="option-row">
+                        <div class="option-label">Frame Type:</div>
+                        <div class="option-value">${frameType}</div>
+                    </div>
+                    <div class="option-row">
+                        <div class="option-label">Payment Mode:</div>
+                        <div class="option-value">${paymentMode}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Amount -->
+            <div class="amount-section">
+                <div class="amount-row">
+                    <div class="amount-label">TOTAL AMOUNT:</div>
+                    <div class="amount-value">₹ ${amount}</div>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="footer">
+                <div class="thank-you">
+                    Thank you for choosing ${clinicName}
+                </div>
+                <div>For queries: ${contactNumber}</div>
+                
+                <div class="signature">
+                    <div class="signature-line">
+                        Authorized Signature<br>
+                        <strong>${optometristName}</strong>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+
+    // Create a temporary container for PDF generation
+    const tempContainer = document.createElement('div');
+    tempContainer.style.position = 'fixed';
+    tempContainer.style.left = '-9999px';
+    tempContainer.style.top = '0';
+    tempContainer.innerHTML = pdfHTML;
+    document.body.appendChild(tempContainer);
+
+    // PDF configuration for 58mm thermal format
     const opt = {
-        margin: [5, 5, 5, 5],
-        filename: `Prescription_${document.getElementById('previewPatientName')?.textContent || 'Patient'}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
+        margin: [2, 2, 2, 2],
+        filename: `Prescription_${patientName}_${shortDate.replace(/\//g, '-')}.pdf`,
+        image: { 
+            type: 'jpeg', 
+            quality: 0.98 
+        },
         html2canvas: { 
             scale: 3,
             useCORS: true,
             allowTaint: false,
-            backgroundColor: '#ffffff'
+            backgroundColor: '#ffffff',
+            width: 165, // 58mm in pixels at 96 DPI
+            windowWidth: 165
         },
         jsPDF: { 
             unit: 'mm', 
-            format: [80, 200], // Custom size for prescription
-            orientation: 'portrait' 
+            format: [58, 200], // 58mm width, auto height
+            orientation: 'portrait',
+            compress: true
         },
         pagebreak: { mode: 'avoid-all' }
     };
 
+    // Generate and download PDF
     html2pdf()
         .set(opt)
-        .from(elementClone)
+        .from(tempContainer)
         .save()
         .then(() => {
             // Clean up
-            document.body.removeChild(elementClone);
+            document.body.removeChild(tempContainer);
             showStatusMessage('PDF downloaded successfully!', 'success');
         })
         .catch((error) => {
-            document.body.removeChild(elementClone);
+            document.body.removeChild(tempContainer);
             console.error('PDF generation error:', error);
             showStatusMessage('PDF generation failed: ' + error.message, 'error');
         });
