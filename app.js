@@ -1092,29 +1092,38 @@ async function sendWhatsApp() {
     }
 }
 
+// Replace the insecure uploadImageToImgBB function in app.js
 async function uploadImageToImgBB(base64Image) {
-    // ⚠️ SECURITY WARNING: This API key is exposed in the client-side code.
-    // In a production environment, this function MUST be moved to a secure backend 
-    // (like Firebase Cloud Functions) to prevent abuse and hide the key.
-    const apiKey = "bbfde58b1da5fc9ee9d7d6a591852f71"; 
-    const formData = new FormData();
-    formData.append("image", base64Image.split(',')[1]);
-
     try {
-        const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
-            method: "POST",
-            body: formData
+        const user = auth.currentUser;
+        if (!user) {
+            throw new Error('User not authenticated');
+        }
+
+        // Get Firebase ID token for authentication
+        const token = await user.getIdToken();
+
+        const response = await fetch('http://localhost:3001/api/upload-image', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                imageData: base64Image,
+                token: token
+            })
         });
+
         const data = await response.json();
-        
+
         if (data.success) {
-            return data.data.url;
+            return data.url;
         } else {
-            console.error('ImgBB Upload Failed:', data.error?.message || 'Unknown error');
-            throw new Error('Image upload failed');
+            console.error('Backend upload failed:', data.error);
+            throw new Error(data.error || 'Image upload failed');
         }
     } catch (error) {
-        console.error('Image upload error:', error);
+        console.error('Secure image upload error:', error);
         throw error;
     }
 }
