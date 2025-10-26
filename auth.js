@@ -52,12 +52,6 @@ function initializeAuth() {
     if (registerFormElement) registerFormElement.addEventListener('submit', handleRegister);
     if (forgotPasswordFormElement) forgotPasswordFormElement.addEventListener('submit', handleForgotPassword);
     
-    // Recovery form listener
-    const accountRecoveryFormElement = document.getElementById('accountRecoveryFormElement');
-    if (accountRecoveryFormElement) {
-        accountRecoveryFormElement.addEventListener('submit', handleAccountRecovery);
-    }
-
     setupPasswordValidation();
     setupSecurityMonitoring();
 }
@@ -268,7 +262,7 @@ async function handleFailedLoginAttempt(error) {
         
         showAccountLockWarning();
         showSecurityWarning(
-            `Account temporarily locked due to too many failed attempts. Please try again in 24 hours or use account recovery.`,
+            `Account temporarily locked due to too many failed attempts. Please try again in 24 hours or use password reset.`,
             'danger'
         );
     } else if (loginAttempts === 1) {
@@ -288,141 +282,6 @@ async function handleFailedLoginAttempt(error) {
     updateLoginAttemptsDisplay();
 }
 
-// Secure Account Recovery System
-async function handleAccountRecovery(event) {
-    event.preventDefault();
-    
-    const email = document.getElementById('recoveryEmail').value.trim();
-    const securityAnswer = document.getElementById('securityAnswer').value.trim();
-    
-    if (!email) {
-        showSecurityWarning('Please enter your email address', 'warning');
-        return;
-    }
-
-    if (!securityAnswer) {
-        showSecurityWarning('Please answer your security question', 'warning');
-        return;
-    }
-
-    const recoveryButton = document.getElementById('recoveryButton');
-    setButtonLoading(recoveryButton, true, 'Verifying...');
-
-    try {
-        // Step 1: Get user ID by trying to sign in (without password)
-        let userId = null;
-        try {
-            // This will fail but give us the user ID if email exists
-            await auth.signInWithEmailAndPassword(email, 'dummy_password');
-        } catch (error) {
-            if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
-                // Extract user ID from error or use alternative method
-                userId = await getUserIdByEmail(email);
-            }
-        }
-
-        if (!userId) {
-            showSecurityWarning('No account found with this email address', 'warning');
-            return;
-        }
-
-        // Step 2: Get security question data
-        const securityData = await getSecurityQuestionData(userId);
-        if (!securityData) {
-            showSecurityWarning('Security question not found. Please use password reset instead.', 'warning');
-            return;
-        }
-
-        // Step 3: Verify security answer
-        const isAnswerCorrect = await verifySecurityAnswer(securityData.securityAnswer, securityAnswer);
-        if (!isAnswerCorrect) {
-            showSecurityWarning('Incorrect security answer', 'warning');
-            return;
-        }
-
-        // Step 4: Send password reset email
-        await auth.sendPasswordResetEmail(email);
-        resetSecurityState();
-        
-        showSuccessMessage('Password reset email sent! Check your inbox to create a new password.');
-
-    } catch (error) {
-        console.error('Account recovery error:', error);
-        
-        if (error.code === 'auth/user-not-found') {
-            showSecurityWarning('No account found with this email address', 'warning');
-        } else if (error.code === 'auth/too-many-requests') {
-            showSecurityWarning('Too many recovery attempts. Please try again later.', 'warning');
-        } else {
-            showSecurityWarning('Recovery failed. Please try password reset or contact support.', 'danger');
-        }
-    } finally {
-        setButtonLoading(recoveryButton, false, 'Verify & Reset Password');
-    }
-}
-
-// Get User ID by Email (Secure Method)
-async function getUserIdByEmail(email) {
-    try {
-        // Use Firebase Admin SDK on backend would be better
-        // For frontend, we'll use a workaround
-        const response = await fetch(`https://us-central1-${firebaseConfig.projectId}.cloudfunctions.net/getUserId`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email: email })
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            return data.userId;
-        }
-    } catch (error) {
-        console.error('Error getting user ID:', error);
-    }
-    
-    // Fallback: Try to get from existing auth state
-    return new Promise((resolve) => {
-        auth.onAuthStateChanged((user) => {
-            if (user && user.email === email) {
-                resolve(user.uid);
-            } else {
-                resolve(null);
-            }
-        });
-    });
-}
-
-// Get Security Question Data
-async function getSecurityQuestionData(userId) {
-    try {
-        const securityDoc = await db.collection('userSecurity').doc(userId).get();
-        return securityDoc.exists ? securityDoc.data() : null;
-    } catch (error) {
-        console.error('Error getting security question:', error);
-        return null;
-    }
-}
-
-// Verify Security Answer
-async function verifySecurityAnswer(storedAnswerHash, userAnswer) {
-    const userAnswerHash = hashAnswer(userAnswer);
-    return storedAnswerHash === userAnswerHash;
-}
-
-// Hash Security Answer
-function hashAnswer(answer) {
-    // Simple hash for demo - in production use bcrypt or similar
-    let hash = 0;
-    for (let i = 0; i < answer.length; i++) {
-        const char = answer.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash;
-    }
-    return hash.toString();
-}
-
 // Enhanced Registration
 async function handleRegister(event) {
     event.preventDefault();
@@ -430,15 +289,13 @@ async function handleRegister(event) {
     const email = document.getElementById('registerEmail').value.trim();
     const password = document.getElementById('registerPassword').value.trim();
     const confirmPassword = document.getElementById('registerConfirmPassword').value.trim();
-    const securityQuestion = document.getElementById('securityQuestion').value;
-    const securityAnswer = document.getElementById('securityAnswer').value.trim();
     
     clearFormErrors();
     const passwordMatchError = document.getElementById('passwordMatchError');
     if (passwordMatchError) passwordMatchError.style.display = 'none';
 
     // Validation
-    if (!email || !password || !confirmPassword || !securityQuestion || !securityAnswer) {
+    if (!email || !password || !confirmPassword) {
         showSecurityWarning('Please fill in all fields.', 'warning');
         return;
     }
@@ -470,14 +327,6 @@ async function handleRegister(event) {
             email: email,
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
-        // Save security data
-        await db.collection('userSecurity').doc(user.uid).set({
-            email: email,
-            securityQuestion: securityQuestion,
-            securityAnswer: hashAnswer(securityAnswer),
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
         localStorage.setItem('freshRegistration', 'true');
@@ -543,7 +392,7 @@ async function handleForgotPassword(event) {
     } catch (error) {
         console.error('Password reset error:', error);
         if (error.code === 'auth/too-many-requests') {
-            showSecurityWarning('Too many reset attempts. Please try account recovery.', 'danger');
+            showSecurityWarning('Too many reset attempts. Please try again later.', 'danger');
         } else {
             handleAuthError(error);
         }
@@ -629,97 +478,60 @@ function showAccountLockWarning() {
         <p>Too many failed login attempts. For security reasons, your account has been locked.</p>
         <div class="account-lock-timer">Time remaining: ${hoursLeft} hours</div>
         <p style="margin-top: 10px;">
-            <a href="#" onclick="showAccountRecovery()" style="color: #007bff; text-decoration: underline;">
-                Use Account Recovery to unlock your account
+            <a href="#" onclick="showForgotPassword()" style="color: #007bff; text-decoration: underline;">
+                Reset your password to unlock immediately
             </a>
         </p>
     `;
     
-    const existingLocks = document.querySelectorAll('.account-lock-warning');
-    existingLocks.forEach(lock => lock.remove());
+    const existingWarnings = document.querySelectorAll('.account-lock-warning, .security-warning');
+    existingWarnings.forEach(warning => warning.remove());
     
-    const activeForm = document.querySelector('.form-container.active');
-    if (activeForm) {
-        activeForm.insertBefore(lockDiv, activeForm.querySelector('form'));
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.insertBefore(lockDiv, loginForm.querySelector('form'));
     }
 }
 
 function updateLoginAttemptsDisplay() {
-    const attemptsDisplay = document.querySelector('.attempts-counter');
-    if (attemptsDisplay) {
-        const remaining = SECURITY_CONFIG.maxLoginAttempts - loginAttempts;
-        if (loginAttempts > 0) {
-            attemptsDisplay.innerHTML = `
-                <span class="${remaining <= 1 ? 'attempts-warning' : ''}">
-                    ${remaining} attempt${remaining !== 1 ? 's' : ''} remaining
-                </span>
-            `;
+    const attemptsCounter = document.getElementById('loginAttemptsCounter');
+    if (!attemptsCounter) return;
+
+    if (loginAttempts > 0) {
+        const remainingAttempts = SECURITY_CONFIG.maxLoginAttempts - loginAttempts;
+        if (remainingAttempts > 0) {
+            attemptsCounter.innerHTML = `<span class="attempts-warning">${loginAttempts} failed attempt(s). ${remainingAttempts} remaining.</span>`;
         } else {
-            attemptsDisplay.innerHTML = '';
+            attemptsCounter.innerHTML = `<span class="attempts-warning">Account locked due to too many failed attempts.</span>`;
         }
+    } else {
+        attemptsCounter.innerHTML = '';
     }
 }
 
-// Form Management
-function showLogin() {
-    hideAllForms();
-    if (loginForm) loginForm.classList.add('active');
-    clearFormErrors();
-    updateLoginAttemptsDisplay();
-}
-
-function showRegister() {
-    hideAllForms();
-    if (registerForm) registerForm.classList.add('active');
-    clearFormErrors();
-}
-
-function showForgotPassword() {
-    hideAllForms();
-    if (forgotPasswordForm) forgotPasswordForm.classList.add('active');
-    clearFormErrors();
-}
-
-function showAccountRecovery() {
-    hideAllForms();
-    const recoveryForm = document.getElementById('accountRecoveryForm');
-    if (recoveryForm) {
-        recoveryForm.classList.add('active');
-    }
-    clearFormErrors();
-}
-
-function hideAllForms() {
-    if (loginForm) loginForm.classList.remove('active');
-    if (registerForm) registerForm.classList.remove('active');
-    if (forgotPasswordForm) forgotPasswordForm.classList.remove('active');
-    if (successMessage) successMessage.classList.add('hidden');
+function showSuccess(message) {
+    const successText = document.getElementById('successText');
+    if (successText) successText.textContent = message;
     
-    const recoveryForm = document.getElementById('accountRecoveryForm');
-    if (recoveryForm) recoveryForm.classList.remove('active');
+    hideAllForms();
+    successMessage.classList.remove('hidden');
+    successMessage.style.display = 'block';
 }
 
 function showSuccessMessage(message) {
-    hideAllForms();
     const successText = document.getElementById('successText');
     if (successText) successText.textContent = message;
-    if (successMessage) successMessage.classList.remove('hidden');
+    
+    hideAllForms();
+    successMessage.classList.remove('hidden');
+    successMessage.style.display = 'block';
 }
 
-// Utility Functions
-function togglePassword(inputId) {
-    const passwordInput = document.getElementById(inputId);
-    if (!passwordInput) return;
-
-    const toggleButton = passwordInput.parentElement.querySelector('.toggle-password');
-
-    if (passwordInput.type === 'password') {
-        passwordInput.type = 'text';
-        if (toggleButton) toggleButton.textContent = '🙈';
-    } else {
-        passwordInput.type = 'password';
-        if (toggleButton) toggleButton.textContent = '👁️';
-    }
+function hideAllForms() {
+    document.querySelectorAll('.form-container').forEach(form => {
+        form.classList.remove('active');
+        form.style.display = 'none';
+    });
 }
 
 function setButtonLoading(button, isLoading, originalText) {
@@ -728,73 +540,29 @@ function setButtonLoading(button, isLoading, originalText) {
     if (isLoading) {
         button.disabled = true;
         button.classList.add('loading');
-        button.innerHTML = 'Processing...';
-        button.dataset.originalText = originalText;
+        button.setAttribute('data-original-text', button.textContent);
+        button.textContent = 'Please wait...';
     } else {
         button.disabled = false;
         button.classList.remove('loading');
-        button.innerHTML = button.dataset.originalText || originalText;
-        delete button.dataset.originalText;
-    }
-}
-
-function showError(message) {
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'error-message';
-    errorDiv.style.cssText = `
-        background: #f8d7da;
-        color: #721c24;
-        padding: 10px;
-        border-radius: 5px;
-        margin: 10px 0;
-        text-align: center;
-        border: 1px solid #f5c6cb;
-    `;
-    errorDiv.textContent = message;
-    
-    const existingErrors = document.querySelectorAll('.error-message');
-    existingErrors.forEach(error => error.remove());
-    
-    const activeForm = document.querySelector('.form-container.active');
-    if (activeForm) {
-        activeForm.insertBefore(errorDiv, activeForm.firstChild);
-        
-        setTimeout(() => {
-            if (errorDiv.parentNode) {
-                errorDiv.remove();
-            }
-        }, 5000);
-    } else {
-        console.error('Authentication Error:', message);
+        button.textContent = originalText || button.getAttribute('data-original-text') || 'Submit';
     }
 }
 
 function clearFormErrors() {
-    const errors = document.querySelectorAll('.error');
-    errors.forEach(error => error.classList.remove('error'));
+    document.querySelectorAll('.error-message').forEach(error => {
+        error.style.display = 'none';
+    });
     
-    const errorMessages = document.querySelectorAll('.error-message');
-    errorMessages.forEach(error => error.remove());
-    
-    const passwordMatchError = document.getElementById('passwordMatchError');
-    if (passwordMatchError) {
-        passwordMatchError.style.display = 'none';
-    }
-    
-    const confirmPasswordInput = document.getElementById('registerConfirmPassword');
-    if (confirmPasswordInput) {
-        confirmPasswordInput.style.borderColor = '';
-    }
-    
-    const securityWarnings = document.querySelectorAll('.security-warning');
-    securityWarnings.forEach(warning => warning.remove());
-    
-    const lockWarnings = document.querySelectorAll('.account-lock-warning');
-    lockWarnings.forEach(warning => warning.remove());
+    document.querySelectorAll('.input-with-error').forEach(input => {
+        input.classList.remove('input-with-error');
+    });
 }
 
 function handleAuthError(error) {
-    let errorMessage = 'An error occurred. Please try again.';
+    console.error('Authentication error:', error);
+    
+    let errorMessage = 'An unexpected error occurred. Please try again.';
     
     switch (error.code) {
         case 'auth/invalid-email':
@@ -804,54 +572,63 @@ function handleAuthError(error) {
             errorMessage = 'This account has been disabled.';
             break;
         case 'auth/user-not-found':
+            errorMessage = 'No account found with this email.';
+            break;
         case 'auth/wrong-password':
-            errorMessage = 'Invalid email or password.';
+            errorMessage = 'Incorrect password. Please try again.';
             break;
         case 'auth/email-already-in-use':
             errorMessage = 'An account with this email already exists.';
             break;
         case 'auth/weak-password':
-            errorMessage = 'Password is too weak. Please use at least 6 characters.';
+            errorMessage = 'Password is too weak. Please use a stronger password.';
             break;
         case 'auth/network-request-failed':
-            errorMessage = 'Network error. Please check your internet connection.';
+            errorMessage = 'Network error. Please check your connection.';
             break;
         case 'auth/too-many-requests':
-            errorMessage = 'Too many unsuccessful attempts. Please try again later.';
+            errorMessage = 'Too many attempts. Please try again later.';
             break;
+        case 'auth/requires-recent-login':
+            errorMessage = 'Please log in again to perform this action.';
+            break;
+        default:
+            errorMessage = error.message || 'Authentication failed. Please try again.';
     }
     
-    showError(errorMessage);
+    showSecurityWarning(errorMessage, 'danger');
 }
 
-function showSuccess(message) {
-    const successDiv = document.createElement('div');
-    successDiv.className = 'success-message';
-    successDiv.style.cssText = `
-        background: #d4edda;
-        color: #155724;
-        padding: 10px;
-        border-radius: 5px;
-        margin: 10px 0;
-        text-align: center;
-        border: 1px solid #c3e6cb;
-    `;
-    successDiv.textContent = message;
-    
-    const existingSuccess = document.querySelectorAll('.success-message');
-    existingSuccess.forEach(msg => msg.remove());
-    
-    const activeForm = document.querySelector('.form-container.active');
-    if (activeForm) {
-        activeForm.insertBefore(successDiv, activeForm.firstChild);
-        
-        setTimeout(() => {
-            if (successDiv.parentNode) {
-                successDiv.remove();
-            }
-        }, 3000);
+// Form Navigation
+function showLogin() {
+    hideAllForms();
+    loginForm.classList.add('active');
+    loginForm.style.display = 'block';
+    document.querySelectorAll('.security-warning, .account-lock-warning').forEach(warning => warning.remove());
+    updateLoginAttemptsDisplay();
+}
+
+function showRegister() {
+    hideAllForms();
+    registerForm.classList.add('active');
+    registerForm.style.display = 'block';
+    document.querySelectorAll('.security-warning, .account-lock-warning').forEach(warning => warning.remove());
+}
+
+function showForgotPassword() {
+    hideAllForms();
+    forgotPasswordForm.classList.add('active');
+    forgotPasswordForm.style.display = 'block';
+    document.querySelectorAll('.security-warning, .account-lock-warning').forEach(warning => warning.remove());
+}
+
+// Utility Functions
+function togglePassword(fieldId) {
+    const passwordField = document.getElementById(fieldId);
+    if (passwordField.type === 'password') {
+        passwordField.type = 'text';
     } else {
-        console.log('Success:', message);
+        passwordField.type = 'password';
     }
 }
 
@@ -859,6 +636,5 @@ function showSuccess(message) {
 window.showLogin = showLogin;
 window.showRegister = showRegister;
 window.showForgotPassword = showForgotPassword;
-window.showAccountRecovery = showAccountRecovery;
 window.togglePassword = togglePassword;
 window.checkPasswordStrength = checkPasswordStrength;
