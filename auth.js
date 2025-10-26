@@ -373,13 +373,20 @@ async function saveSecurityQuestion(userId, question, answer) {
 
 async function getUserSecurityQuestion(email) {
     try {
-        // Get user by email - this is a simplified approach
-        // In production, you might want to store security questions in a separate collection
-        const usersRef = db.collection('userSecurity');
+        // Since we can't query by email directly in security collection,
+        // we need to find the user by email first
+        const usersRef = db.collection('users');
         const querySnapshot = await usersRef.where('email', '==', email).get();
         
         if (!querySnapshot.empty) {
-            return querySnapshot.docs[0].data();
+            const userDoc = querySnapshot.docs[0];
+            const userId = userDoc.id;
+            
+            // Now get the security question
+            const securityDoc = await db.collection('userSecurity').doc(userId).get();
+            if (securityDoc.exists) {
+                return securityDoc.data();
+            }
         }
         return null;
     } catch (error) {
@@ -412,6 +419,7 @@ function hashAnswer(answer) {
     return hash.toString();
 }
 
+// Enhanced Registration with Security Questions
 // Enhanced Registration with Security Questions
 async function handleRegister(event) {
     event.preventDefault();
@@ -469,7 +477,13 @@ async function handleRegister(event) {
 
         console.log('Firebase user created successfully:', user.uid);
 
-        // Save security question to Firestore
+        // Save user data to 'users' collection
+        await db.collection('users').doc(user.uid).set({
+            email: email,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Save security question to 'userSecurity' collection
         await db.collection('userSecurity').doc(user.uid).set({
             email: email,
             securityQuestion: securityQuestion,
@@ -487,8 +501,6 @@ async function handleRegister(event) {
         console.log('Registration completed successfully');
         showSuccess('Registration successful! Redirecting to profile setup...');
         
-        // The onAuthStateChanged will handle redirect
-
     } catch (error) {
         console.error('Registration error:', error);
         
