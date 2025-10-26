@@ -1,45 +1,4 @@
 // app.js - Consolidated from app.js and script.js
-console.log('App.js loading...');
-
-// Wait for Firebase to load
-function waitForFirebase() {
-  return new Promise((resolve) => {
-    const checkFirebase = () => {
-      if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
-        console.log('Firebase is ready');
-        resolve();
-      } else if (window.auth && window.db) {
-        console.log('Using mock Firebase objects');
-        resolve();
-      } else {
-        console.log('Waiting for Firebase...');
-        setTimeout(checkFirebase, 100);
-      }
-    };
-    checkFirebase();
-  });
-}
-
-// Initialize app only after Firebase is ready
-waitForFirebase().then(() => {
-  console.log('Starting app initialization...');
-  // Your existing initialization code here...
-  firebase.auth().onAuthStateChanged((user) => {
-    if (user) {
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() {
-          initializeApp();
-        });
-      } else {
-        initializeApp();
-      }
-    } else {
-      window.location.replace('auth.html');
-    }
-  });
-}).catch(error => {
-  console.error('Failed to initialize Firebase:', error);
-});
 
 // Global Variables
 let currentPrescriptionData = null;
@@ -1092,25 +1051,27 @@ async function sendWhatsApp() {
     }
 }
 
-// Replace the insecure uploadImageToImgBB function in app.js
 async function uploadImageToImgBB(base64Image) {
+    // ⚠️ SECURITY WARNING: This API key is exposed in the client-side code.
+    // In a production environment, this function MUST be moved to a secure backend 
+    // (like Firebase Cloud Functions) to prevent abuse and hide the key.
+    const apiKey = "bbfde58b1da5fc9ee9d7d6a591852f71"; 
+    const formData = new FormData();
+    formData.append("image", base64Image.split(',')[1]);
+
     try {
-        const user = auth.currentUser;
-        if (!user) throw new Error('User not authenticated');
-
-        const token = await user.getIdToken();
-        const BACKEND_URL = 'https://lens-prescription-backend.onrender.com';
-
-        const response = await fetch(`${BACKEND_URL}/api/upload-image`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ imageData: base64Image, token })
+        const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+            method: "POST",
+            body: formData
         });
-
         const data = await response.json();
-        if (data.success) return data.url;
-        else throw new Error(data.error || 'Upload failed');
         
+        if (data.success) {
+            return data.data.url;
+        } else {
+            console.error('ImgBB Upload Failed:', data.error?.message || 'Unknown error');
+            throw new Error('Image upload failed');
+        }
     } catch (error) {
         console.error('Image upload error:', error);
         throw error;
@@ -1355,40 +1316,16 @@ function resetStats() {
     console.warn("Local stats reset function is deprecated as data is stored in Firebase.");
 }
 
-// Logout Function - FIXED VERSION
+// Logout Function
 function logoutUser() {
-  // Check if auth is available
-  if (window.auth && typeof auth.signOut === 'function') {
     auth.signOut().then(() => {
-      // Clear user-specific local storage items
-      localStorage.removeItem('username');
-      localStorage.removeItem('userId');
-      localStorage.removeItem('userProfile');
-      localStorage.removeItem('rememberedUsername');
-      localStorage.removeItem('rememberMe');
-      
-      window.location.href = 'auth.html';
+        // Clear only user-specific local storage items, not PWA cache or 'rememberMe'
+        localStorage.removeItem('username');
+        localStorage.removeItem('userId');
+        window.location.href = 'auth.html';
     }).catch(error => {
-      console.error('Logout failed:', error);
-      // Fallback: clear storage and redirect anyway
-      clearUserData();
-      window.location.href = 'auth.html';
+        console.error('Logout failed:', error);
     });
-  } else {
-    // Fallback if Firebase auth is not available
-    console.warn('Firebase auth not available, using fallback logout');
-    clearUserData();
-    window.location.href = 'auth.html';
-  }
-}
-
-function clearUserData() {
-  localStorage.removeItem('username');
-  localStorage.removeItem('userId');
-  localStorage.removeItem('userProfile');
-  localStorage.removeItem('rememberedUsername');
-  localStorage.removeItem('rememberMe');
-  localStorage.removeItem('freshRegistration');
 }
 
 // Handle beforeunload event for closing the PWA
