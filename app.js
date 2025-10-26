@@ -1,4 +1,45 @@
 // app.js - Consolidated from app.js and script.js
+console.log('App.js loading...');
+
+// Wait for Firebase to load
+function waitForFirebase() {
+  return new Promise((resolve) => {
+    const checkFirebase = () => {
+      if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+        console.log('Firebase is ready');
+        resolve();
+      } else if (window.auth && window.db) {
+        console.log('Using mock Firebase objects');
+        resolve();
+      } else {
+        console.log('Waiting for Firebase...');
+        setTimeout(checkFirebase, 100);
+      }
+    };
+    checkFirebase();
+  });
+}
+
+// Initialize app only after Firebase is ready
+waitForFirebase().then(() => {
+  console.log('Starting app initialization...');
+  // Your existing initialization code here...
+  firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+          initializeApp();
+        });
+      } else {
+        initializeApp();
+      }
+    } else {
+      window.location.replace('auth.html');
+    }
+  });
+}).catch(error => {
+  console.error('Failed to initialize Firebase:', error);
+});
 
 // Global Variables
 let currentPrescriptionData = null;
