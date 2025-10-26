@@ -1083,9 +1083,9 @@ function generatePDF() {
         });
 }
 
+// Enhanced Print Function with Better Structure
 function printPreview() {
-    const originalContent = document.getElementById('prescriptionPreview').innerHTML;
-    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    const printWindow = window.open('', '_blank', 'width=600,height=800');
     
     if (!printWindow) {
         // Fallback to browser print if popup blocked
@@ -1093,150 +1093,474 @@ function printPreview() {
         return;
     }
 
-    // Create print-optimized HTML
+    // Get all the data for the print
+    const clinicName = document.getElementById('previewClinicName')?.textContent || 'Your Clinic';
+    const clinicAddress = document.getElementById('previewClinicAddress')?.textContent || 'Clinic Address';
+    const optometristName = document.getElementById('previewOptometristName')?.textContent || 'Optometrist Name';
+    const contactNumber = document.getElementById('previewContactNumber')?.textContent || 'Contact Number';
+    const currentDate = document.getElementById('previewcurrentDate')?.textContent || new Date().toLocaleDateString();
+    
+    const patientName = document.getElementById('previewPatientName')?.textContent || '';
+    const age = document.getElementById('previewAge')?.textContent || '';
+    const gender = document.getElementById('previewGender')?.textContent || '';
+    const mobile = document.getElementById('previewMobile')?.textContent || '';
+    
+    const visionType = document.getElementById('previewVisionType')?.textContent || '';
+    const lensType = document.getElementById('previewLensType')?.textContent || '';
+    const frameType = document.getElementById('previewFrameType')?.textContent || '';
+    const amount = document.getElementById('previewAmount')?.textContent || '';
+    const paymentMode = document.getElementById('previewPaymentMode')?.textContent || '';
+
+    // Get prescription data
+    const prescriptionData = {
+        rightDist: {
+            SPH: document.getElementById('previewrightDistSPH')?.textContent || '',
+            CYL: document.getElementById('previewrightDistCYL')?.textContent || '',
+            AXIS: document.getElementById('previewrightDistAXIS')?.textContent || '',
+            VA: document.getElementById('previewrightDistVA')?.textContent || ''
+        },
+        rightAdd: {
+            SPH: document.getElementById('previewrightAddSPH')?.textContent || '',
+            CYL: document.getElementById('previewrightAddCYL')?.textContent || '',
+            AXIS: document.getElementById('previewrightAddAXIS')?.textContent || '',
+            VA: document.getElementById('previewrightAddVA')?.textContent || ''
+        },
+        leftDist: {
+            SPH: document.getElementById('previewleftDistSPH')?.textContent || '',
+            CYL: document.getElementById('previewleftDistCYL')?.textContent || '',
+            AXIS: document.getElementById('previewleftDistAXIS')?.textContent || '',
+            VA: document.getElementById('previewleftDistVA')?.textContent || ''
+        },
+        leftAdd: {
+            SPH: document.getElementById('previewleftAddSPH')?.textContent || '',
+            CYL: document.getElementById('previewleftAddCYL')?.textContent || '',
+            AXIS: document.getElementById('previewleftAddAXIS')?.textContent || '',
+            VA: document.getElementById('previewleftAddVA')?.textContent || ''
+        }
+    };
+
+    // Create structured print HTML
     const printHTML = `
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Prescription Print</title>
+            <title>Prescription - ${patientName}</title>
+            <meta charset="UTF-8">
             <style>
                 /* Print-specific styles */
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+                
                 body {
                     font-family: 'Times New Roman', serif;
                     margin: 0;
-                    padding: 10px;
+                    padding: 15px;
                     background: white;
                     color: black;
-                    font-size: 12px;
-                    line-height: 1.2;
-                }
-                
-                .print-container {
-                    max-width: 58mm;
-                    margin: 0 auto;
-                    border: 1px solid #000;
-                    padding: 8px;
-                    page-break-inside: avoid;
-                }
-                
-                .print-header {
-                    text-align: center;
-                    margin-bottom: 8px;
-                }
-                
-                .print-header h2 {
                     font-size: 14px;
-                    margin: 0 0 2px 0;
-                    font-weight: bold;
+                    line-height: 1.4;
                 }
                 
-                .print-header p {
-                    font-size: 10px;
-                    margin: 1px 0;
+                .prescription-container {
+                    max-width: 210mm;
+                    margin: 0 auto;
+                    border: 2px solid #000;
+                    padding: 20px;
+                    background: white;
                 }
                 
-                .print-details {
-                    margin-bottom: 8px;
-                }
-                
-                .print-details p {
-                    margin: 2px 0;
-                    font-size: 10px;
-                }
-                
-                .print-prescription {
-                    margin-bottom: 8px;
-                }
-                
-                .print-prescription h3 {
+                /* Header Section */
+                .clinic-header {
                     text-align: center;
-                    font-size: 12px;
-                    margin: 6px 0;
+                    margin-bottom: 20px;
+                    padding-bottom: 15px;
+                    border-bottom: 2px solid #000;
+                }
+                
+                .clinic-header h1 {
+                    font-size: 24px;
+                    font-weight: bold;
+                    margin-bottom: 5px;
+                    text-transform: uppercase;
+                }
+                
+                .clinic-header .address {
+                    font-size: 14px;
+                    margin-bottom: 5px;
+                }
+                
+                .clinic-header .contact {
+                    font-size: 14px;
                     font-weight: bold;
                 }
                 
-                .print-prescription table {
+                /* Prescription Title */
+                .prescription-title {
+                    text-align: center;
+                    font-size: 20px;
+                    font-weight: bold;
+                    margin: 20px 0;
+                    text-decoration: underline;
+                }
+                
+                /* Patient Details Table */
+                .patient-details-table {
                     width: 100%;
                     border-collapse: collapse;
-                    font-size: 9px;
-                    margin-bottom: 6px;
-                }
-                
-                .print-prescription th,
-                .print-prescription td {
+                    margin-bottom: 20px;
                     border: 1px solid #000;
-                    padding: 2px;
-                    text-align: center;
                 }
                 
-                .print-prescription th {
-                    background: #f5f5f5;
+                .patient-details-table th {
+                    background: #f0f0f0;
+                    border: 1px solid #000;
+                    padding: 8px 12px;
+                    text-align: left;
                     font-weight: bold;
                 }
                 
-                .print-footer {
+                .patient-details-table td {
+                    border: 1px solid #000;
+                    padding: 8px 12px;
+                }
+                
+                /* Prescription Tables Container */
+                .prescription-tables {
+                    display: flex;
+                    gap: 20px;
+                    margin-bottom: 20px;
+                    flex-wrap: wrap;
+                }
+                
+                .eye-prescription {
+                    flex: 1;
+                    min-width: 250px;
+                }
+                
+                .eye-prescription h3 {
                     text-align: center;
-                    font-size: 9px;
-                    margin-top: 8px;
+                    background: #333;
+                    color: white;
+                    padding: 8px;
+                    margin-bottom: 0;
+                    font-size: 16px;
                 }
                 
-                hr {
-                    border: none;
+                .prescription-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    border: 1px solid #000;
+                }
+                
+                .prescription-table th {
+                    background: #f8f8f8;
+                    border: 1px solid #000;
+                    padding: 8px 6px;
+                    text-align: center;
+                    font-weight: bold;
+                    font-size: 12px;
+                }
+                
+                .prescription-table td {
+                    border: 1px solid #000;
+                    padding: 8px 6px;
+                    text-align: center;
+                    font-size: 12px;
+                }
+                
+                .section-heading {
+                    background: #e0e0e0 !important;
+                    font-weight: bold;
+                }
+                
+                /* Options and Payment Section */
+                .options-payment-section {
+                    margin: 20px 0;
+                }
+                
+                .options-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-bottom: 15px;
+                    border: 1px solid #000;
+                }
+                
+                .options-table th {
+                    background: #f0f0f0;
+                    border: 1px solid #000;
+                    padding: 8px 12px;
+                    text-align: left;
+                    font-weight: bold;
+                }
+                
+                .options-table td {
+                    border: 1px solid #000;
+                    padding: 8px 12px;
+                }
+                
+                /* Footer Section */
+                .footer {
+                    margin-top: 30px;
+                    padding-top: 15px;
+                    border-top: 2px solid #000;
+                    text-align: center;
+                }
+                
+                .optometrist-signature {
+                    margin-top: 40px;
+                    text-align: right;
+                }
+                
+                .signature-line {
                     border-top: 1px solid #000;
-                    margin: 5px 0;
+                    width: 200px;
+                    margin-left: auto;
+                    margin-top: 40px;
+                    padding-top: 5px;
+                    text-align: center;
                 }
                 
-                /* Ensure single page */
+                .thank-you {
+                    text-align: center;
+                    margin-top: 20px;
+                    font-style: italic;
+                    font-size: 14px;
+                }
+                
+                /* Date and ID Section */
+                .date-id-section {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-bottom: 20px;
+                    font-size: 14px;
+                }
+                
+                /* Print-specific optimizations */
                 @media print {
                     body {
                         margin: 0;
-                        padding: 0;
+                        padding: 10px;
                     }
                     
-                    .print-container {
+                    .prescription-container {
                         border: none;
-                        padding: 0;
+                        padding: 10px;
                         margin: 0;
-                        max-width: 58mm;
+                        max-width: 100%;
+                        box-shadow: none;
                     }
                     
-                    /* Hide everything except print content */
-                    body * {
-                        visibility: hidden;
+                    /* Ensure single page */
+                    .prescription-container {
+                        page-break-inside: avoid;
+                        break-inside: avoid;
                     }
                     
-                    .print-container, .print-container * {
-                        visibility: visible;
+                    /* Hide URL and page info */
+                    @page {
+                        margin: 0.5cm;
                     }
-                    
-                    .print-container {
-                        position: absolute;
-                        left: 0;
-                        top: 0;
-                    }
+                }
+                
+                /* No print dialog controls */
+                .no-print {
+                    display: none;
                 }
             </style>
         </head>
         <body>
-            <div class="print-container">
-                ${originalContent}
+            <div class="prescription-container">
+                <!-- Clinic Header -->
+                <div class="clinic-header">
+                    <h1>${clinicName}</h1>
+                    <div class="address">${clinicAddress}</div>
+                    <div class="contact">Contact: ${contactNumber}</div>
+                </div>
+                
+                <!-- Date and Prescription Title -->
+                <div class="date-id-section">
+                    <div><strong>Date:</strong> ${currentDate}</div>
+                    <div><strong>Optometrist:</strong> ${optometristName}</div>
+                </div>
+                
+                <div class="prescription-title">EYE PRESCRIPTION</div>
+                
+                <!-- Patient Details Table -->
+                <table class="patient-details-table">
+                    <thead>
+                        <tr>
+                            <th colspan="4">PATIENT INFORMATION</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Name:</strong></td>
+                            <td>${patientName}</td>
+                            <td><strong>Age:</strong></td>
+                            <td>${age}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Gender:</strong></td>
+                            <td>${gender}</td>
+                            <td><strong>Mobile:</strong></td>
+                            <td>${mobile}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <!-- Prescription Tables -->
+                <div class="prescription-tables">
+                    <!-- Right Eye -->
+                    <div class="eye-prescription">
+                        <h3>RIGHT EYE (OD)</h3>
+                        <table class="prescription-table">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>SPH</th>
+                                    <th>CYL</th>
+                                    <th>AXIS</th>
+                                    <th>V/A</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="section-heading">DISTANCE</td>
+                                    <td>${prescriptionData.rightDist.SPH}</td>
+                                    <td>${prescriptionData.rightDist.CYL}</td>
+                                    <td>${prescriptionData.rightDist.AXIS}</td>
+                                    <td>${prescriptionData.rightDist.VA}</td>
+                                </tr>
+                                <tr>
+                                    <td class="section-heading">NEAR (ADD)</td>
+                                    <td>${prescriptionData.rightAdd.SPH}</td>
+                                    <td>${prescriptionData.rightAdd.CYL}</td>
+                                    <td>${prescriptionData.rightAdd.AXIS}</td>
+                                    <td>${prescriptionData.rightAdd.VA}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Left Eye -->
+                    <div class="eye-prescription">
+                        <h3>LEFT EYE (OS)</h3>
+                        <table class="prescription-table">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>SPH</th>
+                                    <th>CYL</th>
+                                    <th>AXIS</th>
+                                    <th>V/A</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="section-heading">DISTANCE</td>
+                                    <td>${prescriptionData.leftDist.SPH}</td>
+                                    <td>${prescriptionData.leftDist.CYL}</td>
+                                    <td>${prescriptionData.leftDist.AXIS}</td>
+                                    <td>${prescriptionData.leftDist.VA}</td>
+                                </tr>
+                                <tr>
+                                    <td class="section-heading">NEAR (ADD)</td>
+                                    <td>${prescriptionData.leftAdd.SPH}</td>
+                                    <td>${prescriptionData.leftAdd.CYL}</td>
+                                    <td>${prescriptionData.leftAdd.AXIS}</td>
+                                    <td>${prescriptionData.leftAdd.VA}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Options and Payment -->
+                <div class="options-payment-section">
+                    <table class="options-table">
+                        <thead>
+                            <tr>
+                                <th colspan="4">RECOMMENDED OPTIONS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Vision Type:</strong></td>
+                                <td>${visionType}</td>
+                                <td><strong>Lens Type:</strong></td>
+                                <td>${lensType}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Frame Type:</strong></td>
+                                <td>${frameType}</td>
+                                <td><strong>Payment Mode:</strong></td>
+                                <td>${paymentMode}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <table class="options-table">
+                        <tr>
+                            <th style="width: 30%;">Total Amount</th>
+                            <td style="width: 70%; font-size: 16px; font-weight: bold;">
+                                ₹ ${amount}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <!-- Footer -->
+                <div class="footer">
+                    <div class="optometrist-signature">
+                        <div class="signature-line">
+                            Authorized Signature<br>
+                            <strong>${optometristName}</strong>
+                        </div>
+                    </div>
+                    
+                    <div class="thank-you">
+                        <p><strong>Thank you for choosing ${clinicName}</strong></p>
+                        <p>We value your trust in our vision care services</p>
+                        <p>For any queries, please contact: ${contactNumber}</p>
+                    </div>
+                </div>
             </div>
+            
+            <div class="no-print" style="text-align: center; margin-top: 20px; padding: 10px;">
+                <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    Print Prescription
+                </button>
+                <button onclick="window.close()" style="padding: 10px 20px; font-size: 16px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; margin-left: 10px;">
+                    Close Window
+                </button>
+            </div>
+
             <script>
-                // Auto-print and close
+                // Auto-print when page loads
                 window.onload = function() {
-                    window.print();
+                    // Small delay to ensure everything is rendered
                     setTimeout(function() {
-                        window.close();
+                        window.print();
                     }, 500);
                 };
                 
-                // Fallback close if print dialog is cancelled
+                // Close window after print or if user cancels
                 window.onafterprint = function() {
                     setTimeout(function() {
                         window.close();
                     }, 1000);
                 };
-            <\/script>
+                
+                // Fallback: close after 10 seconds if print dialog doesn't trigger
+                setTimeout(function() {
+                    if (!window.closed) {
+                        window.close();
+                    }
+                }, 10000);
+            </script>
         </body>
         </html>
     `;
