@@ -59,7 +59,7 @@ body {
 /* Form Container */
 .form-container {
     padding: 30px;
-    display: none; /* Hide all by default, JS manages 'active' class */
+    display: none;
 }
 
 .form-container.active {
@@ -264,6 +264,11 @@ body {
     line-height: 1.5;
 }
 
+/* Hidden Utility */
+.hidden {
+    display: none !important;
+}
+
 /* Loading State */
 .loading {
     position: relative;
@@ -342,178 +347,22 @@ body {
     margin-top: 5px;
 }
 
-/* Style for valid/invalid inputs */
-.input-with-error {
-    border-color: #dc3545 !important;
-    background: #fef7f7 !important; /* Lighter red background */
-}
-
-.input-with-success {
-    border-color: #28a745 !important;
-    background: #f7fff7 !important; /* Lighter green background */
-}
-
-/* Security Level Indicators */
-.password-strength {
-    margin-top: 5px;
-    height: 4px;
-    border-radius: 2px;
-    transition: all 0.3s ease;
-}
-
-.password-strength.weak {
-    background: #dc3545;
-    width: 25%;
-}
-
-.password-strength.fair {
-    background: #ffc107;
-    width: 50%;
-}
-
-.password-strength.good {
-    background: #17a2b8;
-    width: 75%;
-}
-
-.password-strength.strong {
-    background: #28a745;
-    width: 100%;
-}
-
-.password-hint {
-    font-size: 12px;
-    color: #666;
-    margin-top: 5px;
-    line-height: 1.4;
-}
-
-/* Warning System */
-.security-warning {
-    padding: 12px 15px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    font-size: 14px;
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-}
-
-.security-warning.warning {
-    background: #fff3cd;
-    border: 1px solid #ffeaa7;
-    color: #856404;
-}
-
-.security-warning.danger {
-    background: #f8d7da;
-    border: 1px solid #f5c6cb;
-    color: #721c24;
-}
-
-.security-warning.info {
-    background: #d1ecf1;
-    border: 1px solid #bee5eb;
-    color: #0c5460;
-}
-
-.warning-icon {
-    font-size: 16px;
-    flex-shrink: 0;
-}
-
-/* Account Lock Warning */
-.account-lock-warning {
-    background: #f8d7da;
-    border: 1px solid #dc3545;
-    color: #721c24;
-    padding: 20px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    text-align: center;
-    box-shadow: 0 4px 10px rgba(220, 53, 69, 0.1);
-}
-
-.account-lock-timer {
-    font-size: 18px;
-    font-weight: bold;
-    margin: 10px 0;
-    color: #dc3545;
-}
-
-/* Attempts Counter */
-.attempts-counter {
-    text-align: center;
-    font-size: 12px;
-    color: #666;
-    margin: 10px 0;
-    padding: 5px;
-    border-radius: 4px;
-}
-
-.attempts-warning {
-    color: #dc3545;
-    font-weight: bold;
-    background: #f8d7da;
-    padding: 5px 10px;
-    border-radius: 4px;
-}
-
-/* Enhanced Password Requirements */
-.password-requirements {
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    padding: 15px;
-    margin-top: 10px;
-    font-size: 12px;
-}
-
-.password-requirements h4 {
-    margin: 0 0 10px 0;
-    color: #333;
-    font-size: 14px;
-}
-
-.requirement {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 5px;
-    transition: color 0.3s ease;
-}
-
-.requirement.met {
+/* Style for valid password match */
+input:valid + .toggle-password {
     color: #28a745;
 }
 
-.requirement.unmet {
-    color: #6c757d;
+/* Style for invalid password match */
+input:invalid + .toggle-password {
+    color: #dc3545;
 }
 
-.requirement-icon {
-    font-size: 14px;
+/* Success state for matching passwords */
+.password-match-success {
+    border-color: #28a745 !important;
 }
 
-/* Security Badge */
-.security-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    background: #e9ecef;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 11px;
-    margin-left: 10px;
-}
-
-.security-badge.secure {
-    background: #d4edda;
-    color: #155724;
-}
-
-/* Loading States */
-.security-loading {
-    opacity: 0.6;
-    pointer-events: none;
+/* Error state for non-matching passwords */
+.password-match-error {
+    border-color: #dc3545 !important;
 }
