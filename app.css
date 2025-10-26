@@ -993,3 +993,123 @@ button:disabled {
         font-size: 12px;
     }
 }
+
+/* PWA Installation Prompt Styles */
+.install-prompt {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    z-index: 10000;
+    border: 2px solid var(--primary-color);
+    animation: slideUp 0.3s ease;
+}
+
+.install-content {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    gap: 12px;
+}
+
+.install-text {
+    flex: 1;
+}
+
+.install-text strong {
+    display: block;
+    color: var(--dark-color);
+    font-size: 14px;
+}
+
+.install-text small {
+    color: var(--secondary-color);
+    font-size: 12px;
+}
+
+.install-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.install-content i {
+    font-size: 24px;
+    color: var(--primary-color);
+}
+
+/* Update Notification */
+.update-notification {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    background: var(--success-color);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    z-index: 10000;
+    animation: slideInRight 0.3s ease;
+}
+
+.update-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Status Messages */
+.status-message {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 10000;
+    min-width: 200px;
+    animation: slideInRight 0.3s ease;
+}
+
+/* Animations */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Offline-specific styles */
+body.offline .navbar {
+    background: linear-gradient(135deg, #6c757d, #495057) !important;
+}
+
+.offline-indicator {
+    background: var(--warning-color);
+    color: black;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    margin-left: 10px;
+}
+
+/* Print styles for PWA */
+@media print {
+    .install-prompt,
+    .update-notification,
+    .status-message {
+        display: none !important;
+    }
+}
