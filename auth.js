@@ -1,4 +1,4 @@
-// auth.js - PRODUCTION READY SECURE VERSION
+// auth.js - ENHANCED WITH PROPER USER VALIDATION
 
 // DOM Elements
 const loginForm = document.getElementById('loginForm');
@@ -16,8 +16,8 @@ let isRedirecting = false;
 
 // Security Configuration
 const SECURITY_CONFIG = {
-    maxLoginAttempts: 3,
-    lockoutDuration: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
+    maxLoginAttempts: 5,
+    lockoutDuration: 30 * 60 * 1000, // 30 minutes in milliseconds
     passwordMinLength: 8,
     requireStrongPassword: true
 };
@@ -54,6 +54,95 @@ function initializeAuth() {
     
     setupPasswordValidation();
     setupSecurityMonitoring();
+    setupRealTimeValidation();
+}
+
+function setupRealTimeValidation() {
+    // Real-time email validation for login
+    const loginEmailInput = document.getElementById('loginUsername');
+    if (loginEmailInput) {
+        loginEmailInput.addEventListener('blur', function() {
+            validateEmailFormat(this.value, 'login');
+        });
+    }
+
+    // Real-time email validation for register
+    const registerEmailInput = document.getElementById('registerEmail');
+    if (registerEmailInput) {
+        registerEmailInput.addEventListener('blur', function() {
+            validateEmailFormat(this.value, 'register');
+            checkEmailAvailability(this.value);
+        });
+    }
+}
+
+function validateEmailFormat(email, formType) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
+    if (!email) return true;
+    
+    if (!emailRegex.test(email)) {
+        showFieldError(`${formType === 'login' ? 'loginUsername' : 'registerEmail'}`, 'Please enter a valid email address');
+        return false;
+    } else {
+        clearFieldError(`${formType === 'login' ? 'loginUsername' : 'registerEmail'}`);
+        return true;
+    }
+}
+
+async function checkEmailAvailability(email) {
+    if (!email || !validateEmailFormat(email, 'register')) return;
+
+    try {
+        // Check if email already exists by attempting to fetch sign-in methods
+        const methods = await auth.fetchSignInMethodsForEmail(email);
+        if (methods && methods.length > 0) {
+            showFieldError('registerEmail', 'An account with this email already exists');
+            return false;
+        } else {
+            clearFieldError('registerEmail');
+            return true;
+        }
+    } catch (error) {
+        console.log('Email availability check:', error);
+        return true; // Assume available if check fails
+    }
+}
+
+function showFieldError(fieldId, message) {
+    const field = document.getElementById(fieldId);
+    if (!field) return;
+
+    // Remove existing error
+    clearFieldError(fieldId);
+
+    // Add error styling
+    field.classList.add('input-with-error');
+    
+    // Create error message element
+    const errorElement = document.createElement('div');
+    errorElement.className = 'field-error-message';
+    errorElement.textContent = message;
+    errorElement.style.cssText = `
+        color: #dc3545;
+        font-size: 12px;
+        margin-top: 5px;
+        display: block;
+    `;
+    
+    field.parentNode.appendChild(errorElement);
+}
+
+function clearFieldError(fieldId) {
+    const field = document.getElementById(fieldId);
+    if (!field) return;
+
+    field.classList.remove('input-with-error');
+    
+    const existingError = field.parentNode.querySelector('.field-error-message');
+    if (existingError) {
+        existingError.remove();
+    }
 }
 
 function loadRememberedUser() {
@@ -200,7 +289,7 @@ function checkPasswordStrength(password) {
     return strengthLevel;
 }
 
-// Enhanced Login Handler
+// Enhanced Login Handler with proper user validation
 async function handleLogin(event) {
     event.preventDefault();
     
@@ -213,8 +302,19 @@ async function handleLogin(event) {
     const password = document.getElementById('loginPassword').value.trim();
     const rememberMe = document.getElementById('rememberMe').checked;
 
+    // Clear previous errors
+    clearFormErrors();
+
+    // Validation
     if (!email || !password) {
         showSecurityWarning('Please fill in all fields', 'warning');
+        if (!email) showFieldError('loginUsername', 'Email is required');
+        if (!password) showFieldError('loginPassword', 'Password is required');
+        return;
+    }
+
+    // Validate email format
+    if (!validateEmailFormat(email, 'login')) {
         return;
     }
 
@@ -223,14 +323,29 @@ async function handleLogin(event) {
     setButtonLoading(loginButton, true, 'Login');
 
     try {
+        // First, check if user exists
+        const signInMethods = await auth.fetchSignInMethodsForEmail(email);
+        
+        if (signInMethods.length === 0) {
+            // User doesn't exist
+            loginAttempts++;
+            saveSecurityState();
+            showSecurityWarning('No account found with this email address. Please check your email or register for a new account.', 'warning');
+            showFieldError('loginUsername', 'Account not found');
+            updateLoginAttemptsDisplay();
+            return;
+        }
+
+        // User exists, attempt login
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         const user = userCredential.user;
 
+        // Successful login
         resetSecurityState();
 
         if (rememberMe) {
             localStorage.setItem('rememberedUsername', email);
-            localStorage.setItem('rememberMe', true);
+            localStorage.setItem('rememberMe', 'true');
         } else {
             localStorage.removeItem('rememberedUsername');
             localStorage.removeItem('rememberMe');
@@ -239,50 +354,88 @@ async function handleLogin(event) {
         localStorage.setItem('username', email);
         localStorage.setItem('userId', user.uid);
         
-        console.log('Login successful');
+        console.log('Login successful - redirecting to app');
 
     } catch (error) {
         console.error('Login error:', error);
-        await handleFailedLoginAttempt(error);
+        await handleFailedLoginAttempt(error, email);
     } finally {
         setButtonLoading(loginButton, false, 'Login');
     }
 }
 
-// Handle Failed Login Attempts
-async function handleFailedLoginAttempt(error) {
+// Enhanced failed login handler
+async function handleFailedLoginAttempt(error, email) {
     loginAttempts++;
     saveSecurityState();
 
     const remainingAttempts = SECURITY_CONFIG.maxLoginAttempts - loginAttempts;
     
+    // Clear previous errors
+    clearFieldError('loginUsername');
+    clearFieldError('loginPassword');
+
     if (loginAttempts >= SECURITY_CONFIG.maxLoginAttempts) {
         accountLockedUntil = Date.now() + SECURITY_CONFIG.lockoutDuration;
         saveSecurityState();
         
         showAccountLockWarning();
         showSecurityWarning(
-            `Account temporarily locked due to too many failed attempts. Please try again in 24 hours or use password reset.`,
+            `Account temporarily locked due to too many failed attempts. Please try again in 30 minutes or reset your password.`,
             'danger'
         );
-    } else if (loginAttempts === 1) {
-        showSecurityWarning(
-            `Invalid credentials. ${remainingAttempts} attempts remaining.`,
-            'warning'
-        );
-    } else if (loginAttempts === 2) {
-        showSecurityWarning(
-            `Invalid credentials. Last attempt before account lock!`,
-            'danger'
-        );
+        
+        // Send email notification about lockout
+        await sendLockoutNotification(email);
     } else {
-        handleAuthError(error);
+        // Show specific error messages
+        switch (error.code) {
+            case 'auth/wrong-password':
+                showFieldError('loginPassword', 'Incorrect password');
+                showSecurityWarning(
+                    `Incorrect password. ${remainingAttempts} attempt${remainingAttempts !== 1 ? 's' : ''} remaining.`,
+                    remainingAttempts <= 2 ? 'danger' : 'warning'
+                );
+                break;
+                
+            case 'auth/user-disabled':
+                showSecurityWarning('This account has been disabled. Please contact support.', 'danger');
+                break;
+                
+            case 'auth/invalid-credential':
+            case 'auth/invalid-email':
+                showFieldError('loginUsername', 'Invalid email address');
+                showSecurityWarning('Please check your email address and try again.', 'warning');
+                break;
+                
+            case 'auth/too-many-requests':
+                showSecurityWarning('Too many login attempts. Please try again later.', 'danger');
+                break;
+                
+            default:
+                showSecurityWarning('Login failed. Please check your credentials and try again.', 'warning');
+        }
     }
     
     updateLoginAttemptsDisplay();
 }
 
-// Enhanced Registration
+async function sendLockoutNotification(email) {
+    try {
+        // In a real application, you would send this to your backend
+        console.log(`Account lockout notification for: ${email}`);
+        // await db.collection('securityLogs').add({
+        //     email: email,
+        //     type: 'account_lockout',
+        //     timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        //     attempts: loginAttempts
+        // });
+    } catch (error) {
+        console.error('Failed to log lockout:', error);
+    }
+}
+
+// Enhanced Registration with proper validation
 async function handleRegister(event) {
     event.preventDefault();
     
@@ -290,33 +443,63 @@ async function handleRegister(event) {
     const password = document.getElementById('registerPassword').value.trim();
     const confirmPassword = document.getElementById('registerConfirmPassword').value.trim();
     
+    // Clear previous errors
     clearFormErrors();
     const passwordMatchError = document.getElementById('passwordMatchError');
     if (passwordMatchError) passwordMatchError.style.display = 'none';
 
     // Validation
-    if (!email || !password || !confirmPassword) {
-        showSecurityWarning('Please fill in all fields.', 'warning');
+    let hasErrors = false;
+
+    if (!email) {
+        showFieldError('registerEmail', 'Email is required');
+        hasErrors = true;
+    } else if (!validateEmailFormat(email, 'register')) {
+        hasErrors = true;
+    }
+
+    if (!password) {
+        showFieldError('registerPassword', 'Password is required');
+        hasErrors = true;
+    }
+
+    if (!confirmPassword) {
+        showFieldError('registerConfirmPassword', 'Please confirm your password');
+        hasErrors = true;
+    }
+
+    if (hasErrors) {
+        showSecurityWarning('Please fix the errors above', 'warning');
         return;
     }
 
+    // Check password strength
     const passwordStrength = checkPasswordStrength(password);
     if (SECURITY_CONFIG.requireStrongPassword && passwordStrength === 'weak') {
-        showSecurityWarning('Please use a stronger password.', 'warning');
+        showSecurityWarning('Please use a stronger password. Your password should include uppercase letters, numbers, and special characters.', 'warning');
         return;
     }
 
+    // Check password match
     if (password !== confirmPassword) {
         if (passwordMatchError) {
             passwordMatchError.textContent = 'Passwords do not match';
             passwordMatchError.style.display = 'block';
         }
-        showSecurityWarning('Passwords do not match.', 'warning');
+        showFieldError('registerConfirmPassword', 'Passwords do not match');
+        showSecurityWarning('Passwords do not match. Please check and try again.', 'warning');
+        return;
+    }
+
+    // Check email availability
+    const isEmailAvailable = await checkEmailAvailability(email);
+    if (!isEmailAvailable) {
+        showSecurityWarning('An account with this email already exists. Please use a different email or try logging in.', 'warning');
         return;
     }
 
     const registerButton = document.getElementById('registerButton');
-    setButtonLoading(registerButton, true, 'Register');
+    setButtonLoading(registerButton, true, 'Creating Account...');
 
     try {
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
@@ -326,14 +509,20 @@ async function handleRegister(event) {
         await db.collection('users').doc(user.uid).set({
             email: email,
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+            lastLogin: firebase.firestore.FieldValue.serverTimestamp(),
+            profileCompleted: false
         });
 
         localStorage.setItem('freshRegistration', 'true');
         localStorage.setItem('username', email);
         localStorage.setItem('userId', user.uid);
 
-        showSuccess('Registration successful! Redirecting to profile setup...');
+        showSuccess('Registration successful! Setting up your account...');
+        
+        // Redirect after short delay
+        setTimeout(() => {
+            window.location.href = 'app.html';
+        }, 2000);
         
     } catch (error) {
         console.error('Registration error:', error);
@@ -355,6 +544,7 @@ function setupPasswordValidation() {
 
             if (confirmPassword === '') {
                 passwordMatchError.style.display = 'none';
+                clearFieldError('registerConfirmPassword');
                 return;
             }
 
@@ -362,9 +552,11 @@ function setupPasswordValidation() {
                 passwordMatchError.textContent = 'Passwords do not match';
                 passwordMatchError.style.display = 'block';
                 confirmPasswordInput.style.borderColor = '#dc3545';
+                showFieldError('registerConfirmPassword', 'Passwords do not match');
             } else {
                 passwordMatchError.style.display = 'none';
                 confirmPasswordInput.style.borderColor = '#28a745';
+                clearFieldError('registerConfirmPassword');
             }
         };
 
@@ -373,26 +565,51 @@ function setupPasswordValidation() {
     }
 }
 
+// Enhanced Forgot Password with user validation
 async function handleForgotPassword(event) {
     event.preventDefault();
     
     const email = document.getElementById('forgotUsername').value.trim();
 
+    // Clear previous errors
+    clearFormErrors();
+
     if (!email) {
+        showFieldError('forgotUsername', 'Email is required');
         showSecurityWarning('Please enter your email address', 'warning');
         return;
     }
 
+    if (!validateEmailFormat(email, 'forgot')) {
+        return;
+    }
+
     const resetButton = forgotPasswordFormElement.querySelector('button[type="submit"]');
-    setButtonLoading(resetButton, true, 'Sending...');
+    setButtonLoading(resetButton, true, 'Checking...');
 
     try {
+        // Check if user exists before sending reset email
+        const signInMethods = await auth.fetchSignInMethodsForEmail(email);
+        
+        if (signInMethods.length === 0) {
+            showFieldError('forgotUsername', 'No account found with this email');
+            showSecurityWarning('No account found with this email address. Please check your email or register for a new account.', 'warning');
+            return;
+        }
+
+        // User exists, send reset email
         await auth.sendPasswordResetEmail(email);
-        showSuccessMessage('Password reset email sent! Check your inbox.');
+        
+        showSuccessMessage('Password reset email sent! Check your inbox for instructions to reset your password.');
+        
     } catch (error) {
         console.error('Password reset error:', error);
+        
         if (error.code === 'auth/too-many-requests') {
-            showSecurityWarning('Too many reset attempts. Please try again later.', 'danger');
+            showSecurityWarning('Too many reset attempts. Please try again in a few minutes.', 'danger');
+        } else if (error.code === 'auth/user-not-found') {
+            showFieldError('forgotUsername', 'No account found with this email');
+            showSecurityWarning('No account found with this email address.', 'warning');
         } else {
             handleAuthError(error);
         }
@@ -469,14 +686,14 @@ function showAccountLockWarning() {
     if (!accountLockedUntil) return;
     
     const timeLeft = accountLockedUntil - Date.now();
-    const hoursLeft = Math.ceil(timeLeft / (60 * 60 * 1000));
+    const minutesLeft = Math.ceil(timeLeft / (60 * 1000));
     
     const lockDiv = document.createElement('div');
     lockDiv.className = 'account-lock-warning';
     lockDiv.innerHTML = `
         <h4>🔒 Account Temporarily Locked</h4>
         <p>Too many failed login attempts. For security reasons, your account has been locked.</p>
-        <div class="account-lock-timer">Time remaining: ${hoursLeft} hours</div>
+        <div class="account-lock-timer">Time remaining: ${minutesLeft} minutes</div>
         <p style="margin-top: 10px;">
             <a href="#" onclick="showForgotPassword()" style="color: #007bff; text-decoration: underline;">
                 Reset your password to unlock immediately
@@ -500,7 +717,7 @@ function updateLoginAttemptsDisplay() {
     if (loginAttempts > 0) {
         const remainingAttempts = SECURITY_CONFIG.maxLoginAttempts - loginAttempts;
         if (remainingAttempts > 0) {
-            attemptsCounter.innerHTML = `<span class="attempts-warning">${loginAttempts} failed attempt(s). ${remainingAttempts} remaining.</span>`;
+            attemptsCounter.innerHTML = `<span class="attempts-warning">${loginAttempts} failed attempt${loginAttempts !== 1 ? 's' : ''}. ${remainingAttempts} remaining.</span>`;
         } else {
             attemptsCounter.innerHTML = `<span class="attempts-warning">Account locked due to too many failed attempts.</span>`;
         }
@@ -550,12 +767,26 @@ function setButtonLoading(button, isLoading, originalText) {
 }
 
 function clearFormErrors() {
-    document.querySelectorAll('.error-message').forEach(error => {
-        error.style.display = 'none';
+    // Clear field errors
+    document.querySelectorAll('.field-error-message').forEach(error => {
+        error.remove();
     });
     
     document.querySelectorAll('.input-with-error').forEach(input => {
         input.classList.remove('input-with-error');
+    });
+    
+    // Clear password match error
+    const passwordMatchError = document.getElementById('passwordMatchError');
+    if (passwordMatchError) {
+        passwordMatchError.style.display = 'none';
+    }
+    
+    // Clear security warnings
+    document.querySelectorAll('.security-warning').forEach(warning => {
+        if (!warning.closest('.account-lock-warning')) {
+            warning.remove();
+        }
     });
 }
 
@@ -604,7 +835,7 @@ function showLogin() {
     hideAllForms();
     loginForm.classList.add('active');
     loginForm.style.display = 'block';
-    document.querySelectorAll('.security-warning, .account-lock-warning').forEach(warning => warning.remove());
+    clearFormErrors();
     updateLoginAttemptsDisplay();
 }
 
@@ -612,23 +843,27 @@ function showRegister() {
     hideAllForms();
     registerForm.classList.add('active');
     registerForm.style.display = 'block';
-    document.querySelectorAll('.security-warning, .account-lock-warning').forEach(warning => warning.remove());
+    clearFormErrors();
 }
 
 function showForgotPassword() {
     hideAllForms();
     forgotPasswordForm.classList.add('active');
     forgotPasswordForm.style.display = 'block';
-    document.querySelectorAll('.security-warning, .account-lock-warning').forEach(warning => warning.remove());
+    clearFormErrors();
 }
 
 // Utility Functions
 function togglePassword(fieldId) {
     const passwordField = document.getElementById(fieldId);
+    const toggleButton = passwordField.parentElement.querySelector('.toggle-password');
+    
     if (passwordField.type === 'password') {
         passwordField.type = 'text';
+        if (toggleButton) toggleButton.textContent = '🙈';
     } else {
         passwordField.type = 'password';
+        if (toggleButton) toggleButton.textContent = '👁️';
     }
 }
 
