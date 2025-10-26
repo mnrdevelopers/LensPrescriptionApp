@@ -1637,3 +1637,148 @@ body.offline .navbar {
         font-size: 7px;
     }
 }
+
+/* Active Navigation States */
+.nav-link-custom.active {
+    color: var(--premium-navy) !important;
+    background: var(--premium-gold);
+    box-shadow: 0 4px 15px rgba(251, 191, 36, 0.5);
+    font-weight: 700;
+}
+
+/* Filter Section Styles */
+.filter-section {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #e9ecef;
+}
+
+.filter-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    align-items: end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-group label {
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: var(--dark-color);
+    font-size: 14px;
+}
+
+.filter-group input,
+.filter-group select {
+    padding: 10px;
+    border: 2px solid #e9ecef;
+    border-radius: 5px;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+}
+
+.filter-group input:focus,
+.filter-group select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 15px;
+}
+
+.filter-buttons .btn {
+    padding: 8px 16px;
+    font-size: 14px;
+}
+
+/* Enhanced Back Button */
+.btn-back-section {
+    background: var(--secondary-color);
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-bottom: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-back-section:hover {
+    background: #5a6268;
+    transform: translateX(-3px);
+}
+
+/* Date Range Picker */
+.date-range {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+/* Report Filters */
+.report-filters {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px 0;
+    border: 1px solid #e9ecef;
+}
+
+/* Loading State for Filters */
+.btn-loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.btn-loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* No Results Message */
+.no-results {
+    text-align: center;
+    padding: 40px;
+    color: var(--secondary-color);
+    font-style: italic;
+}
+
+/* Prescription Group Headers */
+.prescription-group-header {
+    background: linear-gradient(135deg, var(--primary-color), #0056b3) !important;
+    color: white !important;
+    font-weight: bold !important;
+    font-size: 16px !important;
+    padding: 15px !important;
+}
+
+.prescription-group-header td {
+    color: white !important;
+    font-weight: bold !important;
+}
