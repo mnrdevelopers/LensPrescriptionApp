@@ -1,5 +1,6 @@
-// service-worker.js - FIXED VERSION
-const CACHE_NAME = 'lens-prescription-v4';
+// service-worker.js - UPDATED VERSION WITH CORS SUPPORT
+
+const CACHE_NAME = 'lens-prescription-v5';
 const ASSETS = [
   '/',
   '/index.html',
@@ -43,14 +44,35 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch event - CRITICAL FIX: Don't cache HTML files aggressively
+// Fetch event - Enhanced for CORS and external resources
 self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') return;
 
   const url = new URL(event.request.url);
   
-  // Don't cache Firebase requests
+  // Handle external resources (ImgBB, etc.) with CORS
+  if (url.href.includes('imgbb.com') || 
+      url.href.includes('api.imgbb.com')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          // Cache the CORS response
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
+          return response;
+        })
+        .catch(() => {
+          // Fallback to cache if network fails
+          return caches.match(event.request);
+        })
+    );
+    return;
+  }
+
+  // Don't cache other external requests aggressively
   if (url.href.includes('firebase') || 
       url.href.includes('googleapis') ||
       url.href.includes('gstatic.com')) {
