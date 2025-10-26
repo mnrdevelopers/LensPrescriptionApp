@@ -639,7 +639,11 @@ function showAccountLockWarning() {
         <h4>🔒 Account Temporarily Locked</h4>
         <p>Too many failed login attempts. For security reasons, your account has been locked.</p>
         <div class="account-lock-timer">Time remaining: ${hoursLeft} hours</div>
-        <p><a href="#" onclick="showAccountRecovery()">Use account recovery to reset your password</a></p>
+        <p style="margin-top: 10px;">
+            <a href="#" onclick="showAccountRecovery()" style="color: #007bff; text-decoration: underline;">
+                Use Account Recovery to unlock your account
+            </a>
+        </p>
     `;
     
     // Remove existing lock warnings
