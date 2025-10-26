@@ -4,6 +4,11 @@
 let currentPrescriptionData = null;
 let isFormFilled = false;
 let deferredPrompt;
+// Flag to track if the user profile is complete
+let isProfileComplete = false;
+// Store the last valid section to return to after setup
+let lastValidSection = 'dashboard'; 
+
 
 // 🛑 CRITICAL FIX: Use onAuthStateChanged to prevent the redirect loop.
 firebase.auth().onAuthStateChanged((user) => {
@@ -34,15 +39,12 @@ function initializeApp() {
     // Set current date first
     setCurrentDate();
     
-    // Load user profile
+    // Load user profile and check for completion
     loadUserProfile();
     
     // Setup event listeners
     setupEventListeners();
     setupPWA();
-    
-    // Show dashboard by default
-    showDashboard();
     
     console.log('App initialized successfully');
 }
@@ -129,42 +131,103 @@ function setupPWA() {
 }
 
 // Navigation Functions
+
+/**
+ * Checks if profile is complete before navigating. Forces user to setup screen if not.
+ * @param {function} navFunction The function to call if profile is complete.
+ * @param {string} sectionName The name of the section we are trying to navigate to.
+ */
+function navigateIfProfileComplete(navFunction, sectionName) {
+    if (isProfileComplete) {
+        navFunction();
+        lastValidSection = sectionName; // Update last valid section
+    } else {
+        showProfileSetup(true); // Force profile setup
+    }
+}
+
 function showDashboard() {
-    hideAllSections();
-    const dashboardSection = document.getElementById('dashboardSection');
-    if (dashboardSection) dashboardSection.classList.add('active');
-    updateActiveNavLink('dashboard');
-    // Ensure history state reflects the dashboard
-    history.pushState({ page: 'dashboard' }, 'Dashboard', 'app.html#dashboard');
+    navigateIfProfileComplete(() => {
+        hideAllSections();
+        const dashboardSection = document.getElementById('dashboardSection');
+        if (dashboardSection) dashboardSection.classList.add('active');
+        updateActiveNavLink('dashboard');
+        history.pushState({ page: 'dashboard' }, 'Dashboard', 'app.html#dashboard');
+    }, 'dashboard');
 }
 
 function showPrescriptionForm() {
-    hideAllSections();
-    const formSection = document.getElementById('prescriptionFormSection');
-    if (formSection) formSection.classList.add('active');
-    updateActiveNavLink('prescription');
-    resetForm();
-    // Ensure history state reflects the form
-    history.pushState({ page: 'form' }, 'Add Prescription', 'app.html#form');
+    navigateIfProfileComplete(() => {
+        hideAllSections();
+        const formSection = document.getElementById('prescriptionFormSection');
+        if (formSection) formSection.classList.add('active');
+        updateActiveNavLink('prescription');
+        resetForm();
+        history.pushState({ page: 'form' }, 'Add Prescription', 'app.html#form');
+    }, 'form');
 }
 
 function showPrescriptions() {
-    hideAllSections();
-    const prescriptionsSection = document.getElementById('prescriptionsSection');
-    if (prescriptionsSection) prescriptionsSection.classList.add('active');
-    updateActiveNavLink('prescriptions');
-    fetchPrescriptions();
-    // Ensure history state reflects the list
-    history.pushState({ page: 'prescriptions' }, 'View Prescriptions', 'app.html#prescriptions');
+    navigateIfProfileComplete(() => {
+        hideAllSections();
+        const prescriptionsSection = document.getElementById('prescriptionsSection');
+        if (prescriptionsSection) prescriptionsSection.classList.add('active');
+        updateActiveNavLink('prescriptions');
+        fetchPrescriptions();
+        history.pushState({ page: 'prescriptions' }, 'View Prescriptions', 'app.html#prescriptions');
+    }, 'prescriptions');
 }
 
 function showReports() {
+    navigateIfProfileComplete(() => {
+        hideAllSections();
+        const reportsSection = document.getElementById('reportsSection');
+        if (reportsSection) reportsSection.classList.add('active');
+        updateActiveNavLink('reports');
+        history.pushState({ page: 'reports' }, 'Reports', 'app.html#reports');
+    }, 'reports');
+}
+
+/**
+ * Shows the dedicated profile setup screen.
+ * @param {boolean} isForced True if the user is being forced to set up the profile (e.g., after registration).
+ */
+function showProfileSetup(isForced) {
     hideAllSections();
-    const reportsSection = document.getElementById('reportsSection');
-    if (reportsSection) reportsSection.classList.add('active');
-    updateActiveNavLink('reports');
-    // Ensure history state reflects the reports
-    history.pushState({ page: 'reports' }, 'Reports', 'app.html#reports');
+    const setupSection = document.getElementById('profileSetupSection');
+    if (setupSection) setupSection.classList.add('active');
+    
+    // Disable navigation if forced
+    const navButtons = document.querySelectorAll('.nav-link:not(.btn-logout)');
+    navButtons.forEach(btn => btn.style.pointerEvents = isForced ? 'none' : 'auto');
+    
+    // Hide continue button if just editing
+    const saveBtn = document.getElementById('saveSetupProfileBtn');
+    if (saveBtn) {
+        saveBtn.textContent = isForced ? 'Save Profile & Continue' : 'Save Changes';
+    }
+
+    // Populate current data for editing
+    if (!isForced) {
+        // If profile is already complete, use the data loaded in updateProfileUI
+        const clinicName = document.getElementById('clinicName')?.textContent;
+        const optometristName = document.getElementById('optometristName')?.textContent;
+        const address = document.getElementById('clinicAddress')?.textContent;
+        const contactNumber = document.getElementById('contactNumber')?.textContent;
+        
+        document.getElementById('setupClinicName').value = clinicName || '';
+        document.getElementById('setupOptometristName').value = optometristName || '';
+        document.getElementById('setupAddress').value = address || '';
+        document.getElementById('setupContactNumber').value = contactNumber || '';
+    } else {
+         // Clear fields for new user or prompt
+         document.getElementById('setupClinicName').value = '';
+         document.getElementById('setupOptometristName').value = '';
+         document.getElementById('setupAddress').value = '';
+         document.getElementById('setupContactNumber').value = '';
+    }
+    
+    history.pushState({ page: 'setup' }, 'Profile Setup', 'app.html#setup');
 }
 
 function showPreview(prescriptionData = null) {
@@ -200,68 +263,129 @@ async function loadUserProfile() {
 
     console.log('Loading user profile for:', user.uid);
 
+    // Check for fresh registration flag
+    const isFreshRegistration = localStorage.getItem('freshRegistration') === 'true';
+    if (isFreshRegistration) {
+        localStorage.removeItem('freshRegistration');
+    }
+    
+    let userData = null;
+
     try {
         const doc = await db.collection('users').doc(user.uid).get();
         
         if (doc.exists) {
-            const userData = doc.data();
+            userData = doc.data();
             console.log('Loaded user profile from Firestore:', userData);
-            updateProfileUI(userData);
             
-            // Also update localStorage as backup
-            localStorage.setItem('userProfile', JSON.stringify(userData));
-        } else {
-            console.log('No user profile found in Firestore, checking localStorage...');
+            // Check if profile is sufficiently complete
+            const isDataValid = userData.clinicName && userData.optometristName;
             
-            // CRITICAL FIX: Check localStorage as fallback
-            const localProfile = localStorage.getItem('userProfile');
-            if (localProfile) {
-                console.log('Found profile in localStorage:', localProfile);
-                const userData = JSON.parse(localProfile);
+            if (isDataValid) {
+                isProfileComplete = true;
                 updateProfileUI(userData);
-                
-                // Also save this back to Firestore
-                await db.collection('users').doc(user.uid).set(userData, { merge: true });
-                console.log('Profile restored from localStorage to Firestore');
-            } else {
-                console.log('No profile found anywhere, creating default...');
-                // Create a default profile if none exists
-                const defaultProfile = {
-                    clinicName: 'Your Clinic Name',
-                    optometristName: 'Optometrist Name',
-                    address: 'Clinic Address',
-                    contactNumber: 'Contact Number',
-                    email: user.email,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                };
-                
-                await db.collection('users').doc(user.uid).set(defaultProfile);
-                console.log('Default profile created:', defaultProfile);
-                updateProfileUI(defaultProfile);
+                localStorage.setItem('userProfile', JSON.stringify(userData));
+                showDashboard(); // Default to dashboard if everything is fine
+                return;
             }
+            
+            // If document exists but is incomplete/placeholder (e.g., from an old flow)
+            console.warn('User profile found but incomplete. Forcing setup.');
+            isProfileComplete = false;
+            showProfileSetup(true);
+
+        } else {
+            console.log('No user profile found in Firestore. Forcing setup.');
+            
+            // This is a brand new user after registration (or an old user whose doc was deleted)
+            isProfileComplete = false;
+            showProfileSetup(true);
         }
     } catch (error) {
         console.error('Error loading user profile from Firestore:', error);
-        
-        // CRITICAL FIX: Fallback to localStorage if Firestore fails
+        // Fallback to local storage or force setup if there's an error
         const localProfile = localStorage.getItem('userProfile');
         if (localProfile) {
-            console.log('Firestore failed, using localStorage backup:', localProfile);
-            const userData = JSON.parse(localProfile);
+            console.log('Firestore failed, using localStorage backup.');
+            userData = JSON.parse(localProfile);
+            isProfileComplete = userData.clinicName && userData.optometristName;
             updateProfileUI(userData);
+            if (isProfileComplete) {
+                showDashboard();
+            } else {
+                showProfileSetup(true);
+            }
         } else {
-            console.error('No backup profile available, using defaults');
-            // Fallback to default values
-            const fallbackData = {
-                clinicName: 'Your Clinic Name',
-                optometristName: 'Optometrist Name', 
-                address: 'Clinic Address',
-                contactNumber: 'Contact Number'
-            };
-            updateProfileUI(fallbackData);
+            console.error('No backup profile available, forcing setup.');
+            isProfileComplete = false;
+            showProfileSetup(true);
         }
     }
 }
+
+/**
+ * Saves the profile from the dedicated Profile Setup screen.
+ */
+async function saveSetupProfile() {
+    const user = auth.currentUser;
+    if (!user) {
+        console.error('No user logged in');
+        return;
+    }
+
+    const updatedData = {
+        clinicName: document.getElementById('setupClinicName').value.trim(),
+        optometristName: document.getElementById('setupOptometristName').value.trim(),
+        address: document.getElementById('setupAddress').value.trim(),
+        contactNumber: document.getElementById('setupContactNumber').value.trim(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        email: user.email // Ensure email is always saved
+    };
+    
+    // Enhanced validation (basic check)
+    if (!updatedData.clinicName || !updatedData.optometristName) {
+        alert('Clinic Name and Optometrist Name are required to continue.');
+        return;
+    }
+
+    try {
+        const saveBtn = document.getElementById('saveSetupProfileBtn');
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+        
+        // Use set to save or update the profile
+        await db.collection('users').doc(user.uid).set(updatedData, { merge: true });
+        
+        console.log('Profile setup/updated successfully!');
+        
+        // Update flags and UI
+        isProfileComplete = true;
+        updateProfileUI(updatedData);
+        localStorage.setItem('userProfile', JSON.stringify(updatedData));
+        
+        // Re-enable navigation
+        const navButtons = document.querySelectorAll('.nav-link:not(.btn-logout)');
+        navButtons.forEach(btn => btn.style.pointerEvents = 'auto');
+
+        // Go to the last valid page or dashboard
+        if (lastValidSection === 'dashboard' || !lastValidSection) {
+            showDashboard();
+        } else {
+            // This case handles users editing their profile from a different page (e.g., /#form)
+            // It uses the browser history back to return to the previous page.
+            window.history.back(); 
+        }
+
+    } catch (error) {
+        console.error('Error saving profile:', error);
+        alert('Error saving profile: ' + error.message);
+    } finally {
+        const saveBtn = document.getElementById('saveSetupProfileBtn');
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Profile & Continue'; // Reset text
+    }
+}
+
 
 function updateProfileUI(userData) {
     console.log('Updating UI with user data:', userData);
@@ -271,66 +395,40 @@ function updateProfileUI(userData) {
         return;
     }
     
-    // Update main form - FIXED: Using correct element IDs from app.html
-    const clinicNameElement = document.getElementById('clinicName');
-    const clinicAddressElement = document.getElementById('clinicAddress');
-    const optometristNameElement = document.getElementById('optometristName');
-    const contactNumberElement = document.getElementById('contactNumber');
+    // Update main form sections and preview sections
+    const fields = [
+        { id: 'clinicName', text: userData.clinicName || 'Your Clinic Name' },
+        { id: 'clinicAddress', text: userData.address || 'Clinic Address' },
+        { id: 'optometristName', text: userData.optometristName || 'Optometrist Name' },
+        { id: 'contactNumber', text: userData.contactNumber || 'Contact Number' },
+        { id: 'previewClinicName', text: userData.clinicName || 'Your Clinic Name' },
+        { id: 'previewClinicAddress', text: userData.address || 'Clinic Address' },
+        { id: 'previewOptometristName', text: userData.optometristName || 'Optometrist Name' },
+        { id: 'previewContactNumber', text: userData.contactNumber || 'Contact Number' },
+    ];
     
-    if (clinicNameElement) {
-        clinicNameElement.textContent = userData.clinicName || 'Your Clinic Name';
-        console.log('Updated clinic name:', clinicNameElement.textContent);
-    }
-    
-    if (clinicAddressElement) {
-        clinicAddressElement.textContent = userData.address || 'Clinic Address';
-        console.log('Updated clinic address:', clinicAddressElement.textContent);
-    }
-    
-    if (optometristNameElement) {
-        optometristNameElement.textContent = userData.optometristName || 'Optometrist Name';
-        console.log('Updated optometrist name:', optometristNameElement.textContent);
-    }
-    
-    if (contactNumberElement) {
-        contactNumberElement.textContent = userData.contactNumber || 'Contact Number';
-        console.log('Updated contact number:', contactNumberElement.textContent);
-    }
+    fields.forEach(field => {
+        const element = document.getElementById(field.id);
+        if (element) {
+            element.textContent = field.text;
+        }
+    });
 
-    // Update preview section - FIXED: Using correct element IDs
-    const previewClinicName = document.getElementById('previewClinicName');
-    const previewClinicAddress = document.getElementById('previewClinicAddress');
-    const previewOptometristName = document.getElementById('previewOptometristName');
-    const previewContactNumber = document.getElementById('previewContactNumber');
-    
-    if (previewClinicName) previewClinicName.textContent = userData.clinicName || 'Your Clinic Name';
-    if (previewClinicAddress) previewClinicAddress.textContent = userData.address || 'Clinic Address';
-    if (previewOptometristName) previewOptometristName.textContent = userData.optometristName || 'Optometrist Name';
-    if (previewContactNumber) previewContactNumber.textContent = userData.contactNumber || 'Contact Number';
+    // Update Dashboard Welcome Text
+    const dashboardText = document.getElementById('dashboardWelcomeText');
+    if (dashboardText) {
+        dashboardText.textContent = `Welcome, ${userData.optometristName || 'Optometrist'}!`;
+    }
     
     console.log('UI update completed');
 }
 
+// The old modal-based edit functions now redirect to the new setup screen
 function openEditProfile() {
+    // Hide the edit modal, as it's now handled by the dedicated section
     const modal = document.getElementById('editProfileModal');
-    if (modal) modal.style.display = 'flex';
-    
-    // Get current values from the displayed UI, not from Firestore
-    const clinicName = document.getElementById('clinicName')?.textContent;
-    const optometristName = document.getElementById('optometristName')?.textContent;
-    const address = document.getElementById('clinicAddress')?.textContent;
-    const contactNumber = document.getElementById('contactNumber')?.textContent;
-
-    const editClinicName = document.getElementById('editClinicName');
-    const editOptometristName = document.getElementById('editOptometristName');
-    const editAddress = document.getElementById('editAddress');
-    const editContactNumber = document.getElementById('editContactNumber');
-    
-    // Set values, filtering out placeholder text
-    if (editClinicName) editClinicName.value = (clinicName === 'Loading...' || clinicName === 'Your Clinic Name' || clinicName === 'Your Clinic Name (DB Error)') ? '' : clinicName;
-    if (editOptometristName) editOptometristName.value = (optometristName === 'Loading...' || optometristName === 'Optometrist Name') ? '' : optometristName;
-    if (editAddress) editAddress.value = (address === 'Please wait...' || address === 'Clinic Address') ? '' : address;
-    if (editContactNumber) editContactNumber.value = (contactNumber === 'Please wait...' || contactNumber === 'Contact Number') ? '' : contactNumber;
+    if (modal) modal.style.display = 'none'; 
+    showProfileSetup(false); // Go to profile setup/edit screen
 }
 
 function closeEditProfile() {
@@ -339,52 +437,20 @@ function closeEditProfile() {
 }
 
 async function saveProfile() {
-    const user = auth.currentUser;
-    if (!user) {
-        console.error('No user logged in');
-        alert('Please log in again');
-        return;
-    }
-
-    const updatedData = {
-        clinicName: document.getElementById('editClinicName').value.trim(),
-        optometristName: document.getElementById('editOptometristName').value.trim(),
-        address: document.getElementById('editAddress').value.trim(),
-        contactNumber: document.getElementById('editContactNumber').value.trim(),
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    };
-    
-    console.log('Saving profile data:', updatedData);
-    
-    // Enhanced validation
-    if (!updatedData.clinicName || !updatedData.optometristName) {
-        console.error('Profile Update Error: Clinic Name and Optometrist Name are required.');
-        alert('Clinic Name and Optometrist Name are required.');
-        return;
-    }
-
-    try {
-        // Use set with merge: true to update or create the document
-        await db.collection('users').doc(user.uid).set(updatedData, { merge: true });
-        
-        console.log('Profile updated successfully in Firestore!');
-        
-        // Reload the profile data to ensure UI is updated
-        await loadUserProfile();
-        
-        closeEditProfile();
-        
-        // Show success message
-        alert('Profile updated successfully!');
-        
-    } catch (error) {
-        console.error('Error updating profile in Firestore:', error);
-        alert('Error updating profile: ' + error.message);
-    }
+    // This function is for the modal, which is now deprecated.
+    // We redirect to the main setup screen instead.
+    alert('Please use the dedicated Edit Profile screen.');
+    showProfileSetup(false);
 }
 
 // Prescription Management
 async function submitPrescription() {
+    if (!isProfileComplete) {
+        alert('Please complete your Clinic Profile before adding prescriptions.');
+        showProfileSetup(true);
+        return;
+    }
+    
     const user = auth.currentUser;
     if (!user) {
         console.error('Authentication Error: User is not logged in.');
@@ -947,6 +1013,14 @@ function cancelExitAction() {
 
 function handleBrowserBack(event) {
     const currentState = history.state?.page;
+    
+    if (currentState === 'setup' && !isProfileComplete) {
+        // Prevent navigating away from the setup page if the profile is not complete
+        history.pushState({ page: 'setup' }, 'Profile Setup', 'app.html#setup');
+        alert('Please save your profile details to continue.');
+        return;
+    }
+    
     // Only show the modal if the user is leaving the form AND the form is filled
     if (currentState === 'form' && isFormFilled) {
         
@@ -1061,9 +1135,11 @@ window.showPrescriptionForm = showPrescriptionForm;
 window.showPrescriptions = showPrescriptions;
 window.showReports = showReports;
 window.showPreview = showPreview;
-window.openEditProfile = openEditProfile;
-window.closeEditProfile = closeEditProfile;
-window.saveProfile = saveProfile;
+window.openEditProfile = openEditProfile; // Will now redirect to showProfileSetup(false)
+window.closeEditProfile = closeEditProfile; // Retained for modal compatibility
+window.saveProfile = saveProfile; // Retained for modal compatibility
+window.saveSetupProfile = saveSetupProfile; // New dedicated save function
+window.showProfileSetup = showProfileSetup; // New dedicated setup function
 window.submitPrescription = submitPrescription;
 window.filterPrescriptions = filterPrescriptions;
 window.generatePDF = generatePDF;
