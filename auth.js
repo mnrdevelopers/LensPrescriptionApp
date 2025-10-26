@@ -1,5 +1,19 @@
 // auth.js - ENHANCED SECURITY VERSION
 
+// DOM Elements
+const loginForm = document.getElementById('loginForm');
+const registerForm = document.getElementById('registerForm');
+const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+const successMessage = document.getElementById('successMessage');
+
+// Form Elements
+const loginFormElement = document.getElementById('loginFormElement');
+const registerFormElement = document.getElementById('registerFormElement');
+const forgotPasswordFormElement = document.getElementById('forgotPasswordFormElement');
+
+// Flag to ensure we don't redirect multiple times
+let isRedirecting = false; 
+
 // Security Configuration
 const SECURITY_CONFIG = {
     maxLoginAttempts: 3,
@@ -13,7 +27,12 @@ let loginAttempts = 0;
 let accountLockedUntil = null;
 let currentUserEmail = null;
 
-// Initialize enhanced security system
+// Initialize the authentication system
+document.addEventListener('DOMContentLoaded', function() {
+    initializeAuth();
+    loadRememberedUser();
+});
+
 function initializeAuth() {
     loadSecurityState();
     checkAccountLockStatus();
@@ -22,6 +41,7 @@ function initializeAuth() {
     auth.onAuthStateChanged((user) => {
         if (user && !isRedirecting) {
             console.log('User authenticated, redirecting to app...');
+            // User is signed in, redirect to dashboard
             resetSecurityState(); // Reset attempts on successful login
             isRedirecting = true;
             window.location.href = 'app.html';
@@ -41,6 +61,19 @@ function initializeAuth() {
 
     setupPasswordValidation();
     setupSecurityMonitoring();
+}
+
+function loadRememberedUser() {
+    const rememberedUsername = localStorage.getItem('rememberedUsername');
+    const rememberMe = localStorage.getItem('rememberMe');
+
+    if (rememberMe === 'true' && rememberedUsername) {
+        const loginUsernameInput = document.getElementById('loginUsername');
+        if (loginUsernameInput) loginUsernameInput.value = rememberedUsername;
+        
+        const rememberMeCheckbox = document.getElementById('rememberMe');
+        if (rememberMeCheckbox) rememberMeCheckbox.checked = true;
+    }
 }
 
 // Security Monitoring
@@ -66,6 +99,8 @@ function checkPasswordStrength(password) {
         special: document.getElementById('reqSpecial')
     };
 
+    if (!strengthBar || !hintText) return 'empty';
+
     if (!password) {
         strengthBar.className = 'password-strength';
         hintText.textContent = '';
@@ -78,55 +113,75 @@ function checkPasswordStrength(password) {
     // Check length
     if (password.length >= 8) {
         strength += 1;
-        requirements.length.className = 'requirement met';
-        requirements.length.innerHTML = '<span class="requirement-icon">✓</span> At least 8 characters';
+        if (requirements.length) {
+            requirements.length.className = 'requirement met';
+            requirements.length.innerHTML = '<span class="requirement-icon">✓</span> At least 8 characters';
+        }
     } else {
-        requirements.length.className = 'requirement unmet';
-        requirements.length.innerHTML = '<span class="requirement-icon">○</span> At least 8 characters';
+        if (requirements.length) {
+            requirements.length.className = 'requirement unmet';
+            requirements.length.innerHTML = '<span class="requirement-icon">○</span> At least 8 characters';
+        }
         hints.push('Use at least 8 characters');
     }
 
     // Check uppercase
     if (/[A-Z]/.test(password)) {
         strength += 1;
-        requirements.uppercase.className = 'requirement met';
-        requirements.uppercase.innerHTML = '<span class="requirement-icon">✓</span> One uppercase letter';
+        if (requirements.uppercase) {
+            requirements.uppercase.className = 'requirement met';
+            requirements.uppercase.innerHTML = '<span class="requirement-icon">✓</span> One uppercase letter';
+        }
     } else {
-        requirements.uppercase.className = 'requirement unmet';
-        requirements.uppercase.innerHTML = '<span class="requirement-icon">○</span> One uppercase letter';
+        if (requirements.uppercase) {
+            requirements.uppercase.className = 'requirement unmet';
+            requirements.uppercase.innerHTML = '<span class="requirement-icon">○</span> One uppercase letter';
+        }
         hints.push('Add an uppercase letter (A-Z)');
     }
 
     // Check lowercase
     if (/[a-z]/.test(password)) {
         strength += 1;
-        requirements.lowercase.className = 'requirement met';
-        requirements.lowercase.innerHTML = '<span class="requirement-icon">✓</span> One lowercase letter';
+        if (requirements.lowercase) {
+            requirements.lowercase.className = 'requirement met';
+            requirements.lowercase.innerHTML = '<span class="requirement-icon">✓</span> One lowercase letter';
+        }
     } else {
-        requirements.lowercase.className = 'requirement unmet';
-        requirements.lowercase.innerHTML = '<span class="requirement-icon">○</span> One lowercase letter';
+        if (requirements.lowercase) {
+            requirements.lowercase.className = 'requirement unmet';
+            requirements.lowercase.innerHTML = '<span class="requirement-icon">○</span> One lowercase letter';
+        }
         hints.push('Add a lowercase letter (a-z)');
     }
 
     // Check numbers
     if (/[0-9]/.test(password)) {
         strength += 1;
-        requirements.number.className = 'requirement met';
-        requirements.number.innerHTML = '<span class="requirement-icon">✓</span> One number';
+        if (requirements.number) {
+            requirements.number.className = 'requirement met';
+            requirements.number.innerHTML = '<span class="requirement-icon">✓</span> One number';
+        }
     } else {
-        requirements.number.className = 'requirement unmet';
-        requirements.number.innerHTML = '<span class="requirement-icon">○</span> One number';
+        if (requirements.number) {
+            requirements.number.className = 'requirement unmet';
+            requirements.number.innerHTML = '<span class="requirement-icon">○</span> One number';
+        }
         hints.push('Include a number (0-9)');
     }
 
     // Check special characters
     if (/[^A-Za-z0-9]/.test(password)) {
         strength += 1;
-        requirements.special.className = 'requirement met';
-        requirements.special.innerHTML = '<span class="requirement-icon">✓</span> One special character';
+        if (requirements.special) {
+            requirements.special.className = 'requirement met';
+            requirements.special.innerHTML = '<span class="requirement-icon">✓</span> One special character';
+        }
     } else {
-        requirements.special.className = 'requirement unmet';
-        requirements.special.innerHTML = '<span class="requirement-icon">○</span> One special character';
+        if (requirements.special) {
+            requirements.special.className = 'requirement unmet';
+            requirements.special.innerHTML = '<span class="requirement-icon">○</span> One special character';
+        }
         hints.push('Add a special character (!@#$% etc.)');
     }
 
@@ -135,7 +190,7 @@ function checkPasswordStrength(password) {
     if (strength <= 2) {
         strengthLevel = 'weak';
         strengthBar.className = 'password-strength weak';
-        hintText.textContent = 'Password is weak. ' + hints[0];
+        hintText.textContent = 'Password is weak. ' + (hints[0] || '');
         hintText.style.color = '#dc3545';
     } else if (strength === 3) {
         strengthLevel = 'fair';
@@ -181,6 +236,7 @@ async function handleLogin(event) {
     setButtonLoading(loginButton, true, 'Login');
 
     try {
+        // Sign in with email/password
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         const user = userCredential.user;
 
@@ -200,7 +256,7 @@ async function handleLogin(event) {
         localStorage.setItem('username', email);
         localStorage.setItem('userId', user.uid);
         
-        console.log('Login successful, security state reset');
+        console.log('Login successful, user data saved to localStorage');
 
     } catch (error) {
         console.error('Login error:', error);
@@ -307,12 +363,13 @@ async function saveSecurityQuestion(userId, question, answer) {
 
 async function getUserSecurityQuestion(email) {
     try {
-        // In a real app, you'd look up by email
-        // This is a simplified version
-        const user = await auth.getUserByEmail(email);
-        if (user) {
-            const securityDoc = await db.collection('userSecurity').doc(user.uid).get();
-            return securityDoc.exists ? securityDoc.data() : null;
+        // Get user by email - this is a simplified approach
+        // In production, you might want to store security questions in a separate collection
+        const usersRef = db.collection('userSecurity');
+        const querySnapshot = await usersRef.where('email', '==', email).get();
+        
+        if (!querySnapshot.empty) {
+            return querySnapshot.docs[0].data();
         }
         return null;
     } catch (error) {
@@ -323,13 +380,9 @@ async function getUserSecurityQuestion(email) {
 
 async function verifySecurityAnswer(email, answer) {
     try {
-        const user = await auth.getUserByEmail(email);
-        if (user) {
-            const securityDoc = await db.collection('userSecurity').doc(user.uid).get();
-            if (securityDoc.exists) {
-                const securityData = securityDoc.data();
-                return securityData.securityAnswer === hashAnswer(answer);
-            }
+        const userRecord = await getUserSecurityQuestion(email);
+        if (userRecord) {
+            return userRecord.securityAnswer === hashAnswer(answer);
         }
         return false;
     } catch (error) {
@@ -355,6 +408,7 @@ async function handleRegister(event) {
     
     console.log('Registration started...');
     
+    // Get form values
     const email = document.getElementById('registerEmail').value.trim();
     const password = document.getElementById('registerPassword').value.trim();
     const confirmPassword = document.getElementById('registerConfirmPassword').value.trim();
@@ -399,27 +453,110 @@ async function handleRegister(event) {
     try {
         console.log('Creating Firebase user...');
         
+        // Create user with email and password
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
         const user = userCredential.user;
 
         console.log('Firebase user created successfully:', user.uid);
 
-        // Save security question
-        await saveSecurityQuestion(user.uid, securityQuestion, securityAnswer);
+        // Save security question to Firestore
+        await db.collection('userSecurity').doc(user.uid).set({
+            email: email,
+            securityQuestion: securityQuestion,
+            securityAnswer: hashAnswer(securityAnswer),
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
 
-        // Set registration flags
+        // Set a flag to notify app.js that this is a fresh registration, to force profile setup.
         localStorage.setItem('freshRegistration', 'true');
+        
+        // Save user data to localStorage
         localStorage.setItem('username', email);
         localStorage.setItem('userId', user.uid);
 
         console.log('Registration completed successfully');
         showSuccess('Registration successful! Redirecting to profile setup...');
         
+        // The onAuthStateChanged will handle redirect
+
     } catch (error) {
         console.error('Registration error:', error);
+        
+        // More detailed error handling
+        if (error.code === 'auth/email-already-in-use') {
+            showError('This email is already registered. Please use a different email or login.');
+        } else if (error.code === 'auth/weak-password') {
+            showError('Password is too weak. Please use at least 6 characters.');
+        } else if (error.code === 'auth/invalid-email') {
+            showError('Invalid email address format.');
+        } else {
+            showError('Registration failed: ' + error.message);
+        }
+        
         handleAuthError(error);
     } finally {
         setButtonLoading(registerButton, false, 'Register');
+    }
+}
+
+function setupPasswordValidation() {
+    const passwordInput = document.getElementById('registerPassword');
+    const confirmPasswordInput = document.getElementById('registerConfirmPassword');
+    const passwordMatchError = document.getElementById('passwordMatchError');
+
+    if (passwordInput && confirmPasswordInput && passwordMatchError) {
+        const validatePasswords = () => {
+            const password = passwordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+
+            if (confirmPassword === '') {
+                passwordMatchError.style.display = 'none';
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                passwordMatchError.textContent = 'Passwords do not match';
+                passwordMatchError.style.display = 'block';
+                confirmPasswordInput.style.borderColor = '#dc3545';
+            } else {
+                passwordMatchError.style.display = 'none';
+                confirmPasswordInput.style.borderColor = '#28a745';
+            }
+        };
+
+        passwordInput.addEventListener('input', validatePasswords);
+        confirmPasswordInput.addEventListener('input', validatePasswords);
+    }
+}
+
+async function handleForgotPassword(event) {
+    event.preventDefault();
+    
+    const email = document.getElementById('forgotUsername').value.trim();
+
+    if (!email) {
+        showSecurityWarning('Please enter your email address', 'warning');
+        return;
+    }
+
+    const resetButton = forgotPasswordFormElement.querySelector('button[type="submit"]');
+    setButtonLoading(resetButton, true, 'Reset Password');
+
+    try {
+        await auth.sendPasswordResetEmail(email);
+        showSuccessMessage('Password reset email sent! Check your inbox.');
+    } catch (error) {
+        console.error('Password reset error:', error);
+        if (error.code === 'auth/too-many-requests') {
+            showSecurityWarning(
+                'Too many reset attempts. Please try account recovery or wait before trying again.',
+                'danger'
+            );
+        } else {
+            handleAuthError(error);
+        }
+    } finally {
+        setButtonLoading(resetButton, false, 'Reset Password');
     }
 }
 
@@ -491,6 +628,8 @@ function showSecurityWarning(message, type = 'warning') {
 }
 
 function showAccountLockWarning() {
+    if (!accountLockedUntil) return;
+    
     const timeLeft = accountLockedUntil - Date.now();
     const hoursLeft = Math.ceil(timeLeft / (60 * 60 * 1000));
     
@@ -529,7 +668,26 @@ function updateLoginAttemptsDisplay() {
     }
 }
 
-// New UI Functions
+// UI Management Functions
+function showLogin() {
+    hideAllForms();
+    if (loginForm) loginForm.classList.add('active');
+    clearFormErrors();
+    updateLoginAttemptsDisplay();
+}
+
+function showRegister() {
+    hideAllForms();
+    if (registerForm) registerForm.classList.add('active');
+    clearFormErrors();
+}
+
+function showForgotPassword() {
+    hideAllForms();
+    if (forgotPasswordForm) forgotPasswordForm.classList.add('active');
+    clearFormErrors();
+}
+
 function showAccountRecovery() {
     hideAllForms();
     const recoveryForm = document.getElementById('accountRecoveryForm');
@@ -539,7 +697,6 @@ function showAccountRecovery() {
     clearFormErrors();
 }
 
-// Update the existing hideAllForms function
 function hideAllForms() {
     if (loginForm) loginForm.classList.remove('active');
     if (registerForm) registerForm.classList.remove('active');
@@ -550,38 +707,177 @@ function hideAllForms() {
     if (recoveryForm) recoveryForm.classList.remove('active');
 }
 
-// Update the forgot password handler to suggest account recovery
-async function handleForgotPassword(event) {
-    event.preventDefault();
-    
-    const email = document.getElementById('forgotUsername').value.trim();
+function showSuccessMessage(message) {
+    hideAllForms();
+    const successText = document.getElementById('successText');
+    if (successText) successText.textContent = message;
+    if (successMessage) successMessage.classList.remove('hidden');
+}
 
-    if (!email) {
-        showSecurityWarning('Please enter your email address', 'warning');
-        return;
-    }
+// Utility Functions
+function togglePassword(inputId) {
+    const passwordInput = document.getElementById(inputId);
+    if (!passwordInput) return;
 
-    const resetButton = forgotPasswordFormElement.querySelector('button[type="submit"]');
-    setButtonLoading(resetButton, true, 'Reset Password');
+    const toggleButton = passwordInput.parentElement.querySelector('.toggle-password');
 
-    try {
-        await auth.sendPasswordResetEmail(email);
-        showSuccessMessage('Password reset email sent! Check your inbox.');
-    } catch (error) {
-        console.error('Password reset error:', error);
-        if (error.code === 'auth/too-many-requests') {
-            showSecurityWarning(
-                'Too many reset attempts. Please try account recovery or wait before trying again.',
-                'danger'
-            );
-        } else {
-            handleAuthError(error);
-        }
-    } finally {
-        setButtonLoading(resetButton, false, 'Reset Password');
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        if (toggleButton) toggleButton.textContent = '🙈';
+    } else {
+        passwordInput.type = 'password';
+        if (toggleButton) toggleButton.textContent = '👁️';
     }
 }
 
-// Export new functions for global access
+function setButtonLoading(button, isLoading, originalText) {
+    if (!button) return;
+    
+    if (isLoading) {
+        button.disabled = true;
+        button.classList.add('loading');
+        button.innerHTML = 'Processing...';
+        button.dataset.originalText = originalText;
+    } else {
+        button.disabled = false;
+        button.classList.remove('loading');
+        button.innerHTML = button.dataset.originalText || originalText;
+        delete button.dataset.originalText;
+    }
+}
+
+function showError(message) {
+    // Create a temporary error display
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-message';
+    errorDiv.style.cssText = `
+        background: #f8d7da;
+        color: #721c24;
+        padding: 10px;
+        border-radius: 5px;
+        margin: 10px 0;
+        text-align: center;
+        border: 1px solid #f5c6cb;
+    `;
+    errorDiv.textContent = message;
+    
+    // Remove any existing error messages
+    const existingErrors = document.querySelectorAll('.error-message');
+    existingErrors.forEach(error => error.remove());
+    
+    // Insert the error message at the top of the active form
+    const activeForm = document.querySelector('.form-container.active');
+    if (activeForm) {
+        activeForm.insertBefore(errorDiv, activeForm.firstChild);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (errorDiv.parentNode) {
+                errorDiv.remove();
+            }
+        }, 5000);
+    } else {
+        console.error('Authentication Error:', message);
+    }
+}
+
+function clearFormErrors() {
+    const errors = document.querySelectorAll('.error');
+    errors.forEach(error => error.classList.remove('error'));
+    
+    const errorMessages = document.querySelectorAll('.error-message');
+    errorMessages.forEach(error => error.remove());
+    
+    // Clear password match error specifically
+    const passwordMatchError = document.getElementById('passwordMatchError');
+    if (passwordMatchError) {
+        passwordMatchError.style.display = 'none';
+    }
+    
+    // Reset border colors
+    const confirmPasswordInput = document.getElementById('registerConfirmPassword');
+    if (confirmPasswordInput) {
+        confirmPasswordInput.style.borderColor = '';
+    }
+    
+    // Clear security warnings
+    const securityWarnings = document.querySelectorAll('.security-warning');
+    securityWarnings.forEach(warning => warning.remove());
+    
+    const lockWarnings = document.querySelectorAll('.account-lock-warning');
+    lockWarnings.forEach(warning => warning.remove());
+}
+
+function handleAuthError(error) {
+    let errorMessage = 'An error occurred. Please try again.';
+    
+    switch (error.code) {
+        case 'auth/invalid-email':
+            errorMessage = 'Invalid email address format.';
+            break;
+        case 'auth/user-disabled':
+            errorMessage = 'This account has been disabled.';
+            break;
+        case 'auth/user-not-found':
+        case 'auth/wrong-password':
+            errorMessage = 'Invalid email or password.';
+            break;
+        case 'auth/email-already-in-use':
+            errorMessage = 'An account with this email already exists.';
+            break;
+        case 'auth/weak-password':
+            errorMessage = 'Password is too weak. Please use at least 6 characters.';
+            break;
+        case 'auth/network-request-failed':
+            errorMessage = 'Network error. Please check your internet connection.';
+            break;
+        case 'auth/too-many-requests':
+            errorMessage = 'Too many unsuccessful attempts. Please try again later.';
+            break;
+    }
+    
+    showError(errorMessage);
+}
+
+function showSuccess(message) {
+    // Create a temporary success display
+    const successDiv = document.createElement('div');
+    successDiv.className = 'success-message';
+    successDiv.style.cssText = `
+        background: #d4edda;
+        color: #155724;
+        padding: 10px;
+        border-radius: 5px;
+        margin: 10px 0;
+        text-align: center;
+        border: 1px solid #c3e6cb;
+    `;
+    successDiv.textContent = message;
+    
+    // Remove any existing success messages
+    const existingSuccess = document.querySelectorAll('.success-message');
+    existingSuccess.forEach(msg => msg.remove());
+    
+    // Insert the success message at the top of the active form
+    const activeForm = document.querySelector('.form-container.active');
+    if (activeForm) {
+        activeForm.insertBefore(successDiv, activeForm.firstChild);
+        
+        // Auto-remove after 3 seconds
+        setTimeout(() => {
+            if (successDiv.parentNode) {
+                successDiv.remove();
+            }
+        }, 3000);
+    } else {
+        console.log('Success:', message);
+    }
+}
+
+// Export functions for global access
+window.showLogin = showLogin;
+window.showRegister = showRegister;
+window.showForgotPassword = showForgotPassword;
 window.showAccountRecovery = showAccountRecovery;
+window.togglePassword = togglePassword;
 window.checkPasswordStrength = checkPasswordStrength;
