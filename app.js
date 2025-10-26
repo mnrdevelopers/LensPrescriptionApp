@@ -1098,7 +1098,20 @@ function printPreview() {
     const clinicAddress = document.getElementById('previewClinicAddress')?.textContent || 'Clinic Address';
     const optometristName = document.getElementById('previewOptometristName')?.textContent || 'Optometrist Name';
     const contactNumber = document.getElementById('previewContactNumber')?.textContent || 'Contact Number';
-    const currentDate = document.getElementById('previewcurrentDate')?.textContent || new Date().toLocaleDateString();
+    
+    // Get short date with time
+    const now = new Date();
+    const shortDate = now.toLocaleDateString('en-IN', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric' 
+    });
+    const shortTime = now.toLocaleTimeString('en-IN', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: true 
+    });
+    const currentDateTime = `${shortDate} ${shortTime}`;
     
     const patientName = document.getElementById('previewPatientName')?.textContent || '';
     const age = document.getElementById('previewAge')?.textContent || '';
@@ -1203,6 +1216,7 @@ function printPreview() {
                 
                 .date-section {
                     text-align: right;
+                    font-weight: bold;
                 }
                 
                 /* Prescription Title */
@@ -1417,7 +1431,7 @@ function printPreview() {
             <!-- Name and Date - UPDATED -->
             <div class="header-info">
                 <div class="name-section"><strong>${optometristName}</strong></div>
-                <div class="date-section"><strong>Date:</strong> ${currentDate}</div>
+                <div class="date-section"><strong>${currentDateTime}</strong></div>
             </div>
             
             <!-- Prescription Title -->
