@@ -1083,11 +1083,159 @@ function generatePDF() {
         });
 }
 
-// Enhanced Print Function for 58mm Thermal Printer
+// Alternative: Dedicated Thermal Print Function
 function printPreview() {
-    // For thermal printers, use simple window.print() on the existing preview
-    // The CSS @media print styles will handle the thermal formatting
-    window.print();
+    const printWindow = window.open('', '_blank', 'width=300,height=600');
+    
+    if (!printWindow) {
+        // Fallback to direct print if popup blocked
+        window.print();
+        return;
+    }
+
+    // Get the existing preview HTML
+    const previewContent = document.getElementById('prescriptionPreview').innerHTML;
+    
+    const printHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Prescription</title>
+            <meta charset="UTF-8">
+            <style>
+                /* Thermal Printer Optimized Styles */
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+                
+                body {
+                    font-family: 'Courier New', monospace;
+                    margin: 0;
+                    padding: 5px;
+                    background: white;
+                    color: black;
+                    font-size: 10px;
+                    line-height: 1.1;
+                    width: 58mm;
+                }
+                
+                .thermal-container {
+                    width: 58mm;
+                    margin: 0 auto;
+                    padding: 5px;
+                }
+                
+                .thermal-header {
+                    text-align: center;
+                    margin-bottom: 5px;
+                    padding-bottom: 3px;
+                    border-bottom: 1px solid #000;
+                }
+                
+                .thermal-header h2 {
+                    font-size: 11px;
+                    font-weight: bold;
+                    margin-bottom: 2px;
+                }
+                
+                .thermal-header p {
+                    font-size: 8px;
+                    margin: 1px 0;
+                }
+                
+                .thermal-details {
+                    margin-bottom: 5px;
+                }
+                
+                .thermal-details p {
+                    margin: 2px 0;
+                    font-size: 8px;
+                }
+                
+                .thermal-prescription {
+                    margin: 5px 0;
+                }
+                
+                .thermal-prescription h3 {
+                    text-align: center;
+                    font-size: 9px;
+                    font-weight: bold;
+                    margin: 4px 0;
+                    background: #f0f0f0;
+                    padding: 2px;
+                }
+                
+                .thermal-prescription table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin: 3px 0;
+                    font-size: 7px;
+                }
+                
+                .thermal-prescription th {
+                    background: #e0e0e0;
+                    border: 1px solid #000;
+                    padding: 2px 1px;
+                    text-align: center;
+                    font-weight: bold;
+                }
+                
+                .thermal-prescription td {
+                    border: 1px solid #000;
+                    padding: 2px 1px;
+                    text-align: center;
+                }
+                
+                .thermal-footer {
+                    text-align: center;
+                    margin-top: 8px;
+                    padding-top: 4px;
+                    border-top: 1px solid #000;
+                    font-size: 7px;
+                }
+                
+                hr {
+                    border: none;
+                    border-top: 1px solid #000;
+                    margin: 3px 0;
+                }
+                
+                @media print {
+                    body {
+                        margin: 0;
+                        padding: 3mm;
+                    }
+                    
+                    @page {
+                        margin: 0;
+                        size: 58mm auto;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="thermal-container">
+                ${previewContent}
+            </div>
+            <script>
+                window.onload = function() {
+                    setTimeout(function() {
+                        window.print();
+                        setTimeout(function() {
+                            window.close();
+                        }, 500);
+                    }, 300);
+                };
+            </script>
+        </body>
+        </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(printHTML);
+    printWindow.document.close();
 }
 
 async function sendWhatsApp() {
