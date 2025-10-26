@@ -308,8 +308,7 @@ async function handleAccountRecovery(event) {
     event.preventDefault();
     
     const email = document.getElementById('recoveryEmail').value.trim();
-    const securityAnswer = document.getElementById('recoveryAnswer').value.trim();
-    const newPassword = document.getElementById('newPassword').value.trim();
+    const securityAnswer = document.getElementById('securityAnswer').value.trim(); // FIXED ID
     
     if (!email) {
         showSecurityWarning('Please enter your email address', 'warning');
@@ -320,7 +319,7 @@ async function handleAccountRecovery(event) {
     setButtonLoading(recoveryButton, true, 'Verify');
 
     try {
-        // Check if user exists
+        // Check if user exists and get their security question
         const userRecord = await getUserSecurityQuestion(email);
         
         if (!userRecord) {
@@ -328,22 +327,33 @@ async function handleAccountRecovery(event) {
             return;
         }
 
+        // Show security question to user
+        const securityQuestionContainer = document.getElementById('securityQuestionContainer');
+        const securityQuestionLabel = securityQuestionContainer.querySelector('label');
+        if (securityQuestionLabel && userRecord.securityQuestion) {
+            securityQuestionLabel.textContent = userRecord.securityQuestion;
+        }
+
         // Verify security answer
         if (await verifySecurityAnswer(email, securityAnswer)) {
-            // Reset password
+            // Reset password via email
             await auth.sendPasswordResetEmail(email);
             resetSecurityState(); // Reset lockout on successful recovery
             
-            showSuccessMessage('Password reset email sent! Check your inbox.');
+            showSuccessMessage('Password reset email sent! Check your inbox to create a new password.');
         } else {
             showSecurityWarning('Incorrect security answer', 'warning');
         }
 
     } catch (error) {
         console.error('Account recovery error:', error);
-        showSecurityWarning('Recovery failed: ' + error.message, 'danger');
+        if (error.code === 'auth/user-not-found') {
+            showSecurityWarning('No account found with this email address', 'warning');
+        } else {
+            showSecurityWarning('Recovery failed: ' + error.message, 'danger');
+        }
     } finally {
-        setButtonLoading(recoveryButton, false, 'Verify & Reset');
+        setButtonLoading(recoveryButton, false, 'Verify & Reset Password');
     }
 }
 
