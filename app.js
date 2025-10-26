@@ -1029,9 +1029,12 @@ function loadPreviewData(data) {
     });
 }
 
-// Dedicated PDF Generation for 58mm Thermal Printer
+// Fixed PDF Generation for 58mm Thermal Printer
 function generatePDF() {
-    // Get all the data for PDF
+    // Show loading state
+    showStatusMessage('Generating PDF...', 'info');
+    
+    // Get all the data directly from the preview elements
     const clinicName = document.getElementById('previewClinicName')?.textContent || 'Your Clinic';
     const clinicAddress = document.getElementById('previewClinicAddress')?.textContent || 'Clinic Address';
     const optometristName = document.getElementById('previewOptometristName')?.textContent || 'Optometrist Name';
@@ -1090,397 +1093,158 @@ function generatePDF() {
         }
     };
 
-    // Create PDF HTML content
-    const pdfHTML = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <style>
-                /* PDF Specific Styles for 58mm Thermal Format */
-                * {
-                    margin: 0;
-                    padding: 0;
-                    box-sizing: border-box;
-                    font-family: 'Courier New', monospace;
-                }
-                
-                body {
-                    width: 58mm;
-                    margin: 0 auto;
-                    padding: 3mm;
-                    background: white;
-                    color: black;
-                    font-size: 9px;
-                    line-height: 1.1;
-                }
-                
-                /* Clinic Header */
-                .clinic-header {
-                    text-align: center;
-                    margin-bottom: 4px;
-                    padding-bottom: 3px;
-                    border-bottom: 1px solid #000;
-                }
-                
-                .clinic-name {
-                    font-size: 11px;
-                    font-weight: bold;
-                    margin-bottom: 1px;
-                    text-transform: uppercase;
-                }
-                
-                .clinic-address {
-                    font-size: 8px;
-                    margin-bottom: 1px;
-                }
-                
-                .clinic-contact {
-                    font-size: 8px;
-                    font-weight: bold;
-                }
-                
-                /* Name and Date */
-                .header-info {
-                    display: flex;
-                    justify-content: space-between;
-                    margin-bottom: 4px;
-                    font-size: 8px;
-                }
-                
-                .name-section {
-                    font-weight: bold;
-                }
-                
-                .date-section {
-                    text-align: right;
-                    font-weight: bold;
-                }
-                
-                /* Prescription Title */
-                .prescription-title {
-                    text-align: center;
-                    font-size: 10px;
-                    font-weight: bold;
-                    margin: 4px 0;
-                    text-decoration: underline;
-                }
-                
-                /* Patient Information */
-                .patient-info {
-                    margin-bottom: 4px;
-                    padding: 3px;
-                    border: 1px solid #000;
-                }
-                
-                .patient-row {
-                    display: flex;
-                    margin-bottom: 1px;
-                }
-                
-                .patient-label {
-                    font-weight: bold;
-                    width: 25mm;
-                }
-                
-                .patient-value {
-                    flex: 1;
-                }
-                
-                /* Prescription Tables */
-                .prescription-section {
-                    margin: 4px 0;
-                }
-                
-                .eye-title {
-                    text-align: center;
-                    background: #e0e0e0;
-                    padding: 2px;
-                    font-weight: bold;
-                    font-size: 9px;
-                    border: 1px solid #000;
-                    border-bottom: none;
-                }
-                
-                .prescription-table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    margin-bottom: 3px;
-                    font-size: 7px;
-                }
-                
-                .prescription-table th {
-                    background: #f0f0f0;
-                    border: 1px solid #000;
-                    padding: 2px 1px;
-                    text-align: center;
-                    font-weight: bold;
-                }
-                
-                .prescription-table td {
-                    border: 1px solid #000;
-                    padding: 2px 1px;
-                    text-align: center;
-                }
-                
-                .section-heading {
-                    background: #e8e8e8 !important;
-                    font-weight: bold;
-                }
-                
-                /* Options Section */
-                .options-section {
-                    margin: 4px 0;
-                    border: 1px solid #000;
-                }
-                
-                .options-title {
-                    background: #e0e0e0;
-                    padding: 2px;
-                    text-align: center;
-                    font-weight: bold;
-                    font-size: 9px;
-                }
-                
-                .options-content {
-                    padding: 3px;
-                }
-                
-                .option-row {
-                    display: flex;
-                    margin-bottom: 1px;
-                }
-                
-                .option-label {
-                    font-weight: bold;
-                    width: 20mm;
-                }
-                
-                .option-value {
-                    flex: 1;
-                }
-                
-                /* Amount Section */
-                .amount-section {
-                    border: 1px solid #000;
-                    margin: 4px 0;
-                }
-                
-                .amount-row {
-                    display: flex;
-                    padding: 2px 3px;
-                }
-                
-                .amount-label {
-                    font-weight: bold;
-                    width: 25mm;
-                }
-                
-                .amount-value {
-                    flex: 1;
-                    font-weight: bold;
-                    font-size: 10px;
-                }
-                
-                /* Footer */
-                .footer {
-                    margin-top: 6px;
-                    padding-top: 3px;
-                    border-top: 1px solid #000;
-                    text-align: center;
-                    font-size: 7px;
-                }
-                
-                .thank-you {
-                    margin-bottom: 2px;
-                    font-style: italic;
-                }
-                
-                .signature {
-                    margin-top: 8px;
-                    text-align: right;
-                }
-                
-                .signature-line {
-                    border-top: 1px solid #000;
-                    width: 30mm;
-                    margin-left: auto;
-                    padding-top: 1px;
-                    text-align: center;
-                    font-size: 7px;
-                }
-                
-                /* PDF Specific Optimizations */
-                @media print {
-                    body {
-                        margin: 0;
-                        padding: 2mm;
-                        width: 58mm;
-                    }
-                    
-                    @page {
-                        margin: 0;
-                        padding: 0;
-                        size: 58mm auto;
-                    }
-                }
-            </style>
-        </head>
-        <body>
-            <!-- Clinic Header -->
-            <div class="clinic-header">
-                <div class="clinic-name">${clinicName}</div>
-                <div class="clinic-address">${clinicAddress}</div>
-                <div class="clinic-contact">📞 ${contactNumber}</div>
+    // Create a temporary container with the actual data
+    const tempContainer = document.createElement('div');
+    tempContainer.style.width = '58mm';
+    tempContainer.style.margin = '0 auto';
+    tempContainer.style.padding = '3mm';
+    tempContainer.style.background = 'white';
+    tempContainer.style.fontFamily = 'Courier New, monospace';
+    tempContainer.style.fontSize = '9px';
+    tempContainer.style.lineHeight = '1.1';
+    tempContainer.style.color = 'black';
+    
+    // Build the PDF content with actual data
+    tempContainer.innerHTML = `
+        <div class="clinic-header" style="text-align: center; margin-bottom: 4px; padding-bottom: 3px; border-bottom: 1px solid #000;">
+            <div class="clinic-name" style="font-size: 11px; font-weight: bold; margin-bottom: 1px; text-transform: uppercase;">${clinicName}</div>
+            <div class="clinic-address" style="font-size: 8px; margin-bottom: 1px;">${clinicAddress}</div>
+            <div class="clinic-contact" style="font-size: 8px; font-weight: bold;">📞 ${contactNumber}</div>
+        </div>
+        
+        <div class="header-info" style="display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 8px;">
+            <div class="name-section" style="font-weight: bold;">${optometristName}</div>
+            <div class="date-section" style="text-align: right; font-weight: bold;">${currentDateTime}</div>
+        </div>
+        
+        <div class="prescription-title" style="text-align: center; font-size: 10px; font-weight: bold; margin: 4px 0; text-decoration: underline;">EYE PRESCRIPTION</div>
+        
+        <div class="patient-info" style="margin-bottom: 4px; padding: 3px; border: 1px solid #000;">
+            <div class="patient-row" style="display: flex; margin-bottom: 1px;">
+                <div class="patient-label" style="font-weight: bold; width: 25mm;">Patient Name:</div>
+                <div class="patient-value" style="flex: 1;">${patientName}</div>
             </div>
-            
-            <!-- Name and Date -->
-            <div class="header-info">
-                <div class="name-section"><strong>${optometristName}</strong></div>
-                <div class="date-section"><strong>${currentDateTime}</strong></div>
+            <div class="patient-row" style="display: flex; margin-bottom: 1px;">
+                <div class="patient-label" style="font-weight: bold; width: 25mm;">Age / Gender:</div>
+                <div class="patient-value" style="flex: 1;">${age} / ${gender}</div>
             </div>
-            
-            <!-- Prescription Title -->
-            <div class="prescription-title">EYE PRESCRIPTION</div>
-            
-            <!-- Patient Information -->
-            <div class="patient-info">
-                <div class="patient-row">
-                    <div class="patient-label">Patient Name:</div>
-                    <div class="patient-value">${patientName}</div>
+            <div class="patient-row" style="display: flex; margin-bottom: 1px;">
+                <div class="patient-label" style="font-weight: bold; width: 25mm;">Mobile:</div>
+                <div class="patient-value" style="flex: 1;">${mobile}</div>
+            </div>
+        </div>
+        
+        <div class="prescription-section" style="margin: 4px 0;">
+            <div class="eye-title" style="text-align: center; background: #e0e0e0; padding: 2px; font-weight: bold; font-size: 9px; border: 1px solid #000; border-bottom: none;">RIGHT EYE (OD)</div>
+            <table class="prescription-table" style="width: 100%; border-collapse: collapse; margin-bottom: 3px; font-size: 7px;">
+                <thead>
+                    <tr>
+                        <th style="background: #f0f0f0; border: 1px solid #000; padding: 2px 1px; text-align: center; font-weight: bold;">Type</th>
+                        <th style="background: #f0f0f0; border: 1px solid #000; padding: 2px 1px; text-align: center; font-weight: bold;">SPH</th>
+                        <th style="background: #f0f0f0; border: 1px solid #000; padding: 2px 1px; text-align: center; font-weight: bold;">CYL</th>
+                        <th style="background: #f0f0f0; border: 1px solid #000; padding: 2px 1px; text-align: center; font-weight: bold;">AXIS</th>
+                        <th style="background: #f0f0f0; border: 1px solid #000; padding: 2px 1px; text-align: center; font-weight: bold;">V/A</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="section-heading" style="background: #e8e8e8 !important; font-weight: bold; border: 1px solid #000; padding: 2px 1px; text-align: center;">DIST</td>
+                        <td style="border: 1px solid #000; padding: 2px 1px; text-align: center;">${prescriptionData.rightDist.SPH}</td>
+                        <td style="border: 1px solid #000; padding: 2px 1px; text-align: center;">${prescriptionData.rightDist.CYL}</td>
+                        <td style="border: 1px solid #000; padding: 2px 1px; text-align: center;">${prescriptionData.rightDist.AXIS}</td>
+                        <td style="border: 1px solid #000; padding: 2px 1px; text-align: center;">${prescriptionData.rightDist.VA}</td>
+                    </tr>
+                    <tr>
+                        <td class="section-heading" style="background: #e8e8e8 !important; font-weight: bold; border: 1px solid #000; padding: 2px 1px; text-align: center;">ADD</td>
+                        <td style="border: 1px solid #000; padding: 2px 1px; text-align: center;">${prescriptionData.rightAdd.SPH}</td>
+                        <td style="border: 1px solid #000; padding: 2px 1px; text-align: center;">${prescriptionData.rightAdd.CYL}</td>
+                        <td style="border: 1px solid #000; padding: 2px 1px; text-align: center;">${prescriptionData.rightAdd.AXIS}</td>
+                        <td style="border: 1px solid #000; padding: 2px 1px; text-align: center;">${prescriptionData.rightAdd.VA}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="prescription-section" style="margin: 4px 0;">
+            <div class="eye-title" style="text-align: center; background: #e0e0e0; padding: 2px; font-weight: bold; font-size: 9px; border: 1px solid #000; border-bottom: none;">LEFT EYE (OS)</div>
+            <table class="prescription-table" style="width: 100%; border-collapse: collapse; margin-bottom: 3px; font-size: 7px;">
+                <thead>
+                    <tr>
+                        <th style="background: #f0f0f0; border: 1px solid #000; padding: 2px 1px; text-align: center; font-weight: bold;">Type</th>
+                        <th style="background: #f0f0f0; border: 1px solid #000; padding: 2px 1px; text-align: center; font-weight: bold;">SPH</th>
+                        <th style="background: #f0f0f0; border: 1px solid #000; padding: 2px 1px; text-align: center; font-weight: bold;">CYL</th>
+                        <th style="background: #f0f0f0; border: 1px solid #000; padding: 2px 1px; text-align: center; font-weight: bold;">AXIS</th>
+                        <th style="background: #f0f0f0; border: 1px solid #000; padding: 2px 1px; text-align: center; font-weight: bold;">V/A</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="section-heading" style="background: #e8e8e8 !important; font-weight: bold; border: 1px solid #000; padding: 2px 1px; text-align: center;">DIST</td>
+                        <td style="border: 1px solid #000; padding: 2px 1px; text-align: center;">${prescriptionData.leftDist.SPH}</td>
+                        <td style="border: 1px solid #000; padding: 2px 1px; text-align: center;">${prescriptionData.leftDist.CYL}</td>
+                        <td style="border: 1px solid #000; padding: 2px 1px; text-align: center;">${prescriptionData.leftDist.AXIS}</td>
+                        <td style="border: 1px solid #000; padding: 2px 1px; text-align: center;">${prescriptionData.leftDist.VA}</td>
+                    </tr>
+                    <tr>
+                        <td class="section-heading" style="background: #e8e8e8 !important; font-weight: bold; border: 1px solid #000; padding: 2px 1px; text-align: center;">ADD</td>
+                        <td style="border: 1px solid #000; padding: 2px 1px; text-align: center;">${prescriptionData.leftAdd.SPH}</td>
+                        <td style="border: 1px solid #000; padding: 2px 1px; text-align: center;">${prescriptionData.leftAdd.CYL}</td>
+                        <td style="border: 1px solid #000; padding: 2px 1px; text-align: center;">${prescriptionData.leftAdd.AXIS}</td>
+                        <td style="border: 1px solid #000; padding: 2px 1px; text-align: center;">${prescriptionData.leftAdd.VA}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="options-section" style="margin: 4px 0; border: 1px solid #000;">
+            <div class="options-title" style="background: #e0e0e0; padding: 2px; text-align: center; font-weight: bold; font-size: 9px;">RECOMMENDED OPTIONS</div>
+            <div class="options-content" style="padding: 3px;">
+                <div class="option-row" style="display: flex; margin-bottom: 1px;">
+                    <div class="option-label" style="font-weight: bold; width: 20mm;">Vision Type:</div>
+                    <div class="option-value" style="flex: 1;">${visionType}</div>
                 </div>
-                <div class="patient-row">
-                    <div class="patient-label">Age / Gender:</div>
-                    <div class="patient-value">${age} / ${gender}</div>
+                <div class="option-row" style="display: flex; margin-bottom: 1px;">
+                    <div class="option-label" style="font-weight: bold; width: 20mm;">Lens Type:</div>
+                    <div class="option-value" style="flex: 1;">${lensType}</div>
                 </div>
-                <div class="patient-row">
-                    <div class="patient-label">Mobile:</div>
-                    <div class="patient-value">${mobile}</div>
+                <div class="option-row" style="display: flex; margin-bottom: 1px;">
+                    <div class="option-label" style="font-weight: bold; width: 20mm;">Frame Type:</div>
+                    <div class="option-value" style="flex: 1;">${frameType}</div>
+                </div>
+                <div class="option-row" style="display: flex; margin-bottom: 1px;">
+                    <div class="option-label" style="font-weight: bold; width: 20mm;">Payment Mode:</div>
+                    <div class="option-value" style="flex: 1;">${paymentMode}</div>
                 </div>
             </div>
-            
-            <!-- Right Eye Prescription -->
-            <div class="prescription-section">
-                <div class="eye-title">RIGHT EYE (OD)</div>
-                <table class="prescription-table">
-                    <thead>
-                        <tr>
-                            <th>Type</th>
-                            <th>SPH</th>
-                            <th>CYL</th>
-                            <th>AXIS</th>
-                            <th>V/A</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td class="section-heading">DIST</td>
-                            <td>${prescriptionData.rightDist.SPH}</td>
-                            <td>${prescriptionData.rightDist.CYL}</td>
-                            <td>${prescriptionData.rightDist.AXIS}</td>
-                            <td>${prescriptionData.rightDist.VA}</td>
-                        </tr>
-                        <tr>
-                            <td class="section-heading">ADD</td>
-                            <td>${prescriptionData.rightAdd.SPH}</td>
-                            <td>${prescriptionData.rightAdd.CYL}</td>
-                            <td>${prescriptionData.rightAdd.AXIS}</td>
-                            <td>${prescriptionData.rightAdd.VA}</td>
-                        </tr>
-                    </tbody>
-                </table>
+        </div>
+        
+        <div class="amount-section" style="border: 1px solid #000; margin: 4px 0;">
+            <div class="amount-row" style="display: flex; padding: 2px 3px;">
+                <div class="amount-label" style="font-weight: bold; width: 25mm;">TOTAL AMOUNT:</div>
+                <div class="amount-value" style="flex: 1; font-weight: bold; font-size: 10px;">₹ ${amount}</div>
             </div>
+        </div>
+        
+        <div class="footer" style="margin-top: 6px; padding-top: 3px; border-top: 1px solid #000; text-align: center; font-size: 7px;">
+            <div class="thank-you" style="margin-bottom: 2px; font-style: italic;">Thank you for choosing ${clinicName}</div>
+            <div>For queries: ${contactNumber}</div>
             
-            <!-- Left Eye Prescription -->
-            <div class="prescription-section">
-                <div class="eye-title">LEFT EYE (OS)</div>
-                <table class="prescription-table">
-                    <thead>
-                        <tr>
-                            <th>Type</th>
-                            <th>SPH</th>
-                            <th>CYL</th>
-                            <th>AXIS</th>
-                            <th>V/A</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td class="section-heading">DIST</td>
-                            <td>${prescriptionData.leftDist.SPH}</td>
-                            <td>${prescriptionData.leftDist.CYL}</td>
-                            <td>${prescriptionData.leftDist.AXIS}</td>
-                            <td>${prescriptionData.leftDist.VA}</td>
-                        </tr>
-                        <tr>
-                            <td class="section-heading">ADD</td>
-                            <td>${prescriptionData.leftAdd.SPH}</td>
-                            <td>${prescriptionData.leftAdd.CYL}</td>
-                            <td>${prescriptionData.leftAdd.AXIS}</td>
-                            <td>${prescriptionData.leftAdd.VA}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            
-            <!-- Recommended Options -->
-            <div class="options-section">
-                <div class="options-title">RECOMMENDED OPTIONS</div>
-                <div class="options-content">
-                    <div class="option-row">
-                        <div class="option-label">Vision Type:</div>
-                        <div class="option-value">${visionType}</div>
-                    </div>
-                    <div class="option-row">
-                        <div class="option-label">Lens Type:</div>
-                        <div class="option-value">${lensType}</div>
-                    </div>
-                    <div class="option-row">
-                        <div class="option-label">Frame Type:</div>
-                        <div class="option-value">${frameType}</div>
-                    </div>
-                    <div class="option-row">
-                        <div class="option-label">Payment Mode:</div>
-                        <div class="option-value">${paymentMode}</div>
-                    </div>
+            <div class="signature" style="margin-top: 8px; text-align: right;">
+                <div class="signature-line" style="border-top: 1px solid #000; width: 30mm; margin-left: auto; padding-top: 1px; text-align: center; font-size: 7px;">
+                    Authorized Signature<br>
+                    <strong>${optometristName}</strong>
                 </div>
             </div>
-            
-            <!-- Amount -->
-            <div class="amount-section">
-                <div class="amount-row">
-                    <div class="amount-label">TOTAL AMOUNT:</div>
-                    <div class="amount-value">₹ ${amount}</div>
-                </div>
-            </div>
-            
-            <!-- Footer -->
-            <div class="footer">
-                <div class="thank-you">
-                    Thank you for choosing ${clinicName}
-                </div>
-                <div>For queries: ${contactNumber}</div>
-                
-                <div class="signature">
-                    <div class="signature-line">
-                        Authorized Signature<br>
-                        <strong>${optometristName}</strong>
-                    </div>
-                </div>
-            </div>
-        </body>
-        </html>
+        </div>
     `;
 
-    // Create a temporary container for PDF generation
-    const tempContainer = document.createElement('div');
+    // Add to document but keep it hidden
     tempContainer.style.position = 'fixed';
     tempContainer.style.left = '-9999px';
     tempContainer.style.top = '0';
-    tempContainer.innerHTML = pdfHTML;
     document.body.appendChild(tempContainer);
 
-    // PDF configuration for 58mm thermal format
+    // PDF configuration
     const opt = {
         margin: [2, 2, 2, 2],
         filename: `Prescription_${patientName}_${shortDate.replace(/\//g, '-')}.pdf`,
@@ -1493,33 +1257,38 @@ function generatePDF() {
             useCORS: true,
             allowTaint: false,
             backgroundColor: '#ffffff',
-            width: 165, // 58mm in pixels at 96 DPI
+            width: 165, // 58mm in pixels
             windowWidth: 165
         },
         jsPDF: { 
             unit: 'mm', 
-            format: [58, 200], // 58mm width, auto height
+            format: [58, 400], // 58mm width, enough height
             orientation: 'portrait',
             compress: true
-        },
-        pagebreak: { mode: 'avoid-all' }
+        }
     };
 
-    // Generate and download PDF
-    html2pdf()
-        .set(opt)
-        .from(tempContainer)
-        .save()
-        .then(() => {
-            // Clean up
-            document.body.removeChild(tempContainer);
-            showStatusMessage('PDF downloaded successfully!', 'success');
-        })
-        .catch((error) => {
-            document.body.removeChild(tempContainer);
-            console.error('PDF generation error:', error);
-            showStatusMessage('PDF generation failed: ' + error.message, 'error');
-        });
+    try {
+        // Generate PDF
+        html2pdf()
+            .set(opt)
+            .from(tempContainer)
+            .save()
+            .then(() => {
+                // Clean up
+                document.body.removeChild(tempContainer);
+                showStatusMessage('PDF downloaded successfully!', 'success');
+            })
+            .catch((error) => {
+                document.body.removeChild(tempContainer);
+                console.error('PDF generation error:', error);
+                showStatusMessage('PDF download failed: ' + error.message, 'error');
+            });
+    } catch (error) {
+        document.body.removeChild(tempContainer);
+        console.error('PDF generation error:', error);
+        showStatusMessage('PDF generation failed: ' + error.message, 'error');
+    }
 }
 
 // Dedicated Thermal Print Function for 58mm Printer
