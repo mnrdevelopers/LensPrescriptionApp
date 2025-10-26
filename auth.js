@@ -1,4 +1,4 @@
-// auth.js - UPDATED VERSION
+// auth.js - FIXED VERSION WITH PROPER VALIDATION
 
 // DOM Elements
 const loginForm = document.getElementById('loginForm');
@@ -38,6 +38,49 @@ function initializeAuth() {
 
     // Setup password validation
     setupPasswordValidation();
+    setupEmailValidation();
+}
+
+function setupEmailValidation() {
+    // Email validation for all forms
+    const emailInputs = [
+        document.getElementById('loginUsername'),
+        document.getElementById('registerEmail'),
+        document.getElementById('forgotUsername')
+    ];
+
+    emailInputs.forEach(input => {
+        if (input) {
+            input.addEventListener('blur', validateEmail);
+            input.addEventListener('input', clearFieldError);
+        }
+    });
+
+    // Password field clearing
+    const passwordInputs = [
+        document.getElementById('loginPassword'),
+        document.getElementById('registerPassword'),
+        document.getElementById('registerConfirmPassword')
+    ];
+
+    passwordInputs.forEach(input => {
+        if (input) {
+            input.addEventListener('input', clearFieldError);
+        }
+    });
+}
+
+function validateEmail(event) {
+    const email = event.target.value.trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
+    if (email && !emailRegex.test(email)) {
+        showFieldError(event.target, 'Please enter a valid email address');
+        return false;
+    }
+    
+    clearFieldError(event);
+    return true;
 }
 
 function loadRememberedUser() {
@@ -61,9 +104,17 @@ async function handleLogin(event) {
     const password = document.getElementById('loginPassword').value.trim();
     const rememberMe = document.getElementById('rememberMe').checked;
 
+    // Clear previous errors
+    clearFormErrors();
+
     // Validate inputs
     if (!email || !password) {
         showError('Please fill in all fields');
+        return;
+    }
+
+    // Validate email format
+    if (!validateEmail({ target: document.getElementById('loginUsername') })) {
         return;
     }
 
@@ -120,12 +171,18 @@ async function handleRegister(event) {
         return;
     }
 
+    // Validate email format
+    if (!validateEmail({ target: document.getElementById('registerEmail') })) {
+        return;
+    }
+
     // Validate password match
     if (password !== confirmPassword) {
         console.error('Validation failed: Passwords do not match');
         if (passwordMatchError) {
             passwordMatchError.textContent = 'Passwords do not match';
             passwordMatchError.style.display = 'block';
+            document.getElementById('registerConfirmPassword').classList.add('error');
         }
         showError('Passwords do not match.');
         return;
@@ -133,6 +190,7 @@ async function handleRegister(event) {
 
     if (password.length < 6) {
         showError('Password must be at least 6 characters long');
+        document.getElementById('registerPassword').classList.add('error');
         return;
     }
 
@@ -158,22 +216,13 @@ async function handleRegister(event) {
         console.log('Registration completed successfully');
         showSuccess('Registration successful! Redirecting to profile setup...');
         
-        // The onAuthStateChanged will handle redirect
+        // Redirect after short delay
+        setTimeout(() => {
+            window.location.href = 'app.html';
+        }, 2000);
 
     } catch (error) {
         console.error('Registration error:', error);
-        
-        // More detailed error handling
-        if (error.code === 'auth/email-already-in-use') {
-            showError('This email is already registered. Please use a different email or login.');
-        } else if (error.code === 'auth/weak-password') {
-            showError('Password is too weak. Please use at least 6 characters.');
-        } else if (error.code === 'auth/invalid-email') {
-            showError('Invalid email address format.');
-        } else {
-            showError('Registration failed: ' + error.message);
-        }
-        
         handleAuthError(error);
     } finally {
         setButtonLoading(registerButton, false, 'Register');
@@ -192,16 +241,19 @@ function setupPasswordValidation() {
 
             if (confirmPassword === '') {
                 passwordMatchError.style.display = 'none';
+                confirmPasswordInput.classList.remove('error', 'password-match-success');
                 return;
             }
 
             if (password !== confirmPassword) {
                 passwordMatchError.textContent = 'Passwords do not match';
                 passwordMatchError.style.display = 'block';
-                confirmPasswordInput.style.borderColor = '#dc3545';
+                confirmPasswordInput.classList.add('error');
+                confirmPasswordInput.classList.remove('password-match-success');
             } else {
                 passwordMatchError.style.display = 'none';
-                confirmPasswordInput.style.borderColor = '#28a745';
+                confirmPasswordInput.classList.remove('error');
+                confirmPasswordInput.classList.add('password-match-success');
             }
         };
 
@@ -215,8 +267,16 @@ async function handleForgotPassword(event) {
     
     const email = document.getElementById('forgotUsername').value.trim();
 
+    // Clear previous errors
+    clearFormErrors();
+
     if (!email) {
         showError('Please enter your email address');
+        return;
+    }
+
+    // Validate email format
+    if (!validateEmail({ target: document.getElementById('forgotUsername') })) {
         return;
     }
 
@@ -306,11 +366,13 @@ function showError(message) {
     errorDiv.style.cssText = `
         background: #f8d7da;
         color: #721c24;
-        padding: 10px;
-        border-radius: 5px;
-        margin: 10px 0;
+        padding: 12px;
+        border-radius: 8px;
+        margin: 15px 0;
         text-align: center;
         border: 1px solid #f5c6cb;
+        font-size: 14px;
+        font-weight: bold;
     `;
     errorDiv.textContent = message;
     
@@ -321,7 +383,12 @@ function showError(message) {
     // Insert the error message at the top of the active form
     const activeForm = document.querySelector('.form-container.active');
     if (activeForm) {
-        activeForm.insertBefore(errorDiv, activeForm.firstChild);
+        const formHeader = activeForm.querySelector('h2');
+        if (formHeader) {
+            activeForm.insertBefore(errorDiv, formHeader.nextSibling);
+        } else {
+            activeForm.insertBefore(errorDiv, activeForm.firstChild);
+        }
         
         // Auto-remove after 5 seconds
         setTimeout(() => {
@@ -334,10 +401,43 @@ function showError(message) {
     }
 }
 
-function clearFormErrors() {
-    const errors = document.querySelectorAll('.error');
-    errors.forEach(error => error.classList.remove('error'));
+function showFieldError(inputElement, message) {
+    // Clear any existing error for this field
+    clearFieldError({ target: inputElement });
     
+    // Add error class to input
+    inputElement.classList.add('error');
+    
+    // Create error message element
+    const errorElement = document.createElement('div');
+    errorElement.className = 'error-message';
+    errorElement.style.cssText = `
+        color: #dc3545;
+        font-size: 12px;
+        margin-top: 5px;
+        display: block;
+    `;
+    errorElement.textContent = message;
+    
+    // Insert after the input
+    inputElement.parentNode.appendChild(errorElement);
+}
+
+function clearFieldError(event) {
+    const input = event.target;
+    input.classList.remove('error');
+    
+    // Remove any error messages for this field
+    const errorMessages = input.parentNode.querySelectorAll('.error-message');
+    errorMessages.forEach(error => error.remove());
+}
+
+function clearFormErrors() {
+    // Clear all error classes
+    const errorInputs = document.querySelectorAll('.error');
+    errorInputs.forEach(input => input.classList.remove('error'));
+    
+    // Clear all error messages
     const errorMessages = document.querySelectorAll('.error-message');
     errorMessages.forEach(error => error.remove());
     
@@ -350,12 +450,13 @@ function clearFormErrors() {
     // Reset border colors
     const confirmPasswordInput = document.getElementById('registerConfirmPassword');
     if (confirmPasswordInput) {
-        confirmPasswordInput.style.borderColor = '';
+        confirmPasswordInput.classList.remove('error', 'password-match-success');
     }
 }
 
 function handleAuthError(error) {
     let errorMessage = 'An error occurred. Please try again.';
+    let suggestion = '';
     
     switch (error.code) {
         case 'auth/invalid-email':
@@ -365,24 +466,68 @@ function handleAuthError(error) {
             errorMessage = 'This account has been disabled.';
             break;
         case 'auth/user-not-found':
+            errorMessage = 'No account found with this email address.';
+            suggestion = 'Please check your email or create a new account.';
+            break;
         case 'auth/wrong-password':
-            errorMessage = 'Invalid email or password.';
+            errorMessage = 'Incorrect password.';
+            suggestion = 'Please check your password and try again.';
             break;
         case 'auth/email-already-in-use':
             errorMessage = 'An account with this email already exists.';
+            suggestion = 'Please login or use a different email address.';
             break;
         case 'auth/weak-password':
-            errorMessage = 'Password is too weak. Please use at least 6 characters.';
+            errorMessage = 'Password is too weak.';
+            suggestion = 'Please use at least 6 characters.';
             break;
         case 'auth/network-request-failed':
-            errorMessage = 'Network error. Please check your internet connection.';
+            errorMessage = 'Network error.';
+            suggestion = 'Please check your internet connection.';
             break;
         case 'auth/too-many-requests':
-            errorMessage = 'Too many unsuccessful attempts. Please try again later.';
+            errorMessage = 'Too many unsuccessful attempts.';
+            suggestion = 'Please try again later.';
+            break;
+        case 'auth/operation-not-allowed':
+            errorMessage = 'Email/password accounts are not enabled.';
+            suggestion = 'Please contact support.';
             break;
     }
     
+    // Show the main error
     showError(errorMessage);
+    
+    // If there's a suggestion, show it after a delay
+    if (suggestion) {
+        setTimeout(() => {
+            // Check if we're still on the same form
+            const activeForm = document.querySelector('.form-container.active');
+            if (activeForm && !document.querySelector('.suggestion-message')) {
+                const suggestionDiv = document.createElement('div');
+                suggestionDiv.className = 'suggestion-message';
+                suggestionDiv.style.cssText = `
+                    background: #d1ecf1;
+                    color: #0c5460;
+                    padding: 10px;
+                    border-radius: 5px;
+                    margin: 10px 0;
+                    text-align: center;
+                    border: 1px solid #bee5eb;
+                    font-size: 13px;
+                `;
+                suggestionDiv.textContent = suggestion;
+                activeForm.appendChild(suggestionDiv);
+                
+                // Auto-remove after 8 seconds
+                setTimeout(() => {
+                    if (suggestionDiv.parentNode) {
+                        suggestionDiv.remove();
+                    }
+                }, 8000);
+            }
+        }, 500);
+    }
 }
 
 function showSuccess(message) {
@@ -392,11 +537,13 @@ function showSuccess(message) {
     successDiv.style.cssText = `
         background: #d4edda;
         color: #155724;
-        padding: 10px;
-        border-radius: 5px;
-        margin: 10px 0;
+        padding: 12px;
+        border-radius: 8px;
+        margin: 15px 0;
         text-align: center;
         border: 1px solid #c3e6cb;
+        font-size: 14px;
+        font-weight: bold;
     `;
     successDiv.textContent = message;
     
@@ -407,7 +554,12 @@ function showSuccess(message) {
     // Insert the success message at the top of the active form
     const activeForm = document.querySelector('.form-container.active');
     if (activeForm) {
-        activeForm.insertBefore(successDiv, activeForm.firstChild);
+        const formHeader = activeForm.querySelector('h2');
+        if (formHeader) {
+            activeForm.insertBefore(successDiv, formHeader.nextSibling);
+        } else {
+            activeForm.insertBefore(successDiv, activeForm.firstChild);
+        }
         
         // Auto-remove after 3 seconds
         setTimeout(() => {
