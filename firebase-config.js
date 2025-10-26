@@ -1,17 +1,28 @@
-// firebase-config.js
-const firebaseConfig = {
-  apiKey: "AIzaSyD0qbeB7cPxBu3IGgrLFph8xOwxdwFER7c",
-  authDomain: "lensprescriptionapp-e8f48.firebaseapp.com",
-  projectId: "lensprescriptionapp-e8f48",
-  storageBucket: "lensprescriptionapp-e8f48.firebasestorage.app",
-  messagingSenderId: "96345105670",
-  appId: "1:96345105670:web:a6f3d448aa13663e92aa87",
-  measurementId: "G-GS1MLHFP13"
-};
+// firebase-config.js - Updated version
+let firebaseConfig = null;
+let configLoaded = false;
 
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
+async function initializeFirebase() {
+    try {
+        // Fetch config from secure backend
+        const response = await fetch('http://localhost:3001/api/config');
+        firebaseConfig = await response.json();
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        
+        // Set global variables
+        window.auth = firebase.auth();
+        window.db = firebase.firestore();
+        
+        configLoaded = true;
+        console.log('Firebase initialized successfully with secure config');
+        
+    } catch (error) {
+        console.error('Failed to initialize Firebase:', error);
+        // Fallback - you might want to show an error to the user
+    }
+}
 
-// Add these global declarations
-const auth = firebase.auth();
-const db = firebase.firestore();
+// Initialize immediately
+initializeFirebase();
