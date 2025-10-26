@@ -1096,34 +1096,23 @@ async function sendWhatsApp() {
 async function uploadImageToImgBB(base64Image) {
     try {
         const user = auth.currentUser;
-        if (!user) {
-            throw new Error('User not authenticated');
-        }
+        if (!user) throw new Error('User not authenticated');
 
-        // Get Firebase ID token for authentication
         const token = await user.getIdToken();
+        const BACKEND_URL = 'https://lens-prescription-backend.onrender.com';
 
-        const response = await fetch('http://localhost:3001/api/upload-image', {
+        const response = await fetch(`${BACKEND_URL}/api/upload-image`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                imageData: base64Image,
-                token: token
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageData: base64Image, token })
         });
 
         const data = await response.json();
-
-        if (data.success) {
-            return data.url;
-        } else {
-            console.error('Backend upload failed:', data.error);
-            throw new Error(data.error || 'Image upload failed');
-        }
+        if (data.success) return data.url;
+        else throw new Error(data.error || 'Upload failed');
+        
     } catch (error) {
-        console.error('Secure image upload error:', error);
+        console.error('Image upload error:', error);
         throw error;
     }
 }
