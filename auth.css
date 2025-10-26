@@ -339,3 +339,30 @@ body {
         font-size: 14px;
     }
 }
+
+/* Add to auth.css */
+.password-match .error-message {
+    display: block;
+    font-size: 12px;
+    margin-top: 5px;
+}
+
+/* Style for valid password match */
+input:valid + .toggle-password {
+    color: #28a745;
+}
+
+/* Style for invalid password match */
+input:invalid + .toggle-password {
+    color: #dc3545;
+}
+
+/* Success state for matching passwords */
+.password-match-success {
+    border-color: #28a745 !important;
+}
+
+/* Error state for non-matching passwords */
+.password-match-error {
+    border-color: #dc3545 !important;
+}
