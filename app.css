@@ -152,45 +152,83 @@ body.dark-mode {
     transform: translateY(-2px);
 }
 
-/* Enhanced Offcanvas */
+/* Enhanced Offcanvas Styles */
 .offcanvas {
-    background: white; /* Light background for inner menu */
+    background: white !important;
 }
 
 .premium-offcanvas-header {
-    background: linear-gradient(90deg, var(--premium-navy), var(--primary-color)); /* Premium gradient header */
+    background: linear-gradient(90deg, var(--premium-navy), var(--primary-color)) !important;
     color: white;
     padding: 20px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    border-bottom: 2px solid var(--premium-gold);
 }
 
 .offcanvas-body {
-    background: var(--light-color); /* Light body for contrast */
+    background: var(--light-color) !important;
+    padding: 0 !important;
+    display: flex;
+    flex-direction: column;
 }
 
 .offcanvas-body .nav-link-custom {
-    color: var(--dark-color) !important; /* Dark text in offcanvas body */
+    color: var(--dark-color) !important;
+    padding: 15px 20px !important;
+    margin: 0;
+    border-radius: 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.offcanvas-body .nav-link-custom:hover {
+    background: rgba(251, 191, 36, 0.1);
+    color: var(--premium-navy) !important;
 }
 
 .offcanvas-body .nav-link-custom i {
-    color: var(--premium-gold); /* Gold icon in offcanvas body */
+    color: var(--premium-gold);
+    font-size: 1.1rem;
+    width: 24px;
+    text-align: center;
 }
 
-.btn-close-white {
-    filter: invert(1);
+.offcanvas-body .navbar-nav {
+    width: 100%;
 }
 
-/* Footer in Offcanvas */
-.offcanvas .footer {
-    padding: 20px;
-    border-top: 1px solid rgba(0, 0, 0, 0.1);
-    margin-top: auto;
+/* Ensure offcanvas takes full height on mobile */
+@media (max-width: 991.98px) {
+    .offcanvas {
+        width: 280px !important;
+    }
+    
+    .offcanvas-body {
+        min-height: calc(100vh - 80px);
+    }
 }
 
-.offcanvas .footer small {
-    color: #6c757d;
-    font-size: 0.8rem;
+/* Fix for offcanvas backdrop */
+.offcanvas-backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* Improved button styles in offcanvas */
+.offcanvas-body .premium-logout {
+    margin: 0;
+    padding: 12px;
+    font-size: 16px;
+}
+
+/* Footer text in offcanvas */
+.offcanvas-body .text-muted {
+    font-size: 12px;
     line-height: 1.4;
+    color: #6c757d !important;
 }
 
 /* Mobile Responsive */
