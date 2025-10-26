@@ -163,6 +163,10 @@ function showPrescriptionForm() {
         if (formSection) formSection.classList.add('active');
         updateActiveNavLink('prescription');
         resetForm();
+        
+        // **FIX: Update lastValidSection to track prescription form**
+        lastValidSection = 'form';
+        
         history.pushState({ page: 'form' }, 'Add Prescription', 'app.html#form');
     }, 'form');
 }
@@ -196,6 +200,13 @@ function showProfileSetup(isForced) {
     hideAllSections();
     const setupSection = document.getElementById('profileSetupSection');
     if (setupSection) setupSection.classList.add('active');
+    
+    // **FIX: Track where we're coming from for proper navigation back**
+    const currentState = history.state?.page;
+    if (currentState === 'form') {
+        // If we're coming from the prescription form, remember that
+        lastValidSection = 'form';
+    }
     
     // Disable navigation if forced
     const navButtons = document.querySelectorAll('.nav-link:not(.btn-logout)');
@@ -339,7 +350,7 @@ async function saveSetupProfile() {
         address: document.getElementById('setupAddress').value.trim(),
         contactNumber: document.getElementById('setupContactNumber').value.trim(),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        email: user.email // Ensure email is always saved
+        email: user.email
     };
     
     // Enhanced validation (basic check)
@@ -367,13 +378,20 @@ async function saveSetupProfile() {
         const navButtons = document.querySelectorAll('.nav-link:not(.btn-logout)');
         navButtons.forEach(btn => btn.style.pointerEvents = 'auto');
 
-        // Go to the last valid page or dashboard
-        if (lastValidSection === 'dashboard' || !lastValidSection) {
+        // **FIX: Determine where to navigate after saving**
+        // Check if we came from the prescription form (edit profile scenario)
+        const cameFromPrescriptionForm = document.getElementById('prescriptionFormSection')?.classList.contains('active') || 
+                                        history.state?.page === 'form';
+        
+        if (cameFromPrescriptionForm) {
+            // If editing profile from prescription form, go back to form
+            showPrescriptionForm();
+        } else if (lastValidSection === 'dashboard' || !lastValidSection) {
+            // Default to dashboard
             showDashboard();
         } else {
-            // This case handles users editing their profile from a different page (e.g., /#form)
-            // It uses the browser history back to return to the previous page.
-            window.history.back(); 
+            // For other cases, use browser back
+            window.history.back();
         }
 
     } catch (error) {
@@ -382,7 +400,7 @@ async function saveSetupProfile() {
     } finally {
         const saveBtn = document.getElementById('saveSetupProfileBtn');
         saveBtn.disabled = false;
-        saveBtn.textContent = 'Save Profile & Continue'; // Reset text
+        saveBtn.textContent = 'Save Profile & Continue';
     }
 }
 
