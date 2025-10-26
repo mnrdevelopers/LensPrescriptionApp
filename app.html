@@ -34,7 +34,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
-   <!-- Enhanced Navigation - Updated with 'premium-nav' class and Logo -->
+ <!-- Enhanced Navigation - Updated with 'premium-nav' class and Logo -->
 <nav class="navbar navbar-expand-lg fixed-top premium-nav">
     <div class="container-fluid">
         <a class="navbar-brand" href="#" onclick="showDashboard()">
@@ -48,7 +48,7 @@
         </button>
         
         <!-- Desktop Menu (hidden on mobile) -->
-        <div class="collapse navbar-collapse d-none d-lg-block">
+        <div class="collapse navbar-collapse d-none d-lg-flex">
             <ul class="navbar-nav me-auto">
                 <li class="nav-item">
                     <a class="nav-link nav-link-custom" href="#" onclick="showDashboard()">
@@ -82,7 +82,7 @@
         </div>
 
         <!-- Offcanvas Mobile Menu -->
-        <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar">
+        <div class="offcanvas offcanvas-end d-lg-none" tabindex="-1" id="offcanvasNavbar">
             <div class="offcanvas-header premium-offcanvas-header">
                 <h5 class="offcanvas-title">
                     <i class="fas fa-bars me-2"></i>Navigation Menu
@@ -613,3 +613,4 @@
     </script>
 </body>
 </html>
+
