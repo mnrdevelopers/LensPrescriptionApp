@@ -1,4 +1,4 @@
-// firebase-config.js - FIXED VERSION
+// firebase-config.js - ENHANCED VERSION
 let firebaseConfig = null;
 let isFirebaseInitialized = false;
 
@@ -42,45 +42,68 @@ async function initializeFirebase() {
   try {
     // Initialize Firebase
     if (typeof firebase !== 'undefined') {
-      firebase.initializeApp(firebaseConfig);
+      const app = firebase.initializeApp(firebaseConfig);
       
-      // Set global variables
+      // Set global variables immediately
       window.auth = firebase.auth();
       window.db = firebase.firestore();
       
       isFirebaseInitialized = true;
       console.log('Firebase initialized successfully');
       
-      // Dispatch event that Firebase is ready
-      window.dispatchEvent(new Event('firebase-ready'));
+      // Dispatch custom event that Firebase is ready
+      window.dispatchEvent(new CustomEvent('firebase-ready', {
+        detail: { auth: window.auth, db: window.db }
+      }));
+    } else {
+      throw new Error('Firebase SDK not loaded');
     }
   } catch (error) {
     console.error('Firebase initialization error:', error);
-    
-    // Create mock objects for critical functions
-    window.auth = {
-      currentUser: null,
-      onAuthStateChanged: (callback) => callback(null),
-      signOut: () => Promise.resolve()
-    };
-    
-    window.db = {
-      collection: () => ({
-        doc: () => ({
-          get: () => Promise.resolve({ exists: false, data: () => null }),
-          set: () => Promise.resolve()
-        }),
-        where: () => ({
-          orderBy: () => ({
-            get: () => Promise.resolve({ forEach: () => {} })
-          }),
-          get: () => Promise.resolve({ forEach: () => {} })
-        })
-      })
-    };
-    
-    console.log('Created mock Firebase objects for fallback');
+    initializeFallbackAuth();
   }
+}
+
+function initializeFallbackAuth() {
+  console.log('Initializing fallback authentication...');
+  
+  // Create mock auth object with basic functionality
+  window.auth = {
+    currentUser: null,
+    onAuthStateChanged: (callback) => {
+      // Simulate no user logged in
+      setTimeout(() => callback(null), 100);
+      return () => {}; // Return unsubscribe function
+    },
+    signInWithEmailAndPassword: (email, password) => {
+      return Promise.reject(new Error('Firebase not available'));
+    },
+    createUserWithEmailAndPassword: (email, password) => {
+      return Promise.reject(new Error('Firebase not available'));
+    },
+    sendPasswordResetEmail: (email) => {
+      return Promise.reject(new Error('Firebase not available'));
+    },
+    signOut: () => Promise.resolve()
+  };
+  
+  // Create mock firestore
+  window.db = {
+    collection: () => ({
+      doc: () => ({
+        get: () => Promise.resolve({ exists: false, data: () => null }),
+        set: () => Promise.resolve()
+      }),
+      where: () => ({
+        orderBy: () => ({
+          get: () => Promise.resolve({ forEach: () => {} })
+        }),
+        get: () => Promise.resolve({ forEach: () => {} })
+      })
+    })
+  };
+  
+  console.log('Fallback authentication initialized');
 }
 
 // Initialize immediately
