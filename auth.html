@@ -123,13 +123,16 @@
         </div>
     </div>
 
-     <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+   <!-- Load Firebase FIRST -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
-    <script src="firebase-config.js"></script>
-    <script src="auth.js"></script>
+<!-- THEN load your config -->
+<script src="firebase-config.js"></script>
+
+<!-- THEN load your app logic -->
+<script src="app.js"></script>
 
     <!-- Service Worker Registration -->
     <script>
@@ -148,3 +151,4 @@
     </script>
 </body>
 </html>
+
