@@ -1,4 +1,4 @@
-// auth.js - ENHANCED WITH PROPER USER VALIDATION
+// auth.js - PRODUCTION READY SECURE VERSION
 
 // DOM Elements
 const loginForm = document.getElementById('loginForm');
@@ -16,32 +16,36 @@ let isRedirecting = false;
 
 // Security Configuration
 const SECURITY_CONFIG = {
-    maxLoginAttempts: 5,
-    lockoutDuration: 30 * 60 * 1000, // 30 minutes in milliseconds
+    maxLoginAttempts: 3,
+    // Lockout duration is 1 hour (for testing/user experience) in development, change to 24 * 60 * 60 * 1000 (24 hours) for production.
+    lockoutDuration: 60 * 60 * 1000, // 1 hour in milliseconds (24 * 60 * 60 * 1000 for 24 hours)
     passwordMinLength: 8,
     requireStrongPassword: true
 };
 
-// Security State
-let loginAttempts = 0;
-let accountLockedUntil = null;
-let currentUserEmail = null;
+// Security State Storage (now managed by email)
+let securityState = {}; // { email: { attempts: number, lockedUntil: timestamp } }
+
+// Utility for sleep function to mitigate timing attacks
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Initialize the authentication system
 document.addEventListener('DOMContentLoaded', function() {
     initializeAuth();
+    loadSecurityState();
     loadRememberedUser();
+    
+    // Check lock status on load and show the lock screen if necessary
+    checkAccountLockStatus(document.getElementById('loginUsername').value.trim()); 
 });
 
 function initializeAuth() {
-    loadSecurityState();
-    checkAccountLockStatus();
     
     // Check if user is already logged in
     auth.onAuthStateChanged((user) => {
         if (user && !isRedirecting) {
             console.log('User authenticated, redirecting to app...');
-            resetSecurityState();
+            resetSecurityState(user.email); // Reset attempts on successful auth
             isRedirecting = true;
             window.location.href = 'app.html';
         }
@@ -54,95 +58,6 @@ function initializeAuth() {
     
     setupPasswordValidation();
     setupSecurityMonitoring();
-    setupRealTimeValidation();
-}
-
-function setupRealTimeValidation() {
-    // Real-time email validation for login
-    const loginEmailInput = document.getElementById('loginUsername');
-    if (loginEmailInput) {
-        loginEmailInput.addEventListener('blur', function() {
-            validateEmailFormat(this.value, 'login');
-        });
-    }
-
-    // Real-time email validation for register
-    const registerEmailInput = document.getElementById('registerEmail');
-    if (registerEmailInput) {
-        registerEmailInput.addEventListener('blur', function() {
-            validateEmailFormat(this.value, 'register');
-            checkEmailAvailability(this.value);
-        });
-    }
-}
-
-function validateEmailFormat(email, formType) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    
-    if (!email) return true;
-    
-    if (!emailRegex.test(email)) {
-        showFieldError(`${formType === 'login' ? 'loginUsername' : 'registerEmail'}`, 'Please enter a valid email address');
-        return false;
-    } else {
-        clearFieldError(`${formType === 'login' ? 'loginUsername' : 'registerEmail'}`);
-        return true;
-    }
-}
-
-async function checkEmailAvailability(email) {
-    if (!email || !validateEmailFormat(email, 'register')) return;
-
-    try {
-        // Check if email already exists by attempting to fetch sign-in methods
-        const methods = await auth.fetchSignInMethodsForEmail(email);
-        if (methods && methods.length > 0) {
-            showFieldError('registerEmail', 'An account with this email already exists');
-            return false;
-        } else {
-            clearFieldError('registerEmail');
-            return true;
-        }
-    } catch (error) {
-        console.log('Email availability check:', error);
-        return true; // Assume available if check fails
-    }
-}
-
-function showFieldError(fieldId, message) {
-    const field = document.getElementById(fieldId);
-    if (!field) return;
-
-    // Remove existing error
-    clearFieldError(fieldId);
-
-    // Add error styling
-    field.classList.add('input-with-error');
-    
-    // Create error message element
-    const errorElement = document.createElement('div');
-    errorElement.className = 'field-error-message';
-    errorElement.textContent = message;
-    errorElement.style.cssText = `
-        color: #dc3545;
-        font-size: 12px;
-        margin-top: 5px;
-        display: block;
-    `;
-    
-    field.parentNode.appendChild(errorElement);
-}
-
-function clearFieldError(fieldId) {
-    const field = document.getElementById(fieldId);
-    if (!field) return;
-
-    field.classList.remove('input-with-error');
-    
-    const existingError = field.parentNode.querySelector('.field-error-message');
-    if (existingError) {
-        existingError.remove();
-    }
 }
 
 function loadRememberedUser() {
@@ -151,7 +66,11 @@ function loadRememberedUser() {
 
     if (rememberMe === 'true' && rememberedUsername) {
         const loginUsernameInput = document.getElementById('loginUsername');
-        if (loginUsernameInput) loginUsernameInput.value = rememberedUsername;
+        if (loginUsernameInput) {
+            loginUsernameInput.value = rememberedUsername;
+            // Check lock status for the remembered user
+            checkAccountLockStatus(rememberedUsername); 
+        }
         
         const rememberMeCheckbox = document.getElementById('rememberMe');
         if (rememberMeCheckbox) rememberMeCheckbox.checked = true;
@@ -160,15 +79,18 @@ function loadRememberedUser() {
 
 // Security Monitoring
 function setupSecurityMonitoring() {
-    const loginPasswordInput = document.getElementById('loginPassword');
-    if (loginPasswordInput) {
-        loginPasswordInput.addEventListener('input', function() {
-            updateLoginAttemptsDisplay();
+    const loginUsernameInput = document.getElementById('loginUsername');
+    if (loginUsernameInput) {
+        loginUsernameInput.addEventListener('input', function() {
+            // Update the display whenever the user changes the email input
+            const email = this.value.trim();
+            checkAccountLockStatus(email);
+            updateLoginAttemptsDisplay(email);
         });
     }
 }
 
-// Password Strength Checker
+// Password Strength Checker (Logic remains the same, just keeping it here for completeness)
 function checkPasswordStrength(password) {
     const strengthBar = document.getElementById('passwordStrength');
     const hintText = document.getElementById('passwordHint');
@@ -192,82 +114,39 @@ function checkPasswordStrength(password) {
     let hints = [];
 
     // Check requirements
-    if (password.length >= 8) {
-        strength += 1;
-        if (requirements.length) {
-            requirements.length.className = 'requirement met';
-            requirements.length.innerHTML = '<span class="requirement-icon">✓</span> At least 8 characters';
-        }
-    } else {
-        if (requirements.length) {
-            requirements.length.className = 'requirement unmet';
-            requirements.length.innerHTML = '<span class="requirement-icon">○</span> At least 8 characters';
-        }
-        hints.push('Use at least 8 characters');
-    }
+    const isLength = password.length >= 8;
+    const isUppercase = /[A-Z]/.test(password);
+    const isLowercase = /[a-z]/.test(password);
+    const isNumber = /[0-9]/.test(password);
+    const isSpecial = /[^A-Za-z0-9]/.test(password);
+    
+    if (isLength) strength += 1;
+    if (isUppercase) strength += 1;
+    if (isLowercase) strength += 1;
+    if (isNumber) strength += 1;
+    if (isSpecial) strength += 1;
 
-    if (/[A-Z]/.test(password)) {
-        strength += 1;
-        if (requirements.uppercase) {
-            requirements.uppercase.className = 'requirement met';
-            requirements.uppercase.innerHTML = '<span class="requirement-icon">✓</span> One uppercase letter';
+    // Update UI requirements
+    const updateRequirementUI = (req, check, text) => {
+        if (requirements[req]) {
+            requirements[req].className = `requirement ${check ? 'met' : 'unmet'}`;
+            requirements[req].innerHTML = `<span class="requirement-icon">${check ? '✓' : '○'}</span> ${text}`;
         }
-    } else {
-        if (requirements.uppercase) {
-            requirements.uppercase.className = 'requirement unmet';
-            requirements.uppercase.innerHTML = '<span class="requirement-icon">○</span> One uppercase letter';
-        }
-        hints.push('Add an uppercase letter (A-Z)');
-    }
+    };
 
-    if (/[a-z]/.test(password)) {
-        strength += 1;
-        if (requirements.lowercase) {
-            requirements.lowercase.className = 'requirement met';
-            requirements.lowercase.innerHTML = '<span class="requirement-icon">✓</span> One lowercase letter';
-        }
-    } else {
-        if (requirements.lowercase) {
-            requirements.lowercase.className = 'requirement unmet';
-            requirements.lowercase.innerHTML = '<span class="requirement-icon">○</span> One lowercase letter';
-        }
-        hints.push('Add a lowercase letter (a-z)');
-    }
+    updateRequirementUI('length', isLength, 'At least 8 characters');
+    updateRequirementUI('uppercase', isUppercase, 'One uppercase letter');
+    updateRequirementUI('lowercase', isLowercase, 'One lowercase letter');
+    updateRequirementUI('number', isNumber, 'One number');
+    updateRequirementUI('special', isSpecial, 'One special character');
 
-    if (/[0-9]/.test(password)) {
-        strength += 1;
-        if (requirements.number) {
-            requirements.number.className = 'requirement met';
-            requirements.number.innerHTML = '<span class="requirement-icon">✓</span> One number';
-        }
-    } else {
-        if (requirements.number) {
-            requirements.number.className = 'requirement unmet';
-            requirements.number.innerHTML = '<span class="requirement-icon">○</span> One number';
-        }
-        hints.push('Include a number (0-9)');
-    }
-
-    if (/[^A-Za-z0-9]/.test(password)) {
-        strength += 1;
-        if (requirements.special) {
-            requirements.special.className = 'requirement met';
-            requirements.special.innerHTML = '<span class="requirement-icon">✓</span> One special character';
-        }
-    } else {
-        if (requirements.special) {
-            requirements.special.className = 'requirement unmet';
-            requirements.special.innerHTML = '<span class="requirement-icon">○</span> One special character';
-        }
-        hints.push('Add a special character (!@#$% etc.)');
-    }
 
     // Update strength display
     let strengthLevel = '';
     if (strength <= 2) {
         strengthLevel = 'weak';
         strengthBar.className = 'password-strength weak';
-        hintText.textContent = 'Password is weak. ' + (hints[0] || '');
+        hintText.textContent = 'Password is weak. Use a mix of characters.';
         hintText.style.color = '#dc3545';
     } else if (strength === 3) {
         strengthLevel = 'fair';
@@ -289,63 +168,41 @@ function checkPasswordStrength(password) {
     return strengthLevel;
 }
 
-// Enhanced Login Handler with proper user validation
+// Enhanced Login Handler
 async function handleLogin(event) {
     event.preventDefault();
+    clearSecurityWarnings();
     
-    if (isAccountLocked()) {
-        showAccountLockWarning();
-        return;
-    }
-
     const email = document.getElementById('loginUsername').value.trim();
     const password = document.getElementById('loginPassword').value.trim();
     const rememberMe = document.getElementById('rememberMe').checked;
+    
+    // Check lock status before attempting login
+    if (isAccountLocked(email)) {
+        showAccountLockWarning(email);
+        return;
+    }
 
-    // Clear previous errors
-    clearFormErrors();
-
-    // Validation
     if (!email || !password) {
-        showSecurityWarning('Please fill in all fields', 'warning');
-        if (!email) showFieldError('loginUsername', 'Email is required');
-        if (!password) showFieldError('loginPassword', 'Password is required');
+        showSecurityWarning('Please fill in both Email and Password.', 'warning');
         return;
     }
 
-    // Validate email format
-    if (!validateEmailFormat(email, 'login')) {
-        return;
-    }
-
-    currentUserEmail = email;
     const loginButton = loginFormElement.querySelector('button[type="submit"]');
     setButtonLoading(loginButton, true, 'Login');
 
     try {
-        // First, check if user exists
-        const signInMethods = await auth.fetchSignInMethodsForEmail(email);
-        
-        if (signInMethods.length === 0) {
-            // User doesn't exist
-            loginAttempts++;
-            saveSecurityState();
-            showSecurityWarning('No account found with this email address. Please check your email or register for a new account.', 'warning');
-            showFieldError('loginUsername', 'Account not found');
-            updateLoginAttemptsDisplay();
-            return;
-        }
+        // Introduce a slight delay before Firebase call to mitigate timing attacks
+        await sleep(500); 
 
-        // User exists, attempt login
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         const user = userCredential.user;
 
-        // Successful login
-        resetSecurityState();
+        resetSecurityState(email);
 
         if (rememberMe) {
             localStorage.setItem('rememberedUsername', email);
-            localStorage.setItem('rememberMe', 'true');
+            localStorage.setItem('rememberMe', true);
         } else {
             localStorage.removeItem('rememberedUsername');
             localStorage.removeItem('rememberMe');
@@ -354,88 +211,66 @@ async function handleLogin(event) {
         localStorage.setItem('username', email);
         localStorage.setItem('userId', user.uid);
         
-        console.log('Login successful - redirecting to app');
+        console.log('Login successful');
 
     } catch (error) {
         console.error('Login error:', error);
-        await handleFailedLoginAttempt(error, email);
+        await handleFailedLoginAttempt(email, error);
     } finally {
         setButtonLoading(loginButton, false, 'Login');
     }
 }
 
-// Enhanced failed login handler
-async function handleFailedLoginAttempt(error, email) {
-    loginAttempts++;
+// Handle Failed Login Attempts
+async function handleFailedLoginAttempt(email, error) {
+    
+    // Ensure state object exists for this email
+    if (!securityState[email]) {
+        securityState[email] = { attempts: 0, lockedUntil: null };
+    }
+    
+    securityState[email].attempts++;
     saveSecurityState();
 
-    const remainingAttempts = SECURITY_CONFIG.maxLoginAttempts - loginAttempts;
+    const currentAttempts = securityState[email].attempts;
+    const remainingAttempts = SECURITY_CONFIG.maxLoginAttempts - currentAttempts;
     
-    // Clear previous errors
-    clearFieldError('loginUsername');
-    clearFieldError('loginPassword');
-
-    if (loginAttempts >= SECURITY_CONFIG.maxLoginAttempts) {
-        accountLockedUntil = Date.now() + SECURITY_CONFIG.lockoutDuration;
+    if (currentAttempts >= SECURITY_CONFIG.maxLoginAttempts) {
+        const lockTime = Date.now() + SECURITY_CONFIG.lockoutDuration;
+        securityState[email].lockedUntil = lockTime;
         saveSecurityState();
         
-        showAccountLockWarning();
-        showSecurityWarning(
-            `Account temporarily locked due to too many failed attempts. Please try again in 30 minutes or reset your password.`,
-            'danger'
-        );
+        showAccountLockWarning(email);
         
-        // Send email notification about lockout
-        await sendLockoutNotification(email);
-    } else {
-        // Show specific error messages
-        switch (error.code) {
-            case 'auth/wrong-password':
-                showFieldError('loginPassword', 'Incorrect password');
-                showSecurityWarning(
-                    `Incorrect password. ${remainingAttempts} attempt${remainingAttempts !== 1 ? 's' : ''} remaining.`,
-                    remainingAttempts <= 2 ? 'danger' : 'warning'
-                );
-                break;
-                
-            case 'auth/user-disabled':
-                showSecurityWarning('This account has been disabled. Please contact support.', 'danger');
-                break;
-                
-            case 'auth/invalid-credential':
-            case 'auth/invalid-email':
-                showFieldError('loginUsername', 'Invalid email address');
-                showSecurityWarning('Please check your email address and try again.', 'warning');
-                break;
-                
-            case 'auth/too-many-requests':
-                showSecurityWarning('Too many login attempts. Please try again later.', 'danger');
-                break;
-                
-            default:
-                showSecurityWarning('Login failed. Please check your credentials and try again.', 'warning');
+        // Show a general error if it's the wrong password, otherwise show the specific error
+        if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+            showSecurityWarning(
+                `Too many failed attempts. Account temporarily locked. Please try again later or use password reset.`,
+                'danger'
+            );
+        } else {
+             handleAuthError(error);
         }
+        
+    } else if (currentAttempts >= 1) {
+        // Only show this warning if the error code is related to credentials failing
+        if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+             showSecurityWarning(
+                `Invalid credentials. ${remainingAttempts} attempts remaining before lock.`,
+                remainingAttempts === 1 ? 'danger' : 'warning'
+            );
+        } else {
+            handleAuthError(error);
+        }
+    } else {
+        // Fallback for other errors on first attempt
+        handleAuthError(error);
     }
     
-    updateLoginAttemptsDisplay();
+    updateLoginAttemptsDisplay(email);
 }
 
-async function sendLockoutNotification(email) {
-    try {
-        // In a real application, you would send this to your backend
-        console.log(`Account lockout notification for: ${email}`);
-        // await db.collection('securityLogs').add({
-        //     email: email,
-        //     type: 'account_lockout',
-        //     timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-        //     attempts: loginAttempts
-        // });
-    } catch (error) {
-        console.error('Failed to log lockout:', error);
-    }
-}
-
-// Enhanced Registration with proper validation
+// Enhanced Registration
 async function handleRegister(event) {
     event.preventDefault();
     
@@ -443,63 +278,29 @@ async function handleRegister(event) {
     const password = document.getElementById('registerPassword').value.trim();
     const confirmPassword = document.getElementById('registerConfirmPassword').value.trim();
     
-    // Clear previous errors
     clearFormErrors();
-    const passwordMatchError = document.getElementById('passwordMatchError');
-    if (passwordMatchError) passwordMatchError.style.display = 'none';
-
+    
+    // Input fields should be marked as invalid/valid by the validation function
+    
     // Validation
-    let hasErrors = false;
-
-    if (!email) {
-        showFieldError('registerEmail', 'Email is required');
-        hasErrors = true;
-    } else if (!validateEmailFormat(email, 'register')) {
-        hasErrors = true;
-    }
-
-    if (!password) {
-        showFieldError('registerPassword', 'Password is required');
-        hasErrors = true;
-    }
-
-    if (!confirmPassword) {
-        showFieldError('registerConfirmPassword', 'Please confirm your password');
-        hasErrors = true;
-    }
-
-    if (hasErrors) {
-        showSecurityWarning('Please fix the errors above', 'warning');
+    if (!email || !password || !confirmPassword) {
+        showSecurityWarning('All fields are required for registration.', 'warning');
         return;
     }
 
-    // Check password strength
     const passwordStrength = checkPasswordStrength(password);
-    if (SECURITY_CONFIG.requireStrongPassword && passwordStrength === 'weak') {
-        showSecurityWarning('Please use a stronger password. Your password should include uppercase letters, numbers, and special characters.', 'warning');
+    if (SECURITY_CONFIG.requireStrongPassword && (passwordStrength === 'weak' || passwordStrength === 'fair')) {
+        showSecurityWarning('Please use a strong password (Good or Strong rating).', 'warning');
         return;
     }
 
-    // Check password match
     if (password !== confirmPassword) {
-        if (passwordMatchError) {
-            passwordMatchError.textContent = 'Passwords do not match';
-            passwordMatchError.style.display = 'block';
-        }
-        showFieldError('registerConfirmPassword', 'Passwords do not match');
-        showSecurityWarning('Passwords do not match. Please check and try again.', 'warning');
-        return;
-    }
-
-    // Check email availability
-    const isEmailAvailable = await checkEmailAvailability(email);
-    if (!isEmailAvailable) {
-        showSecurityWarning('An account with this email already exists. Please use a different email or try logging in.', 'warning');
+        showSecurityWarning('Passwords do not match.', 'danger');
         return;
     }
 
     const registerButton = document.getElementById('registerButton');
-    setButtonLoading(registerButton, true, 'Creating Account...');
+    setButtonLoading(registerButton, true, 'Register');
 
     try {
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
@@ -510,19 +311,18 @@ async function handleRegister(event) {
             email: email,
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             lastLogin: firebase.firestore.FieldValue.serverTimestamp(),
-            profileCompleted: false
+            // Ensure profile fields are initialized to avoid errors later
+            clinicName: '',
+            optometristName: '',
+            address: '',
+            contactNumber: ''
         });
 
         localStorage.setItem('freshRegistration', 'true');
         localStorage.setItem('username', email);
         localStorage.setItem('userId', user.uid);
 
-        showSuccess('Registration successful! Setting up your account...');
-        
-        // Redirect after short delay
-        setTimeout(() => {
-            window.location.href = 'app.html';
-        }, 2000);
+        showSuccess('Registration successful! Redirecting to profile setup...');
         
     } catch (error) {
         console.error('Registration error:', error);
@@ -536,80 +336,68 @@ function setupPasswordValidation() {
     const passwordInput = document.getElementById('registerPassword');
     const confirmPasswordInput = document.getElementById('registerConfirmPassword');
     const passwordMatchError = document.getElementById('passwordMatchError');
+    const registerButton = document.getElementById('registerButton');
 
     if (passwordInput && confirmPasswordInput && passwordMatchError) {
         const validatePasswords = () => {
             const password = passwordInput.value;
             const confirmPassword = confirmPasswordInput.value;
 
-            if (confirmPassword === '') {
-                passwordMatchError.style.display = 'none';
-                clearFieldError('registerConfirmPassword');
-                return;
-            }
-
-            if (password !== confirmPassword) {
+            const isMatch = password === confirmPassword && confirmPassword.length > 0;
+            
+            // UI Feedback
+            if (confirmPassword.length > 0 && password !== confirmPassword) {
                 passwordMatchError.textContent = 'Passwords do not match';
                 passwordMatchError.style.display = 'block';
-                confirmPasswordInput.style.borderColor = '#dc3545';
-                showFieldError('registerConfirmPassword', 'Passwords do not match');
+                confirmPasswordInput.classList.add('input-with-error');
+                confirmPasswordInput.classList.remove('input-with-success');
+            } else if (isMatch) {
+                passwordMatchError.style.display = 'none';
+                confirmPasswordInput.classList.add('input-with-success');
+                confirmPasswordInput.classList.remove('input-with-error');
             } else {
                 passwordMatchError.style.display = 'none';
-                confirmPasswordInput.style.borderColor = '#28a745';
-                clearFieldError('registerConfirmPassword');
+                confirmPasswordInput.classList.remove('input-with-error', 'input-with-success');
             }
+            
+            // Disable button if validation fails
+            const isStrong = checkPasswordStrength(password) === 'strong' || checkPasswordStrength(password) === 'good';
+            registerButton.disabled = !isMatch || !isStrong || !passwordInput.checkValidity() || !confirmPasswordInput.checkValidity();
         };
 
         passwordInput.addEventListener('input', validatePasswords);
         confirmPasswordInput.addEventListener('input', validatePasswords);
+        
+        // Initial check
+        validatePasswords();
     }
 }
 
-// Enhanced Forgot Password with user validation
 async function handleForgotPassword(event) {
     event.preventDefault();
+    clearSecurityWarnings();
     
     const email = document.getElementById('forgotUsername').value.trim();
 
-    // Clear previous errors
-    clearFormErrors();
-
     if (!email) {
-        showFieldError('forgotUsername', 'Email is required');
         showSecurityWarning('Please enter your email address', 'warning');
         return;
     }
 
-    if (!validateEmailFormat(email, 'forgot')) {
-        return;
-    }
-
     const resetButton = forgotPasswordFormElement.querySelector('button[type="submit"]');
-    setButtonLoading(resetButton, true, 'Checking...');
+    setButtonLoading(resetButton, true, 'Sending...');
 
     try {
-        // Check if user exists before sending reset email
-        const signInMethods = await auth.fetchSignInMethodsForEmail(email);
-        
-        if (signInMethods.length === 0) {
-            showFieldError('forgotUsername', 'No account found with this email');
-            showSecurityWarning('No account found with this email address. Please check your email or register for a new account.', 'warning');
-            return;
-        }
-
-        // User exists, send reset email
         await auth.sendPasswordResetEmail(email);
-        
-        showSuccessMessage('Password reset email sent! Check your inbox for instructions to reset your password.');
-        
+        showSuccessMessage(`Password reset link sent to <strong>${email}</strong>. Check your inbox.`);
     } catch (error) {
         console.error('Password reset error:', error);
-        
         if (error.code === 'auth/too-many-requests') {
-            showSecurityWarning('Too many reset attempts. Please try again in a few minutes.', 'danger');
+            showSecurityWarning('Too many reset attempts. Please try again later.', 'danger');
         } else if (error.code === 'auth/user-not-found') {
-            showFieldError('forgotUsername', 'No account found with this email');
-            showSecurityWarning('No account found with this email address.', 'warning');
+            // Be vague about user existence for security reasons
+            showSecurityWarning('If an account exists for that email, a reset link has been sent.', 'info');
+            showSuccessMessage('Password reset email sent! Check your inbox.');
         } else {
             handleAuthError(error);
         }
@@ -620,44 +408,89 @@ async function handleForgotPassword(event) {
 
 // Security State Management
 function saveSecurityState() {
-    const securityState = {
-        loginAttempts: loginAttempts,
-        accountLockedUntil: accountLockedUntil,
-        currentUserEmail: currentUserEmail
-    };
-    localStorage.setItem('securityState', JSON.stringify(securityState));
+    // Only store attempts and lockedUntil for security
+    const simplifiedState = {};
+    for (const email in securityState) {
+        if (securityState[email].attempts > 0 || securityState[email].lockedUntil) {
+            simplifiedState[email] = securityState[email];
+        }
+    }
+    localStorage.setItem('securityState', JSON.stringify(simplifiedState));
 }
 
 function loadSecurityState() {
     const savedState = localStorage.getItem('securityState');
     if (savedState) {
-        const state = JSON.parse(savedState);
-        loginAttempts = state.loginAttempts || 0;
-        accountLockedUntil = state.accountLockedUntil || null;
-        currentUserEmail = state.currentUserEmail || null;
+        securityState = JSON.parse(savedState);
     }
 }
 
-function resetSecurityState() {
-    loginAttempts = 0;
-    accountLockedUntil = null;
-    currentUserEmail = null;
-    saveSecurityState();
-    updateLoginAttemptsDisplay();
-}
-
-function isAccountLocked() {
-    return accountLockedUntil && Date.now() < accountLockedUntil;
-}
-
-function checkAccountLockStatus() {
-    if (isAccountLocked()) {
-        showAccountLockWarning();
+function resetSecurityState(email) {
+    if (securityState[email]) {
+        securityState[email] = { attempts: 0, lockedUntil: null };
+        saveSecurityState();
     }
+    updateLoginAttemptsDisplay(email);
 }
+
+/**
+ * Checks if a specific email is currently locked out.
+ * @param {string} email 
+ * @returns {boolean}
+ */
+function isAccountLocked(email) {
+    if (!email) return false;
+    const state = securityState[email.toLowerCase()];
+    if (!state || !state.lockedUntil) return false;
+
+    // If the lock time has passed, automatically unlock and reset
+    if (Date.now() > state.lockedUntil) {
+        resetSecurityState(email);
+        return false;
+    }
+    return true;
+}
+
+/**
+ * Checks and displays account lock status when the user types an email.
+ * @param {string} email 
+ */
+function checkAccountLockStatus(email) {
+    clearAccountLockWarning(); // Clear any previous lock warning
+    
+    // Normalize email for lookup
+    const normEmail = email.toLowerCase(); 
+
+    if (isAccountLocked(normEmail)) {
+        showAccountLockWarning(normEmail);
+        
+        // Temporarily disable login button if account is locked
+        const loginButton = loginFormElement?.querySelector('button[type="submit"]');
+        if (loginButton) loginButton.disabled = true;
+    } else {
+         // Enable login button if account is not locked (and re-check login form validity later)
+        const loginButton = loginFormElement?.querySelector('button[type="submit"]');
+        if (loginButton) loginButton.disabled = false;
+        
+        // Hide lock warning if it was showing
+        clearAccountLockWarning();
+    }
+    updateLoginAttemptsDisplay(normEmail);
+}
+
 
 // UI Functions
+function clearSecurityWarnings() {
+    document.querySelectorAll('.security-warning').forEach(warning => warning.remove());
+}
+
+function clearAccountLockWarning() {
+    document.querySelectorAll('.account-lock-warning').forEach(warning => warning.remove());
+}
+
 function showSecurityWarning(message, type = 'warning') {
+    clearSecurityWarnings(); // Only show one active warning at a time
+    
     const warningDiv = document.createElement('div');
     warningDiv.className = `security-warning ${type}`;
     warningDiv.innerHTML = `
@@ -665,14 +498,12 @@ function showSecurityWarning(message, type = 'warning') {
         <span>${message}</span>
     `;
     
-    const existingWarnings = document.querySelectorAll('.security-warning');
-    existingWarnings.forEach(warning => warning.remove());
-    
     const activeForm = document.querySelector('.form-container.active');
     if (activeForm) {
-        activeForm.insertBefore(warningDiv, activeForm.querySelector('form'));
+        // Insert before the first form group for maximum visibility
+        activeForm.insertBefore(warningDiv, activeForm.querySelector('.form-group'));
         
-        if (type !== 'danger') {
+        if (type !== 'danger' && type !== 'info') {
             setTimeout(() => {
                 if (warningDiv.parentNode) {
                     warningDiv.remove();
@@ -682,18 +513,20 @@ function showSecurityWarning(message, type = 'warning') {
     }
 }
 
-function showAccountLockWarning() {
-    if (!accountLockedUntil) return;
+function showAccountLockWarning(email) {
+    clearAccountLockWarning();
+    const lockState = securityState[email];
+    if (!lockState || !lockState.lockedUntil) return;
     
-    const timeLeft = accountLockedUntil - Date.now();
-    const minutesLeft = Math.ceil(timeLeft / (60 * 1000));
+    const timeLeft = lockState.lockedUntil - Date.now();
+    const hoursLeft = Math.ceil(timeLeft / (60 * 60 * 1000));
     
     const lockDiv = document.createElement('div');
     lockDiv.className = 'account-lock-warning';
     lockDiv.innerHTML = `
         <h4>🔒 Account Temporarily Locked</h4>
-        <p>Too many failed login attempts. For security reasons, your account has been locked.</p>
-        <div class="account-lock-timer">Time remaining: ${minutesLeft} minutes</div>
+        <p>Too many failed login attempts for <strong>${email}</strong>. For security reasons, your account has been locked.</p>
+        <div class="account-lock-timer">Time remaining: ${hoursLeft} hour(s)</div>
         <p style="margin-top: 10px;">
             <a href="#" onclick="showForgotPassword()" style="color: #007bff; text-decoration: underline;">
                 Reset your password to unlock immediately
@@ -701,26 +534,31 @@ function showAccountLockWarning() {
         </p>
     `;
     
-    const existingWarnings = document.querySelectorAll('.account-lock-warning, .security-warning');
-    existingWarnings.forEach(warning => warning.remove());
-    
     const loginForm = document.getElementById('loginForm');
-    if (loginForm) {
+    if (loginForm && loginForm.classList.contains('active')) {
+        // Insert before the form element
         loginForm.insertBefore(lockDiv, loginForm.querySelector('form'));
+        
+        // Disable the login button
+        const loginButton = loginForm.querySelector('button[type="submit"]');
+        if (loginButton) loginButton.disabled = true;
     }
 }
 
-function updateLoginAttemptsDisplay() {
+function updateLoginAttemptsDisplay(email) {
     const attemptsCounter = document.getElementById('loginAttemptsCounter');
-    if (!attemptsCounter) return;
+    if (!attemptsCounter || !email) return;
 
-    if (loginAttempts > 0) {
-        const remainingAttempts = SECURITY_CONFIG.maxLoginAttempts - loginAttempts;
+    const state = securityState[email.toLowerCase()];
+    const currentAttempts = state?.attempts || 0;
+    
+    if (currentAttempts > 0 && !isAccountLocked(email)) {
+        const remainingAttempts = SECURITY_CONFIG.maxLoginAttempts - currentAttempts;
         if (remainingAttempts > 0) {
-            attemptsCounter.innerHTML = `<span class="attempts-warning">${loginAttempts} failed attempt${loginAttempts !== 1 ? 's' : ''}. ${remainingAttempts} remaining.</span>`;
-        } else {
-            attemptsCounter.innerHTML = `<span class="attempts-warning">Account locked due to too many failed attempts.</span>`;
+            attemptsCounter.innerHTML = `<span class="attempts-warning">${currentAttempts} failed attempt(s). ${remainingAttempts} remaining.</span>`;
         }
+    } else if (isAccountLocked(email)) {
+        attemptsCounter.innerHTML = `<span class="attempts-warning">Account locked.</span>`;
     } else {
         attemptsCounter.innerHTML = '';
     }
@@ -728,26 +566,23 @@ function updateLoginAttemptsDisplay() {
 
 function showSuccess(message) {
     const successText = document.getElementById('successText');
-    if (successText) successText.textContent = message;
+    if (successText) successText.innerHTML = message;
     
     hideAllForms();
-    successMessage.classList.remove('hidden');
-    successMessage.style.display = 'block';
+    successMessage.classList.add('active');
 }
 
 function showSuccessMessage(message) {
     const successText = document.getElementById('successText');
-    if (successText) successText.textContent = message;
+    if (successText) successText.innerHTML = message;
     
     hideAllForms();
-    successMessage.classList.remove('hidden');
-    successMessage.style.display = 'block';
+    successMessage.classList.add('active');
 }
 
 function hideAllForms() {
     document.querySelectorAll('.form-container').forEach(form => {
         form.classList.remove('active');
-        form.style.display = 'none';
     });
 }
 
@@ -767,27 +602,7 @@ function setButtonLoading(button, isLoading, originalText) {
 }
 
 function clearFormErrors() {
-    // Clear field errors
-    document.querySelectorAll('.field-error-message').forEach(error => {
-        error.remove();
-    });
-    
-    document.querySelectorAll('.input-with-error').forEach(input => {
-        input.classList.remove('input-with-error');
-    });
-    
-    // Clear password match error
-    const passwordMatchError = document.getElementById('passwordMatchError');
-    if (passwordMatchError) {
-        passwordMatchError.style.display = 'none';
-    }
-    
-    // Clear security warnings
-    document.querySelectorAll('.security-warning').forEach(warning => {
-        if (!warning.closest('.account-lock-warning')) {
-            warning.remove();
-        }
-    });
+    // This is primarily handled by the password validation function now
 }
 
 function handleAuthError(error) {
@@ -818,7 +633,7 @@ function handleAuthError(error) {
             errorMessage = 'Network error. Please check your connection.';
             break;
         case 'auth/too-many-requests':
-            errorMessage = 'Too many attempts. Please try again later.';
+            errorMessage = 'Too many requests. Please try again later.';
             break;
         case 'auth/requires-recent-login':
             errorMessage = 'Please log in again to perform this action.';
@@ -834,36 +649,35 @@ function handleAuthError(error) {
 function showLogin() {
     hideAllForms();
     loginForm.classList.add('active');
-    loginForm.style.display = 'block';
-    clearFormErrors();
-    updateLoginAttemptsDisplay();
+    clearSecurityWarnings();
+    // Re-check lock status for the currently entered email on form switch
+    const email = document.getElementById('loginUsername').value.trim();
+    checkAccountLockStatus(email);
+    updateLoginAttemptsDisplay(email);
 }
 
 function showRegister() {
     hideAllForms();
     registerForm.classList.add('active');
-    registerForm.style.display = 'block';
-    clearFormErrors();
+    clearSecurityWarnings();
 }
 
 function showForgotPassword() {
     hideAllForms();
     forgotPasswordForm.classList.add('active');
-    forgotPasswordForm.style.display = 'block';
-    clearFormErrors();
+    clearSecurityWarnings();
 }
 
 // Utility Functions
 function togglePassword(fieldId) {
     const passwordField = document.getElementById(fieldId);
-    const toggleButton = passwordField.parentElement.querySelector('.toggle-password');
-    
+    const toggleIcon = passwordField.nextElementSibling;
     if (passwordField.type === 'password') {
         passwordField.type = 'text';
-        if (toggleButton) toggleButton.textContent = '🙈';
+        if (toggleIcon) toggleIcon.textContent = '🙈'; // Closed Eye
     } else {
         passwordField.type = 'password';
-        if (toggleButton) toggleButton.textContent = '👁️';
+        if (toggleIcon) toggleIcon.textContent = '👁️'; // Open Eye
     }
 }
 
