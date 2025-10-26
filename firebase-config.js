@@ -1,0 +1,17 @@
+// firebase-config.js
+const firebaseConfig = {
+  apiKey: "AIzaSyD0qbeB7cPxBu3IGgrLFph8xOwxdwFER7c",
+  authDomain: "lensprescriptionapp-e8f48.firebaseapp.com",
+  projectId: "lensprescriptionapp-e8f48",
+  storageBucket: "lensprescriptionapp-e8f48.firebasestorage.app",
+  messagingSenderId: "96345105670",
+  appId: "1:96345105670:web:a6f3d448aa13663e92aa87",
+  measurementId: "G-GS1MLHFP13"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+
+// Add these global declarations
+const auth = firebase.auth();
+const db = firebase.firestore();
