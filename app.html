@@ -34,10 +34,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
-   <!-- Enhanced Navigation -->
-<nav class="navbar navbar-expand-lg fixed-top">
+   <!-- Enhanced Navigation - Updated with 'premium-nav' class and Logo -->
+<nav class="navbar navbar-expand-lg fixed-top premium-nav">
     <div class="container-fluid">
         <a class="navbar-brand" href="#" onclick="showDashboard()">
+            <img src="lenslogo.png" alt="Lens Prescription Logo" class="nav-logo">
             <span>Lens Prescription</span>
         </a>
         
@@ -50,74 +51,74 @@
         <div class="collapse navbar-collapse d-none d-lg-block">
             <ul class="navbar-nav me-auto">
                 <li class="nav-item">
-                    <a class="nav-link" href="#" onclick="showDashboard()">
+                    <a class="nav-link nav-link-custom" href="#" onclick="showDashboard()">
                         <i class="fas fa-tachometer-alt"></i> Dashboard
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#" onclick="showPrescriptionForm()">
+                    <a class="nav-link nav-link-custom" href="#" onclick="showPrescriptionForm()">
                         <i class="fas fa-plus-circle"></i> Add Prescription
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#" onclick="showPrescriptions()">
+                    <a class="nav-link nav-link-custom" href="#" onclick="showPrescriptions()">
                         <i class="fas fa-list"></i> View Prescriptions
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#" onclick="showReports()">
+                    <a class="nav-link nav-link-custom" href="#" onclick="showReports()">
                         <i class="fas fa-chart-bar"></i> Reports
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#" onclick="showProfileSetup(false)">
-                        <i class="fas fa-user-circle"></i> Edit Profile
+                    <a class="nav-link nav-link-custom" href="#" onclick="showProfileSetup(false)">
+                        <i class="fas fa-user-circle"></i> Profile
                     </a>
                 </li>
             </ul>
-            <button onclick="logoutUser()" class="btn btn-logout">
+            <button onclick="logoutUser()" class="btn btn-logout premium-logout">
                 <i class="fas fa-sign-out-alt"></i> Logout
             </button>
         </div>
 
         <!-- Offcanvas Mobile Menu -->
         <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar">
-            <div class="offcanvas-header">
+            <div class="offcanvas-header premium-offcanvas-header">
                 <h5 class="offcanvas-title">
-                    <i class="fas fa-bars me-2"></i>Menu
+                    <i class="fas fa-bars me-2"></i>Navigation Menu
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
             </div>
             <div class="offcanvas-body">
                 <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
                     <li class="nav-item">
-                        <a class="nav-link" href="#" onclick="showDashboard()" data-bs-dismiss="offcanvas">
+                        <a class="nav-link nav-link-custom" href="#" onclick="showDashboard()" data-bs-dismiss="offcanvas">
                             <i class="fas fa-tachometer-alt"></i> Dashboard
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#" onclick="showPrescriptionForm()" data-bs-dismiss="offcanvas">
+                        <a class="nav-link nav-link-custom" href="#" onclick="showPrescriptionForm()" data-bs-dismiss="offcanvas">
                             <i class="fas fa-plus-circle"></i> Add Prescription
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#" onclick="showPrescriptions()" data-bs-dismiss="offcanvas">
+                        <a class="nav-link nav-link-custom" href="#" onclick="showPrescriptions()" data-bs-dismiss="offcanvas">
                             <i class="fas fa-list"></i> View Prescriptions
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#" onclick="showReports()" data-bs-dismiss="offcanvas">
+                        <a class="nav-link nav-link-custom" href="#" onclick="showReports()" data-bs-dismiss="offcanvas">
                             <i class="fas fa-chart-bar"></i> Reports
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#" onclick="showProfileSetup(false)" data-bs-dismiss="offcanvas">
+                        <a class="nav-link nav-link-custom" href="#" onclick="showProfileSetup(false)" data-bs-dismiss="offcanvas">
                             <i class="fas fa-user-circle"></i> Edit Profile
                         </a>
                     </li>
                 </ul>
                 <div class="mt-4">
-                    <button onclick="logoutUser()" class="btn btn-logout w-100">
+                    <button onclick="logoutUser()" class="btn btn-logout premium-logout w-100">
                         <i class="fas fa-sign-out-alt"></i> Logout
                     </button>
                 </div>
@@ -612,4 +613,3 @@
     </script>
 </body>
 </html>
-
