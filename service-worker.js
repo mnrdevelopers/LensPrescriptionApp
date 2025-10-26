@@ -1,5 +1,5 @@
-// service-worker.js - ENHANCED VERSION
-const CACHE_NAME = 'lens-prescription-v3';
+// service-worker.js - FIXED VERSION
+const CACHE_NAME = 'lens-prescription-v4';
 const ASSETS = [
   '/',
   '/index.html',
@@ -10,33 +10,23 @@ const ASSETS = [
   '/app.js',
   '/auth.js',
   '/firebase-config.js',
-  '/manifest.json',
-  'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css',
-  'https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js',
-  'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js',
-  'https://i.postimg.cc/2S2Pcrt6/glasses-220002.png'
+  '/manifest.json'
 ];
 
-// Install event - Cache all essential assets
+// Install event
 self.addEventListener('install', (event) => {
   console.log('Service Worker: Installing...');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Service Worker: Caching app shell');
-        return cache.addAll(ASSETS).catch(error => {
-          console.log('Service Worker: Cache addAll error:', error);
-        });
+        return cache.addAll(ASSETS);
       })
-      .then(() => {
-        console.log('Service Worker: Skip waiting');
-        return self.skipWaiting();
-      })
+      .then(() => self.skipWaiting())
   );
 });
 
-// Activate event - Clean up old caches
+// Activate event
 self.addEventListener('activate', (event) => {
   console.log('Service Worker: Activating...');
   event.waitUntil(
@@ -49,57 +39,59 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    }).then(() => {
-      console.log('Service Worker: Claiming clients');
-      return self.clients.claim();
-    })
+    }).then(() => self.clients.claim())
   );
 });
 
-// Fetch event - Network first, fallback to cache
+// Fetch event - CRITICAL FIX: Don't cache HTML files aggressively
 self.addEventListener('fetch', (event) => {
-  // Skip non-GET requests and Firebase/Google APIs
-  if (event.request.method !== 'GET' || 
-      event.request.url.includes('firebase') ||
-      event.request.url.includes('googleapis')) {
+  // Skip non-GET requests
+  if (event.request.method !== 'GET') return;
+
+  const url = new URL(event.request.url);
+  
+  // Don't cache Firebase requests
+  if (url.href.includes('firebase') || 
+      url.href.includes('googleapis') ||
+      url.href.includes('gstatic.com')) {
     return;
   }
 
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // If valid response, cache it
-        if (response.status === 200) {
+  // For HTML files, use network first strategy
+  if (event.request.headers.get('accept')?.includes('text/html')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
           const responseClone = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseClone);
           });
+          return response;
+        })
+        .catch(() => {
+          return caches.match(event.request) || caches.match('/index.html');
+        })
+    );
+    return;
+  }
+
+  // For other assets, use cache first
+  event.respondWith(
+    caches.match(event.request)
+      .then((cachedResponse) => {
+        if (cachedResponse) {
+          return cachedResponse;
         }
-        return response;
-      })
-      .catch(() => {
-        // Network failed, try cache
-        return caches.match(event.request)
-          .then((cachedResponse) => {
-            if (cachedResponse) {
-              return cachedResponse;
-            }
-            // If not in cache, return offline page or fallback
-            return caches.match('/index.html');
+        return fetch(event.request).then((response) => {
+          if (!response || response.status !== 200) {
+            return response;
+          }
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
           });
+          return response;
+        });
       })
   );
 });
-
-// Background sync for offline data
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'background-sync') {
-    console.log('Service Worker: Background sync triggered');
-    event.waitUntil(doBackgroundSync());
-  }
-});
-
-async function doBackgroundSync() {
-  // Implement background sync for prescriptions when online
-  console.log('Performing background sync...');
-}
