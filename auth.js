@@ -130,13 +130,6 @@ async function handleRegister(event) {
         return;
     }
 
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        showError('Please enter a valid email address');
-        return;
-    }
-
     const registerButton = registerFormElement.querySelector('button[type="submit"]');
     setButtonLoading(registerButton, true, 'Register');
 
@@ -148,46 +141,26 @@ async function handleRegister(event) {
         const user = userCredential.user;
 
         console.log('Firebase user created successfully:', user.uid);
-        console.log('User email from auth:', user.email);
 
-        // CRITICAL FIX: Save user details to Firestore with proper email field
+        // ✅ FIXED: Use the EXACT same field structure and saving method as saveProfile()
         const userData = {
-            // Use the exact email from the form input
-            email: email, // This should match the registered email
             clinicName: clinicName,
             optometristName: optometristName,
             address: address,
             contactNumber: contactNumber,
-            // Add these additional fields for better tracking
-            userId: user.uid, // Store user ID for reference
-            registeredEmail: email, // Explicit email field
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            email: email,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
-        console.log('Saving to Firestore with data:', userData);
+        console.log('Saving user profile to Firestore:', userData);
 
-        // Save to Firestore with error handling
+        // ✅ FIXED: Use the EXACT same Firestore save method as saveProfile()
         await db.collection('users').doc(user.uid).set(userData);
-        console.log('User data saved to Firestore successfully');
-
-        // Verify the data was saved correctly
-        const savedDoc = await db.collection('users').doc(user.uid).get();
-        if (savedDoc.exists) {
-            const savedData = savedDoc.data();
-            console.log('Verified Firestore data:', savedData);
-            
-            if (savedData.email !== email) {
-                console.error('EMAIL MISMATCH: Firestore email does not match input email');
-                console.error('Input email:', email);
-                console.error('Saved email:', savedData.email);
-            }
-        }
+        console.log('User profile saved to Firestore successfully');
 
         // Save user data to localStorage
         localStorage.setItem('username', email);
         localStorage.setItem('userId', user.uid);
-        localStorage.setItem('userProfile', JSON.stringify(userData));
 
         console.log('Registration completed successfully');
         showSuccess('Registration successful! Redirecting...');
@@ -204,11 +177,11 @@ async function handleRegister(event) {
             showError('Password is too weak. Please use at least 6 characters.');
         } else if (error.code === 'auth/invalid-email') {
             showError('Invalid email address format.');
-        } else if (error.code === 'auth/operation-not-allowed') {
-            showError('Email/password accounts are not enabled. Please contact support.');
         } else {
             showError('Registration failed: ' + error.message);
         }
+        
+        handleAuthError(error);
     } finally {
         setButtonLoading(registerButton, false, 'Register');
     }
