@@ -1085,13 +1085,8 @@ function generatePDF() {
 
 // Enhanced Print Function with Better Structure
 function printPreview() {
-    const printWindow = window.open('', '_blank', 'width=600,height=800');
-    
-    if (!printWindow) {
-        // Fallback to browser print if popup blocked
-        window.print();
-        return;
-    }
+    window.print();
+}
 
     // Get all the data for the print
     const clinicName = document.getElementById('previewClinicName')?.textContent || 'Your Clinic';
