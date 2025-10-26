@@ -167,11 +167,8 @@
         </section>
 
         <!-- Dashboard Section -->
-       <section id="dashboardSection" class="page-section active">
-    <div class="dashboard-container">
-        <button onclick="goBack()" class="btn btn-back-section">
-            <i class="fas fa-arrow-left"></i> Back
-        </button>
+        <section id="dashboardSection" class="page-section active">
+            <div class="dashboard-container">
                 <h2 id="dashboardWelcomeText">Welcome to Lens Prescription</h2>
                 <div class="button-group">
                     <button onclick="showPrescriptionForm()" class="btn btn-primary">
@@ -405,55 +402,16 @@
         </section>
 
         <!-- View Prescriptions Section -->
-      <section id="prescriptionsSection" class="page-section">
-    <div class="container">
-        <button onclick="goBack()" class="btn btn-back-section">
-            <i class="fas fa-arrow-left"></i> Back
-        </button>
-        
-        <h2>Prescription History</h2>
-        
-        <!-- Enhanced Filter Section -->
-        <div class="filter-section">
-            <div class="filter-row">
-                <div class="filter-group">
-                    <label for="searchPatientName">Patient Name</label>
-                    <input type="text" id="searchPatientName" placeholder="Search by name">
+        <section id="prescriptionsSection" class="page-section">
+            <div class="container">
+                <h2>Prescription History</h2>
+                
+                <div class="search-bar">
+                    <input type="text" id="searchInput" placeholder="Search by Name or Mobile" onkeyup="filterPrescriptions()">
+                    <button class="btn-search">Search</button>
                 </div>
-                <div class="filter-group">
-                    <label for="searchMobile">Mobile Number</label>
-                    <input type="text" id="searchMobile" placeholder="Search by mobile">
-                </div>
-                <div class="filter-group">
-                    <label for="filterDateFrom">Date From</label>
-                    <input type="date" id="filterDateFrom">
-                </div>
-                <div class="filter-group">
-                    <label for="filterDateTo">Date To</label>
-                    <input type="date" id="filterDateTo">
-                </div>
-                <div class="filter-group">
-                    <label for="filterVisionType">Vision Type</label>
-                    <select id="filterVisionType">
-                        <option value="">All Types</option>
-                        <option value="Single Vision">Single Vision</option>
-                        <option value="Bifocal">Bifocal</option>
-                        <option value="Progressive">Progressive</option>
-                        <option value="Reading">Reading</option>
-                    </select>
-                </div>
-            </div>
-            <div class="filter-buttons">
-                <button onclick="applyPrescriptionFilters()" class="btn btn-primary">
-                    <i class="fas fa-filter"></i> Apply Filters
-                </button>
-                <button onclick="clearPrescriptionFilters()" class="btn btn-secondary">
-                    <i class="fas fa-times"></i> Clear
-                </button>
-            </div>
-        </div>
 
-        <table id="prescriptionTable">
+                <table id="prescriptionTable">
                     <thead>
                         <tr>
                             <th>Date</th>
@@ -475,44 +433,14 @@
         </section>
 
         <!-- Reports Section -->
-       <section id="reportsSection" class="page-section">
-    <div class="reports-container">
-        <button onclick="goBack()" class="btn btn-back-section">
-            <i class="fas fa-arrow-left"></i> Back
-        </button>
-        
-        <h2>Reports</h2>
-        
-        <!-- Report Filters -->
-        <div class="report-filters">
-            <div class="filter-row">
-                <div class="filter-group">
-                    <label for="reportDateFrom">Date From</label>
-                    <input type="date" id="reportDateFrom">
+        <section id="reportsSection" class="page-section">
+            <div class="reports-container">
+                <h2>Reports</h2>
+                <div class="button-group">
+                    <button onclick="fetchDailyReport()" class="btn btn-primary">Daily Report</button>
+                    <button onclick="fetchWeeklyReport()" class="btn btn-secondary">Weekly Report</button>
+                    <button onclick="fetchMonthlyReport()" class="btn btn-tertiary">Monthly Report</button>
                 </div>
-                <div class="filter-group">
-                    <label for="reportDateTo">Date To</label>
-                    <input type="date" id="reportDateTo">
-                </div>
-                <div class="filter-group">
-                    <label for="reportType">Report Type</label>
-                    <select id="reportType" onchange="handleReportTypeChange()">
-                        <option value="daily">Daily Report</option>
-                        <option value="weekly">Weekly Report</option>
-                        <option value="monthly">Monthly Report</option>
-                        <option value="custom">Custom Range</option>
-                    </select>
-                </div>
-            </div>
-            <div class="filter-buttons">
-                <button onclick="generateCustomReport()" class="btn btn-primary">
-                    <i class="fas fa-chart-bar"></i> Generate Report
-                </button>
-                <button onclick="clearReportFilters()" class="btn btn-secondary">
-                    <i class="fas fa-times"></i> Clear
-                </button>
-            </div>
-        </div>
 
                 <!-- Report Table -->
                 <table id="reportTable">
@@ -691,5 +619,3 @@
     </script>
 </body>
 </html>
-
-
