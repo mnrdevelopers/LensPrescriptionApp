@@ -1,25 +1,41 @@
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config();
+const admin = require('firebase-admin');
 
 const app = express();
 
-// Middleware
+// Get environment variables
+const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID;
+const FIREBASE_PRIVATE_KEY = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+const FIREBASE_CLIENT_EMAIL = process.env.FIREBASE_CLIENT_EMAIL;
+const IMG_BB_API_KEY = process.env.IMG_BB_API_KEY;
+
+// CORS - Replace with your Netlify URL
+const allowedOrigins = [
+  'https://your-app-name.netlify.app',
+  'http://localhost:3000'
+];
+
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
+
 app.use(express.json({ limit: '10mb' }));
 
 // Initialize Firebase Admin
-const admin = require('firebase-admin');
-
 const serviceAccount = {
   type: "service_account",
-  project_id: process.env.FIREBASE_PROJECT_ID,
+  project_id: FIREBASE_PROJECT_ID,
   private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
-  private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-  client_email: process.env.FIREBASE_CLIENT_EMAIL,
+  private_key: FIREBASE_PRIVATE_KEY,
+  client_email: FIREBASE_CLIENT_EMAIL,
   client_id: process.env.FIREBASE_CLIENT_ID,
   auth_uri: "https://accounts.google.com/o/oauth2/auth",
   token_uri: "https://oauth2.googleapis.com/token",
@@ -35,7 +51,6 @@ const db = admin.firestore();
 
 // Routes
 app.get('/api/config', (req, res) => {
-  // Return only public Firebase config (no secret keys)
   res.json({
     apiKey: "AIzaSyD0qbeB7cPxBu3IGgrLFph8xOwxdwFER7c",
     authDomain: "lensprescriptionapp-e8f48.firebaseapp.com",
@@ -46,11 +61,15 @@ app.get('/api/config', (req, res) => {
   });
 });
 
-// Secure Image Upload Endpoint
+// Secure Image Upload
 app.post('/api/upload-image', async (req, res) => {
   try {
     const { imageData, token } = req.body;
     
+    if (!token) {
+      return res.status(401).json({ error: 'No authentication token' });
+    }
+
     // Verify Firebase token
     const decodedToken = await admin.auth().verifyIdToken(token);
     const userId = decodedToken.uid;
@@ -63,7 +82,7 @@ app.post('/api/upload-image', async (req, res) => {
     const formData = new FormData();
     formData.append("image", imageData.split(',')[1]);
 
-    const imgbbResponse = await fetch(`https://api.imgbb.com/1/upload?key=${process.env.IMG_BB_API_KEY}`, {
+    const imgbbResponse = await fetch(`https://api.imgbb.com/1/upload?key=${IMG_BB_API_KEY}`, {
       method: "POST",
       body: formData
     });
@@ -73,8 +92,7 @@ app.post('/api/upload-image', async (req, res) => {
     if (imgbbData.success) {
       res.json({ 
         success: true, 
-        url: imgbbData.data.url,
-        deleteUrl: imgbbData.data.delete_url 
+        url: imgbbData.data.url
       });
     } else {
       res.status(500).json({ 
@@ -91,9 +109,13 @@ app.post('/api/upload-image', async (req, res) => {
   }
 });
 
-// Health check endpoint
+// Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    service: 'Lens Prescription Backend'
+  });
 });
 
 const PORT = process.env.PORT || 3001;
