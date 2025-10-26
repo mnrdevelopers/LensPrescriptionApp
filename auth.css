@@ -556,3 +556,34 @@ input:invalid + .toggle-password {
     padding: 5px 10px;
     border-radius: 4px;
 }
+
+/* Enhanced Error States */
+.field-error-message {
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: 5px;
+    display: block;
+    font-weight: normal;
+}
+
+.input-with-error {
+    border-color: #dc3545 !important;
+    background: #f8d7da !important;
+}
+
+.input-with-success {
+    border-color: #28a745 !important;
+    background: #d4edda !important;
+}
+
+/* Real-time validation states */
+.validating {
+    border-color: #ffc107 !important;
+    background: #fff3cd !important;
+}
+
+/* Success states */
+.success-field {
+    border-color: #28a745 !important;
+    background: #d4edda !important;
+}
