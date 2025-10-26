@@ -1355,16 +1355,40 @@ function resetStats() {
     console.warn("Local stats reset function is deprecated as data is stored in Firebase.");
 }
 
-// Logout Function
+// Logout Function - FIXED VERSION
 function logoutUser() {
+  // Check if auth is available
+  if (window.auth && typeof auth.signOut === 'function') {
     auth.signOut().then(() => {
-        // Clear only user-specific local storage items, not PWA cache or 'rememberMe'
-        localStorage.removeItem('username');
-        localStorage.removeItem('userId');
-        window.location.href = 'auth.html';
+      // Clear user-specific local storage items
+      localStorage.removeItem('username');
+      localStorage.removeItem('userId');
+      localStorage.removeItem('userProfile');
+      localStorage.removeItem('rememberedUsername');
+      localStorage.removeItem('rememberMe');
+      
+      window.location.href = 'auth.html';
     }).catch(error => {
-        console.error('Logout failed:', error);
+      console.error('Logout failed:', error);
+      // Fallback: clear storage and redirect anyway
+      clearUserData();
+      window.location.href = 'auth.html';
     });
+  } else {
+    // Fallback if Firebase auth is not available
+    console.warn('Firebase auth not available, using fallback logout');
+    clearUserData();
+    window.location.href = 'auth.html';
+  }
+}
+
+function clearUserData() {
+  localStorage.removeItem('username');
+  localStorage.removeItem('userId');
+  localStorage.removeItem('userProfile');
+  localStorage.removeItem('rememberedUsername');
+  localStorage.removeItem('rememberMe');
+  localStorage.removeItem('freshRegistration');
 }
 
 // Handle beforeunload event for closing the PWA
