@@ -10,22 +10,6 @@ let isProfileComplete = false;
 // Store the last valid section to return to after setup
 let lastValidSection = 'dashboard'; 
 
-// State Management
-let currentSection = 'dashboard';
-let prescriptionFilters = {
-    patientName: '',
-    mobile: '',
-    dateFrom: '',
-    dateTo: '',
-    visionType: ''
-};
-let reportFilters = {
-    dateFrom: '',
-    dateTo: '',
-    reportType: 'daily'
-};
-
-
 // 🛑 CRITICAL FIX: Use onAuthStateChanged to prevent the redirect loop.
 firebase.auth().onAuthStateChanged((user) => {
     if (user) {
@@ -60,80 +44,9 @@ function initializeApp() {
     
     // Setup event listeners
     setupEventListeners();
-    setupPWA();
-    
-    // Load saved state
-    loadAppState();
+    setupPWA(); // Enhanced PWA setup
     
     console.log('App initialized successfully');
-}
-
-// State Management Functions
-function saveAppState() {
-    const state = {
-        currentSection: currentSection,
-        prescriptionFilters: prescriptionFilters,
-        reportFilters: reportFilters,
-        lastValidSection: lastValidSection
-    };
-    localStorage.setItem('appState', JSON.stringify(state));
-}
-
-function loadAppState() {
-    const savedState = localStorage.getItem('appState');
-    if (savedState) {
-        const state = JSON.parse(savedState);
-        currentSection = state.currentSection || 'dashboard';
-        prescriptionFilters = state.prescriptionFilters || prescriptionFilters;
-        reportFilters = state.reportFilters || reportFilters;
-        lastValidSection = state.lastValidSection || 'dashboard';
-        
-        // Restore filter inputs
-        restoreFilterInputs();
-        
-        // Navigate to saved section
-        navigateToSection(currentSection);
-    }
-}
-
-// Enhanced Navigation with State Management
-function navigateToSection(section) {
-    switch(section) {
-        case 'dashboard':
-            showDashboard();
-            break;
-        case 'prescription':
-            showPrescriptionForm();
-            break;
-        case 'prescriptions':
-            showPrescriptions();
-            break;
-        case 'reports':
-            showReports();
-            break;
-        case 'preview':
-            showPreview();
-            break;
-        case 'setup':
-            showProfileSetup(false);
-            break;
-        default:
-            showDashboard();
-    }
-}
-
-function restoreFilterInputs() {
-    // Restore prescription filters
-    document.getElementById('searchPatientName').value = prescriptionFilters.patientName || '';
-    document.getElementById('searchMobile').value = prescriptionFilters.mobile || '';
-    document.getElementById('filterDateFrom').value = prescriptionFilters.dateFrom || '';
-    document.getElementById('filterDateTo').value = prescriptionFilters.dateTo || '';
-    document.getElementById('filterVisionType').value = prescriptionFilters.visionType || '';
-    
-    // Restore report filters
-    document.getElementById('reportDateFrom').value = reportFilters.dateFrom || '';
-    document.getElementById('reportDateTo').value = reportFilters.dateTo || '';
-    document.getElementById('reportType').value = reportFilters.reportType || 'daily';
 }
 
 function setCurrentDate() {
@@ -191,45 +104,8 @@ function setupEventListeners() {
         history.pushState({ page: 'initial' }, document.title, location.href);
     }
     
-   // Filter event listeners
-    setupFilterEventListeners();
-    
     console.log('Event listeners setup completed');
 }
-
-function setupFilterEventListeners() {
-    // Real-time filtering for name and mobile
-    document.getElementById('searchPatientName')?.addEventListener('input', debounce(applyPrescriptionFilters, 300));
-    document.getElementById('searchMobile')?.addEventListener('input', debounce(applyPrescriptionFilters, 300));
-    
-    // Date filter changes
-    document.getElementById('filterDateFrom')?.addEventListener('change', applyPrescriptionFilters);
-    document.getElementById('filterDateTo')?.addEventListener('change', applyPrescriptionFilters);
-    document.getElementById('filterVisionType')?.addEventListener('change', applyPrescriptionFilters);
-}
-
-// Utility function for debouncing
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
-// Update the existing navigation functions to set lastValidSection
-// Add this to each navigation function before changing sections:
-function updateLastValidSection(section) {
-    if (section !== 'preview' && section !== 'setup') {
-        lastValidSection = section;
-        saveAppState();
-    }
-}
-
 
 function setupPWA() {
     // Service Worker Registration
@@ -502,8 +378,6 @@ function showDashboard() {
         const dashboardSection = document.getElementById('dashboardSection');
         if (dashboardSection) dashboardSection.classList.add('active');
         updateActiveNavLink('dashboard');
-        currentSection = 'dashboard';
-        saveAppState();
         history.pushState({ page: 'dashboard' }, 'Dashboard', 'app.html#dashboard');
     }, 'dashboard');
 }
@@ -516,9 +390,8 @@ function showPrescriptionForm() {
         updateActiveNavLink('prescription');
         resetForm();
         
+        // **FIX: Update lastValidSection to track prescription form**
         lastValidSection = 'form';
-        currentSection = 'prescription';
-        saveAppState();
         
         history.pushState({ page: 'form' }, 'Add Prescription', 'app.html#form');
     }, 'form');
@@ -530,9 +403,7 @@ function showPrescriptions() {
         const prescriptionsSection = document.getElementById('prescriptionsSection');
         if (prescriptionsSection) prescriptionsSection.classList.add('active');
         updateActiveNavLink('prescriptions');
-        applyPrescriptionFilters(); // This will fetch and filter prescriptions
-        currentSection = 'prescriptions';
-        saveAppState();
+        fetchPrescriptions();
         history.pushState({ page: 'prescriptions' }, 'View Prescriptions', 'app.html#prescriptions');
     }, 'prescriptions');
 }
@@ -543,96 +414,8 @@ function showReports() {
         const reportsSection = document.getElementById('reportsSection');
         if (reportsSection) reportsSection.classList.add('active');
         updateActiveNavLink('reports');
-        
-        // Apply current report filters
-        if (reportFilters.reportType === 'custom') {
-            generateCustomReport();
-        } else {
-            applyReportType();
-        }
-        
-        currentSection = 'reports';
-        saveAppState();
         history.pushState({ page: 'reports' }, 'Reports', 'app.html#reports');
     }, 'reports');
-}
-
-async function generateCustomReport() {
-    const dateFrom = document.getElementById('reportDateFrom').value;
-    const dateTo = document.getElementById('reportDateTo').value;
-    
-    if (!dateFrom || !dateTo) {
-        showStatusMessage('Please select both start and end dates', 'warning');
-        return;
-    }
-    
-    reportFilters.dateFrom = dateFrom;
-    reportFilters.dateTo = dateTo;
-    saveAppState();
-    
-    await fetchCustomReport(dateFrom, dateTo);
-}
-
-async function fetchCustomReport(dateFrom, dateTo) {
-    const user = auth.currentUser;
-    if (!user) return;
-
-    const startDate = new Date(dateFrom);
-    startDate.setHours(0, 0, 0, 0);
-    
-    const endDate = new Date(dateTo);
-    endDate.setHours(23, 59, 59, 999);
-
-    try {
-        const querySnapshot = await db.collection('prescriptions')
-            .where('userId', '==', user.uid)
-            .where('createdAt', '>=', startDate)
-            .where('createdAt', '<=', endDate)
-            .get();
-
-        const reportData = processCustomReportData(querySnapshot, dateFrom, dateTo);
-        displayReport(reportData);
-    } catch (error) {
-        console.error('Error fetching custom report:', error);
-    }
-}
-
-function processCustomReportData(querySnapshot, dateFrom, dateTo) {
-    const reportData = {};
-    
-    querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        const timestamp = data.createdAt;
-        
-        if (!timestamp || typeof timestamp.toDate !== 'function') return;
-        
-        const date = timestamp.toDate();
-        const dateKey = date.toLocaleDateString();
-        
-        if (!reportData[dateKey]) {
-            reportData[dateKey] = { prescriptions: 0, totalAmount: 0 };
-        }
-        
-        reportData[dateKey].prescriptions += 1;
-        reportData[dateKey].totalAmount += (data.amount || 0);
-    });
-    
-    return reportData;
-}
-
-function clearReportFilters() {
-    document.getElementById('reportDateFrom').value = '';
-    document.getElementById('reportDateTo').value = '';
-    document.getElementById('reportType').value = 'daily';
-    
-    reportFilters = {
-        dateFrom: '',
-        dateTo: '',
-        reportType: 'daily'
-    };
-    
-    saveAppState();
-    fetchDailyReport(); // Reset to default report
 }
 
 /**
@@ -694,9 +477,7 @@ function showPreview(prescriptionData = null) {
     } else {
         loadPreviewFromForm();
     }
-    
-    currentSection = 'preview';
-    saveAppState();
+    // No history push needed for preview since it's transient, but ensure back returns to list/form
 }
 
 function hideAllSections() {
@@ -705,172 +486,8 @@ function hideAllSections() {
 }
 
 function updateActiveNavLink(activeSection) {
-    const navLinks = document.querySelectorAll('.nav-link-custom');
-    navLinks.forEach(link => {
-        link.classList.remove('active');
-        // Remove active class from parent li if exists
-        if (link.parentElement) {
-            link.parentElement.classList.remove('active');
-        }
-    });
-    
-    // Add active class to current section link
-    const activeLinks = document.querySelectorAll(`[onclick*="${activeSection}"]`);
-    activeLinks.forEach(link => {
-        if (link.classList.contains('nav-link-custom')) {
-            link.classList.add('active');
-            // Add active class to parent li if exists
-            if (link.parentElement) {
-                link.parentElement.classList.add('active');
-            }
-        }
-    });
-    
-    // Also update offcanvas navigation
-    updateOffcanvasNav(activeSection);
-}
-
-function updateOffcanvasNav(activeSection) {
-    const offcanvasLinks = document.querySelectorAll('.offcanvas-body .nav-link-custom');
-    offcanvasLinks.forEach(link => {
-        link.classList.remove('active');
-        if (link.getAttribute('onclick')?.includes(activeSection)) {
-            link.classList.add('active');
-        }
-    });
-}
-
-// Back Navigation Function
-function goBack() {
-    if (lastValidSection && lastValidSection !== currentSection) {
-        navigateToSection(lastValidSection);
-    } else {
-        showDashboard(); // Default fallback
-    }
-}
-
-// Enhanced Prescription Filtering
-async function applyPrescriptionFilters() {
-    // Update filter state
-    prescriptionFilters = {
-        patientName: document.getElementById('searchPatientName').value.toLowerCase(),
-        mobile: document.getElementById('searchMobile').value,
-        dateFrom: document.getElementById('filterDateFrom').value,
-        dateTo: document.getElementById('filterDateTo').value,
-        visionType: document.getElementById('filterVisionType').value
-    };
-    
-    saveAppState();
-    await fetchAndFilterPrescriptions();
-}
-
-async function fetchAndFilterPrescriptions() {
-    const user = auth.currentUser;
-    if (!user) return;
-
-    try {
-        const querySnapshot = await db.collection('prescriptions')
-            .where('userId', '==', user.uid)
-            .orderBy('createdAt', 'desc')
-            .get();
-
-        const prescriptions = [];
-        querySnapshot.forEach((doc) => {
-            prescriptions.push({
-                id: doc.id,
-                ...doc.data()
-            });
-        });
-
-        const filteredPrescriptions = filterPrescriptionsData(prescriptions);
-        displayPrescriptions(filteredPrescriptions);
-    } catch (error) {
-        console.error('Error fetching prescriptions:', error);
-    }
-}
-
-function filterPrescriptionsData(prescriptions) {
-    return prescriptions.filter(prescription => {
-        // Patient Name filter
-        if (prescriptionFilters.patientName && 
-            !prescription.patientName.toLowerCase().includes(prescriptionFilters.patientName)) {
-            return false;
-        }
-        
-        // Mobile filter
-        if (prescriptionFilters.mobile && 
-            !prescription.mobile.includes(prescriptionFilters.mobile)) {
-            return false;
-        }
-        
-        // Date range filter
-        if (prescriptionFilters.dateFrom || prescriptionFilters.dateTo) {
-            const prescriptionDate = new Date(prescription.date);
-            const fromDate = prescriptionFilters.dateFrom ? new Date(prescriptionFilters.dateFrom) : null;
-            const toDate = prescriptionFilters.dateTo ? new Date(prescriptionFilters.dateTo) : null;
-            
-            if (fromDate && prescriptionDate < fromDate) return false;
-            if (toDate && prescriptionDate > toDate) return false;
-        }
-        
-        // Vision Type filter
-        if (prescriptionFilters.visionType && 
-            prescription.visionType !== prescriptionFilters.visionType) {
-            return false;
-        }
-        
-        return true;
-    });
-}
-
-function clearPrescriptionFilters() {
-    document.getElementById('searchPatientName').value = '';
-    document.getElementById('searchMobile').value = '';
-    document.getElementById('filterDateFrom').value = '';
-    document.getElementById('filterDateTo').value = '';
-    document.getElementById('filterVisionType').value = '';
-    
-    prescriptionFilters = {
-        patientName: '',
-        mobile: '',
-        dateFrom: '',
-        dateTo: '',
-        visionType: ''
-    };
-    
-    saveAppState();
-    fetchAndFilterPrescriptions();
-}
-
-// Enhanced Report Filtering
-function handleReportTypeChange() {
-    const reportType = document.getElementById('reportType').value;
-    reportFilters.reportType = reportType;
-    
-    if (reportType !== 'custom') {
-        applyReportType();
-    }
-}
-
-function applyReportType() {
-    const reportType = reportFilters.reportType;
-    
-    switch(reportType) {
-        case 'daily':
-            fetchDailyReport();
-            break;
-        case 'weekly':
-            fetchWeeklyReport();
-            break;
-        case 'monthly':
-            fetchMonthlyReport();
-            break;
-        case 'custom':
-            // Wait for user to set custom dates
-            break;
-    }
-    
-    saveAppState();
+    const navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(link => link.classList.remove('active'));
 }
 
 // User Profile Management
@@ -1196,9 +813,28 @@ function resetForm() {
 }
 
 // Prescriptions List Management
-function fetchPrescriptions() {
-    // This is now handled by applyPrescriptionFilters
-    applyPrescriptionFilters();
+async function fetchPrescriptions() {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    try {
+        const querySnapshot = await db.collection('prescriptions')
+            .where('userId', '==', user.uid)
+            .orderBy('createdAt', 'desc') 
+            .get();
+
+        const prescriptions = [];
+        querySnapshot.forEach((doc) => {
+            prescriptions.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+
+        displayPrescriptions(prescriptions);
+    } catch (error) {
+        console.error('Error fetching prescriptions:', error);
+    }
 }
 
 function displayPrescriptions(data) {
@@ -1208,14 +844,7 @@ function displayPrescriptions(data) {
     tbody.innerHTML = '';
 
     if (!data || data.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="11" class="no-results">
-                    <i class="fas fa-search"></i><br>
-                    No prescriptions found matching your filters
-                </td>
-            </tr>
-        `;
+        tbody.innerHTML = '<tr><td colspan="11" class="text-center">No prescriptions found</td></tr>';
         return;
     }
 
@@ -2431,12 +2060,6 @@ window.fetchMonthlyReport = fetchMonthlyReport;
 window.logoutUser = logoutUser;
 window.installPWA = installPWA;
 window.resetStats = resetStats;
-window.applyPrescriptionFilters = applyPrescriptionFilters;
-window.clearPrescriptionFilters = clearPrescriptionFilters;
-window.handleReportTypeChange = handleReportTypeChange;
-window.generateCustomReport = generateCustomReport;
-window.clearReportFilters = clearReportFilters;
-window.goBack = goBack;
 
 // Add this function to debug Firestore data
 async function debugFirestoreData() {
