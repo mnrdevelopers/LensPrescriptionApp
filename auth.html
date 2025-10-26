@@ -62,8 +62,7 @@
         <div class="form-links">
             <p>Don't have an account? <a href="#" onclick="showRegister()">Register</a></p>
             <p>
-                <a href="#" onclick="showForgotPassword()">Forgot Password?</a> | 
-                <a href="#" onclick="showAccountRecovery()">Account Recovery</a>
+                <a href="#" onclick="showForgotPassword()">Forgot Password?</a>
             </p>
         </div>
     </form>
@@ -123,21 +122,6 @@
             <small id="passwordMatchError" class="error-message" style="display: none; color: #dc3545;"></small>
         </div>
 
-        <!-- Security Question -->
-        <div class="form-group security-question-group">
-            <label for="securityQuestion">Security Question</label>
-            <select id="securityQuestion" required>
-                <option value="">Select a security question</option>
-                <option value="What was your first pet's name?">What was your first pet's name?</option>
-                <option value="What city were you born in?">What city were you born in?</option>
-                <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
-                <option value="What was your first school name?">What was your first school name?</option>
-                <option value="What is your favorite book?">What is your favorite book?</option>
-            </select>
-            <input type="text" id="securityAnswer" placeholder="Your answer" required 
-                   style="width: 100%; padding: 12px 15px; border: 2px solid #e1e5e9; border-radius: 8px;">
-        </div>
-
         <button type="submit" class="btn btn-primary" id="registerButton">Register</button>
         
         <div class="form-links">
@@ -161,31 +145,6 @@
         
         <div class="form-links">
             <p><a href="#" onclick="showLogin()">Back to Login</a></p>
-            <p>Can't access email? <a href="#" onclick="showAccountRecovery()">Use Account Recovery</a></p>
-        </div>
-    </form>
-</div>
-
-     <!-- Account Recovery Form -->
-<div id="accountRecoveryForm" class="form-container">
-    <h2>Account Recovery</h2>
-    <p class="subtitle">Answer your security question to reset your password.</p>
-    
-    <form id="accountRecoveryFormElement">
-        <div class="form-group">
-            <label for="recoveryEmail">Email Address</label>
-            <input type="email" id="recoveryEmail" placeholder="Enter your email address" required>
-        </div>
-
-        <div class="form-group" id="securityQuestionContainer">
-            <label>Security Question</label>
-            <input type="text" id="securityAnswer" placeholder="Your answer" required> <!-- FIXED ID -->
-        </div>
-
-        <button type="submit" class="btn btn-primary" id="recoveryButton">Verify & Reset Password</button>
-        
-        <div class="form-links">
-            <p><a href="#" onclick="showLogin()">Back to Login</a> | <a href="#" onclick="showForgotPassword()">Forgot Password</a></p>
         </div>
     </form>
 </div>
@@ -224,7 +183,3 @@
     </script>
 </body>
 </html>
-
-
-
-
