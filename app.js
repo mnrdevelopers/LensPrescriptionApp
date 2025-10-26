@@ -2,13 +2,13 @@
 
 // Global Variables
 let currentPrescriptionData = null;
+let whatsappImageUrl = null;
 let isFormFilled = false;
 let deferredPrompt;
 // Flag to track if the user profile is complete
 let isProfileComplete = false;
 // Store the last valid section to return to after setup
 let lastValidSection = 'dashboard'; 
-
 
 // 🛑 CRITICAL FIX: Use onAuthStateChanged to prevent the redirect loop.
 firebase.auth().onAuthStateChanged((user) => {
@@ -258,11 +258,15 @@ function showOfflineStatus() {
     showStatusMessage('You are currently offline', 'warning');
 }
 
-function showStatusMessage(message, type) {
+function showStatusMessage(message, type = 'info') {
+    // Remove existing status messages
+    const existingMessages = document.querySelectorAll('.status-message');
+    existingMessages.forEach(msg => msg.remove());
+
     const statusMessage = document.createElement('div');
     statusMessage.className = `status-message alert alert-${type}`;
     statusMessage.innerHTML = `
-        <i class="fas fa-${type === 'success' ? 'wifi' : 'exclamation-triangle'}"></i>
+        <i class="fas fa-${getStatusIcon(type)}"></i>
         ${message}
     `;
     statusMessage.style.cssText = `
@@ -270,8 +274,17 @@ function showStatusMessage(message, type) {
         top: 80px;
         right: 20px;
         z-index: 10000;
-        min-width: 200px;
+        min-width: 250px;
+        padding: 12px 16px;
+        border-radius: 8px;
+        background: ${getStatusColor(type)};
+        color: white;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         animation: slideInRight 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
     `;
     
     document.body.appendChild(statusMessage);
@@ -280,7 +293,27 @@ function showStatusMessage(message, type) {
         if (statusMessage.parentNode) {
             statusMessage.remove();
         }
-    }, 3000);
+    }, 4000);
+}
+
+function getStatusIcon(type) {
+    const icons = {
+        'success': 'check-circle',
+        'error': 'exclamation-circle',
+        'warning': 'exclamation-triangle',
+        'info': 'info-circle'
+    };
+    return icons[type] || 'info-circle';
+}
+
+function getStatusColor(type) {
+    const colors = {
+        'success': '#28a745',
+        'error': '#dc3545',
+        'warning': '#ffc107',
+        'info': '#17a2b8'
+    };
+    return colors[type] || '#17a2b8';
 }
 
 // Offline Data Sync
@@ -1000,80 +1033,367 @@ function loadPreviewData(data) {
 function generatePDF() {
     const element = document.getElementById('prescriptionPreview');
     if (!element) {
-        console.error("PDF Error: Prescription Preview element not found.");
+        showStatusMessage("PDF Error: Prescription Preview not found", "error");
         return;
     }
 
-    html2pdf()
-        .set({
-            margin: 5,
-            filename: 'Lens_Prescription.pdf',
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        })
-        .from(element)
-        .save();
+    // Create a clone for PDF generation to avoid affecting the display
+    const elementClone = element.cloneNode(true);
+    elementClone.style.width = '58mm';
+    elementClone.style.margin = '0 auto';
+    elementClone.style.padding = '10px';
+    elementClone.style.background = 'white';
     
-    console.log('PDF generation initiated.');
+    // Hide the clone
+    elementClone.style.position = 'fixed';
+    elementClone.style.left = '-9999px';
+    document.body.appendChild(elementClone);
+
+    const opt = {
+        margin: [5, 5, 5, 5],
+        filename: `Prescription_${document.getElementById('previewPatientName')?.textContent || 'Patient'}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+            scale: 3,
+            useCORS: true,
+            allowTaint: false,
+            backgroundColor: '#ffffff'
+        },
+        jsPDF: { 
+            unit: 'mm', 
+            format: [80, 200], // Custom size for prescription
+            orientation: 'portrait' 
+        },
+        pagebreak: { mode: 'avoid-all' }
+    };
+
+    html2pdf()
+        .set(opt)
+        .from(elementClone)
+        .save()
+        .then(() => {
+            // Clean up
+            document.body.removeChild(elementClone);
+            showStatusMessage('PDF downloaded successfully!', 'success');
+        })
+        .catch((error) => {
+            document.body.removeChild(elementClone);
+            console.error('PDF generation error:', error);
+            showStatusMessage('PDF generation failed: ' + error.message, 'error');
+        });
 }
 
 function printPreview() {
-    window.print();
+    const originalContent = document.getElementById('prescriptionPreview').innerHTML;
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    
+    if (!printWindow) {
+        // Fallback to browser print if popup blocked
+        window.print();
+        return;
+    }
+
+    // Create print-optimized HTML
+    const printHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Prescription Print</title>
+            <style>
+                /* Print-specific styles */
+                body {
+                    font-family: 'Times New Roman', serif;
+                    margin: 0;
+                    padding: 10px;
+                    background: white;
+                    color: black;
+                    font-size: 12px;
+                    line-height: 1.2;
+                }
+                
+                .print-container {
+                    max-width: 58mm;
+                    margin: 0 auto;
+                    border: 1px solid #000;
+                    padding: 8px;
+                    page-break-inside: avoid;
+                }
+                
+                .print-header {
+                    text-align: center;
+                    margin-bottom: 8px;
+                }
+                
+                .print-header h2 {
+                    font-size: 14px;
+                    margin: 0 0 2px 0;
+                    font-weight: bold;
+                }
+                
+                .print-header p {
+                    font-size: 10px;
+                    margin: 1px 0;
+                }
+                
+                .print-details {
+                    margin-bottom: 8px;
+                }
+                
+                .print-details p {
+                    margin: 2px 0;
+                    font-size: 10px;
+                }
+                
+                .print-prescription {
+                    margin-bottom: 8px;
+                }
+                
+                .print-prescription h3 {
+                    text-align: center;
+                    font-size: 12px;
+                    margin: 6px 0;
+                    font-weight: bold;
+                }
+                
+                .print-prescription table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-size: 9px;
+                    margin-bottom: 6px;
+                }
+                
+                .print-prescription th,
+                .print-prescription td {
+                    border: 1px solid #000;
+                    padding: 2px;
+                    text-align: center;
+                }
+                
+                .print-prescription th {
+                    background: #f5f5f5;
+                    font-weight: bold;
+                }
+                
+                .print-footer {
+                    text-align: center;
+                    font-size: 9px;
+                    margin-top: 8px;
+                }
+                
+                hr {
+                    border: none;
+                    border-top: 1px solid #000;
+                    margin: 5px 0;
+                }
+                
+                /* Ensure single page */
+                @media print {
+                    body {
+                        margin: 0;
+                        padding: 0;
+                    }
+                    
+                    .print-container {
+                        border: none;
+                        padding: 0;
+                        margin: 0;
+                        max-width: 58mm;
+                    }
+                    
+                    /* Hide everything except print content */
+                    body * {
+                        visibility: hidden;
+                    }
+                    
+                    .print-container, .print-container * {
+                        visibility: visible;
+                    }
+                    
+                    .print-container {
+                        position: absolute;
+                        left: 0;
+                        top: 0;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="print-container">
+                ${originalContent}
+            </div>
+            <script>
+                // Auto-print and close
+                window.onload = function() {
+                    window.print();
+                    setTimeout(function() {
+                        window.close();
+                    }, 500);
+                };
+                
+                // Fallback close if print dialog is cancelled
+                window.onafterprint = function() {
+                    setTimeout(function() {
+                        window.close();
+                    }, 1000);
+                };
+            <\/script>
+        </body>
+        </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(printHTML);
+    printWindow.document.close();
 }
 
 async function sendWhatsApp() {
     const mobile = document.getElementById('previewMobile')?.textContent;
     if (!mobile) {
-        console.error('WhatsApp Error: No mobile number available for preview.');
+        showStatusMessage('No mobile number available for WhatsApp', 'error');
         return;
     }
 
     try {
         const element = document.getElementById('prescriptionPreview');
         if (!element) {
-            console.error("WhatsApp Error: Prescription Preview element not found.");
+            showStatusMessage('Prescription preview not found', 'error');
             return;
         }
 
-        const canvas = await html2canvas(element, { scale: 2 });
+        // Show loading state
+        showStatusMessage('Preparing prescription for WhatsApp...', 'info');
+
+        // Method 1: Try to use existing image URL first
+        if (whatsappImageUrl) {
+            await sendWhatsAppMessage(mobile, whatsappImageUrl);
+            return;
+        }
+
+        // Method 2: Generate canvas and try multiple upload methods
+        const canvas = await html2canvas(element, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: false,
+            backgroundColor: '#ffffff'
+        });
+
         const imageData = canvas.toDataURL('image/png');
         
-        // Upload to ImgBB
-        const imageUrl = await uploadImageToImgBB(imageData);
-        
-        const message = `Here is your digital prescription from ${document.getElementById('previewClinicName')?.textContent || 'Your Clinic'}: ${imageUrl}`;
-        const whatsappURL = `https://wa.me/${mobile}?text=${encodeURIComponent(message)}`;
-        window.open(whatsappURL, '_blank');
+        // Try multiple upload methods with fallbacks
+        try {
+            // Method 2A: Try ImgBB first
+            whatsappImageUrl = await uploadImageToImgBB(imageData);
+        } catch (imgbbError) {
+            console.warn('ImgBB upload failed, trying alternative methods:', imgbbError);
+            
+            try {
+                // Method 2B: Try converting to blob and creating object URL
+                whatsappImageUrl = await convertToBlobUrl(imageData);
+            } catch (blobError) {
+                console.warn('Blob URL method failed:', blobError);
+                
+                // Method 2C: Final fallback - use data URL directly (may not work in all browsers)
+                whatsappImageUrl = imageData;
+            }
+        }
+
+        await sendWhatsAppMessage(mobile, whatsappImageUrl);
         
     } catch (error) {
         console.error('Error sending WhatsApp:', error);
+        showStatusMessage('Failed to send WhatsApp: ' + error.message, 'error');
     }
 }
 
+async function convertToBlobUrl(dataUrl) {
+    return new Promise((resolve, reject) => {
+        try {
+            const blob = dataURLToBlob(dataUrl);
+            const blobUrl = URL.createObjectURL(blob);
+            resolve(blobUrl);
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
+function dataURLToBlob(dataUrl) {
+    const arr = dataUrl.split(',');
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    
+    while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    
+    return new Blob([u8arr], { type: mime });
+}
+
+async function sendWhatsAppMessage(mobile, imageUrl) {
+    const clinicName = document.getElementById('previewClinicName')?.textContent || 'Your Clinic';
+    const patientName = document.getElementById('previewPatientName')?.textContent || '';
+    
+    let message = `Hello${patientName ? ' ' + patientName : ''}! Here is your digital prescription from ${clinicName}.`;
+    
+    // If it's a data URL, we need to handle it differently
+    if (imageUrl.startsWith('data:')) {
+        message += '\n\nPrescription details:\n';
+        
+        // Add basic prescription info as text
+        const details = [
+            `Patient: ${patientName}`,
+            `Age: ${document.getElementById('previewAge')?.textContent || ''}`,
+            `Vision Type: ${document.getElementById('previewVisionType')?.textContent || ''}`,
+            `Amount: ₹${document.getElementById('previewAmount')?.textContent || ''}`
+        ];
+        
+        message += details.join('\n');
+        message += '\n\nPlease visit the clinic for the complete prescription.';
+    } else {
+        message += ` ${imageUrl}`;
+    }
+    
+    // Clean mobile number (remove any non-digit characters)
+    const cleanMobile = mobile.replace(/\D/g, '');
+    
+    // Create WhatsApp URL
+    const whatsappURL = `https://wa.me/${cleanMobile}?text=${encodeURIComponent(message)}`;
+    
+    // Open in new tab
+    window.open(whatsappURL, '_blank');
+    
+    showStatusMessage('WhatsApp opened with prescription!', 'success');
+}
+
 async function uploadImageToImgBB(base64Image) {
-    // ⚠️ SECURITY WARNING: This API key is exposed in the client-side code.
-    // In a production environment, this function MUST be moved to a secure backend 
-    // (like Firebase Cloud Functions) to prevent abuse and hide the key.
-    const apiKey = "bbfde58b1da5fc9ee9d7d6a591852f71"; 
+    const apiKey = "bbfde58b1da5fc9ee9d7d6a591852f71";
+    
+    // Convert base64 to blob for better compatibility
+    const blob = dataURLToBlob(base64Image);
     const formData = new FormData();
-    formData.append("image", base64Image.split(',')[1]);
+    formData.append("image", blob);
 
     try {
         const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
             method: "POST",
             body: formData
         });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const data = await response.json();
         
         if (data.success) {
             return data.data.url;
         } else {
-            console.error('ImgBB Upload Failed:', data.error?.message || 'Unknown error');
-            throw new Error('Image upload failed');
+            throw new Error(data.error?.message || 'Image upload failed');
         }
     } catch (error) {
-        console.error('Image upload error:', error);
+        console.error('ImgBB upload error:', error);
         throw error;
     }
 }
