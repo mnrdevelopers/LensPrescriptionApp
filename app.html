@@ -81,53 +81,59 @@
             </button>
         </div>
 
-        <!-- Offcanvas Mobile Menu -->
-        <div class="offcanvas offcanvas-end d-lg-none" tabindex="-1" id="offcanvasNavbar">
-            <div class="offcanvas-header premium-offcanvas-header">
-                <h5 class="offcanvas-title">
-                    <i class="fas fa-bars me-2"></i>Navigation Menu
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+      <!-- Offcanvas Mobile Menu -->
+<div class="offcanvas offcanvas-end d-lg-none" tabindex="-1" id="offcanvasNavbar">
+    <div class="offcanvas-header premium-offcanvas-header">
+        <h5 class="offcanvas-title">
+            <i class="fas fa-bars me-2"></i>Navigation Menu
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body p-0">
+        <div class="d-flex flex-column h-100">
+            <!-- Navigation Links -->
+            <ul class="navbar-nav justify-content-start flex-grow-1 p-3">
+                <li class="nav-item">
+                    <a class="nav-link nav-link-custom" href="#" onclick="showDashboard()" data-bs-dismiss="offcanvas">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link nav-link-custom" href="#" onclick="showPrescriptionForm()" data-bs-dismiss="offcanvas">
+                        <i class="fas fa-plus-circle"></i> Add Prescription
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link nav-link-custom" href="#" onclick="showPrescriptions()" data-bs-dismiss="offcanvas">
+                        <i class="fas fa-list"></i> View Prescriptions
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link nav-link-custom" href="#" onclick="showReports()" data-bs-dismiss="offcanvas">
+                        <i class="fas fa-chart-bar"></i> Reports
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link nav-link-custom" href="#" onclick="showProfileSetup(false)" data-bs-dismiss="offcanvas">
+                        <i class="fas fa-user-circle"></i> Edit Profile
+                    </a>
+                </li>
+            </ul>
+            
+            <!-- Logout Button -->
+            <div class="p-3 border-top">
+                <button onclick="logoutUser()" class="btn btn-logout premium-logout w-100">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
             </div>
-            <div class="offcanvas-body">
-                <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
-                    <li class="nav-item">
-                        <a class="nav-link nav-link-custom" href="#" onclick="showDashboard()" data-bs-dismiss="offcanvas">
-                            <i class="fas fa-tachometer-alt"></i> Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link nav-link-custom" href="#" onclick="showPrescriptionForm()" data-bs-dismiss="offcanvas">
-                            <i class="fas fa-plus-circle"></i> Add Prescription
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link nav-link-custom" href="#" onclick="showPrescriptions()" data-bs-dismiss="offcanvas">
-                            <i class="fas fa-list"></i> View Prescriptions
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link nav-link-custom" href="#" onclick="showReports()" data-bs-dismiss="offcanvas">
-                            <i class="fas fa-chart-bar"></i> Reports
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link nav-link-custom" href="#" onclick="showProfileSetup(false)" data-bs-dismiss="offcanvas">
-                            <i class="fas fa-user-circle"></i> Edit Profile
-                        </a>
-                    </li>
-                </ul>
-                <div class="mt-4">
-                    <button onclick="logoutUser()" class="btn btn-logout premium-logout w-100">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </button>
-                </div>
-                <div class="footer mt-4">
-                    <small>@2025 Lens-Prescription-App developed by <strong>MANITEJA (MNR DEVELOPERS)</strong></small>
-                </div>
+            
+            <!-- Footer -->
+            <div class="p-3 border-top mt-auto">
+                <small class="text-muted">@2025 Lens-Prescription-App developed by <strong>MANITEJA (MNR DEVELOPERS)</strong></small>
             </div>
         </div>
     </div>
+</div>
 </nav>
 
     <!-- Main Content Container -->
@@ -613,4 +619,5 @@
     </script>
 </body>
 </html>
+
 
