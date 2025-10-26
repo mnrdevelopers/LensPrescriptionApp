@@ -1,54 +1,119 @@
-// This is how your app talks to the Bank Teller
-class APIHelper {
+// api-helper.js - Safe way to talk to backend
+class ApiHelper {
   constructor() {
-    this.tellerURL = "http://localhost:3001"; // Bank Teller's address
+    // Use local backend during development
+    this.baseURL = 'http://localhost:3001';
   }
 
-  async talkToTeller(endpoint, data = null) {
+  // Get authentication token from Firebase
+  async getAuthToken() {
     try {
-      // Get your ID token from Firebase
       const user = firebase.auth().currentUser;
-      const idToken = await user.getIdToken();
-      
-      const options = {
-        method: data ? 'POST' : 'GET',
-        headers: {
-          'Authorization': `Bearer ${idToken}`,
-          'Content-Type': 'application/json'
-        }
-      };
-      
-      if (data) {
-        options.body = JSON.stringify(data);
+      if (!user) {
+        throw new Error('Please login first');
       }
-      
-      // Send request to Bank Teller
-      const response = await fetch(`${this.tellerURL}${endpoint}`, options);
-      return await response.json();
-      
+      return await user.getIdToken();
     } catch (error) {
-      console.error("Oops! Couldn't reach the Bank Teller:", error);
+      console.error('Failed to get auth token:', error);
       throw error;
     }
   }
 
-  // Simple methods to use in your app:
-  async savePrescription(prescriptionData) {
-    return this.talkToTeller('/save-prescription', prescriptionData);
+  // Make API request to backend
+  async makeRequest(endpoint, options = {}) {
+    try {
+      const token = await this.getAuthToken();
+      
+      const config = {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        ...options
+      };
+
+      // Add body for POST/PUT requests
+      if (options.body) {
+        config.body = JSON.stringify(options.body);
+      }
+
+      console.log(`📡 Making request to: ${this.baseURL}${endpoint}`);
+      
+      const response = await fetch(`${this.baseURL}${endpoint}`, config);
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || `HTTP error! status: ${response.status}`);
+      }
+      
+      return result;
+      
+    } catch (error) {
+      console.error('API request failed:', error);
+      
+      // Show user-friendly error messages
+      if (error.message.includes('Failed to fetch')) {
+        throw new Error('Cannot connect to server. Please check if backend is running.');
+      }
+      
+      throw error;
+    }
   }
 
-  async getPrescriptions() {
-    return this.talkToTeller('/get-prescriptions');
+  // ========== PROFILE METHODS ==========
+  async getProfile() {
+    return this.makeRequest('/profile');
   }
 
   async saveProfile(profileData) {
-    return this.talkToTeller('/save-profile', profileData);
+    return this.makeRequest('/profile', {
+      method: 'POST',
+      body: profileData
+    });
   }
 
-  async getProfile() {
-    return this.talkToTeller('/get-profile');
+  // ========== PRESCRIPTION METHODS ==========
+  async getPrescriptions(search = '') {
+    const endpoint = search ? `/prescriptions?search=${encodeURIComponent(search)}` : '/prescriptions';
+    return this.makeRequest(endpoint);
+  }
+
+  async savePrescription(prescriptionData) {
+    return this.makeRequest('/prescriptions', {
+      method: 'POST',
+      body: prescriptionData
+    });
+  }
+
+  async deletePrescription(prescriptionId) {
+    return this.makeRequest(`/prescriptions/${prescriptionId}`, {
+      method: 'DELETE'
+    });
+  }
+
+  // ========== REPORT METHODS ==========
+  async getDailyReport() {
+    return this.makeRequest('/reports/daily');
+  }
+
+  async getWeeklyReport() {
+    return this.makeRequest('/reports/weekly');
+  }
+
+  async getMonthlyReport() {
+    return this.makeRequest('/reports/monthly');
+  }
+
+  // ========== HEALTH CHECK ==========
+  async healthCheck() {
+    try {
+      const response = await fetch(`${this.baseURL}/health`);
+      return await response.json();
+    } catch (error) {
+      throw new Error('Backend server is not running');
+    }
   }
 }
 
-// Create one helper for your whole app to use
-window.apiHelper = new APIHelper();
+// Create global instance
+window.apiHelper = new ApiHelper();
