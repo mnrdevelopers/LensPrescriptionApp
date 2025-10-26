@@ -1356,7 +1356,7 @@ body.offline .navbar {
     100% { transform: rotate(360deg); }
 }
 
-/* 58mm Thermal Printer Print Styles */
+/* Clean 58mm Thermal Printer Print & PDF Styles */
 @media print {
     /* Reset everything for thermal printer */
     * {
@@ -1396,86 +1396,9 @@ body.offline .navbar {
         font-size: 9px !important;
         line-height: 1.1 !important;
         box-shadow: none !important;
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
         position: absolute !important;
         left: 0 !important;
         top: 0 !important;
-    }
-    
-    /* Thermal printer header */
-    .preview-header {
-        text-align: center !important;
-        margin-bottom: 8px !important;
-        padding-bottom: 4px !important;
-        border-bottom: 1px solid #000 !important;
-    }
-    
-    .preview-header h2 {
-        font-size: 11px !important;
-        font-weight: bold !important;
-        margin-bottom: 2px !important;
-        text-transform: uppercase !important;
-    }
-    
-    .preview-header p {
-        font-size: 8px !important;
-        margin: 1px 0 !important;
-    }
-    
-    /* Thermal printer details */
-    .preview-details {
-        margin-bottom: 8px !important;
-    }
-    
-    .preview-details p {
-        margin: 2px 0 !important;
-        font-size: 8px !important;
-        padding: 0 !important;
-    }
-    
-    /* Thermal printer prescription tables */
-    .preview-prescription {
-        margin: 8px 0 !important;
-    }
-    
-    .preview-prescription h3 {
-        text-align: center !important;
-        font-size: 9px !important;
-        font-weight: bold !important;
-        margin: 6px 0 !important;
-        background: #f0f0f0 !important;
-        padding: 2px !important;
-    }
-    
-    .preview-prescription table {
-        width: 100% !important;
-        border-collapse: collapse !important;
-        margin: 4px 0 !important;
-        font-size: 7px !important;
-    }
-    
-    .preview-prescription th {
-        background: #e0e0e0 !important;
-        border: 1px solid #000 !important;
-        padding: 2px 1px !important;
-        text-align: center !important;
-        font-weight: bold !important;
-    }
-    
-    .preview-prescription td {
-        border: 1px solid #000 !important;
-        padding: 2px 1px !important;
-        text-align: center !important;
-    }
-    
-    /* Thermal printer footer */
-    .preview-footer {
-        text-align: center !important;
-        margin-top: 10px !important;
-        padding-top: 6px !important;
-        border-top: 1px solid #000 !important;
-        font-size: 7px !important;
     }
     
     /* Hide all UI elements */
@@ -1484,8 +1407,7 @@ body.offline .navbar {
     .btn-back,
     .install-prompt,
     .update-notification,
-    .status-message,
-    .main-content > *:not(#previewSection) {
+    .status-message {
         display: none !important;
     }
     
@@ -1494,20 +1416,6 @@ body.offline .navbar {
         margin: 0;
         padding: 0;
         size: 58mm auto;
-    }
-    
-    /* Ensure no page breaks */
-    #prescriptionPreview {
-        page-break-after: avoid !important;
-        page-break-before: avoid !important;
-        page-break-inside: avoid !important;
-    }
-    
-    /* Remove any max-width constraints */
-    body {
-        width: 58mm !important;
-        margin: 0 !important;
-        padding: 0 !important;
     }
 }
 
@@ -1610,6 +1518,105 @@ body.offline .navbar {
     border: none;
     border-top: 1px solid #ccc;
     margin: 6px 0;
+}
+
+/* PDF Generation Specific Styles */
+.pdf-container {
+    width: 58mm;
+    margin: 0 auto;
+    padding: 3mm;
+    background: white;
+    font-family: 'Courier New', monospace;
+    font-size: 9px;
+    line-height: 1.1;
+    color: black;
+}
+
+.pdf-header {
+    text-align: center;
+    margin-bottom: 4px;
+    padding-bottom: 3px;
+    border-bottom: 1px solid #000;
+}
+
+.pdf-header h2 {
+    font-size: 11px;
+    font-weight: bold;
+    margin-bottom: 1px;
+    text-transform: uppercase;
+}
+
+.pdf-patient-info {
+    margin-bottom: 4px;
+    padding: 3px;
+    border: 1px solid #000;
+}
+
+.pdf-prescription-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 4px 0;
+    font-size: 7px;
+}
+
+.pdf-prescription-table th {
+    background: #f0f0f0;
+    border: 1px solid #000;
+    padding: 2px 1px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.pdf-prescription-table td {
+    border: 1px solid #000;
+    padding: 2px 1px;
+    text-align: center;
+}
+
+/* Status Messages */
+.status-message {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 10000;
+    min-width: 250px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    color: white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    animation: slideInRight 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+}
+
+.status-success {
+    background: #28a745;
+}
+
+.status-error {
+    background: #dc3545;
+}
+
+.status-info {
+    background: #17a2b8;
+}
+
+.status-warning {
+    background: #ffc107;
+    color: black;
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 /* Mobile responsive for thermal preview */
