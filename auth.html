@@ -46,7 +46,7 @@
             </form>
         </div>
 
-      <!-- Register Form: Simplified -->
+     <!-- In the register form section of auth.html -->
 <div id="registerForm" class="form-container">
     <h2>Create Your Account</h2>
     <form id="registerFormElement">
@@ -61,6 +61,16 @@
                 <input type="password" id="registerPassword" placeholder="Enter Password" required>
                 <span class="toggle-password" onclick="togglePassword('registerPassword')">👁️</span>
             </div>
+        </div>
+
+        <!-- ADD CONFIRM PASSWORD FIELD -->
+        <div class="form-group">
+            <label for="registerConfirmPassword">Confirm Password</label>
+            <div class="password-container">
+                <input type="password" id="registerConfirmPassword" placeholder="Confirm Password" required>
+                <span class="toggle-password" onclick="togglePassword('registerConfirmPassword')">👁️</span>
+            </div>
+            <small id="passwordMatchError" class="error-message" style="display: none; color: #dc3545;"></small>
         </div>
 
         <button type="submit" class="btn btn-primary">Register</button>
@@ -108,3 +118,4 @@
     <script src="auth.js"></script>
 </body>
 </html>
+
