@@ -59,7 +59,7 @@ body {
 /* Form Container */
 .form-container {
     padding: 30px;
-    display: none;
+    display: none; /* Hide all by default, JS manages 'active' class */
 }
 
 .form-container.active {
@@ -264,11 +264,6 @@ body {
     line-height: 1.5;
 }
 
-/* Hidden Utility */
-.hidden {
-    display: none !important;
-}
-
 /* Loading State */
 .loading {
     position: relative;
@@ -347,24 +342,15 @@ body {
     margin-top: 5px;
 }
 
-/* Style for valid password match */
-input:valid + .toggle-password {
-    color: #28a745;
-}
-
-/* Style for invalid password match */
-input:invalid + .toggle-password {
-    color: #dc3545;
-}
-
-/* Success state for matching passwords */
-.password-match-success {
-    border-color: #28a745 !important;
-}
-
-/* Error state for non-matching passwords */
-.password-match-error {
+/* Style for valid/invalid inputs */
+.input-with-error {
     border-color: #dc3545 !important;
+    background: #fef7f7 !important; /* Lighter red background */
+}
+
+.input-with-success {
+    border-color: #28a745 !important;
+    background: #f7fff7 !important; /* Lighter green background */
 }
 
 /* Security Level Indicators */
@@ -404,9 +390,6 @@ input:invalid + .toggle-password {
 
 /* Warning System */
 .security-warning {
-    background: #fff3cd;
-    border: 1px solid #ffeaa7;
-    color: #856404;
     padding: 12px 15px;
     border-radius: 8px;
     margin-bottom: 20px;
@@ -418,19 +401,19 @@ input:invalid + .toggle-password {
 
 .security-warning.warning {
     background: #fff3cd;
-    border-color: #ffeaa7;
+    border: 1px solid #ffeaa7;
     color: #856404;
 }
 
 .security-warning.danger {
     background: #f8d7da;
-    border-color: #f5c6cb;
+    border: 1px solid #f5c6cb;
     color: #721c24;
 }
 
 .security-warning.info {
     background: #d1ecf1;
-    border-color: #bee5eb;
+    border: 1px solid #bee5eb;
     color: #0c5460;
 }
 
@@ -442,16 +425,17 @@ input:invalid + .toggle-password {
 /* Account Lock Warning */
 .account-lock-warning {
     background: #f8d7da;
-    border: 1px solid #f5c6cb;
+    border: 1px solid #dc3545;
     color: #721c24;
-    padding: 15px;
+    padding: 20px;
     border-radius: 8px;
     margin-bottom: 20px;
     text-align: center;
+    box-shadow: 0 4px 10px rgba(220, 53, 69, 0.1);
 }
 
 .account-lock-timer {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: bold;
     margin: 10px 0;
     color: #dc3545;
@@ -462,12 +446,17 @@ input:invalid + .toggle-password {
     text-align: center;
     font-size: 12px;
     color: #666;
-    margin-top: 10px;
+    margin: 10px 0;
+    padding: 5px;
+    border-radius: 4px;
 }
 
 .attempts-warning {
     color: #dc3545;
     font-weight: bold;
+    background: #f8d7da;
+    padding: 5px 10px;
+    border-radius: 4px;
 }
 
 /* Enhanced Password Requirements */
@@ -491,6 +480,7 @@ input:invalid + .toggle-password {
     align-items: center;
     gap: 8px;
     margin-bottom: 5px;
+    transition: color 0.3s ease;
 }
 
 .requirement.met {
@@ -526,64 +516,4 @@ input:invalid + .toggle-password {
 .security-loading {
     opacity: 0.6;
     pointer-events: none;
-}
-
-/* Enhanced Error States */
-.input-with-error {
-    border-color: #dc3545 !important;
-    background: #f8d7da !important;
-}
-
-.input-with-success {
-    border-color: #28a745 !important;
-    background: #d4edda !important;
-}
-
-/* Add to auth.css */
-.attempts-counter {
-    text-align: center;
-    font-size: 12px;
-    color: #666;
-    margin: 10px 0;
-    padding: 5px;
-    border-radius: 4px;
-}
-
-.attempts-warning {
-    color: #dc3545;
-    font-weight: bold;
-    background: #f8d7da;
-    padding: 5px 10px;
-    border-radius: 4px;
-}
-
-/* Enhanced Error States */
-.field-error-message {
-    color: #dc3545;
-    font-size: 12px;
-    margin-top: 5px;
-    display: block;
-    font-weight: normal;
-}
-
-.input-with-error {
-    border-color: #dc3545 !important;
-    background: #f8d7da !important;
-}
-
-.input-with-success {
-    border-color: #28a745 !important;
-    background: #d4edda !important;
-}
-
-/* Real-time validation states */
-.validating {
-    border-color: #ffc107 !important;
-    background: #fff3cd !important;
-}
-
-/* Success states */
-.success-field {
-    border-color: #28a745 !important;
-    background: #d4edda !important;
 }
