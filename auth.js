@@ -284,8 +284,14 @@ async function handleForgotPassword(event) {
     setButtonLoading(resetButton, true, 'Reset Password');
 
     try {
-        await auth.sendPasswordResetEmail(email);
-        showSuccessMessage('Password reset email sent! Check your inbox.');
+        // Specify the custom reset URL
+        const actionCodeSettings = {
+            url: window.location.origin + '/reset-password.html',
+            handleCodeInApp: true
+        };
+        
+        await auth.sendPasswordResetEmail(email, actionCodeSettings);
+        showSuccessMessage('Password reset email sent! Check your inbox for instructions.');
     } catch (error) {
         console.error('Password reset error:', error);
         handleAuthError(error);
