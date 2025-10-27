@@ -47,7 +47,7 @@
             <span class="navbar-toggler-icon"></span>
         </button>
         
-       <!-- Desktop Menu -->
+<!-- Desktop Menu -->
 <div class="collapse navbar-collapse d-none d-lg-flex">
     <ul class="navbar-nav me-auto">
         <li class="nav-item">
@@ -76,6 +76,24 @@
             </a>
         </li>
     </ul>
+    
+    <!-- Subscription Status Section -->
+    <div class="navbar-nav me-3">
+        <li class="nav-item">
+            <span id="subscriptionStatus" class="nav-link nav-link-custom">
+                <i class="fas fa-sync fa-spin"></i> Checking...
+            </span>
+        </li>
+        <li class="nav-item">
+            <span id="prescriptionUsage" class="nav-link nav-link-custom"></span>
+        </li>
+        <li class="nav-item">
+            <button id="upgradeButton" class="nav-link nav-link-custom" onclick="showUpgradeModal()" style="display: none;">
+                <i class="fas fa-crown"></i> Upgrade
+            </button>
+        </li>
+    </div>
+    
     <button onclick="logoutUser()" class="btn btn-logout premium-logout">
         <i class="fas fa-sign-out-alt"></i> Logout
     </button>
@@ -703,4 +721,5 @@
     </script>
 </body>
 </html>
+
 
