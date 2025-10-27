@@ -26,7 +26,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
-    <style>
+  <style>
         /* Landing Page Specific Styles */
         .landing-page {
             min-height: 100vh;
@@ -161,9 +161,141 @@
             line-height: 1.6;
         }
         
-        .instructions-section {
+        /* Pricing Section Styles */
+        .pricing-section {
             padding: 80px 20px;
             background: #f8f9fa;
+        }
+        
+        .pricing-card {
+            background: white;
+            border-radius: 15px;
+            padding: 40px 30px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .pricing-card.featured {
+            border-color: #667eea;
+            transform: scale(1.05);
+        }
+        
+        .pricing-card:hover {
+            transform: translateY(-10px);
+        }
+        
+        .pricing-card.featured:hover {
+            transform: scale(1.05) translateY(-10px);
+        }
+        
+        .pricing-badge {
+            position: absolute;
+            top: 20px;
+            right: -30px;
+            background: #28a745;
+            color: white;
+            padding: 5px 40px;
+            transform: rotate(45deg);
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .pricing-header {
+            margin-bottom: 30px;
+        }
+        
+        .pricing-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .pricing-price {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        
+        .pricing-period {
+            color: #666;
+            font-size: 1rem;
+        }
+        
+        .pricing-features {
+            list-style: none;
+            padding: 0;
+            margin: 30px 0;
+        }
+        
+        .pricing-features li {
+            padding: 10px 0;
+            border-bottom: 1px solid #e9ecef;
+            color: #666;
+        }
+        
+        .pricing-features li:last-child {
+            border-bottom: none;
+        }
+        
+        .pricing-features li i {
+            color: #28a745;
+            margin-right: 10px;
+        }
+        
+        .btn-pricing {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-pricing-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .btn-pricing-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-pricing:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .free-trial-banner {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+            margin: 40px 0;
+            border-radius: 15px;
+        }
+        
+        .free-trial-banner h2 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+        
+        .free-trial-banner p {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+        
+        .instructions-section {
+            padding: 80px 20px;
+            background: white;
         }
         
         .instruction-step {
@@ -205,7 +337,7 @@
         
         .guide-section {
             padding: 80px 20px;
-            background: white;
+            background: #f8f9fa;
         }
         
         .guide-item {
@@ -273,6 +405,36 @@
             opacity: 0.8;
         }
         
+        /* Payment Modal */
+        .payment-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .payment-modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+        
+        .payment-plan-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
         /* Responsive Design */
         @media (max-width: 768px) {
             .hero-title {
@@ -306,6 +468,11 @@
             .section-title h2 {
                 font-size: 2rem;
             }
+            
+            .pricing-card.featured {
+                transform: none;
+                margin: 20px 0;
+            }
         }
         
         @media (max-width: 480px) {
@@ -319,6 +486,10 @@
             
             .feature-card {
                 padding: 20px;
+            }
+            
+            .pricing-card {
+                padding: 30px 20px;
             }
         }
     </style>
@@ -335,10 +506,10 @@
                     
                     <div class="hero-buttons">
                         <a href="auth.html" class="btn btn-hero btn-hero-primary">
-                            <i class="fas fa-sign-in-alt"></i> Login to App
+                            <i class="fas fa-sign-in-alt"></i> Start Free Trial
                         </a>
-                        <a href="#features" class="btn btn-hero btn-hero-secondary">
-                            <i class="fas fa-info-circle"></i> Learn More
+                        <a href="#pricing" class="btn btn-hero btn-hero-secondary">
+                            <i class="fas fa-tags"></i> View Plans
                         </a>
                     </div>
                     
@@ -362,6 +533,17 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </section>
+
+    <!-- Free Trial Banner -->
+    <section class="free-trial-banner">
+        <div class="container">
+            <h2>🎉 Start Your 1-Month Free Trial!</h2>
+            <p>No credit card required. Get full access to all features for 30 days.</p>
+            <a href="auth.html" class="btn btn-hero btn-hero-primary">
+                <i class="fas fa-rocket"></i> Start Free Trial Now
+            </a>
         </div>
     </section>
 
@@ -437,6 +619,89 @@
         </div>
     </section>
 
+    <!-- Pricing Section -->
+    <section id="pricing" class="pricing-section">
+        <div class="container">
+            <div class="section-title">
+                <h2>Choose Your Plan</h2>
+                <p>Flexible pricing plans designed for optometry practices of all sizes</p>
+            </div>
+            
+            <div class="row justify-content-center">
+                <!-- Basic Plan -->
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="pricing-card">
+                        <div class="pricing-header">
+                            <h3 class="pricing-title">Basic</h3>
+                            <div class="pricing-price">₹99</div>
+                            <div class="pricing-period">per month</div>
+                        </div>
+                        <ul class="pricing-features">
+                            <li><i class="fas fa-check"></i> 100 Prescriptions/Month</li>
+                            <li><i class="fas fa-check"></i> Digital Records</li>
+                            <li><i class="fas fa-check"></i> Basic Search</li>
+                            <li><i class="fas fa-check"></i> PDF Export</li>
+                            <li><i class="fas fa-times"></i> Advanced Reports</li>
+                            <li><i class="fas fa-times"></i> Priority Support</li>
+                        </ul>
+                        <button class="btn btn-pricing btn-pricing-primary" onclick="selectPlan('basic')">
+                            Choose Basic
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Professional Plan - Featured -->
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="pricing-card featured">
+                        <div class="pricing-badge">MOST POPULAR</div>
+                        <div class="pricing-header">
+                            <h3 class="pricing-title">Professional</h3>
+                            <div class="pricing-price">₹199</div>
+                            <div class="pricing-period">per month</div>
+                        </div>
+                        <ul class="pricing-features">
+                            <li><i class="fas fa-check"></i> 500 Prescriptions/Month</li>
+                            <li><i class="fas fa-check"></i> All Basic Features</li>
+                            <li><i class="fas fa-check"></i> Advanced Analytics</li>
+                            <li><i class="fas fa-check"></i> Thermal Printing</li>
+                            <li><i class="fas fa-check"></i> WhatsApp Sharing</li>
+                            <li><i class="fas fa-check"></i> Priority Support</li>
+                        </ul>
+                        <button class="btn btn-pricing btn-pricing-primary" onclick="selectPlan('professional')">
+                            Choose Professional
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Enterprise Plan -->
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="pricing-card">
+                        <div class="pricing-header">
+                            <h3 class="pricing-title">Enterprise</h3>
+                            <div class="pricing-price">₹499</div>
+                            <div class="pricing-period">per year</div>
+                        </div>
+                        <ul class="pricing-features">
+                            <li><i class="fas fa-check"></i> Unlimited Prescriptions</li>
+                            <li><i class="fas fa-check"></i> All Professional Features</li>
+                            <li><i class="fas fa-check"></i> Custom Reports</li>
+                            <li><i class="fas fa-check"></i> Multi-User Access</li>
+                            <li><i class="fas fa-check"></i> API Access</li>
+                            <li><i class="fas fa-check"></i> 24/7 Premium Support</li>
+                        </ul>
+                        <button class="btn btn-pricing btn-pricing-primary" onclick="selectPlan('enterprise')">
+                            Choose Enterprise
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <p class="text-muted">All plans include 1-month free trial. No credit card required to start.</p>
+            </div>
+        </div>
+    </section>
+
     <!-- Instructions Section -->
     <section class="instructions-section">
         <div class="container">
@@ -450,8 +715,8 @@
                     <div class="instruction-step">
                         <div class="step-number">1</div>
                         <div class="step-content">
-                            <h3>Create Your Account</h3>
-                            <p>Sign up with your email address and create a secure password. Your data will be automatically synced across all devices.</p>
+                            <h3>Start Free Trial</h3>
+                            <p>Sign up for free and get full access to all features for 30 days. No payment information required.</p>
                         </div>
                     </div>
                     
@@ -459,7 +724,7 @@
                         <div class="step-number">2</div>
                         <div class="step-content">
                             <h3>Setup Your Clinic Profile</h3>
-                            <p>Enter your clinic details including name, address, contact information, and optometrist details. This information will appear on all prescriptions.</p>
+                            <p>Enter your clinic details including name, address, contact information, and optometrist details.</p>
                         </div>
                     </div>
                     
@@ -467,15 +732,15 @@
                         <div class="step-number">3</div>
                         <div class="step-content">
                             <h3>Add Patient Prescriptions</h3>
-                            <p>Use our comprehensive form to enter patient details, prescription data for both eyes, vision type, lens specifications, and payment information.</p>
+                            <p>Use our comprehensive form to enter patient details, prescription data, and generate professional receipts.</p>
                         </div>
                     </div>
                     
                     <div class="instruction-step">
                         <div class="step-number">4</div>
                         <div class="step-content">
-                            <h3>Print & Share</h3>
-                            <p>Generate professional prescriptions that can be printed, saved as PDF, or shared via WhatsApp with your patients instantly.</p>
+                            <h3>Choose Your Plan</h3>
+                            <p>After your free trial, select the plan that best fits your practice needs and continue uninterrupted.</p>
                         </div>
                     </div>
                 </div>
@@ -483,77 +748,19 @@
         </div>
     </section>
 
-    <!-- User Guide Section -->
-    <section class="guide-section">
-        <div class="container">
-            <div class="section-title">
-                <h2>User Guide</h2>
-                <p>Complete guide to using all features of Lens Prescription App</p>
+    <!-- Payment Modal -->
+    <div id="paymentModal" class="payment-modal">
+        <div class="payment-modal-content">
+            <h3>Complete Your Subscription</h3>
+            <div class="payment-plan-info">
+                <h4 id="selectedPlanName">Basic Plan</h4>
+                <p id="selectedPlanPrice">₹99/month</p>
+                <p id="selectedPlanFeatures">100 prescriptions per month</p>
             </div>
-            
-            <div class="row">
-                <div class="col-lg-6">
-                    <div class="guide-item">
-                        <h3><i class="fas fa-tachometer-alt"></i> Dashboard Navigation</h3>
-                        <p>The dashboard is your central hub for quick access to all features:</p>
-                        <ul>
-                            <li><strong>Add Prescription:</strong> Create new patient prescriptions</li>
-                            <li><strong>View Prescriptions:</strong> Access your prescription history</li>
-                            <li><strong>Reports:</strong> Generate business analytics and reports</li>
-                            <li><strong>Profile:</strong> Manage your clinic information</li>
-                        </ul>
-                    </div>
-                    
-                    <div class="guide-item">
-                        <h3><i class="fas fa-plus-circle"></i> Creating Prescriptions</h3>
-                        <p>Follow these steps for accurate prescription entry:</p>
-                        <ul>
-                            <li>Enter complete patient demographics</li>
-                            <li>Fill both DIST and ADD sections for each eye</li>
-                            <li>Specify SPH, CYL, AXIS, and V/A values accurately</li>
-                            <li>Select appropriate vision, lens, and frame types</li>
-                            <li>Record payment details and amount</li>
-                        </ul>
-                    </div>
-                </div>
-                
-                <div class="col-lg-6">
-                    <div class="guide-item">
-                        <h3><i class="fas fa-print"></i> Printing & Export</h3>
-                        <p>Multiple ways to share prescriptions:</p>
-                        <ul>
-                            <li><strong>Thermal Print:</strong> Optimized for 58mm receipt printers</li>
-                            <li><strong>PDF Export:</strong> Professional digital copies</li>
-                            <li><strong>WhatsApp Share:</strong> Instant sharing with patients</li>
-                            <li><strong>Preview:</strong> Review before finalizing</li>
-                        </ul>
-                    </div>
-                    
-                    <div class="guide-item">
-                        <h3><i class="fas fa-search"></i> Managing Records</h3>
-                        <p>Efficiently manage your prescription database:</p>
-                        <ul>
-                            <li>Search by patient name or mobile number</li>
-                            <li>Filter by date range and prescription types</li>
-                            <li>View grouped by Today, Yesterday, and Older</li>
-                            <li>Delete outdated records securely</li>
-                        </ul>
-                    </div>
-                    
-                    <div class="guide-item">
-                        <h3><i class="fas fa-chart-bar"></i> Reports & Analytics</h3>
-                        <p>Track your practice performance:</p>
-                        <ul>
-                            <li>Daily, weekly, and monthly reports</li>
-                            <li>Custom date range analysis</li>
-                            <li>Prescription count and revenue tracking</li>
-                            <li>Exportable report data</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
+            <div id="razorpay-container"></div>
+            <button class="btn btn-secondary mt-3" onclick="closePaymentModal()">Cancel</button>
         </div>
-    </section>
+    </div>
 
     <!-- CTA Section -->
     <section class="cta-section">
@@ -561,7 +768,7 @@
             <h2 class="cta-title">Ready to Transform Your Practice?</h2>
             <p class="cta-subtitle">Join hundreds of optometrists who trust Lens Prescription for their daily practice management</p>
             <a href="auth.html" class="btn btn-hero btn-hero-primary">
-                <i class="fas fa-rocket"></i> Get Started Now
+                <i class="fas fa-rocket"></i> Start Free Trial Now
             </a>
         </div>
     </section>
@@ -574,11 +781,41 @@
         </div>
     </footer>
 
+    <!-- Razorpay Integration -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
     
     <script>
+        // Plan configuration
+        const plans = {
+            basic: {
+                name: 'Basic Plan',
+                price: 99,
+                period: 'monthly',
+                prescriptions: 100,
+                description: '100 prescriptions per month'
+            },
+            professional: {
+                name: 'Professional Plan',
+                price: 199,
+                period: 'monthly',
+                prescriptions: 500,
+                description: '500 prescriptions per month'
+            },
+            enterprise: {
+                name: 'Enterprise Plan',
+                price: 499,
+                period: 'yearly',
+                prescriptions: 'unlimited',
+                description: 'Unlimited prescriptions for 1 year'
+            }
+        };
+
+        let selectedPlan = null;
+
         // Check if user is logged in and redirect to app
         document.addEventListener("DOMContentLoaded", function () {
             const isLoggedIn = localStorage.getItem("username");
@@ -610,6 +847,158 @@
         function redirectToLandingPage() {
             sessionStorage.setItem("explicitLogout", "true");
             window.location.replace("index.html");
+        }
+
+        // Plan selection
+        function selectPlan(planType) {
+            selectedPlan = plans[planType];
+            
+            // Check if user is logged in
+            const isLoggedIn = localStorage.getItem("username");
+            
+            if (!isLoggedIn) {
+                // Redirect to signup page
+                sessionStorage.setItem('selectedPlan', planType);
+                window.location.href = 'auth.html';
+            } else {
+                // Show payment modal for existing users
+                showPaymentModal(planType);
+            }
+        }
+
+        // Show payment modal
+        function showPaymentModal(planType) {
+            const plan = plans[planType];
+            document.getElementById('selectedPlanName').textContent = plan.name;
+            document.getElementById('selectedPlanPrice').textContent = `₹${plan.price}/${plan.period}`;
+            document.getElementById('selectedPlanFeatures').textContent = plan.description;
+            
+            document.getElementById('paymentModal').style.display = 'flex';
+            
+            // Initialize Razorpay payment
+            initializeRazorpay(planType);
+        }
+
+        // Close payment modal
+        function closePaymentModal() {
+            document.getElementById('paymentModal').style.display = 'none';
+            selectedPlan = null;
+        }
+
+        // Initialize Razorpay payment
+        function initializeRazorpay(planType) {
+            const plan = plans[planType];
+            const userEmail = localStorage.getItem('username');
+            const userId = localStorage.getItem('userId');
+            
+            // In a real implementation, you would call your backend to create an order
+            // For demo purposes, we'll create the options directly
+            const options = {
+                "key": "rzp_test_YOUR_RAZORPAY_KEY", // Replace with your Razorpay key
+                "amount": plan.price * 100, // Amount in paise
+                "currency": "INR",
+                "name": "Lens Prescription App",
+                "description": plan.name,
+                "image": "lenslogo.png",
+                "handler": function (response) {
+                    // Handle successful payment
+                    handlePaymentSuccess(response, planType);
+                },
+                "prefill": {
+                    "email": userEmail,
+                    "name": "Optometrist User"
+                },
+                "notes": {
+                    "plan": planType,
+                    "user_id": userId
+                },
+                "theme": {
+                    "color": "#667eea"
+                }
+            };
+            
+            const rzp = new Razorpay(options);
+            
+            // Create a button to trigger payment
+            const razorpayContainer = document.getElementById('razorpay-container');
+            razorpayContainer.innerHTML = `
+                <button class="btn btn-success btn-lg w-100" onclick="rzp.open()">
+                    <i class="fas fa-lock"></i> Pay ₹${plan.price} Now
+                </button>
+            `;
+            
+            // Store rzp instance globally
+            window.rzp = rzp;
+        }
+
+        // Handle successful payment
+        function handlePaymentSuccess(response, planType) {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            // Save subscription to Firestore
+            const subscriptionData = {
+                plan: planType,
+                amount: plans[planType].price,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+                status: 'active',
+                start_date: new Date().toISOString(),
+                end_date: new Date(Date.now() + (planType === 'enterprise' ? 365 : 30) * 24 * 60 * 60 * 1000).toISOString(),
+                created_at: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            // Save to Firestore
+            db.collection('subscriptions').doc(user.uid).set(subscriptionData)
+                .then(() => {
+                    console.log('Subscription activated successfully!');
+                    showStatusMessage('Payment successful! Your subscription is now active.', 'success');
+                    closePaymentModal();
+                    
+                    // Redirect to app
+                    setTimeout(() => {
+                        window.location.href = 'app.html';
+                    }, 2000);
+                })
+                .catch(error => {
+                    console.error('Error saving subscription:', error);
+                    showStatusMessage('Payment successful but there was an error activating your subscription. Please contact support.', 'error');
+                });
+        }
+
+        // Status message function
+        function showStatusMessage(message, type) {
+            const existingMessages = document.querySelectorAll('.status-message');
+            existingMessages.forEach(msg => msg.remove());
+
+            const statusMessage = document.createElement('div');
+            statusMessage.className = `status-message alert alert-${type}`;
+            statusMessage.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 10000;
+                min-width: 300px;
+                padding: 15px 20px;
+                border-radius: 10px;
+                background: ${type === 'success' ? '#28a745' : '#dc3545'};
+                color: white;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+                animation: slideInRight 0.3s ease;
+            `;
+            statusMessage.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                ${message}
+            `;
+            
+            document.body.appendChild(statusMessage);
+            
+            setTimeout(() => {
+                if (statusMessage.parentNode) {
+                    statusMessage.remove();
+                }
+            }, 5000);
         }
     </script>
 </body>
