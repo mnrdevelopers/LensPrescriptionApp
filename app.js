@@ -64,6 +64,9 @@ function initializeApp() {
     setupEventListeners();
     setupPWA();
     
+    // Initialize payment system - ADD THIS LINE
+    initializePaymentSystem();
+    
     // Mark body as initialized
     document.body.classList.add('initialized');
     
