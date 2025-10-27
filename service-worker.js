@@ -1,20 +1,17 @@
-// service-worker.js - FIXED VERSION WITH ERROR HANDLING
+// service-worker.js - UPDATED VERSION WITH CORS SUPPORT
 
-const CACHE_NAME = 'lens-prescription-v6';
+const CACHE_NAME = 'lens-prescription-v5';
 const ASSETS = [
   '/',
   '/index.html',
   '/auth.html',
   '/app.html',
-  '/reset-password.html',
   '/app.css',
   '/auth.css',
   '/app.js',
   '/auth.js',
-  '/reset-password.js',
   '/firebase-config.js',
-  '/manifest.json',
-  '/lenslogo.png'
+  '/manifest.json'
 ];
 
 // Install event
@@ -24,9 +21,7 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Service Worker: Caching app shell');
-        return cache.addAll(ASSETS).catch(error => {
-          console.log('Cache addAll error:', error);
-        });
+        return cache.addAll(ASSETS);
       })
       .then(() => self.skipWaiting())
   );
@@ -49,43 +44,24 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Enhanced Fetch event with better error handling
+// Fetch event - Enhanced for CORS and external resources
 self.addEventListener('fetch', (event) => {
-  // Skip non-GET requests and unsupported schemes
+  // Skip non-GET requests
   if (event.request.method !== 'GET') return;
-  
+
   const url = new URL(event.request.url);
   
-  // Skip chrome-extension, extension, and other unsupported schemes
-  if (url.protocol === 'chrome-extension:' || 
-      url.protocol === 'chrome:' ||
-      url.protocol === 'moz-extension:' ||
-      url.protocol === 'ms-browser-extension:' ||
-      url.href.includes('extension://')) {
-    return;
-  }
-
-  // Skip favicon.ico requests to avoid 404 errors
-  if (url.pathname.endsWith('favicon.ico')) {
-    event.respondWith(new Response('', { status: 204 }));
-    return;
-  }
-
   // Handle external resources (ImgBB, etc.) with CORS
   if (url.href.includes('imgbb.com') || 
       url.href.includes('api.imgbb.com')) {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          // Only cache successful responses
-          if (response.status === 200) {
-            const responseClone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseClone).catch(err => {
-                console.log('Cache put error for external resource:', err);
-              });
-            });
-          }
+          // Cache the CORS response
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
           return response;
         })
         .catch(() => {
@@ -99,16 +75,7 @@ self.addEventListener('fetch', (event) => {
   // Don't cache other external requests aggressively
   if (url.href.includes('firebase') || 
       url.href.includes('googleapis') ||
-      url.href.includes('gstatic.com') ||
-      url.href.includes('cdn.jsdelivr.net') ||
-      url.href.includes('cdnjs.cloudflare.com') ||
-      url.href.includes('bootstrap') ||
-      url.href.includes('fontawesome')) {
-    // Network first for CDN resources
-    event.respondWith(
-      fetch(event.request)
-        .catch(() => caches.match(event.request))
-    );
+      url.href.includes('gstatic.com')) {
     return;
   }
 
@@ -117,15 +84,10 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          // Only cache successful responses
-          if (response.status === 200) {
-            const responseClone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseClone).catch(err => {
-                console.log('Cache put error for HTML:', err);
-              });
-            });
-          }
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
           return response;
         })
         .catch(() => {
@@ -135,63 +97,23 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // For CSS, JS, and images - cache first strategy
-  if (event.request.destination === 'style' || 
-      event.request.destination === 'script' ||
-      event.request.destination === 'image') {
-    event.respondWith(
-      caches.match(event.request)
-        .then((cachedResponse) => {
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          
-          return fetch(event.request).then((response) => {
-            // Only cache successful responses
-            if (response.status === 200) {
-              const responseToCache = response.clone();
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(event.request, responseToCache).catch(err => {
-                  console.log('Cache put error for asset:', err);
-                });
-              });
-            }
-            return response;
-          }).catch(error => {
-            console.log('Fetch failed for:', event.request.url, error);
-            // Return a fallback for images
-            if (event.request.destination === 'image') {
-              return new Response('', { status: 404 });
-            }
-            throw error;
-          });
-        })
-    );
-    return;
-  }
-
-  // Default: network first for other requests
+  // For other assets, use cache first
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        return response;
-      })
-      .catch(() => {
-        return caches.match(event.request);
+    caches.match(event.request)
+      .then((cachedResponse) => {
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        return fetch(event.request).then((response) => {
+          if (!response || response.status !== 200) {
+            return response;
+          }
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+          return response;
+        });
       })
   );
 });
-
-// Background sync for offline data
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'background-sync') {
-    console.log('Background sync triggered');
-    event.waitUntil(doBackgroundSync());
-  }
-});
-
-async function doBackgroundSync() {
-  // Implement background sync logic here
-  console.log('Performing background sync...');
-}
-[file content end]
