@@ -39,6 +39,7 @@ function initializeAuth() {
     // Setup password validation
     setupPasswordValidation();
     setupEmailValidation();
+    setupRealTimeValidation();
 }
 
 function setupEmailValidation() {
@@ -525,6 +526,14 @@ function handleAuthError(error) {
             errorMessage = 'Email/password accounts are not enabled.';
             suggestion = 'Please contact support.';
             break;
+        // Add specific reset password errors
+        case 'auth/missing-android-pkg-name':
+        case 'auth/missing-ios-bundle-id':
+            errorMessage = 'Reset configuration error.';
+            suggestion = 'Please contact support.';
+            break;
+        default:
+            errorMessage = error.message || 'An unexpected error occurred.';
     }
     
     // Show the main error
@@ -560,6 +569,31 @@ function handleAuthError(error) {
             }
         }, 500);
     }
+}
+
+function setupRealTimeValidation() {
+    const emailInputs = [
+        document.getElementById('loginUsername'),
+        document.getElementById('registerEmail'),
+        document.getElementById('forgotUsername')
+    ];
+
+    emailInputs.forEach(input => {
+        if (input) {
+            input.addEventListener('blur', function() {
+                if (this.value.trim()) {
+                    validateEmail({ target: this });
+                }
+            });
+            
+            input.addEventListener('input', function() {
+                // Remove error state when user starts typing
+                if (this.classList.contains('error')) {
+                    clearFieldError({ target: this });
+                }
+            });
+        }
+    });
 }
 
 function showSuccess(message) {
