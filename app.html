@@ -50,8 +50,9 @@
             <span class="navbar-toggler-icon"></span>
         </button>
         
-        <!-- Desktop Menu - FIXED: Corrected display classes -->
+        <!-- Desktop Menu - FIXED: Corrected grouping for right-side elements -->
         <div class="collapse navbar-collapse d-none d-lg-flex">
+            <!-- Main Navigation Links -->
             <ul class="navbar-nav me-auto">
                 <li class="nav-item">
                     <a class="nav-link nav-link-custom" href="#dashboard" onclick="showDashboard()">
@@ -80,26 +81,29 @@
                 </li>
             </ul>
             
-            <!-- Subscription Status Section -->
-            <ul class="navbar-nav me-3">
-                <li class="nav-item">
-                    <span id="subscriptionStatus" class="nav-link nav-link-custom">
-                        <i class="fas fa-sync fa-spin"></i> Checking...
-                    </span>
-                </li>
-                <li class="nav-item">
-                    <span id="prescriptionUsage" class="nav-link nav-link-custom"></span>
-                </li>
-                <li class="nav-item">
-                    <button id="upgradeButton" class="nav-link nav-link-custom" onclick="showUpgradeModal()" style="display: none; border: none; background: none;">
-                        <i class="fas fa-crown"></i> Upgrade
-                    </button>
-                </li>
-            </ul>
-            
-            <button onclick="logoutUser()" class="btn btn-logout premium-logout">
-                <i class="fas fa-sign-out-alt"></i> Logout
-            </button>
+            <!-- FIXED: Grouped Status and Logout into a single flex container for tight alignment -->
+            <div class="d-flex align-items-center flex-shrink-0">
+                <!-- Subscription Status Section -->
+                <ul class="navbar-nav me-3 align-items-center">
+                    <li class="nav-item">
+                        <span id="subscriptionStatus" class="nav-link nav-link-custom">
+                            <i class="fas fa-sync fa-spin"></i> Checking...
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <span id="prescriptionUsage" class="nav-link nav-link-custom"></span>
+                    </li>
+                    <li class="nav-item">
+                        <button id="upgradeButton" class="nav-link nav-link-custom" onclick="showUpgradeModal()" style="display: none; border: none; background: none;">
+                            <i class="fas fa-crown"></i> Upgrade
+                        </button>
+                    </li>
+                </ul>
+                
+                <button onclick="logoutUser()" class="btn btn-logout premium-logout">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
         </div>
         
         <!-- Mobile Menu - FIXED: Added d-lg-none to offcanvas -->
@@ -746,10 +750,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
