@@ -291,7 +291,13 @@ async function handleForgotPassword(event) {
         };
         
         await auth.sendPasswordResetEmail(email, actionCodeSettings);
+        
+        // SUCCESS: Show success message and navigate
         showSuccessMessage('Password reset email sent! Check your inbox for instructions.');
+        
+        // Clear the form
+        document.getElementById('forgotUsername').value = '';
+        
     } catch (error) {
         console.error('Password reset error:', error);
         handleAuthError(error);
@@ -328,9 +334,29 @@ function hideAllForms() {
 
 function showSuccessMessage(message) {
     hideAllForms();
+    
+    // Update success text
     const successText = document.getElementById('successText');
-    if (successText) successText.textContent = message;
-    if (successMessage) successMessage.classList.remove('hidden');
+    if (successText) {
+        successText.textContent = message;
+    }
+    
+    // Show success section
+    if (successMessage) {
+        successMessage.classList.remove('hidden');
+        
+        // Update the button text and behavior
+        const successButton = successMessage.querySelector('.btn-primary');
+        if (successButton) {
+            successButton.textContent = 'Back to Login';
+            successButton.onclick = showLogin;
+        }
+    }
+    
+    // Optional: Auto-redirect after 5 seconds
+    setTimeout(() => {
+        showLogin();
+    }, 5000);
 }
 
 // Utility Functions
