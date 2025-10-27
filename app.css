@@ -1895,7 +1895,7 @@ body.offline .navbar {
     }
 }
 
-/* Critical Fix: Ensure sections display properly */
+/* CRITICAL FIX: Ensure proper section display */
 .page-section {
     display: none;
     opacity: 0;
@@ -1907,23 +1907,12 @@ body.offline .navbar {
     opacity: 1;
 }
 
-/* Ensure body is properly initialized */
-body.initialized {
-    opacity: 1;
-}
-
+/* Fix for initial loading state */
 body:not(.initialized) {
     opacity: 0;
 }
 
-/* Enhanced Active Tab Styles */
-.nav-link-custom.active {
-    color: var(--premium-navy) !important;
-    background: var(--premium-gold);
-    box-shadow: 0 4px 15px rgba(251, 191, 36, 0.5);
-    font-weight: 700;
-}
-
-.nav-link-custom.active i {
-    color: var(--premium-navy);
+body.initialized {
+    opacity: 1;
+    transition: opacity 0.3s ease;
 }
