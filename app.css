@@ -37,112 +37,163 @@ body.dark-mode {
     color: #f4f4f4;
 }
 
-/* --- PREMIUM NAVIGATION BAR STYLES --- */
+/* --- ENHANCED PREMIUM NAVIGATION BAR FIXES --- */
 
 /* Enhanced Modern Navigation Bar (Premium Look) */
 .premium-nav {
-    background: var(--premium-navy) !important; /* Deep Navy Blue */
+    background: var(--premium-navy) !important;
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
-    border-bottom: 2px solid var(--premium-gold); /* Gold Accent Bottom Border */
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4); /* Stronger shadow */
-    padding: 12px 0;
+    border-bottom: 2px solid var(--premium-gold);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    padding: 8px 0 !important; /* Reduced padding for better fit */
     transition: all 0.4s ease;
+    min-height: 70px; /* Fixed height */
 }
 
+.premium-nav .container-fluid {
+    padding-right: 15px !important;
+    padding-left: 15px !important;
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+}
+
+/* Brand Logo Fix */
 .navbar-brand {
     font-weight: 700;
-    font-size: 1.6rem;
-    color: white !important; /* Brand text white */
+    font-size: 1.4rem !important; /* Slightly smaller */
+    color: white !important;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px; /* Reduced gap */
+    margin-right: auto !important; /* Push to left */
+    padding: 5px 0 !important;
+    white-space: nowrap;
 }
 
 .nav-logo {
-    width: 35px;
-    height: 35px;
+    width: 32px !important; /* Consistent size */
+    height: 32px !important;
     border-radius: 50%;
-    border: 2px solid var(--premium-gold); /* Gold border around logo */
+    border: 2px solid var(--premium-gold);
     box-shadow: 0 0 10px rgba(251, 191, 36, 0.7);
     transition: transform 0.3s ease;
+    flex-shrink: 0; /* Prevent shrinking */
 }
 
 .navbar-brand:hover .nav-logo {
     transform: rotate(10deg) scale(1.05);
 }
 
-.navbar-toggler {
-    border: 1px solid white;
-    padding: 8px;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.1);
-    transition: all 0.3s ease;
+/* Desktop Menu Fix */
+.premium-nav .navbar-collapse.d-lg-flex {
+    display: flex !important;
+    flex-grow: 0 !important; /* Don't grow */
+    align-items: center;
 }
 
-.navbar-toggler:focus {
-    box-shadow: 0 0 0 3px var(--premium-gold);
+.premium-nav .navbar-nav {
+    gap: 4px !important; /* Reduced gap */
+    align-items: center;
+    margin-right: 15px !important;
 }
 
-.navbar-toggler-icon {
-    /* White icon for dark background */
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='white' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
-}
-
-/* Enhanced Nav Links (Custom Class: nav-link-custom) */
-.navbar-nav {
-    gap: 8px;
-}
-
+/* Enhanced Nav Links */
 .nav-link-custom {
-    color: #cbd5e1 !important; /* Light text color for contrast */
+    color: #cbd5e1 !important;
     font-weight: 500;
-    padding: 10px 18px !important;
+    padding: 8px 14px !important; /* Reduced padding */
     border-radius: 8px;
-    margin: 4px 0;
+    margin: 2px 0 !important; /* Reduced margin */
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px; /* Reduced gap */
     position: relative;
     overflow: hidden;
+    white-space: nowrap;
+    font-size: 0.9rem !important; /* Consistent font size */
 }
 
 .nav-link-custom i {
-    font-size: 1.05rem;
-    width: 20px;
+    font-size: 1rem !important; /* Consistent icon size */
+    width: 18px !important; /* Fixed width */
     text-align: center;
-    color: var(--premium-gold); /* Gold icon color */
+    color: var(--premium-gold);
     transition: transform 0.3s ease;
+    flex-shrink: 0;
 }
 
 .nav-link-custom:hover {
     color: white !important;
-    background: rgba(251, 191, 36, 0.1); /* Subtle gold background on hover */
+    background: rgba(251, 191, 36, 0.1);
     transform: translateY(-1px);
 }
 
 .nav-link-custom.active {
     color: var(--premium-navy) !important;
-    background: var(--premium-gold); /* Solid Gold for active state */
+    background: var(--premium-gold);
     box-shadow: 0 4px 15px rgba(251, 191, 36, 0.5);
     font-weight: 700;
-    transform: none;
 }
 
 .nav-link-custom.active i {
-    color: var(--premium-navy); /* Dark icon color on gold background */
+    color: var(--premium-navy);
 }
 
-/* Enhanced Logout Button (Custom Class: premium-logout) */
+/* Subscription Status Section Fix */
+.premium-nav .navbar-nav.me-3 {
+    margin-right: 1rem !important;
+    gap: 2px !important;
+}
+
+#subscriptionStatus, #prescriptionUsage {
+    padding: 6px 10px !important; /* Reduced padding */
+    font-size: 0.8rem !important; /* Smaller text */
+    white-space: nowrap;
+}
+
+#subscriptionStatus .badge,
+#prescriptionUsage .badge {
+    font-size: 0.75rem !important;
+    padding: 4px 8px !important;
+}
+
+/* Usage Container Fix */
+.usage-container {
+    min-width: 120px; /* Fixed width */
+}
+
+.usage-container small {
+    font-size: 0.75rem !important;
+}
+
+.usage-container .progress {
+    height: 4px !important; /* Thinner progress bar */
+    margin-top: 2px;
+}
+
+/* Upgrade Button Fix */
+#upgradeButton.nav-link-custom {
+    padding: 6px 12px !important;
+    font-size: 0.85rem !important;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--premium-gold);
+}
+
+/* Enhanced Logout Button */
 .premium-logout {
-    background: #dc3545; /* Red background */
+    background: #dc3545;
     color: white;
     border: 2px solid #dc3545;
-    padding: 10px 20px;
+    padding: 8px 16px !important; /* Reduced padding */
     border-radius: 8px;
     font-weight: 600;
+    font-size: 0.9rem !important;
     transition: all 0.3s ease;
+    white-space: nowrap;
+    margin-left: 8px !important; /* Added spacing */
 }
 
 .premium-logout:hover {
@@ -152,7 +203,32 @@ body.dark-mode {
     transform: translateY(-2px);
 }
 
-/* Enhanced Offcanvas Styles */
+/* Mobile Toggle Button Fix */
+.navbar-toggler {
+    border: 1px solid white;
+    padding: 6px !important; /* Reduced padding */
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+    margin-left: 10px !important;
+    width: 40px !important;
+    height: 40px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.navbar-toggler:focus {
+    box-shadow: 0 0 0 3px var(--premium-gold);
+}
+
+.navbar-toggler-icon {
+    width: 20px !important;
+    height: 20px !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='white' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") !important;
+}
+
+/* Offcanvas Improvements */
 .offcanvas {
     background: white !important;
 }
@@ -174,7 +250,7 @@ body.dark-mode {
 
 .offcanvas-body .nav-link-custom {
     color: var(--dark-color) !important;
-    padding: 15px 20px !important;
+    padding: 12px 20px !important;
     margin: 0;
     border-radius: 0;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
@@ -201,6 +277,18 @@ body.dark-mode {
     width: 100%;
 }
 
+/* Mobile Subscription Status in Offcanvas */
+.offcanvas-body #subscriptionStatusMobile,
+.offcanvas-body #prescriptionUsageMobile {
+    padding: 12px 20px !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.offcanvas-body #upgradeButtonMobile {
+    margin: 10px 20px !important;
+    text-align: center;
+}
+
 /* Ensure offcanvas takes full height on mobile */
 @media (max-width: 991.98px) {
     .offcanvas {
@@ -209,6 +297,75 @@ body.dark-mode {
     
     .offcanvas-body {
         min-height: calc(100vh - 80px);
+    }
+    
+    /* Hide desktop elements on mobile */
+    .premium-nav .d-lg-flex {
+        display: none !important;
+    }
+}
+
+/* Enhanced Mobile Responsive */
+@media (max-width: 1200px) {
+    .navbar-brand {
+        font-size: 1.2rem !important;
+    }
+    
+    .nav-link-custom {
+        padding: 6px 10px !important;
+        font-size: 0.85rem !important;
+    }
+    
+    .premium-nav .navbar-nav {
+        gap: 2px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .premium-nav {
+        padding: 6px 0 !important;
+        min-height: 60px; /* Smaller height on mobile */
+    }
+    
+    .navbar-brand {
+        font-size: 1.1rem !important;
+        gap: 8px;
+    }
+
+    .nav-logo {
+        width: 28px !important;
+        height: 28px !important;
+    }
+    
+    .premium-logout {
+        padding: 6px 12px !important;
+        font-size: 0.8rem !important;
+    }
+    
+    /* Hide subscription info on very small screens */
+    @media (max-width: 576px) {
+        .premium-nav .navbar-nav.me-3 {
+            display: none !important;
+        }
+        
+        .navbar-brand span {
+            display: none; /* Hide text, show only logo */
+        }
+        
+        .navbar-brand {
+            margin-right: 0 !important;
+        }
+    }
+}
+
+@media (max-width: 360px) {
+    .navbar-brand {
+        font-size: 1rem !important;
+    }
+    
+    .nav-logo {
+        width: 24px !important;
+        height: 24px !important;
     }
 }
 
@@ -219,9 +376,10 @@ body.dark-mode {
 
 /* Improved button styles in offcanvas */
 .offcanvas-body .premium-logout {
-    margin: 0;
-    padding: 12px;
+    margin: 10px 20px !important;
+    padding: 12px !important;
     font-size: 16px;
+    text-align: center;
 }
 
 /* Footer text in offcanvas */
@@ -229,29 +387,11 @@ body.dark-mode {
     font-size: 12px;
     line-height: 1.4;
     color: #6c757d !important;
+    padding: 15px 20px;
+    text-align: center;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    margin-top: auto;
 }
-
-/* Mobile Responsive */
-@media (max-width: 768px) {
-    .premium-nav {
-        padding: 10px 0;
-    }
-    
-    .navbar-brand {
-        font-size: 1.3rem;
-    }
-
-    .nav-logo {
-        width: 30px;
-        height: 30px;
-    }
-    
-    .nav-link-custom {
-        padding: 10px 15px !important;
-        font-size: 0.9rem;
-    }
-}
-/* --- END PREMIUM NAVIGATION BAR STYLES --- */
 
 /* Main Content */
 .main-content {
