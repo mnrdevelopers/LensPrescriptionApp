@@ -2292,12 +2292,19 @@ function resetStats() {
 }
 
 // Logout Function
+// In app.js - Update the logoutUser function
 function logoutUser() {
+    // Set explicit logout flag before signing out
+    sessionStorage.setItem("explicitLogout", "true");
+    
     auth.signOut().then(() => {
-        // Clear only user-specific local storage items, not PWA cache or 'rememberMe'
+        // Clear user-specific local storage items
         localStorage.removeItem('username');
         localStorage.removeItem('userId');
-        window.location.href = 'auth.html';
+        localStorage.removeItem('userProfile');
+        
+        // Redirect to landing page instead of auth page
+        window.location.href = 'index.html';
     }).catch(error => {
         console.error('Logout failed:', error);
     });
