@@ -64,6 +64,9 @@ function initializeApp() {
     setupEventListeners();
     setupPWA();
     
+    // Mark body as initialized
+    document.body.classList.add('initialized');
+    
     console.log('App initialized successfully');
 }
 
