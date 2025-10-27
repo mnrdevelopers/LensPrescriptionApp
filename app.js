@@ -405,7 +405,7 @@ function showPrescriptionForm() {
         hideAllSections();
         const formSection = document.getElementById('prescriptionFormSection');
         if (formSection) formSection.classList.add('active');
-        updateActiveNavLink('prescription');
+        updateActiveNavLink('form');
         resetForm();
         
         lastValidSection = 'form';
@@ -430,19 +430,16 @@ function showReports() {
         if (reportsSection) reportsSection.classList.add('active');
         updateActiveNavLink('reports');
         initializeReportFilters();
-        fetchDailyReport(); // Default report
+        fetchDailyReport();
     }, 'reports');
 }
 
-/**
- * Shows the dedicated profile setup screen.
- * @param {boolean} isForced True if the user is being forced to set up the profile (e.g., after registration).
- */
 function showProfileSetup(isForced) {
     navigateIfProfileComplete(() => {
         hideAllSections();
         const setupSection = document.getElementById('profileSetupSection');
         if (setupSection) setupSection.classList.add('active');
+        updateActiveNavLink('setup');
         
         // Disable navigation if forced
         const navButtons = document.querySelectorAll('.nav-link:not(.btn-logout)');
@@ -501,12 +498,21 @@ function updatePreviewBackButton() {
 
 // Hash change handler
 function handleHashChange() {
-    if (!isProfileComplete) return;
+    if (!isProfileComplete) {
+        // If profile not complete, stay on setup
+        if (window.location.hash !== '#setup') {
+            window.location.hash = 'setup';
+        }
+        return;
+    }
     
     const hash = window.location.hash.replace('#', '');
     console.log('Hash changed to:', hash);
     
-    switch (hash) {
+    // Handle query parameters for prescriptions and reports
+    const baseHash = hash.split('?')[0];
+    
+    switch (baseHash) {
         case 'dashboard':
             showDashboard();
             break;
@@ -523,11 +529,11 @@ function handleHashChange() {
             showProfileSetup(false);
             break;
         case 'preview':
-            // Preview is handled separately as it's transient
+            // Preview is handled separately
             break;
         default:
-            // If no hash or invalid hash, show dashboard
-            if (!hash) {
+            // Default to dashboard if no valid hash
+            if (!hash || hash === '') {
                 window.location.hash = 'dashboard';
             } else {
                 showDashboard();
@@ -544,15 +550,25 @@ function updateActiveNavLink(activeSection) {
     const navLinks = document.querySelectorAll('.nav-link-custom');
     navLinks.forEach(link => {
         link.classList.remove('active');
-        // Check if this link corresponds to the active section
-        const linkText = link.textContent.toLowerCase();
-        if (
-            (activeSection === 'dashboard' && linkText.includes('dashboard')) ||
-            (activeSection === 'form' && linkText.includes('add prescription')) ||
-            (activeSection === 'prescriptions' && linkText.includes('view prescriptions')) ||
-            (activeSection === 'reports' && linkText.includes('reports')) ||
-            (activeSection === 'setup' && linkText.includes('profile'))
-        ) {
+        
+        // Get the target section from href or onclick
+        const href = link.getAttribute('href');
+        const onclick = link.getAttribute('onclick');
+        
+        let targetSection = '';
+        
+        if (href) {
+            targetSection = href.replace('#', '');
+        } else if (onclick) {
+            // Extract section from onclick function calls
+            if (onclick.includes('showDashboard()')) targetSection = 'dashboard';
+            else if (onclick.includes('showPrescriptionForm()')) targetSection = 'form';
+            else if (onclick.includes('showPrescriptions()')) targetSection = 'prescriptions';
+            else if (onclick.includes('showReports()')) targetSection = 'reports';
+            else if (onclick.includes('showProfileSetup(false)')) targetSection = 'setup';
+        }
+        
+        if (targetSection === activeSection) {
             link.classList.add('active');
         }
     });
@@ -589,15 +605,20 @@ async function loadUserProfile() {
                 updateProfileUI(userData);
                 localStorage.setItem('userProfile', JSON.stringify(userData));
                 
-                // Set up hash change listener
+                // Set up hash change listener FIRST
                 window.addEventListener('hashchange', handleHashChange);
                 
-                // Handle initial hash
-                if (window.location.hash) {
-                    handleHashChange();
-                } else {
-                    window.location.hash = 'dashboard';
-                }
+                // Handle initial hash - with delay to ensure DOM is ready
+                setTimeout(() => {
+                    if (window.location.hash && window.location.hash !== '#setup') {
+                        console.log('Initial hash found:', window.location.hash);
+                        handleHashChange();
+                    } else {
+                        console.log('No hash found, defaulting to dashboard');
+                        window.location.hash = 'dashboard';
+                    }
+                }, 100);
+                
                 return;
             }
             
@@ -622,11 +643,13 @@ async function loadUserProfile() {
             updateProfileUI(userData);
             if (isProfileComplete) {
                 window.addEventListener('hashchange', handleHashChange);
-                if (window.location.hash) {
-                    handleHashChange();
-                } else {
-                    window.location.hash = 'dashboard';
-                }
+                setTimeout(() => {
+                    if (window.location.hash && window.location.hash !== '#setup') {
+                        handleHashChange();
+                    } else {
+                        window.location.hash = 'dashboard';
+                    }
+                }, 100);
             } else {
                 window.location.hash = 'setup';
                 showProfileSetup(true);
