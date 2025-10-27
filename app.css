@@ -1916,3 +1916,27 @@ body.initialized {
     opacity: 1;
     transition: opacity 0.3s ease;
 }
+
+/* Ensure navbar toggler is hidden on desktop */
+@media (min-width: 992px) {
+    .navbar-toggler.d-lg-none {
+        display: none !important;
+    }
+    
+    /* Ensure desktop menu is visible */
+    .navbar-collapse.d-none.d-lg-flex {
+        display: flex !important;
+    }
+}
+
+/* Mobile specific styles */
+@media (max-width: 991.98px) {
+    .navbar-toggler.d-lg-none {
+        display: flex !important;
+    }
+    
+    /* Hide desktop menu on mobile */
+    .navbar-collapse.d-none.d-lg-flex {
+        display: none !important;
+    }
+}
