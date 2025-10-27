@@ -1754,3 +1754,25 @@ body.offline .navbar {
         flex: 1;
     }
 }
+
+/* Prevent flash of content during page load */
+.page-section {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.page-section.active {
+    display: block;
+    opacity: 1;
+}
+
+/* Ensure body is hidden until initialized */
+body:not(.initialized) {
+    opacity: 0;
+}
+
+body.initialized {
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
