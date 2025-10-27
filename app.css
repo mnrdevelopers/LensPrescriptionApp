@@ -56,7 +56,8 @@ body.dark-mode {
     padding-left: 15px !important;
     display: flex !important;
     align-items: center !important;
-    flex-wrap: nowrap !important;
+    /* FIX: Removed 'flex-wrap: nowrap !important;' to allow content to wrap 
+       and prevent horizontal scrolling/disturbance on mid-size screens */
 }
 
 /* Brand Logo Fix */
@@ -89,14 +90,15 @@ body.dark-mode {
 /* Desktop Menu Fix */
 .premium-nav .navbar-collapse.d-lg-flex {
     display: flex !important;
-    flex-grow: 0 !important; /* Don't grow */
+    flex-grow: 1 !important; /* Allow the main collapse area to grow */
     align-items: center;
+    /* Re-setting flex-grow to 1 to properly utilize space before the right-side group */
 }
 
 .premium-nav .navbar-nav {
     gap: 4px !important; /* Reduced gap */
     align-items: center;
-    margin-right: 15px !important;
+    /* Removed margin-right: 15px !important; from here as it's better controlled by Bootstrap utility classes and the grouping fix */
 }
 
 /* Enhanced Nav Links */
@@ -143,6 +145,7 @@ body.dark-mode {
 }
 
 /* Subscription Status Section Fix */
+/* Targeting the wrapper ul for status elements */
 .premium-nav .navbar-nav.me-3 {
     margin-right: 1rem !important;
     gap: 2px !important;
@@ -194,6 +197,7 @@ body.dark-mode {
     transition: all 0.3s ease;
     white-space: nowrap;
     margin-left: 8px !important; /* Added spacing */
+    flex-shrink: 0; /* Ensures button is not compressed */
 }
 
 .premium-logout:hover {
@@ -318,6 +322,11 @@ body.dark-mode {
     
     .premium-nav .navbar-nav {
         gap: 2px !important;
+    }
+    
+    /* Allow subscription area to shrink */
+    .premium-nav .navbar-nav.me-3 {
+        margin-right: 0.5rem !important;
     }
 }
 
@@ -1385,12 +1394,12 @@ body.offline .navbar {
 #prescriptionPreview {
     width: 100%;
     max-width: 58mm;
-    margin: 0 auto;
+    margin: 20px auto;
     padding: 15px;
     background: white;
     border: 1px solid #ddd;
     border-radius: 5px;
-    font-family: 'Times New Roman', serif;
+    font-family: 'Courier New', monospace;
     font-size: 12px;
     line-height: 1.2;
     box-sizing: border-box;
