@@ -1,7 +1,7 @@
 // firebase-config.js
 const firebaseConfig = {
   apiKey: "AIzaSyD0qbeB7cPxBu3IGgrLFph8xOwxdwFER7c",
-  authDomain: "lensprescriptionapp-e8f48.firebaseapp.com",
+  authDomain: "lensrxbymnr.netlify.app",
   projectId: "lensprescriptionapp-e8f48",
   storageBucket: "lensprescriptionapp-e8f48.firebasestorage.app",
   messagingSenderId: "96345105670",
