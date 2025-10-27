@@ -1637,3 +1637,120 @@ body.offline .navbar {
         font-size: 7px;
     }
 }
+
+/* Add to app.css - Active Tab Styles */
+.nav-link-custom.active {
+    color: var(--premium-navy) !important;
+    background: var(--premium-gold);
+    box-shadow: 0 4px 15px rgba(251, 191, 36, 0.5);
+    font-weight: 700;
+}
+
+.nav-link-custom.active i {
+    color: var(--premium-navy);
+}
+
+/* Enhanced Filter Section Styles */
+.filter-section {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid #e9ecef;
+}
+
+.filter-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-group label {
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: var(--dark-color);
+    font-size: 14px;
+}
+
+.filter-group input,
+.filter-group select {
+    padding: 10px;
+    border: 2px solid #e9ecef;
+    border-radius: 5px;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+}
+
+.filter-group input:focus,
+.filter-group select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.filter-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 10px;
+}
+
+.btn-filter {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-apply {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-clear {
+    background: var(--secondary-color);
+    color: white;
+}
+
+.btn-apply:hover {
+    background: #0056b3;
+    transform: translateY(-1px);
+}
+
+.btn-clear:hover {
+    background: #545b62;
+    transform: translateY(-1px);
+}
+
+/* Date Range Filter */
+.date-range {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+/* Responsive Filters */
+@media (max-width: 768px) {
+    .filter-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .date-range {
+        grid-template-columns: 1fr;
+    }
+    
+    .filter-actions {
+        justify-content: stretch;
+    }
+    
+    .filter-actions .btn-filter {
+        flex: 1;
+    }
+}
