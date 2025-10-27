@@ -1916,3 +1916,44 @@ body.initialized {
     opacity: 1;
     transition: opacity 0.3s ease;
 }
+
+/* Fix for subscription elements in navbar */
+.navbar-nav .nav-link-custom {
+    white-space: nowrap;
+}
+
+/* Ensure upgrade buttons look consistent */
+#upgradeButton, #upgradeButtonMobile {
+    cursor: pointer;
+    color: inherit !important;
+}
+
+#upgradeButton:hover, #upgradeButtonMobile:hover {
+    background: rgba(251, 191, 36, 0.1) !important;
+    color: white !important;
+}
+
+/* Fix for offcanvas header */
+.premium-offcanvas-header {
+    background: linear-gradient(90deg, var(--premium-navy), var(--primary-color)) !important;
+    color: white;
+    padding: 20px;
+    border-bottom: 2px solid var(--premium-gold);
+}
+
+/* Mobile subscription items */
+#subscriptionStatusMobile, #prescriptionUsageMobile {
+    font-size: 0.85rem;
+}
+
+/* Active state fixes */
+.navbar-nav .nav-item.active .nav-link-custom {
+    color: var(--premium-navy) !important;
+    background: var(--premium-gold);
+    box-shadow: 0 4px 15px rgba(251, 191, 36, 0.5);
+    font-weight: 700;
+}
+
+.navbar-nav .nav-item.active .nav-link-custom i {
+    color: var(--premium-navy);
+}
