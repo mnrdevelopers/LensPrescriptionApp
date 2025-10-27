@@ -968,7 +968,21 @@ async function saveProfile() {
 }
 
 // Prescription Management
+// In app.js - Update the submitPrescription function
 async function submitPrescription() {
+    // Check subscription first
+    if (!canCreatePrescription()) {
+        let message = 'Subscription required. ';
+        if (userSubscription?.status === 'expired') {
+            message += 'Please upgrade to continue creating prescriptions.';
+        } else {
+            message += `You've reached your monthly limit.`;
+        }
+        showUpgradeModal(message);
+        return;
+    }
+    
+    // ... rest of your existing submitPrescription code
     if (!isProfileComplete) {
         alert('Please complete your Clinic Profile before adding prescriptions.');
         showProfileSetup(true);
@@ -995,7 +1009,6 @@ async function submitPrescription() {
         const newPrescriptionRef = await db.collection('prescriptions').add({
             userId: user.uid,
             ...formData,
-            // Store date as a human-readable ISO string for accurate queries and sorting
             date: new Date().toISOString(), 
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
@@ -1011,6 +1024,10 @@ async function submitPrescription() {
         // Reset form
         resetForm();
         isFormFilled = false;
+
+        // Update prescription count
+        prescriptionCount++;
+        updateUsageUI();
 
     } catch (error) {
         console.error('Error saving prescription:', error);
