@@ -1895,7 +1895,7 @@ body.offline .navbar {
     }
 }
 
-/* Prevent flash of content during page load */
+/* Critical Fix: Ensure sections display properly */
 .page-section {
     display: none;
     opacity: 0;
@@ -1903,16 +1903,27 @@ body.offline .navbar {
 }
 
 .page-section.active {
-    display: block;
+    display: block !important;
     opacity: 1;
 }
 
-/* Ensure body is hidden until initialized */
+/* Ensure body is properly initialized */
+body.initialized {
+    opacity: 1;
+}
+
 body:not(.initialized) {
     opacity: 0;
 }
 
-body.initialized {
-    opacity: 1;
-    transition: opacity 0.3s ease;
+/* Enhanced Active Tab Styles */
+.nav-link-custom.active {
+    color: var(--premium-navy) !important;
+    background: var(--premium-gold);
+    box-shadow: 0 4px 15px rgba(251, 191, 36, 0.5);
+    font-weight: 700;
+}
+
+.nav-link-custom.active i {
+    color: var(--premium-navy);
 }
