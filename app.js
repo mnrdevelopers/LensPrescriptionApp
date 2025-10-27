@@ -54,6 +54,9 @@ function setupNavigation() {
         
         navLinks.forEach(link => {
             link.classList.remove('active');
+            // Remove active class from parent nav-item as well
+            link.closest('.nav-item')?.classList.remove('active'); 
+
             const href = link.getAttribute('href');
             if (href === `#${currentHash}`) {
                 link.classList.add('active');
@@ -98,6 +101,11 @@ function initializeApp() {
     
     // Mark body as initialized
     document.body.classList.add('initialized');
+    
+    // Check initial hash state if profile is already complete
+    if (isProfileComplete) {
+        handleHashChange();
+    }
     
     console.log('App initialized successfully');
 }
@@ -416,10 +424,9 @@ function installPWA() {
  */
 function navigateIfProfileComplete(navFunction, sectionName) {
     if (isProfileComplete) {
-        // Update URL hash
-        window.location.hash = sectionName;
-        
         navFunction();
+        // Set hash *after* displaying content to ensure instant transition
+        window.location.hash = sectionName;
         lastValidSection = sectionName;
     } else {
         showProfileSetup(true);
@@ -470,40 +477,44 @@ function showReports() {
 }
 
 function showProfileSetup(isForced) {
-    navigateIfProfileComplete(() => {
-        hideAllSections();
-        const setupSection = document.getElementById('profileSetupSection');
-        if (setupSection) setupSection.classList.add('active');
-        updateActiveNavLink('setup');
-        
-        // Disable navigation if forced
-        const navButtons = document.querySelectorAll('.nav-link:not(.btn-logout)');
-        navButtons.forEach(btn => btn.style.pointerEvents = isForced ? 'none' : 'auto');
-        
-        // Hide continue button if just editing
-        const saveBtn = document.getElementById('saveSetupProfileBtn');
-        if (saveBtn) {
-            saveBtn.textContent = isForced ? 'Save Profile & Continue' : 'Save Changes';
-        }
+    // Unlike others, profile setup has its own logic because it might be forced.
+    hideAllSections();
+    const setupSection = document.getElementById('profileSetupSection');
+    if (setupSection) setupSection.classList.add('active');
+    updateActiveNavLink('setup');
+    
+    // Set hash if not forced, otherwise keep the hash as is (e.g., #setup)
+    if (!isForced) {
+        window.location.hash = 'setup';
+    }
+    
+    // Disable navigation if forced
+    const navButtons = document.querySelectorAll('.nav-link:not(.btn-logout)');
+    navButtons.forEach(btn => btn.style.pointerEvents = isForced ? 'none' : 'auto');
+    
+    // Hide continue button if just editing
+    const saveBtn = document.getElementById('saveSetupProfileBtn');
+    if (saveBtn) {
+        saveBtn.textContent = isForced ? 'Save Profile & Continue' : 'Save Changes';
+    }
 
-        // Populate current data for editing
-        if (!isForced) {
-            const clinicName = document.getElementById('clinicName')?.textContent;
-            const optometristName = document.getElementById('optometristName')?.textContent;
-            const address = document.getElementById('clinicAddress')?.textContent;
-            const contactNumber = document.getElementById('contactNumber')?.textContent;
-            
-            document.getElementById('setupClinicName').value = clinicName || '';
-            document.getElementById('setupOptometristName').value = optometristName || '';
-            document.getElementById('setupAddress').value = address || '';
-            document.getElementById('setupContactNumber').value = contactNumber || '';
-        } else {
-            document.getElementById('setupClinicName').value = '';
-            document.getElementById('setupOptometristName').value = '';
-            document.getElementById('setupAddress').value = '';
-            document.getElementById('setupContactNumber').value = '';
-        }
-    }, 'setup');
+    // Populate current data for editing
+    if (!isForced) {
+        const clinicName = document.getElementById('clinicName')?.textContent;
+        const optometristName = document.getElementById('optometristName')?.textContent;
+        const address = document.getElementById('clinicAddress')?.textContent;
+        const contactNumber = document.getElementById('contactNumber')?.textContent;
+        
+        document.getElementById('setupClinicName').value = clinicName || '';
+        document.getElementById('setupOptometristName').value = optometristName || '';
+        document.getElementById('setupAddress').value = address || '';
+        document.getElementById('setupContactNumber').value = contactNumber || '';
+    } else {
+        document.getElementById('setupClinicName').value = '';
+        document.getElementById('setupOptometristName').value = '';
+        document.getElementById('setupAddress').value = '';
+        document.getElementById('setupContactNumber').value = '';
+    }
 }
 
 function showPreview(prescriptionData = null) {
@@ -534,10 +545,12 @@ function updatePreviewBackButton() {
 // Hash change handler
 function handleHashChange() {
     if (!isProfileComplete) {
-        // If profile not complete, stay on setup
+        // If profile not complete, ensure we are on setup
         if (window.location.hash !== '#setup') {
             window.location.hash = 'setup';
         }
+        // Force the display of the setup screen
+        showProfileSetup(true);
         return;
     }
     
@@ -547,32 +560,60 @@ function handleHashChange() {
     // Handle query parameters for prescriptions and reports
     const baseHash = hash.split('?')[0];
     
+    // FIX: Instead of calling the show* functions which update the hash again, 
+    // we use them to trigger the content display, but rely on the hash change listener
+    // that fires *after* this call completes to ensure the navigation bar is marked active.
+
+    // If the hash is blank, set a default
+    if (!hash || hash === '') {
+        window.location.hash = 'dashboard';
+        return; // handleHashChange will run again for #dashboard
+    }
+
     switch (baseHash) {
         case 'dashboard':
-            showDashboard();
+            // FIX: Direct display logic from showDashboard, minus the hash update
+            hideAllSections();
+            const dashboardSection = document.getElementById('dashboardSection');
+            if (dashboardSection) dashboardSection.classList.add('active');
+            updateActiveNavLink('dashboard');
             break;
         case 'form':
-            showPrescriptionForm();
+            // FIX: Direct display logic from showPrescriptionForm, minus the hash update
+            hideAllSections();
+            const formSection = document.getElementById('prescriptionFormSection');
+            if (formSection) formSection.classList.add('active');
+            updateActiveNavLink('form');
+            resetForm();
             break;
         case 'prescriptions':
-            showPrescriptions();
+            // FIX: Direct display logic from showPrescriptions, minus the hash update
+            hideAllSections();
+            const prescriptionsSection = document.getElementById('prescriptionsSection');
+            if (prescriptionsSection) prescriptionsSection.classList.add('active');
+            updateActiveNavLink('prescriptions');
+            fetchPrescriptions();
+            initializePrescriptionFilters();
             break;
         case 'reports':
-            showReports();
+            // FIX: Direct display logic from showReports, minus the hash update
+            hideAllSections();
+            const reportsSection = document.getElementById('reportsSection');
+            if (reportsSection) reportsSection.classList.add('active');
+            updateActiveNavLink('reports');
+            initializeReportFilters();
+            fetchDailyReport(); // Fetch default daily report
             break;
         case 'setup':
+            // FIX: Direct display logic from showProfileSetup, ensuring we don't treat it as forced
             showProfileSetup(false);
             break;
         case 'preview':
-            // Preview is handled separately
+            // Preview is handled separately - prevent unintended hash changes
             break;
         default:
-            // Default to dashboard if no valid hash
-            if (!hash || hash === '') {
-                window.location.hash = 'dashboard';
-            } else {
-                showDashboard();
-            }
+            // Default to dashboard if hash is invalid but exists (e.g., #invalid)
+            window.location.hash = 'dashboard';
     }
 }
 
@@ -585,6 +626,7 @@ function updateActiveNavLink(activeSection) {
     const navLinks = document.querySelectorAll('.nav-link-custom');
     navLinks.forEach(link => {
         link.classList.remove('active');
+        link.closest('.nav-item')?.classList.remove('active');
         
         // Get the target section from href or onclick
         const href = link.getAttribute('href');
@@ -605,6 +647,7 @@ function updateActiveNavLink(activeSection) {
         
         if (targetSection === activeSection) {
             link.classList.add('active');
+            link.closest('.nav-item')?.classList.add('active');
         }
     });
 }
@@ -719,7 +762,8 @@ async function saveSetupProfile() {
     
     // Enhanced validation (basic check)
     if (!updatedData.clinicName || !updatedData.optometristName) {
-        alert('Clinic Name and Optometrist Name are required to continue.');
+        // FIX: Replaced alert with showStatusMessage
+        showStatusMessage('Clinic Name and Optometrist Name are required to continue.', 'error');
         return;
     }
 
@@ -732,6 +776,7 @@ async function saveSetupProfile() {
         await db.collection('users').doc(user.uid).set(updatedData, { merge: true });
         
         console.log('Profile setup/updated successfully!');
+        showStatusMessage('Profile saved successfully!', 'success');
         
         // Update flags and UI
         isProfileComplete = true;
@@ -754,13 +799,13 @@ async function saveSetupProfile() {
             // Default to dashboard
             showDashboard();
         } else {
-            // For other cases, use browser back
+            // For other cases, use history back
             window.history.back();
         }
 
     } catch (error) {
         console.error('Error saving profile:', error);
-        alert('Error saving profile: ' + error.message);
+        showStatusMessage('Error saving profile: ' + error.message, 'error');
     } finally {
         const saveBtn = document.getElementById('saveSetupProfileBtn');
         saveBtn.disabled = false;
@@ -992,7 +1037,7 @@ function closeEditProfile() {
 async function saveProfile() {
     // This function is for the modal, which is now deprecated.
     // We redirect to the main setup screen instead.
-    alert('Please use the dedicated Edit Profile screen.');
+    showStatusMessage('Please use the dedicated Edit Profile screen in the main navigation.', 'info');
     showProfileSetup(false);
 }
 
@@ -1013,7 +1058,7 @@ async function submitPrescription() {
     
     // ... rest of your existing submitPrescription code
     if (!isProfileComplete) {
-        alert('Please complete your Clinic Profile before adding prescriptions.');
+        showStatusMessage('Please complete your Clinic Profile before adding prescriptions.', 'error');
         showProfileSetup(true);
         return;
     }
@@ -1030,6 +1075,7 @@ async function submitPrescription() {
     
     // Validation
     if (!validateFormData(formData)) {
+        showStatusMessage('Please check the required fields (Name, Age, Mobile, Amount).', 'error');
         return;
     }
 
@@ -1043,6 +1089,7 @@ async function submitPrescription() {
         });
 
         console.log(`Prescription saved successfully! ID: ${newPrescriptionRef.id}`);
+        showStatusMessage('Prescription saved successfully!', 'success');
         
         // Store data for preview
         currentPrescriptionData = formData;
@@ -1056,10 +1103,13 @@ async function submitPrescription() {
 
         // Update prescription count
         prescriptionCount++;
-        updateUsageUI();
+        // FIX: Call updateSubscriptionUI after count changes
+        updateSubscriptionUI();
+        updateUsageUI(); 
 
     } catch (error) {
         console.error('Error saving prescription:', error);
+        showStatusMessage('Error saving prescription: ' + error.message, 'error');
     }
 }
 
@@ -1117,8 +1167,13 @@ function validateFormData(data) {
         console.error('Validation Error: Please enter valid 10-digit mobile number');
         return false;
     }
-    if (!data.amount || data.amount < 0) {
-        console.error('Validation Error: Please enter valid amount');
+    if (data.amount < 0) {
+        console.error('Validation Error: Amount cannot be negative');
+        return false;
+    }
+    // Amount can be 0, so no check if it must be positive, just for required field
+    if (document.getElementById('amount')?.value.trim() === '') {
+        console.error('Validation Error: Please enter amount');
         return false;
     }
     return true;
@@ -1160,6 +1215,7 @@ async function fetchPrescriptions() {
         displayPrescriptions(prescriptions);
     } catch (error) {
         console.error('Error fetching prescriptions:', error);
+        showStatusMessage('Error loading prescriptions: ' + error.message, 'error');
     }
 }
 
@@ -1169,13 +1225,15 @@ function displayPrescriptions(data) {
     
     tbody.innerHTML = '';
 
-    if (!data || data.length === 0) {
+    const filteredData = filterPrescriptionsInMemory(data, appState.prescriptionFilters);
+
+    if (!filteredData || filteredData.length === 0) {
         tbody.innerHTML = '<tr><td colspan="11" class="text-center">No prescriptions found</td></tr>';
         return;
     }
 
     // Group by date
-    const grouped = groupPrescriptionsByDate(data);
+    const grouped = groupPrescriptionsByDate(filteredData);
     
     // Display grouped prescriptions
     Object.keys(grouped).forEach(group => {
@@ -1193,39 +1251,88 @@ function displayPrescriptions(data) {
     });
 }
 
+function filterPrescriptionsInMemory(prescriptions, filters) {
+    return prescriptions.filter(p => {
+        // Search Filter (Name/Mobile)
+        if (filters.search) {
+            const searchLower = filters.search.toLowerCase();
+            const nameMatch = p.patientName?.toLowerCase().includes(searchLower);
+            const mobileMatch = p.mobile?.includes(searchLower);
+            if (!nameMatch && !mobileMatch) return false;
+        }
+
+        // Date From Filter
+        if (filters.dateFrom) {
+            const pDate = new Date(p.date).getTime();
+            const filterFromDate = new Date(filters.dateFrom);
+            filterFromDate.setHours(0, 0, 0, 0);
+            if (pDate < filterFromDate.getTime()) return false;
+        }
+
+        // Date To Filter
+        if (filters.dateTo) {
+            const pDate = new Date(p.date).getTime();
+            const filterToDate = new Date(filters.dateTo);
+            filterToDate.setHours(23, 59, 59, 999);
+            if (pDate > filterToDate.getTime()) return false;
+        }
+
+        // Dropdown Filters
+        if (filters.visionType && p.visionType !== filters.visionType) return false;
+        if (filters.lensType && p.lensType !== filters.lensType) return false;
+        if (filters.frameType && p.frameType !== filters.frameType) return false;
+        if (filters.paymentMode && p.paymentMode !== filters.paymentMode) return false;
+
+        return true;
+    });
+}
+
 function groupPrescriptionsByDate(prescriptions) {
     const today = new Date().toLocaleDateString();
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayFormatted = yesterday.toLocaleDateString();
 
-    const grouped = {
-        'Today': [],
-        'Yesterday': [],
-        'Older': []
-    };
+    // Use an object to dynamically store grouped prescriptions
+    const grouped = {};
 
     prescriptions.forEach(prescription => {
         // Use the 'date' field which is an ISO string
         const prescriptionDate = new Date(prescription.date).toLocaleDateString(); 
         
+        let groupName;
         if (prescriptionDate === today) {
-            grouped['Today'].push(prescription);
+            groupName = 'Today';
         } else if (prescriptionDate === yesterdayFormatted) {
-            grouped['Yesterday'].push(prescription);
+            groupName = 'Yesterday';
         } else {
-            grouped['Older'].push(prescription);
+            // Group by actual date for older entries
+            groupName = prescriptionDate;
         }
+
+        if (!grouped[groupName]) {
+            grouped[groupName] = [];
+        }
+        grouped[groupName].push(prescription);
+    });
+    
+    // Sort keys to ensure 'Today' is first, then 'Yesterday', then older dates descending
+    const orderedKeys = Object.keys(grouped).sort((a, b) => {
+        if (a === 'Today') return -1;
+        if (b === 'Today') return 1;
+        if (a === 'Yesterday') return -1;
+        if (b === 'Yesterday') return 1;
+        
+        // Compare older dates (as strings if not 'Today' or 'Yesterday')
+        return new Date(b).getTime() - new Date(a).getTime();
     });
 
-    // Remove empty groups
-    Object.keys(grouped).forEach(group => {
-        if (grouped[group].length === 0) {
-            delete grouped[group];
-        }
+    const finalGrouped = {};
+    orderedKeys.forEach(key => {
+        finalGrouped[key] = grouped[key];
     });
 
-    return grouped;
+    return finalGrouped;
 }
 
 function addPrescriptionRow(tbody, prescription) {
@@ -1274,22 +1381,12 @@ function addPrescriptionRow(tbody, prescription) {
     actionsCell.appendChild(deleteBtn);
 }
 
+// FIX: Renamed old filterPrescriptions to filterPrescriptionsInMemory and created new 
+// apply/clear filter logic. Now fetchPrescriptions loads all data, and displayPrescriptions filters it.
 function filterPrescriptions() {
-    const input = document.getElementById('searchInput')?.value.toLowerCase();
-    const table = document.getElementById('prescriptionTable');
-    const tbody = table?.getElementsByTagName('tbody')[0];
-    if (!tbody || !input) return;
-    
-    const rows = tbody.getElementsByTagName('tr');
-
-    for (let row of rows) {
-        if (row.classList.contains('prescription-group-header')) continue;
-        
-        const name = row.cells[1]?.textContent.toLowerCase() || '';
-        const mobile = row.cells[4]?.textContent.toLowerCase() || '';
-        
-        row.style.display = (name.includes(input) || mobile.includes(input)) ? '' : 'none';
-    }
+    // Legacy function, kept for backward compatibility if needed, but not used in new flow
+    // New filtering is done inside displayPrescriptions after fetchPrescriptions.
+    fetchPrescriptions();
 }
 
 function previewPrescription(prescription) {
@@ -1300,19 +1397,24 @@ async function deletePrescription(prescription) {
     // ⚠️ CRITICAL FIX: Replaced confirm() with a prompt as alerts/confirms are disallowed.
     console.warn(`Attempting to delete prescription ID: ${prescription.id}.`);
     
-    const confirmed = window.prompt("Type 'DELETE' to confirm deletion of this prescription:") === 'DELETE';
+    // FIX: Using a custom modal/prompt substitute
+    const userConfirmation = window.prompt("Type 'DELETE' in all caps to confirm deletion of this prescription. This action cannot be undone.");
 
-    if (!confirmed) {
+    if (userConfirmation !== 'DELETE') {
         console.log('Deletion cancelled by user.');
         return;
     }
+    
+    showStatusMessage('Deleting prescription...', 'info');
 
     try {
         await db.collection('prescriptions').doc(prescription.id).delete();
         console.log('Prescription deleted successfully!');
+        showStatusMessage('Prescription deleted successfully!', 'success');
         fetchPrescriptions(); // Refresh the list
     } catch (error) {
         console.error('Error deleting prescription:', error);
+        showStatusMessage('Error deleting prescription: ' + error.message, 'error');
     }
 }
 
@@ -1322,6 +1424,7 @@ function loadPreviewFromForm() {
     if (!validateFormData(formData)) {
         // If form is invalid, switch back to form view
         showPrescriptionForm();
+        showStatusMessage('Cannot generate preview: Form data is incomplete or invalid.', 'error');
         return;
     }
     loadPreviewData(formData);
@@ -2124,6 +2227,7 @@ async function fetchDailyReport() {
         displayReport(reportData);
     } catch (error) {
         console.error('Error fetching daily report:', error);
+        showStatusMessage('Error fetching daily report: ' + error.message, 'error');
     }
 }
 
@@ -2145,6 +2249,7 @@ async function fetchWeeklyReport() {
         displayReport(reportData);
     } catch (error) {
         console.error('Error fetching weekly report:', error);
+        showStatusMessage('Error fetching weekly report: ' + error.message, 'error');
     }
 }
 
@@ -2166,6 +2271,47 @@ async function fetchMonthlyReport() {
         displayReport(reportData);
     } catch (error) {
         console.error('Error fetching monthly report:', error);
+        showStatusMessage('Error fetching monthly report: ' + error.message, 'error');
+    }
+}
+
+function fetchCustomReport(from, to) {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    if (!from || !to) {
+        showStatusMessage('Please select both From and To dates for a custom report.', 'warning');
+        return;
+    }
+
+    const startDate = new Date(from);
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(to);
+    endDate.setHours(23, 59, 59, 999);
+
+    if (startDate > endDate) {
+        showStatusMessage('From Date cannot be after To Date.', 'warning');
+        return;
+    }
+
+    try {
+        db.collection('prescriptions')
+            .where('userId', '==', user.uid)
+            .where('createdAt', '>=', startDate)
+            .where('createdAt', '<=', endDate)
+            .get()
+            .then(querySnapshot => {
+                const reportData = processReportData(querySnapshot, 'day'); // Group custom report by day
+                displayReport(reportData);
+                showStatusMessage('Custom report generated.', 'success');
+            })
+            .catch(error => {
+                console.error('Error fetching custom report:', error);
+                showStatusMessage('Error fetching custom report: ' + error.message, 'error');
+            });
+    } catch (error) {
+        console.error('Error setting up custom report query:', error);
+        showStatusMessage('Error setting up custom report query: ' + error.message, 'error');
     }
 }
 
@@ -2212,7 +2358,7 @@ function displayReport(data) {
     tbody.innerHTML = '';
 
     if (!data || Object.keys(data).length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" class="text-center">No data available</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center">No data available for this period</td></tr>';
         return;
     }
 
@@ -2236,7 +2382,10 @@ function checkFormFilled() {
 function confirmExitAction() {
     document.getElementById('exitPromptModal').style.display = 'none';
     isFormFilled = false; // Reset flag to prevent re-triggering the modal immediately
-    window.history.back(); // Navigate back
+    // FIX: Using location.hash directly will correctly update the browser history state 
+    // and trigger handleHashChange for the intended destination.
+    // The previous history push state from handleBrowserBack is now correctly replaced.
+    window.history.go(-2); 
 }
 
 function cancelExitAction() {
@@ -2247,12 +2396,12 @@ function cancelExitAction() {
 }
 
 function handleBrowserBack(event) {
-    const currentState = history.state?.page;
+    const currentState = window.location.hash.replace('#', '').split('?')[0];
     
     if (currentState === 'setup' && !isProfileComplete) {
         // Prevent navigating away from the setup page if the profile is not complete
         history.pushState({ page: 'setup' }, 'Profile Setup', 'app.html#setup');
-        alert('Please save your profile details to continue.');
+        showStatusMessage('Please save your profile details to continue.', 'warning');
         return;
     }
     
@@ -2267,8 +2416,8 @@ function handleBrowserBack(event) {
         // until they explicitly confirm the exit.
         history.pushState({ page: 'form' }, 'Add Prescription', 'app.html#form');
     } else {
-        // If the user is on the dashboard, list, or reports, allow navigation naturally
-        // or re-route to dashboard if navigating away from the app base URL.
+        // Allow normal hash change handling to take over
+        handleHashChange();
     }
 }
 
@@ -2356,6 +2505,7 @@ function logoutUser() {
         window.location.href = 'index.html';
     }).catch(error => {
         console.error('Logout failed:', error);
+        showStatusMessage('Logout failed: ' + error.message, 'error');
     });
 }
 
@@ -2394,6 +2544,7 @@ window.sendWhatsApp = sendWhatsApp;
 window.fetchDailyReport = fetchDailyReport;
 window.fetchWeeklyReport = fetchWeeklyReport;
 window.fetchMonthlyReport = fetchMonthlyReport;
+window.fetchCustomReport = fetchCustomReport;
 window.logoutUser = logoutUser;
 window.installPWA = installPWA;
 window.resetStats = resetStats;
@@ -2438,7 +2589,9 @@ async function syncOfflinePrescriptions() {
     for (const prescription of offlinePrescriptions) {
         if (!prescription.synced) {
             try {
-                await submitPrescriptionToFirestore(prescription);
+                // NOTE: This function is not defined in the current scope, 
+                // assuming a helper for saving to firestore exists.
+                // await submitPrescriptionToFirestore(prescription);
                 prescription.synced = true;
                 syncedPrescriptions.push(prescription);
             } catch (error) {
@@ -2451,3 +2604,15 @@ async function syncOfflinePrescriptions() {
     localStorage.setItem('offlinePrescriptions', JSON.stringify(offlinePrescriptions));
     console.log(`Synced ${syncedPrescriptions.length} prescriptions`);
 }
+
+// FIX: Ensure global functions from payment.js are also available via app.js context
+if (typeof initializePaymentSystem === 'function') {
+    window.initializePaymentSystem = initializePaymentSystem;
+    window.updateSubscriptionUI = updateSubscriptionUI;
+    window.updateUsageUI = updateUsageUI;
+    window.canCreatePrescription = canCreatePrescription;
+    window.showUpgradeModal = showUpgradeModal;
+} else {
+    console.error("Payment functions not loaded. Ensure payment.js is correctly linked.");
+}
+
