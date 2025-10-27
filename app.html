@@ -42,13 +42,13 @@
             <span>Lens Prescription</span>
         </a>
         
-        <!-- Mobile Menu Toggle -->
-        <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+        <!-- Mobile Menu Toggle - FIXED: Added d-lg-none to hide on desktop -->
+<button class="navbar-toggler d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+    <span class="navbar-toggler-icon"></span>
+</button>
         
-       <!-- Desktop Menu -->
-<div class="collapse navbar-collapse d-lg-flex">
+    <!-- Desktop Menu - FIXED: Proper display classes -->
+<div class="collapse navbar-collapse d-none d-lg-flex" id="navbarNav">
     <ul class="navbar-nav me-auto">
         <li class="nav-item">
             <a class="nav-link nav-link-custom" href="#dashboard" onclick="showDashboard()">
@@ -703,4 +703,5 @@
     </script>
 </body>
 </html>
+
 
