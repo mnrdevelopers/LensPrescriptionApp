@@ -37,79 +37,84 @@
  <!-- Enhanced Navigation - Updated with 'premium-nav' class and Logo -->
 <nav class="navbar navbar-expand-lg fixed-top premium-nav">
     <div class="container-fluid">
-        <a class="navbar-brand" href="#dashboard" onclick="showDashboard()">
+        <a class="navbar-brand" href="#" onclick="showDashboard()">
             <img src="lenslogo.png" alt="Lens Prescription Logo" class="nav-logo">
             <span>Lens Prescription</span>
         </a>
         
-        <!-- Mobile Menu Toggle - FIXED: Added d-lg-none to hide on desktop -->
-<button class="navbar-toggler d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
-    <span class="navbar-toggler-icon"></span>
-</button>
+        <!-- Mobile Menu Toggle -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+            <span class="navbar-toggler-icon"></span>
+        </button>
         
-    <!-- Desktop Menu - FIXED: Proper display classes -->
-<div class="collapse navbar-collapse d-none d-lg-flex" id="navbarNav">
-    <ul class="navbar-nav me-auto">
-        <li class="nav-item">
-            <a class="nav-link nav-link-custom" href="#dashboard" onclick="showDashboard()">
-                <i class="fas fa-tachometer-alt"></i> Dashboard
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link nav-link-custom" href="#form" onclick="showPrescriptionForm()">
-                <i class="fas fa-plus-circle"></i> Add Prescription
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link nav-link-custom" href="#prescriptions" onclick="showPrescriptions()">
-                <i class="fas fa-list"></i> View Prescriptions
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link nav-link-custom" href="#reports" onclick="showReports()">
-                <i class="fas fa-chart-bar"></i> Reports
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link nav-link-custom" href="#setup" onclick="showProfileSetup(false)">
-                <i class="fas fa-user-circle"></i> Profile
-            </a>
-        </li>
-    </ul>
-    <button onclick="logoutUser()" class="btn btn-logout premium-logout">
-        <i class="fas fa-sign-out-alt"></i> Logout
-    </button>
-</div>
-        
+        <!-- Desktop Menu (hidden on mobile) -->
+        <div class="collapse navbar-collapse d-none d-lg-flex">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link nav-link-custom" href="#" onclick="showDashboard()">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link nav-link-custom" href="#" onclick="showPrescriptionForm()">
+                        <i class="fas fa-plus-circle"></i> Add Prescription
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link nav-link-custom" href="#" onclick="showPrescriptions()">
+                        <i class="fas fa-list"></i> View Prescriptions
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link nav-link-custom" href="#" onclick="showReports()">
+                        <i class="fas fa-chart-bar"></i> Reports
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link nav-link-custom" href="#" onclick="showProfileSetup(false)">
+                        <i class="fas fa-user-circle"></i> Profile
+                    </a>
+                </li>
+            </ul>
+            <button onclick="logoutUser()" class="btn btn-logout premium-logout">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+
       <!-- Offcanvas Mobile Menu -->
-<!-- Mobile Menu -->
 <div class="offcanvas offcanvas-end d-lg-none" tabindex="-1" id="offcanvasNavbar">
+    <div class="offcanvas-header premium-offcanvas-header">
+        <h5 class="offcanvas-title">
+            <i class="fas fa-bars me-2"></i>Navigation Menu
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+    </div>
     <div class="offcanvas-body p-0">
         <div class="d-flex flex-column h-100">
             <!-- Navigation Links -->
             <ul class="navbar-nav justify-content-start flex-grow-1 p-3">
                 <li class="nav-item">
-                    <a class="nav-link nav-link-custom" href="#dashboard" onclick="showDashboard()" data-bs-dismiss="offcanvas">
+                    <a class="nav-link nav-link-custom" href="#" onclick="showDashboard()" data-bs-dismiss="offcanvas">
                         <i class="fas fa-tachometer-alt"></i> Dashboard
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link nav-link-custom" href="#form" onclick="showPrescriptionForm()" data-bs-dismiss="offcanvas">
+                    <a class="nav-link nav-link-custom" href="#" onclick="showPrescriptionForm()" data-bs-dismiss="offcanvas">
                         <i class="fas fa-plus-circle"></i> Add Prescription
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link nav-link-custom" href="#prescriptions" onclick="showPrescriptions()" data-bs-dismiss="offcanvas">
+                    <a class="nav-link nav-link-custom" href="#" onclick="showPrescriptions()" data-bs-dismiss="offcanvas">
                         <i class="fas fa-list"></i> View Prescriptions
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link nav-link-custom" href="#reports" onclick="showReports()" data-bs-dismiss="offcanvas">
+                    <a class="nav-link nav-link-custom" href="#" onclick="showReports()" data-bs-dismiss="offcanvas">
                         <i class="fas fa-chart-bar"></i> Reports
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link nav-link-custom" href="#setup" onclick="showProfileSetup(false)" data-bs-dismiss="offcanvas">
+                    <a class="nav-link nav-link-custom" href="#" onclick="showProfileSetup(false)" data-bs-dismiss="offcanvas">
                         <i class="fas fa-user-circle"></i> Edit Profile
                     </a>
                 </li>
@@ -396,149 +401,60 @@
             </div>
         </section>
 
-     <!-- Update View Prescriptions Section -->
-<section id="prescriptionsSection" class="page-section">
-    <div class="container">
-        <h2>Prescription History</h2>
-        
-        <!-- Enhanced Filter Section -->
-        <div class="filter-section">
-            <div class="filter-row">
-                <div class="filter-group">
-                    <label for="searchInput">Search (Name/Mobile)</label>
-                    <input type="text" id="searchInput" placeholder="Search by name or mobile">
+        <!-- View Prescriptions Section -->
+        <section id="prescriptionsSection" class="page-section">
+            <div class="container">
+                <h2>Prescription History</h2>
+                
+                <div class="search-bar">
+                    <input type="text" id="searchInput" placeholder="Search by Name or Mobile" onkeyup="filterPrescriptions()">
+                    <button class="btn-search">Search</button>
                 </div>
-                <div class="filter-group">
-                    <label for="filterDateFrom">Date From</label>
-                    <input type="date" id="filterDateFrom">
-                </div>
-                <div class="filter-group">
-                    <label for="filterDateTo">Date To</label>
-                    <input type="date" id="filterDateTo">
-                </div>
-            </div>
-            <div class="filter-row">
-                <div class="filter-group">
-                    <label for="filterVisionType">Vision Type</label>
-                    <select id="filterVisionType">
-                        <option value="">All Types</option>
-                        <option value="Single Vision">Single Vision</option>
-                        <option value="Bifocal">Bifocal</option>
-                        <option value="Progressive">Progressive</option>
-                        <option value="Reading">Reading</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="filterLensType">Lens Type</label>
-                    <select id="filterLensType">
-                        <option value="">All Types</option>
-                        <option value="Blue Cut">Blue Cut</option>
-                        <option value="Progressive">Progressive</option>
-                        <option value="Bifocal">Bifocal</option>
-                        <option value="Anti-Glare">Anti-Glare</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="filterFrameType">Frame Type</label>
-                    <select id="filterFrameType">
-                        <option value="">All Types</option>
-                        <option value="Full Rim">Full Rim</option>
-                        <option value="Half Rim">Half Rim</option>
-                        <option value="Rimless">Rimless</option>
-                        <option value="Metal">Metal</option>
-                        <option value="Plastic">Plastic</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="filterPaymentMode">Payment Mode</label>
-                    <select id="filterPaymentMode">
-                        <option value="">All Modes</option>
-                        <option value="Cash">Cash</option>
-                        <option value="Card">Card</option>
-                        <option value="UPI">UPI</option>
-                        <option value="Online">Online</option>
-                    </select>
-                </div>
-            </div>
-            <div class="filter-actions">
-                <button onclick="clearPrescriptionFilters()" class="btn-filter btn-clear">
-                    Clear Filters
-                </button>
-                <button onclick="applyPrescriptionFilters()" class="btn-filter btn-apply">
-                    Apply Filters
-                </button>
-            </div>
-        </div>
 
-        <table id="prescriptionTable">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Patient Name</th>
-                    <th>Age</th>
-                    <th>Gender</th>
-                    <th>Mobile</th>
-                    <th>Amount</th>
-                    <th>Vision Type</th>
-                    <th>Lens Type</th>
-                    <th>Frame Type</th>
-                    <th>Payment Mode</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
-</section>
-
-       <!-- Update Reports Section -->
-<section id="reportsSection" class="page-section">
-    <div class="reports-container">
-        <h2>Reports</h2>
-        
-        <!-- Report Filters -->
-        <div class="filter-section">
-            <div class="filter-row">
-                <div class="filter-group">
-                    <label for="reportPeriod">Report Period</label>
-                    <select id="reportPeriod" onchange="toggleCustomDateRange()">
-                        <option value="day">Daily</option>
-                        <option value="week">Weekly</option>
-                        <option value="month">Monthly</option>
-                        <option value="custom">Custom Range</option>
-                    </select>
-                </div>
-                <div class="date-range" id="customDateRange" style="display: none;">
-                    <div class="filter-group">
-                        <label for="customDateFrom">From Date</label>
-                        <input type="date" id="customDateFrom">
-                    </div>
-                    <div class="filter-group">
-                        <label for="customDateTo">To Date</label>
-                        <input type="date" id="customDateTo">
-                    </div>
-                </div>
+                <table id="prescriptionTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Patient Name</th>
+                            <th>Age</th>
+                            <th>Gender</th>
+                            <th>Mobile</th>
+                            <th>Amount</th>
+                            <th>Vision Type</th>
+                            <th>Lens Type</th>
+                            <th>Frame Type</th>
+                            <th>Payment Mode</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
             </div>
-            <div class="filter-actions">
-                <button onclick="applyReportFilters()" class="btn-filter btn-apply">
-                    Generate Report
-                </button>
-            </div>
-        </div>
+        </section>
 
-        <!-- Report Table -->
-        <table id="reportTable">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Prescriptions</th>
-                    <th>Amount Earned</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
-</section>
+        <!-- Reports Section -->
+        <section id="reportsSection" class="page-section">
+            <div class="reports-container">
+                <h2>Reports</h2>
+                <div class="button-group">
+                    <button onclick="fetchDailyReport()" class="btn btn-primary">Daily Report</button>
+                    <button onclick="fetchWeeklyReport()" class="btn btn-secondary">Weekly Report</button>
+                    <button onclick="fetchMonthlyReport()" class="btn btn-tertiary">Monthly Report</button>
+                </div>
+
+                <!-- Report Table -->
+                <table id="reportTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Prescriptions</th>
+                            <th>Amount Earned</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </section>
 
         <!-- Preview Section -->
         <section id="previewSection" class="page-section">
@@ -703,5 +619,3 @@
     </script>
 </body>
 </html>
-
-
