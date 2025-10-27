@@ -37,239 +37,112 @@ body.dark-mode {
     color: #f4f4f4;
 }
 
-/* --- ENHANCED PREMIUM NAVIGATION BAR FIXES --- */
+/* --- PREMIUM NAVIGATION BAR STYLES --- */
 
 /* Enhanced Modern Navigation Bar (Premium Look) */
 .premium-nav {
-    background: var(--premium-navy) !important;
+    background: var(--premium-navy) !important; /* Deep Navy Blue */
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
-    border-bottom: 2px solid var(--premium-gold);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-    padding: 8px 0 !important; /* Reduced padding for better fit */
+    border-bottom: 2px solid var(--premium-gold); /* Gold Accent Bottom Border */
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4); /* Stronger shadow */
+    padding: 12px 0;
     transition: all 0.4s ease;
-    min-height: 70px; /* Fixed height */
 }
 
-.premium-nav .container-fluid {
-    padding-right: 15px !important;
-    padding-left: 15px !important;
-    display: flex !important;
-    align-items: center !important;
-    /* FIX: Removed 'flex-wrap: nowrap !important;' to allow content to wrap 
-       and prevent horizontal scrolling/disturbance on mid-size screens */
-}
-
-/* Brand Logo Fix */
 .navbar-brand {
     font-weight: 700;
-    font-size: 1.4rem !important; /* Slightly smaller */
-    color: white !important;
+    font-size: 1.6rem;
+    color: white !important; /* Brand text white */
     display: flex;
     align-items: center;
-    gap: 10px; /* Reduced gap */
-    margin-right: auto !important; /* Push to left */
-    padding: 5px 0 !important;
-    white-space: nowrap;
+    gap: 12px;
 }
 
 .nav-logo {
-    width: 32px !important; /* Consistent size */
-    height: 32px !important;
+    width: 35px;
+    height: 35px;
     border-radius: 50%;
-    border: 2px solid var(--premium-gold);
+    border: 2px solid var(--premium-gold); /* Gold border around logo */
     box-shadow: 0 0 10px rgba(251, 191, 36, 0.7);
     transition: transform 0.3s ease;
-    flex-shrink: 0; /* Prevent shrinking */
 }
 
 .navbar-brand:hover .nav-logo {
     transform: rotate(10deg) scale(1.05);
 }
 
-/* Desktop Menu Fix */
-.premium-nav .navbar-collapse.d-lg-flex {
-    display: flex !important;
-    flex-grow: 1 !important;
-    align-items: center;
-    flex-wrap: wrap; /* ADD THIS: Allow wrapping on smaller screens */
-    justify-content: space-between; /* ADD THIS: Better space distribution */
+.navbar-toggler {
+    border: 1px solid white;
+    padding: 8px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
 }
 
-/* Enhanced Subscription Status Section Fix */
-.premium-nav .navbar-nav.me-3 {
-    margin-right: 0.5rem !important;
-    gap: 2px !important;
-    flex-wrap: nowrap; /* PREVENT subscription items from wrapping individually */
-    min-width: 0; /* ALLOW shrinking */
+.navbar-toggler:focus {
+    box-shadow: 0 0 0 3px var(--premium-gold);
 }
 
-/* Make subscription status items more compact */
-#subscriptionStatus, #prescriptionUsage {
-    padding: 4px 8px !important; /* Reduced padding */
-    font-size: 0.75rem !important; /* Smaller text */
-    white-space: nowrap;
-    min-width: 0; /* Allow text truncation */
+.navbar-toggler-icon {
+    /* White icon for dark background */
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='white' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
 }
 
-#subscriptionStatus .badge,
-#prescriptionUsage .badge {
-    font-size: 0.7rem !important;
-    padding: 3px 6px !important;
-    white-space: nowrap;
+/* Enhanced Nav Links (Custom Class: nav-link-custom) */
+.navbar-nav {
+    gap: 8px;
 }
 
-/* Usage Container Fix - More compact */
-.usage-container {
-    min-width: 100px; /* Reduced from 120px */
-    max-width: 120px; /* Add max-width */
-}
-
-.usage-container small {
-    font-size: 0.7rem !important;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.usage-container .progress {
-    height: 3px !important; /* Thinner progress bar */
-    margin-top: 1px;
-}
-
-/* Enhanced responsive behavior */
-@media (max-width: 1200px) {
-    .premium-nav .navbar-nav.me-3 {
-        margin-right: 0.25rem !important;
-    }
-    
-    #subscriptionStatus, #prescriptionUsage {
-        padding: 3px 6px !important;
-        font-size: 0.7rem !important;
-    }
-    
-    .usage-container {
-        min-width: 90px;
-    }
-}
-
-/* Hide subscription info on medium-small screens */
-@media (max-width: 992px) {
-    .premium-nav .navbar-nav.me-3 {
-        display: none !important;
-    }
-}
-
-/* Ensure desktop menu hides completely on mobile */
-@media (max-width: 991.98px) {
-    .premium-nav .d-lg-flex {
-        display: none !important;
-    }
-}
-
-.premium-nav .navbar-nav {
-    gap: 4px !important; /* Reduced gap */
-    align-items: center;
-    /* Removed margin-right: 15px !important; from here as it's better controlled by Bootstrap utility classes and the grouping fix */
-}
-
-/* Enhanced Nav Links */
 .nav-link-custom {
-    color: #cbd5e1 !important;
+    color: #cbd5e1 !important; /* Light text color for contrast */
     font-weight: 500;
-    padding: 8px 14px !important; /* Reduced padding */
+    padding: 10px 18px !important;
     border-radius: 8px;
-    margin: 2px 0 !important; /* Reduced margin */
+    margin: 4px 0;
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
-    gap: 8px; /* Reduced gap */
+    gap: 10px;
     position: relative;
     overflow: hidden;
-    white-space: nowrap;
-    font-size: 0.9rem !important; /* Consistent font size */
 }
 
 .nav-link-custom i {
-    font-size: 1rem !important; /* Consistent icon size */
-    width: 18px !important; /* Fixed width */
+    font-size: 1.05rem;
+    width: 20px;
     text-align: center;
-    color: var(--premium-gold);
+    color: var(--premium-gold); /* Gold icon color */
     transition: transform 0.3s ease;
-    flex-shrink: 0;
 }
 
 .nav-link-custom:hover {
     color: white !important;
-    background: rgba(251, 191, 36, 0.1);
+    background: rgba(251, 191, 36, 0.1); /* Subtle gold background on hover */
     transform: translateY(-1px);
 }
 
 .nav-link-custom.active {
     color: var(--premium-navy) !important;
-    background: var(--premium-gold);
+    background: var(--premium-gold); /* Solid Gold for active state */
     box-shadow: 0 4px 15px rgba(251, 191, 36, 0.5);
     font-weight: 700;
+    transform: none;
 }
 
 .nav-link-custom.active i {
-    color: var(--premium-navy);
+    color: var(--premium-navy); /* Dark icon color on gold background */
 }
 
-/* Subscription Status Section Fix */
-/* Targeting the wrapper ul for status elements */
-.premium-nav .navbar-nav.me-3 {
-    margin-right: 1rem !important;
-    gap: 2px !important;
-}
-
-#subscriptionStatus, #prescriptionUsage {
-    padding: 6px 10px !important; /* Reduced padding */
-    font-size: 0.8rem !important; /* Smaller text */
-    white-space: nowrap;
-}
-
-#subscriptionStatus .badge,
-#prescriptionUsage .badge {
-    font-size: 0.75rem !important;
-    padding: 4px 8px !important;
-}
-
-/* Usage Container Fix */
-.usage-container {
-    min-width: 120px; /* Fixed width */
-}
-
-.usage-container small {
-    font-size: 0.75rem !important;
-}
-
-.usage-container .progress {
-    height: 4px !important; /* Thinner progress bar */
-    margin-top: 2px;
-}
-
-/* Upgrade Button Fix */
-#upgradeButton.nav-link-custom {
-    padding: 6px 12px !important;
-    font-size: 0.85rem !important;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid var(--premium-gold);
-}
-
-/* Enhanced Logout Button */
+/* Enhanced Logout Button (Custom Class: premium-logout) */
 .premium-logout {
-    background: #dc3545;
+    background: #dc3545; /* Red background */
     color: white;
     border: 2px solid #dc3545;
-    padding: 6px 12px !important; /* Reduced padding */
+    padding: 10px 20px;
     border-radius: 8px;
     font-weight: 600;
-    font-size: 0.85rem !important; /* Smaller font */
     transition: all 0.3s ease;
-    white-space: nowrap;
-    margin-left: 5px !important; /* Reduced spacing */
-    flex-shrink: 0;
 }
 
 .premium-logout:hover {
@@ -279,32 +152,7 @@ body.dark-mode {
     transform: translateY(-2px);
 }
 
-/* Mobile Toggle Button Fix */
-.navbar-toggler {
-    border: 1px solid white;
-    padding: 6px !important; /* Reduced padding */
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.1);
-    transition: all 0.3s ease;
-    margin-left: 10px !important;
-    width: 40px !important;
-    height: 40px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-}
-
-.navbar-toggler:focus {
-    box-shadow: 0 0 0 3px var(--premium-gold);
-}
-
-.navbar-toggler-icon {
-    width: 20px !important;
-    height: 20px !important;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='white' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") !important;
-}
-
-/* Offcanvas Improvements */
+/* Enhanced Offcanvas Styles */
 .offcanvas {
     background: white !important;
 }
@@ -326,7 +174,7 @@ body.dark-mode {
 
 .offcanvas-body .nav-link-custom {
     color: var(--dark-color) !important;
-    padding: 12px 20px !important;
+    padding: 15px 20px !important;
     margin: 0;
     border-radius: 0;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
@@ -353,18 +201,6 @@ body.dark-mode {
     width: 100%;
 }
 
-/* Mobile Subscription Status in Offcanvas */
-.offcanvas-body #subscriptionStatusMobile,
-.offcanvas-body #prescriptionUsageMobile {
-    padding: 12px 20px !important;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.offcanvas-body #upgradeButtonMobile {
-    margin: 10px 20px !important;
-    text-align: center;
-}
-
 /* Ensure offcanvas takes full height on mobile */
 @media (max-width: 991.98px) {
     .offcanvas {
@@ -373,80 +209,6 @@ body.dark-mode {
     
     .offcanvas-body {
         min-height: calc(100vh - 80px);
-    }
-    
-    /* Hide desktop elements on mobile */
-    .premium-nav .d-lg-flex {
-        display: none !important;
-    }
-}
-
-/* Enhanced Mobile Responsive */
-@media (max-width: 1200px) {
-    .navbar-brand {
-        font-size: 1.2rem !important;
-    }
-    
-    .nav-link-custom {
-        padding: 6px 10px !important;
-        font-size: 0.85rem !important;
-    }
-    
-    .premium-nav .navbar-nav {
-        gap: 2px !important;
-    }
-    
-    /* Allow subscription area to shrink */
-    .premium-nav .navbar-nav.me-3 {
-        margin-right: 0.5rem !important;
-    }
-}
-
-@media (max-width: 768px) {
-    .premium-nav {
-        padding: 6px 0 !important;
-        min-height: 60px; /* Smaller height on mobile */
-    }
-    
-    .navbar-brand {
-        font-size: 1.1rem !important;
-        gap: 8px;
-    }
-
-    .nav-logo {
-        width: 28px !important;
-        height: 28px !important;
-    }
-    
-    .premium-logout {
-        padding: 6px 12px !important;
-        font-size: 0.8rem !important;
-    }
-    
-    /* Hide subscription info on very small screens */
-    @media (max-width: 576px) {
-        .premium-nav .navbar-nav.me-3 {
-            display: none !important;
-        }
-        
-        .navbar-brand span {
-            display: none; /* Hide text, show only logo */
-        }
-        
-        .navbar-brand {
-            margin-right: 0 !important;
-        }
-    }
-}
-
-@media (max-width: 360px) {
-    .navbar-brand {
-        font-size: 1rem !important;
-    }
-    
-    .nav-logo {
-        width: 24px !important;
-        height: 24px !important;
     }
 }
 
@@ -457,10 +219,9 @@ body.dark-mode {
 
 /* Improved button styles in offcanvas */
 .offcanvas-body .premium-logout {
-    margin: 10px 20px !important;
-    padding: 12px !important;
+    margin: 0;
+    padding: 12px;
     font-size: 16px;
-    text-align: center;
 }
 
 /* Footer text in offcanvas */
@@ -468,11 +229,29 @@ body.dark-mode {
     font-size: 12px;
     line-height: 1.4;
     color: #6c757d !important;
-    padding: 15px 20px;
-    text-align: center;
-    border-top: 1px solid rgba(0, 0, 0, 0.1);
-    margin-top: auto;
 }
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .premium-nav {
+        padding: 10px 0;
+    }
+    
+    .navbar-brand {
+        font-size: 1.3rem;
+    }
+
+    .nav-logo {
+        width: 30px;
+        height: 30px;
+    }
+    
+    .nav-link-custom {
+        padding: 10px 15px !important;
+        font-size: 0.9rem;
+    }
+}
+/* --- END PREMIUM NAVIGATION BAR STYLES --- */
 
 /* Main Content */
 .main-content {
@@ -1466,12 +1245,12 @@ body.offline .navbar {
 #prescriptionPreview {
     width: 100%;
     max-width: 58mm;
-    margin: 20px auto;
+    margin: 0 auto;
     padding: 15px;
     background: white;
     border: 1px solid #ddd;
     border-radius: 5px;
-    font-family: 'Courier New', monospace;
+    font-family: 'Times New Roman', serif;
     font-size: 12px;
     line-height: 1.2;
     box-sizing: border-box;
@@ -1974,129 +1753,4 @@ body.offline .navbar {
     .filter-actions .btn-filter {
         flex: 1;
     }
-}
-
-/* Prevent flash of content during page load */
-.page-section {
-    display: none;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.page-section.active {
-    display: block;
-    opacity: 1;
-}
-
-/* Ensure body is hidden until initialized */
-body:not(.initialized) {
-    opacity: 0;
-}
-
-body.initialized {
-    opacity: 1;
-    transition: opacity 0.3s ease;
-}
-
-/* Fix for subscription elements in navbar */
-.navbar-nav .nav-link-custom {
-    white-space: nowrap;
-}
-
-/* Ensure upgrade buttons look consistent */
-#upgradeButton, #upgradeButtonMobile {
-    cursor: pointer;
-    color: inherit !important;
-}
-
-#upgradeButton:hover, #upgradeButtonMobile:hover {
-    background: rgba(251, 191, 36, 0.1) !important;
-    color: white !important;
-}
-
-/* Fix for offcanvas header */
-.premium-offcanvas-header {
-    background: linear-gradient(90deg, var(--premium-navy), var(--primary-color)) !important;
-    color: white;
-    padding: 20px;
-    border-bottom: 2px solid var(--premium-gold);
-}
-
-/* Mobile subscription items */
-#subscriptionStatusMobile, #prescriptionUsageMobile {
-    font-size: 0.85rem;
-}
-
-/* Active state fixes */
-.navbar-nav .nav-item.active .nav-link-custom {
-    color: var(--premium-navy) !important;
-    background: var(--premium-gold);
-    box-shadow: 0 4px 15px rgba(251, 191, 36, 0.5);
-    font-weight: 700;
-}
-
-.navbar-nav .nav-item.active .nav-link-custom i {
-    color: var(--premium-navy);
-}
-
-/* Enhanced Subscription Status Styles */
-.usage-container {
-    min-width: 120px;
-    text-align: center;
-}
-
-.usage-container small {
-    font-size: 0.75rem !important;
-    display: block;
-    margin-bottom: 2px;
-}
-
-.usage-container .progress {
-    height: 4px;
-    margin-top: 2px;
-    background-color: rgba(255, 255, 255, 0.3);
-}
-
-.usage-container .progress-bar {
-    transition: width 0.3s ease;
-}
-
-/* Fix for subscription badges */
-.nav-link-custom .badge {
-    font-size: 0.7rem;
-    padding: 2px 6px;
-}
-
-/* Active state improvements */
-.navbar-nav .nav-item .nav-link-custom.active {
-    color: var(--premium-navy) !important;
-    background: var(--premium-gold);
-    box-shadow: 0 4px 15px rgba(251, 191, 36, 0.5);
-    font-weight: 700;
-}
-
-.navbar-nav .nav-item .nav-link-custom.active i {
-    color: var(--premium-navy);
-}
-
-/* Mobile subscription fixes */
-#subscriptionStatusMobile,
-#prescriptionUsageMobile {
-    font-size: 0.85rem;
-    padding: 8px 0 !important;
-}
-
-/* Ensure upgrade buttons are visible when needed */
-#upgradeButton.nav-link-custom,
-#upgradeButtonMobile.nav-link-custom {
-    background: rgba(251, 191, 36, 0.1);
-    border: 1px solid var(--premium-gold);
-    border-radius: 6px;
-    margin: 2px 0;
-}
-
-#upgradeButton.nav-link-custom:hover,
-#upgradeButtonMobile.nav-link-custom:hover {
-    background: rgba(251, 191, 36, 0.2);
-    transform: translateY(-1px);
 }
