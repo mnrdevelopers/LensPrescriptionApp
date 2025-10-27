@@ -1,3 +1,5 @@
+[file name]: payment.js
+[file content begin]
 // payment.js - Subscription and Payment Management
 
 let userSubscription = null;
@@ -291,15 +293,6 @@ async function submitPrescriptionWithCheck() {
 
     // If checks pass, proceed with normal submission
     return await submitPrescription();
-}
-
-// Update app.js to use the enhanced submission
-function initializeAppWithPayments() {
-    // Original initialization
-    initializeApp();
-    
-    // Payment system initialization
-    initializePaymentSystem();
 }
 
 // Make functions globally available
