@@ -45,6 +45,32 @@ firebase.auth().onAuthStateChanged((user) => {
     }
 });
 
+// Enhanced navigation function
+function setupNavigation() {
+    // Update active nav link based on current section
+    const updateNavActiveState = () => {
+        const currentHash = window.location.hash.replace('#', '');
+        const navLinks = document.querySelectorAll('.nav-link-custom');
+        
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+            const href = link.getAttribute('href');
+            if (href === `#${currentHash}`) {
+                link.classList.add('active');
+                // Also activate the parent nav-item
+                link.closest('.nav-item')?.classList.add('active');
+            }
+        });
+    };
+
+    // Listen for hash changes
+    window.addEventListener('hashchange', updateNavActiveState);
+    
+    // Initial update
+    setTimeout(updateNavActiveState, 100);
+}
+
+// Call this after app initialization
 function initializeApp() {
     console.log('Initializing app...');
     const user = auth.currentUser;
@@ -64,8 +90,11 @@ function initializeApp() {
     setupEventListeners();
     setupPWA();
     
-    // Initialize payment system - ADD THIS LINE
+    // Initialize payment system
     initializePaymentSystem();
+    
+    // Setup navigation - ADD THIS LINE
+    setupNavigation();
     
     // Mark body as initialized
     document.body.classList.add('initialized');
