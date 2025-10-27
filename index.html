@@ -1,41 +1,616 @@
+[file name]: index.html
+[file content begin]
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loading...</title>
-    <link rel="stylesheet" href="app.css">
+    <title>Lens Prescription - Professional Eye Care Management</title>
+    
+    <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
-</head>
-<body>
-    <div id="splash-screen">
-        <div class="logo-container">
-            <img src="https://i.postimg.cc/2S2Pcrt6/glasses-220002.png" alt="App Logo" id="splash-logo">
-            <h1 id="splash-title">Lens Prescription</h1>
-            <div class="loader"></div>
-        </div>
-    </div>
-
-    <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const isLoggedIn = localStorage.getItem("username"); // Check login state
-
-    if (!sessionStorage.getItem("splashShown")) {
-        sessionStorage.setItem("splashShown", "true"); // Mark splash as shown
-        setTimeout(() => {
-            if (isLoggedIn) {
-                window.location.replace("app.html"); // Redirect to dashboard if logged in
-            } else {
-                window.location.replace("auth.html"); // Redirect to login page if not logged in
+    
+    <!-- PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="LensPrescription">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#007bff">
+    
+    <!-- iOS Specific -->
+    <link rel="apple-touch-icon" href="lenslogo.png">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="app.css">
+    
+    <style>
+        /* Landing Page Specific Styles */
+        .landing-page {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Times New Roman', serif;
+        }
+        
+        .hero-section {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            color: white;
+            text-align: center;
+            padding: 80px 20px 40px;
+        }
+        
+        .hero-logo {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 30px;
+            border-radius: 50%;
+            border: 4px solid white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .hero-subtitle {
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+        
+        .hero-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 40px;
+        }
+        
+        .btn-hero {
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            border: 2px solid white;
+        }
+        
+        .btn-hero-primary {
+            background: white;
+            color: #667eea;
+        }
+        
+        .btn-hero-secondary {
+            background: transparent;
+            color: white;
+        }
+        
+        .btn-hero:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        
+        .features-section {
+            padding: 80px 20px;
+            background: white;
+        }
+        
+        .section-title {
+            text-align: center;
+            margin-bottom: 50px;
+            color: #333;
+        }
+        
+        .section-title h2 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .section-title p {
+            font-size: 1.2rem;
+            color: #666;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .feature-card {
+            text-align: center;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            transition: transform 0.3s ease;
+            height: 100%;
+            border: 1px solid #e9ecef;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            color: white;
+            font-size: 2rem;
+        }
+        
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .feature-card p {
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .instructions-section {
+            padding: 80px 20px;
+            background: #f8f9fa;
+        }
+        
+        .instruction-step {
+            display: flex;
+            align-items: center;
+            margin-bottom: 40px;
+            padding: 30px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .step-number {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-right: 30px;
+            flex-shrink: 0;
+        }
+        
+        .step-content h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .step-content p {
+            color: #666;
+            line-height: 1.6;
+            margin: 0;
+        }
+        
+        .guide-section {
+            padding: 80px 20px;
+            background: white;
+        }
+        
+        .guide-item {
+            margin-bottom: 40px;
+        }
+        
+        .guide-item h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .guide-item h3 i {
+            color: #667eea;
+        }
+        
+        .guide-item p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+        
+        .guide-item ul {
+            color: #666;
+            padding-left: 20px;
+        }
+        
+        .guide-item li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+        
+        .cta-section {
+            padding: 80px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+        }
+        
+        .cta-title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        
+        .cta-subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+        
+        .footer {
+            padding: 40px 20px;
+            background: #343a40;
+            color: white;
+            text-align: center;
+        }
+        
+        .developer-credit {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.5rem;
             }
-        }, 3000);
-    } else {
-        window.location.replace(isLoggedIn ? "app.html" : "auth.html");
-    }
-});
-</script>
+            
+            .hero-subtitle {
+                font-size: 1.2rem;
+            }
+            
+            .hero-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn-hero {
+                width: 100%;
+                max-width: 300px;
+            }
+            
+            .instruction-step {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .step-number {
+                margin-right: 0;
+                margin-bottom: 20px;
+            }
+            
+            .section-title h2 {
+                font-size: 2rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .hero-title {
+                font-size: 2rem;
+            }
+            
+            .hero-subtitle {
+                font-size: 1rem;
+            }
+            
+            .feature-card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body class="landing-page">
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <img src="lenslogo.png" alt="Lens Prescription Logo" class="hero-logo">
+                    <h1 class="hero-title">Lens Prescription</h1>
+                    <p class="hero-subtitle">Professional Eye Care Management Solution for Optometrists</p>
+                    
+                    <div class="hero-buttons">
+                        <a href="auth.html" class="btn btn-hero btn-hero-primary">
+                            <i class="fas fa-sign-in-alt"></i> Login to App
+                        </a>
+                        <a href="#features" class="btn btn-hero btn-hero-secondary">
+                            <i class="fas fa-info-circle"></i> Learn More
+                        </a>
+                    </div>
+                    
+                    <div class="row mt-5">
+                        <div class="col-md-3 col-6 text-center">
+                            <h3>500+</h3>
+                            <p>Prescriptions</p>
+                        </div>
+                        <div class="col-md-3 col-6 text-center">
+                            <h3>99%</h3>
+                            <p>Accuracy</p>
+                        </div>
+                        <div class="col-md-3 col-6 text-center">
+                            <h3>24/7</h3>
+                            <p>Access</p>
+                        </div>
+                        <div class="col-md-3 col-6 text-center">
+                            <h3>100%</h3>
+                            <p>Secure</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features-section">
+        <div class="container">
+            <div class="section-title">
+                <h2>Powerful Features</h2>
+                <p>Everything you need to manage your optometry practice efficiently</p>
+            </div>
+            
+            <div class="row">
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-file-medical"></i>
+                        </div>
+                        <h3>Digital Prescriptions</h3>
+                        <p>Create, manage, and store eye prescriptions digitally with our intuitive form system. No more paper records.</p>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <h3>Smart Search</h3>
+                        <p>Quickly find patient records with advanced search and filtering capabilities across all your data.</p>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <h3>Analytics & Reports</h3>
+                        <p>Generate detailed reports and analytics to track your practice performance and patient trends.</p>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-print"></i>
+                        </div>
+                        <h3>Thermal Printing</h3>
+                        <p>Print prescriptions directly to 58mm thermal printers with optimized formatting for professional receipts.</p>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <h3>Mobile First</h3>
+                        <p>Progressive Web App that works seamlessly on all devices - desktop, tablet, and mobile.</p>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h3>Secure & Private</h3>
+                        <p>Enterprise-grade security with Firebase authentication and encrypted data storage.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Instructions Section -->
+    <section class="instructions-section">
+        <div class="container">
+            <div class="section-title">
+                <h2>How It Works</h2>
+                <p>Get started in just a few simple steps</p>
+            </div>
+            
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="instruction-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h3>Create Your Account</h3>
+                            <p>Sign up with your email address and create a secure password. Your data will be automatically synced across all devices.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="instruction-step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h3>Setup Your Clinic Profile</h3>
+                            <p>Enter your clinic details including name, address, contact information, and optometrist details. This information will appear on all prescriptions.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="instruction-step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h3>Add Patient Prescriptions</h3>
+                            <p>Use our comprehensive form to enter patient details, prescription data for both eyes, vision type, lens specifications, and payment information.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="instruction-step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h3>Print & Share</h3>
+                            <p>Generate professional prescriptions that can be printed, saved as PDF, or shared via WhatsApp with your patients instantly.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- User Guide Section -->
+    <section class="guide-section">
+        <div class="container">
+            <div class="section-title">
+                <h2>User Guide</h2>
+                <p>Complete guide to using all features of Lens Prescription App</p>
+            </div>
+            
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="guide-item">
+                        <h3><i class="fas fa-tachometer-alt"></i> Dashboard Navigation</h3>
+                        <p>The dashboard is your central hub for quick access to all features:</p>
+                        <ul>
+                            <li><strong>Add Prescription:</strong> Create new patient prescriptions</li>
+                            <li><strong>View Prescriptions:</strong> Access your prescription history</li>
+                            <li><strong>Reports:</strong> Generate business analytics and reports</li>
+                            <li><strong>Profile:</strong> Manage your clinic information</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="guide-item">
+                        <h3><i class="fas fa-plus-circle"></i> Creating Prescriptions</h3>
+                        <p>Follow these steps for accurate prescription entry:</p>
+                        <ul>
+                            <li>Enter complete patient demographics</li>
+                            <li>Fill both DIST and ADD sections for each eye</li>
+                            <li>Specify SPH, CYL, AXIS, and V/A values accurately</li>
+                            <li>Select appropriate vision, lens, and frame types</li>
+                            <li>Record payment details and amount</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="col-lg-6">
+                    <div class="guide-item">
+                        <h3><i class="fas fa-print"></i> Printing & Export</h3>
+                        <p>Multiple ways to share prescriptions:</p>
+                        <ul>
+                            <li><strong>Thermal Print:</strong> Optimized for 58mm receipt printers</li>
+                            <li><strong>PDF Export:</strong> Professional digital copies</li>
+                            <li><strong>WhatsApp Share:</strong> Instant sharing with patients</li>
+                            <li><strong>Preview:</strong> Review before finalizing</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="guide-item">
+                        <h3><i class="fas fa-search"></i> Managing Records</h3>
+                        <p>Efficiently manage your prescription database:</p>
+                        <ul>
+                            <li>Search by patient name or mobile number</li>
+                            <li>Filter by date range and prescription types</li>
+                            <li>View grouped by Today, Yesterday, and Older</li>
+                            <li>Delete outdated records securely</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="guide-item">
+                        <h3><i class="fas fa-chart-bar"></i> Reports & Analytics</h3>
+                        <p>Track your practice performance:</p>
+                        <ul>
+                            <li>Daily, weekly, and monthly reports</li>
+                            <li>Custom date range analysis</li>
+                            <li>Prescription count and revenue tracking</li>
+                            <li>Exportable report data</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <h2 class="cta-title">Ready to Transform Your Practice?</h2>
+            <p class="cta-subtitle">Join hundreds of optometrists who trust Lens Prescription for their daily practice management</p>
+            <a href="auth.html" class="btn btn-hero btn-hero-primary">
+                <i class="fas fa-rocket"></i> Get Started Now
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Lens Prescription App. All rights reserved.</p>
+            <p class="developer-credit">Developed with ❤️ by <strong>MANITEJA (MNR DEVELOPERS)</strong></p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+    
+    <script>
+        // Check if user is logged in and redirect to app
+        document.addEventListener("DOMContentLoaded", function () {
+            const isLoggedIn = localStorage.getItem("username");
+            
+            // If user is logged in, redirect to app (unless they explicitly logged out)
+            if (isLoggedIn && !sessionStorage.getItem("explicitLogout")) {
+                window.location.replace("app.html");
+            }
+            
+            // Clear explicit logout flag when page loads
+            sessionStorage.removeItem("explicitLogout");
+            
+            // Smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+        });
+        
+        // Function to handle logout redirection (called from app.js)
+        function redirectToLandingPage() {
+            sessionStorage.setItem("explicitLogout", "true");
+            window.location.replace("index.html");
+        }
+    </script>
 </body>
 </html>
-
-
-
+[file content end]
