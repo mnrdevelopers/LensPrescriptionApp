@@ -418,8 +418,12 @@ function showPrescriptions() {
         const prescriptionsSection = document.getElementById('prescriptionsSection');
         if (prescriptionsSection) prescriptionsSection.classList.add('active');
         updateActiveNavLink('prescriptions');
-        fetchPrescriptions();
+        
+        // 1. Initialize filters from URL parameters
         initializePrescriptionFilters();
+        
+        // 2. Fetch all data and apply loaded filters. (Fix for refresh issue)
+        fetchAndFilterPrescriptions();
     }, 'prescriptions');
 }
 
@@ -429,46 +433,47 @@ function showReports() {
         const reportsSection = document.getElementById('reportsSection');
         if (reportsSection) reportsSection.classList.add('active');
         updateActiveNavLink('reports');
+        
+        // 1. Initialize filters from URL parameters
         initializeReportFilters();
-        fetchDailyReport();
+        
+        // Note: initializeReportFilters now calls applyReportFilters, which fetches the report.
     }, 'reports');
 }
 
 function showProfileSetup(isForced) {
-    navigateIfProfileComplete(() => {
-        hideAllSections();
-        const setupSection = document.getElementById('profileSetupSection');
-        if (setupSection) setupSection.classList.add('active');
-        updateActiveNavLink('setup');
-        
-        // Disable navigation if forced
-        const navButtons = document.querySelectorAll('.nav-link:not(.btn-logout)');
-        navButtons.forEach(btn => btn.style.pointerEvents = isForced ? 'none' : 'auto');
-        
-        // Hide continue button if just editing
-        const saveBtn = document.getElementById('saveSetupProfileBtn');
-        if (saveBtn) {
-            saveBtn.textContent = isForced ? 'Save Profile & Continue' : 'Save Changes';
-        }
+    hideAllSections();
+    const setupSection = document.getElementById('profileSetupSection');
+    if (setupSection) setupSection.classList.add('active');
+    updateActiveNavLink('setup');
+    
+    // Disable navigation if forced
+    const navButtons = document.querySelectorAll('.nav-link:not(.btn-logout)');
+    navButtons.forEach(btn => btn.style.pointerEvents = isForced ? 'none' : 'auto');
+    
+    // Hide continue button if just editing
+    const saveBtn = document.getElementById('saveSetupProfileBtn');
+    if (saveBtn) {
+        saveBtn.textContent = isForced ? 'Save Profile & Continue' : 'Save Changes';
+    }
 
-        // Populate current data for editing
-        if (!isForced) {
-            const clinicName = document.getElementById('clinicName')?.textContent;
-            const optometristName = document.getElementById('optometristName')?.textContent;
-            const address = document.getElementById('clinicAddress')?.textContent;
-            const contactNumber = document.getElementById('contactNumber')?.textContent;
-            
-            document.getElementById('setupClinicName').value = clinicName || '';
-            document.getElementById('setupOptometristName').value = optometristName || '';
-            document.getElementById('setupAddress').value = address || '';
-            document.getElementById('setupContactNumber').value = contactNumber || '';
-        } else {
-            document.getElementById('setupClinicName').value = '';
-            document.getElementById('setupOptometristName').value = '';
-            document.getElementById('setupAddress').value = '';
-            document.getElementById('setupContactNumber').value = '';
-        }
-    }, 'setup');
+    // Populate current data for editing
+    if (isProfileComplete && !isForced) {
+        const clinicName = document.getElementById('clinicName')?.textContent;
+        const optometristName = document.getElementById('optometristName')?.textContent;
+        const address = document.getElementById('clinicAddress')?.textContent;
+        const contactNumber = document.getElementById('contactNumber')?.textContent;
+        
+        document.getElementById('setupClinicName').value = clinicName || '';
+        document.getElementById('setupOptometristName').value = optometristName || '';
+        document.getElementById('setupAddress').value = address || '';
+        document.getElementById('setupContactNumber').value = contactNumber || '';
+    } else if (isForced) {
+        document.getElementById('setupClinicName').value = '';
+        document.getElementById('setupOptometristName').value = '';
+        document.getElementById('setupAddress').value = '';
+        document.getElementById('setupContactNumber').value = '';
+    }
 }
 
 function showPreview(prescriptionData = null) {
@@ -592,6 +597,7 @@ async function loadUserProfile() {
     let userData = null;
 
     try {
+        // Use a collection path compatible with the provided security rules (assuming private data)
         const doc = await db.collection('users').doc(user.uid).get();
         
         if (doc.exists) {
@@ -684,7 +690,8 @@ async function saveSetupProfile() {
     
     // Enhanced validation (basic check)
     if (!updatedData.clinicName || !updatedData.optometristName) {
-        alert('Clinic Name and Optometrist Name are required to continue.');
+        // ⚠️ FIX: Replaced alert with custom status message
+        showStatusMessage('Clinic Name and Optometrist Name are required to continue.', 'warning');
         return;
     }
 
@@ -697,6 +704,7 @@ async function saveSetupProfile() {
         await db.collection('users').doc(user.uid).set(updatedData, { merge: true });
         
         console.log('Profile setup/updated successfully!');
+        showStatusMessage('Profile saved successfully!', 'success');
         
         // Update flags and UI
         isProfileComplete = true;
@@ -709,23 +717,22 @@ async function saveSetupProfile() {
 
         // **FIX: Determine where to navigate after saving**
         // Check if we came from the prescription form (edit profile scenario)
-        const cameFromPrescriptionForm = document.getElementById('prescriptionFormSection')?.classList.contains('active') || 
-                                        history.state?.page === 'form';
+        const cameFromPrescriptionForm = history.state?.page === 'form';
         
         if (cameFromPrescriptionForm) {
             // If editing profile from prescription form, go back to form
             showPrescriptionForm();
-        } else if (lastValidSection === 'dashboard' || !lastValidSection) {
-            // Default to dashboard
+        } else if (lastValidSection === 'dashboard' || !lastValidSection || window.location.hash.includes('setup')) {
+            // Default to dashboard or move away from setup if we were forced there
             showDashboard();
         } else {
-            // For other cases, use browser back
-            window.history.back();
+            // For other cases, use history back (though showDashboard is safer)
+            showDashboard(); 
         }
 
     } catch (error) {
         console.error('Error saving profile:', error);
-        alert('Error saving profile: ' + error.message);
+        showStatusMessage('Error saving profile: ' + error.message, 'error');
     } finally {
         const saveBtn = document.getElementById('saveSetupProfileBtn');
         saveBtn.disabled = false;
@@ -734,10 +741,12 @@ async function saveSetupProfile() {
 }
 
 function initializePrescriptionFilters() {
-    // Try to get filters from URL parameters
-    const urlParams = new URLSearchParams(window.location.search);
+    // Get URL hash part after '?'
+    const queryString = window.location.hash.split('?')[1] || '';
+    const urlParams = new URLSearchParams(queryString);
+    
     const filters = {
-        search: urlParams.get('search') || '',
+        search: urlParams.get('search')?.toLowerCase() || '',
         dateFrom: urlParams.get('from') || '',
         dateTo: urlParams.get('to') || '',
         visionType: urlParams.get('vision') || '',
@@ -776,8 +785,8 @@ function applyPrescriptionFilters() {
     // Update URL with filter parameters
     updatePrescriptionsURL(filters);
     
-    // Apply filters
-    filterPrescriptions();
+    // Apply filters by refetching all data and filtering in memory (FIX)
+    fetchAndFilterPrescriptions();
 }
 
 function updatePrescriptionsURL(filters) {
@@ -823,13 +832,15 @@ function clearPrescriptionFilters() {
     window.history.replaceState(null, '', 'app.html#prescriptions');
     
     // Refresh prescriptions
-    fetchPrescriptions();
+    fetchAndFilterPrescriptions();
 }
 
 // Enhanced Report Filtering System with URL parameters
 function initializeReportFilters() {
-    // Try to get filters from URL parameters
-    const urlParams = new URLSearchParams(window.location.search);
+    // Get URL hash part after '?'
+    const queryString = window.location.hash.split('?')[1] || '';
+    const urlParams = new URLSearchParams(queryString);
+    
     const filters = {
         period: urlParams.get('period') || 'day',
         customFrom: urlParams.get('from') || '',
@@ -845,6 +856,9 @@ function initializeReportFilters() {
     
     // Show/hide custom date range based on period
     toggleCustomDateRange();
+    
+    // CRITICAL FIX: Load the report data immediately based on initialized filters
+    applyReportFilters(); 
 }
 
 function applyReportFilters() {
@@ -957,14 +971,14 @@ function closeEditProfile() {
 async function saveProfile() {
     // This function is for the modal, which is now deprecated.
     // We redirect to the main setup screen instead.
-    alert('Please use the dedicated Edit Profile screen.');
+    showStatusMessage('Please use the dedicated Edit Profile screen.', 'info');
     showProfileSetup(false);
 }
 
 // Prescription Management
 async function submitPrescription() {
     if (!isProfileComplete) {
-        alert('Please complete your Clinic Profile before adding prescriptions.');
+        showStatusMessage('Please complete your Clinic Profile before adding prescriptions.', 'warning');
         showProfileSetup(true);
         return;
     }
@@ -995,6 +1009,7 @@ async function submitPrescription() {
         });
 
         console.log(`Prescription saved successfully! ID: ${newPrescriptionRef.id}`);
+        showStatusMessage('Prescription saved successfully!', 'success');
         
         // Store data for preview
         currentPrescriptionData = formData;
@@ -1008,6 +1023,7 @@ async function submitPrescription() {
 
     } catch (error) {
         console.error('Error saving prescription:', error);
+        showStatusMessage('Error saving prescription: ' + error.message, 'error');
     }
 }
 
@@ -1054,21 +1070,22 @@ function getFormData() {
 
 function validateFormData(data) {
     if (!data.patientName) {
-        console.error('Validation Error: Please enter patient name');
+        showStatusMessage('Please enter patient name', 'error');
         return false;
     }
     if (!data.age || data.age <= 0) {
-        console.error('Validation Error: Please enter valid age');
+        showStatusMessage('Please enter valid age', 'error');
         return false;
     }
     if (!data.mobile || !data.mobile.match(/^\d{10}$/)) {
-        console.error('Validation Error: Please enter valid 10-digit mobile number');
+        showStatusMessage('Please enter valid 10-digit mobile number', 'error');
         return false;
     }
-    if (!data.amount || data.amount < 0) {
-        console.error('Validation Error: Please enter valid amount');
+    if (data.amount < 0) {
+        showStatusMessage('Amount cannot be negative', 'error');
         return false;
     }
+    // Amount is optional, so it's only checked for negative value.
     return true;
 }
 
@@ -1086,46 +1103,91 @@ function resetForm() {
     isFormFilled = false;
 }
 
-// Prescriptions List Management
-async function fetchPrescriptions() {
+// ----------------------------------------------------------------------
+// PRESCRIPTION LIST MANAGEMENT (FIXED FOR RELOAD)
+// ----------------------------------------------------------------------
+
+/**
+ * Fetches all prescriptions for the current user and applies filters from appState.
+ * This is the main function called on page load and filter application.
+ */
+async function fetchAndFilterPrescriptions() {
     const user = auth.currentUser;
     if (!user) return;
 
+    const tbody = document.getElementById('prescriptionTable')?.getElementsByTagName('tbody')[0];
+    if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="11" class="text-center">Loading prescriptions...</td></tr>';
+    }
+
     try {
+        // Fetch ALL prescriptions for the user (orderBy is fine)
         const querySnapshot = await db.collection('prescriptions')
             .where('userId', '==', user.uid)
             .orderBy('createdAt', 'desc') 
             .get();
 
-        const prescriptions = [];
+        const allPrescriptions = [];
         querySnapshot.forEach((doc) => {
-            prescriptions.push({
+            allPrescriptions.push({
                 id: doc.id,
                 ...doc.data()
             });
         });
 
-        displayPrescriptions(prescriptions);
+        // Apply filters and display results
+        filterAndDisplayPrescriptions(allPrescriptions, appState.prescriptionFilters);
     } catch (error) {
-        console.error('Error fetching prescriptions:', error);
+        console.error('Error fetching and filtering prescriptions:', error);
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="11" class="text-center">Failed to load data. Please check connection.</td></tr>';
+        }
     }
 }
 
-function displayPrescriptions(data) {
+/**
+ * Filters the provided data set based on the current app state filters and renders the table.
+ * @param {Array<Object>} allData - The raw prescription data array.
+ * @param {Object} filters - The current filters from appState.prescriptionFilters.
+ */
+function filterAndDisplayPrescriptions(allData, filters) {
     const tbody = document.getElementById('prescriptionTable')?.getElementsByTagName('tbody')[0];
     if (!tbody) return;
     
-    tbody.innerHTML = '';
+    // Convert date strings to Date objects for comparison, handling potential empty filter dates
+    const filterDateFrom = filters.dateFrom ? new Date(filters.dateFrom) : null;
+    const filterDateTo = filters.dateTo ? new Date(filters.dateTo) : null;
+    if (filterDateTo) filterDateTo.setDate(filterDateTo.getDate() + 1); // Make dateTo inclusive
 
-    if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="11" class="text-center">No prescriptions found</td></tr>';
+    const filteredData = allData.filter(p => {
+        // Date handling: Use the ISO string stored in 'date' field
+        const prescriptionDate = p.date ? new Date(p.date.split('T')[0]) : null;
+        
+        const searchMatch = !filters.search || 
+            p.patientName.toLowerCase().includes(filters.search) || 
+            p.mobile.includes(filters.search);
+        
+        const dateMatch = (!filterDateFrom || (prescriptionDate && prescriptionDate >= filterDateFrom)) &&
+                          (!filterDateTo || (prescriptionDate && prescriptionDate < filterDateTo));
+                          
+        const visionMatch = !filters.visionType || p.visionType === filters.visionType;
+        const lensMatch = !filters.lensType || p.lensType === filters.lensType;
+        const frameMatch = !filters.frameType || p.frameType === filters.frameType;
+        const paymentMatch = !filters.paymentMode || p.paymentMode === filters.paymentMode;
+        
+        return searchMatch && dateMatch && visionMatch && lensMatch && frameMatch && paymentMatch;
+    });
+
+    tbody.innerHTML = '';
+    
+    if (filteredData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="11" class="text-center">No prescriptions match the current filters.</td></tr>';
         return;
     }
 
-    // Group by date
-    const grouped = groupPrescriptionsByDate(data);
+    // Group by date and display
+    const grouped = groupPrescriptionsByDate(filteredData);
     
-    // Display grouped prescriptions
     Object.keys(grouped).forEach(group => {
         // Add group header
         const headerRow = tbody.insertRow();
@@ -1142,10 +1204,15 @@ function displayPrescriptions(data) {
 }
 
 function groupPrescriptionsByDate(prescriptions) {
-    const today = new Date().toLocaleDateString();
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayFormatted = yesterday.toLocaleDateString();
+    // Helper function to get date string in YYYY-MM-DD format
+    const toDateString = (date) => date.toISOString().split('T')[0];
+
+    const today = new Date();
+    const todayStr = toDateString(today);
+
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const yesterdayStr = toDateString(yesterday);
 
     const grouped = {
         'Today': [],
@@ -1154,12 +1221,12 @@ function groupPrescriptionsByDate(prescriptions) {
     };
 
     prescriptions.forEach(prescription => {
-        // Use the 'date' field which is an ISO string
-        const prescriptionDate = new Date(prescription.date).toLocaleDateString(); 
+        // Use the 'date' field which is an ISO string, but strip time for day comparison
+        const prescriptionDateStr = prescription.date ? prescription.date.split('T')[0] : ''; 
         
-        if (prescriptionDate === today) {
+        if (prescriptionDateStr === todayStr) {
             grouped['Today'].push(prescription);
-        } else if (prescriptionDate === yesterdayFormatted) {
+        } else if (prescriptionDateStr === yesterdayStr) {
             grouped['Yesterday'].push(prescription);
         } else {
             grouped['Older'].push(prescription);
@@ -1222,24 +1289,6 @@ function addPrescriptionRow(tbody, prescription) {
     actionsCell.appendChild(deleteBtn);
 }
 
-function filterPrescriptions() {
-    const input = document.getElementById('searchInput')?.value.toLowerCase();
-    const table = document.getElementById('prescriptionTable');
-    const tbody = table?.getElementsByTagName('tbody')[0];
-    if (!tbody || !input) return;
-    
-    const rows = tbody.getElementsByTagName('tr');
-
-    for (let row of rows) {
-        if (row.classList.contains('prescription-group-header')) continue;
-        
-        const name = row.cells[1]?.textContent.toLowerCase() || '';
-        const mobile = row.cells[4]?.textContent.toLowerCase() || '';
-        
-        row.style.display = (name.includes(input) || mobile.includes(input)) ? '' : 'none';
-    }
-}
-
 function previewPrescription(prescription) {
     showPreview(prescription);
 }
@@ -1248,9 +1297,9 @@ async function deletePrescription(prescription) {
     // ⚠️ CRITICAL FIX: Replaced confirm() with a prompt as alerts/confirms are disallowed.
     console.warn(`Attempting to delete prescription ID: ${prescription.id}.`);
     
-    const confirmed = window.prompt("Type 'DELETE' to confirm deletion of this prescription:") === 'DELETE';
+    const confirmation = window.prompt("Type 'DELETE' to confirm deletion of this prescription (Case Sensitive):");
 
-    if (!confirmed) {
+    if (confirmation !== 'DELETE') {
         console.log('Deletion cancelled by user.');
         return;
     }
@@ -1258,9 +1307,11 @@ async function deletePrescription(prescription) {
     try {
         await db.collection('prescriptions').doc(prescription.id).delete();
         console.log('Prescription deleted successfully!');
-        fetchPrescriptions(); // Refresh the list
+        showStatusMessage('Prescription deleted successfully!', 'success');
+        fetchAndFilterPrescriptions(); // Refresh the list
     } catch (error) {
         console.error('Error deleting prescription:', error);
+        showStatusMessage('Error deleting prescription: ' + error.message, 'error');
     }
 }
 
@@ -2028,7 +2079,8 @@ async function uploadImageToImgBB(base64Image) {
     formData.append("image", blob);
 
     try {
-        const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+        // Use exponential backoff for API call
+        const response = await fetchWithExponentialBackoff(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
             method: "POST",
             body: formData
         });
@@ -2048,6 +2100,27 @@ async function uploadImageToImgBB(base64Image) {
         console.error('ImgBB upload error:', error);
         throw error;
     }
+}
+
+// Utility for fetching with exponential backoff
+async function fetchWithExponentialBackoff(url, options, maxRetries = 3) {
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            const response = await fetch(url, options);
+            if (response.status !== 429) { // Not Too Many Requests
+                return response;
+            }
+            // If 429, retry logic below
+        } catch (error) {
+            // Handle network errors, log silently
+        }
+
+        if (i < maxRetries - 1) {
+            const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+    }
+    throw new Error('API request failed after multiple retries.');
 }
 
 // Reports Management
@@ -2117,6 +2190,36 @@ async function fetchMonthlyReport() {
     }
 }
 
+async function fetchCustomReport(dateFromStr, dateToStr) {
+    const user = auth.currentUser;
+    if (!user) return;
+    
+    // Validate dates
+    if (!dateFromStr || !dateToStr) {
+        showStatusMessage('Please select both From and To dates for a custom report.', 'warning');
+        return;
+    }
+
+    const dateFrom = new Date(dateFromStr);
+    dateFrom.setHours(0, 0, 0, 0);
+    
+    const dateTo = new Date(dateToStr);
+    dateTo.setHours(23, 59, 59, 999); // Include the entire last day
+
+    try {
+        const querySnapshot = await db.collection('prescriptions')
+            .where('userId', '==', user.uid)
+            .where('createdAt', '>=', dateFrom)
+            .where('createdAt', '<=', dateTo)
+            .get();
+
+        const reportData = processReportData(querySnapshot, 'custom');
+        displayReport(reportData);
+    } catch (error) {
+        console.error('Error fetching custom report:', error);
+    }
+}
+
 function processReportData(querySnapshot, period = 'day') {
     const reportData = {};
     
@@ -2130,7 +2233,7 @@ function processReportData(querySnapshot, period = 'day') {
         const date = timestamp.toDate();
         let key;
         
-        if (period === 'day') {
+        if (period === 'day' || period === 'custom') {
             key = date.toLocaleDateString();
         } else if (period === 'week') {
             const startOfWeek = new Date(date);
@@ -2160,16 +2263,31 @@ function displayReport(data) {
     tbody.innerHTML = '';
 
     if (!data || Object.keys(data).length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" class="text-center">No data available</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center">No data available for this period.</td></tr>';
         return;
     }
 
+    // Calculate totals
+    let totalPrescriptions = 0;
+    let totalRevenue = 0;
+    
     Object.entries(data).forEach(([date, report]) => {
+        totalPrescriptions += report.prescriptions;
+        totalRevenue += report.totalAmount;
+        
         const row = tbody.insertRow();
         row.insertCell().textContent = date;
         row.insertCell().textContent = report.prescriptions;
         row.insertCell().textContent = `₹${report.totalAmount.toFixed(2)}`;
     });
+    
+    // Add total row
+    const totalRow = tbody.insertRow();
+    totalRow.style.fontWeight = 'bold';
+    totalRow.style.backgroundColor = '#f0f0f0';
+    totalRow.insertCell().textContent = 'TOTAL';
+    totalRow.insertCell().textContent = totalPrescriptions;
+    totalRow.insertCell().textContent = `₹${totalRevenue.toFixed(2)}`;
 }
 
 // Form Management
@@ -2184,28 +2302,28 @@ function checkFormFilled() {
 function confirmExitAction() {
     document.getElementById('exitPromptModal').style.display = 'none';
     isFormFilled = false; // Reset flag to prevent re-triggering the modal immediately
-    window.history.back(); // Navigate back
+    // Navigate back to the previous valid section hash
+    window.history.back(); 
 }
 
 function cancelExitAction() {
     document.getElementById('exitPromptModal').style.display = 'none';
-    // When the user clicks cancel, we restore the history state to the form page
-    // to prevent the user from being stuck in the back button loop.
+    // Restore the form hash to prevent the user from being stuck in a back button loop
     history.pushState({ page: 'form' }, 'Add Prescription', 'app.html#form');
 }
 
 function handleBrowserBack(event) {
-    const currentState = history.state?.page;
+    const currentHash = window.location.hash.replace('#', '').split('?')[0];
     
-    if (currentState === 'setup' && !isProfileComplete) {
+    if (currentHash === 'setup' && !isProfileComplete) {
         // Prevent navigating away from the setup page if the profile is not complete
         history.pushState({ page: 'setup' }, 'Profile Setup', 'app.html#setup');
-        alert('Please save your profile details to continue.');
+        showStatusMessage('Please save your profile details to continue.', 'warning');
         return;
     }
     
     // Only show the modal if the user is leaving the form AND the form is filled
-    if (currentState === 'form' && isFormFilled) {
+    if (currentHash === 'form' && isFormFilled) {
         
         const modal = document.getElementById('exitPromptModal');
         if (modal) modal.style.display = 'flex';
@@ -2214,9 +2332,6 @@ function handleBrowserBack(event) {
         // We must push the current state back to the history stack to keep the user on the page
         // until they explicitly confirm the exit.
         history.pushState({ page: 'form' }, 'Add Prescription', 'app.html#form');
-    } else {
-        // If the user is on the dashboard, list, or reports, allow navigation naturally
-        // or re-route to dashboard if navigating away from the app base URL.
     }
 }
 
@@ -2257,7 +2372,13 @@ function setupInputValidation() {
                 // Ensure only allowed characters are kept
                 if (field.type === 'number') {
                     // Allows numbers, decimal point, and sign (for SPH/CYL)
-                    this.value = this.value.replace(/[^0-9.-]/g, ''); 
+                    // Added logic to remove leading decimals if no numbers follow
+                    let val = this.value.replace(/[^0-9.-]/g, '');
+                    const parts = val.split('.');
+                    if (parts.length > 2) {
+                        val = parts[0] + '.' + parts.slice(1).join('');
+                    }
+                    this.value = val;
                 } else if (field.type === 'va') {
                     // Allows numbers, '/', and 'N' (for V/A fields)
                     this.value = this.value.replace(/[^0-9/N]/g, '');
@@ -2324,7 +2445,7 @@ window.saveProfile = saveProfile;
 window.saveSetupProfile = saveSetupProfile;
 window.showProfileSetup = showProfileSetup;
 window.submitPrescription = submitPrescription;
-window.filterPrescriptions = filterPrescriptions;
+window.fetchAndFilterPrescriptions = fetchAndFilterPrescriptions; // Exposed new function
 window.applyPrescriptionFilters = applyPrescriptionFilters;
 window.clearPrescriptionFilters = clearPrescriptionFilters;
 window.applyReportFilters = applyReportFilters;
@@ -2335,6 +2456,7 @@ window.sendWhatsApp = sendWhatsApp;
 window.fetchDailyReport = fetchDailyReport;
 window.fetchWeeklyReport = fetchWeeklyReport;
 window.fetchMonthlyReport = fetchMonthlyReport;
+window.fetchCustomReport = fetchCustomReport;
 window.logoutUser = logoutUser;
 window.installPWA = installPWA;
 window.resetStats = resetStats;
