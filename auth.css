@@ -440,3 +440,45 @@ input:invalid + .toggle-password {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
+
+/* Enhanced loading states */
+.btn-loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.btn-loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    right: 15px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Success message enhancements */
+.success-message-enhanced {
+    background: #d4edda;
+    color: #155724;
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px 0;
+    text-align: center;
+    border: 1px solid #c3e6cb;
+    animation: fadeIn 0.5s ease-in;
+}
+
+.success-message-enhanced i {
+    font-size: 24px;
+    margin-bottom: 10px;
+    display: block;
+}
