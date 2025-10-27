@@ -285,18 +285,15 @@ async function handleForgotPassword(event) {
     setButtonLoading(resetButton, true, 'Reset Password');
 
     try {
-        // Specify the custom reset URL
+        // Use your Netlify domain for the reset page
         const actionCodeSettings = {
-            url: window.location.origin + '/reset-password.html',
+            url: 'https://your-app-name.netlify.app/reset-password.html',
             handleCodeInApp: true
         };
         
         await auth.sendPasswordResetEmail(email, actionCodeSettings);
         
-        // SUCCESS: Show success message and navigate
         showSuccessMessage('Password reset email sent! Check your inbox for instructions.');
-        
-        // Clear the form
         document.getElementById('forgotUsername').value = '';
         
     } catch (error) {
