@@ -37,7 +37,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
-<!-- Enhanced Navigation - Updated with 'premium-nav' class and Logo -->
+<!-- Enhanced Premium Navigation Bar - FIXED VERSION -->
 <nav class="navbar navbar-expand-lg fixed-top premium-nav">
     <div class="container-fluid">
         <a class="navbar-brand" href="#dashboard" onclick="showDashboard()">
@@ -80,7 +80,7 @@
                 </li>
             </ul>
             
-            <!-- Subscription Status Section - FIXED STRUCTURE -->
+            <!-- Subscription Status Section - FIXED -->
             <ul class="navbar-nav me-3">
                 <li class="nav-item">
                     <span id="subscriptionStatus" class="nav-link nav-link-custom">
@@ -88,10 +88,17 @@
                     </span>
                 </li>
                 <li class="nav-item">
-                    <span id="prescriptionUsage" class="nav-link nav-link-custom"></span>
+                    <span id="prescriptionUsage" class="nav-link nav-link-custom">
+                        <div class="usage-container">
+                            <small>Usage: <span class="badge bg-warning">0/0</span></small>
+                            <div class="progress" style="height: 4px;">
+                                <div class="progress-bar bg-warning" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </span>
                 </li>
                 <li class="nav-item">
-                    <button id="upgradeButton" class="nav-link nav-link-custom" onclick="showUpgradeModal()" style="display: none; border: none; background: none;">
+                    <button id="upgradeButton" class="nav-link nav-link-custom" onclick="showUpgradeModal()" style="display: none; border: none; background: none; cursor: pointer;">
                         <i class="fas fa-crown"></i> Upgrade
                     </button>
                 </li>
@@ -102,7 +109,7 @@
             </button>
         </div>
         
-        <!-- Mobile Menu - FIXED WITH HEADER -->
+        <!-- Mobile Menu - FIXED -->
         <div class="offcanvas offcanvas-end d-lg-none" tabindex="-1" id="offcanvasNavbar">
             <!-- Offcanvas Header -->
             <div class="offcanvas-header premium-offcanvas-header">
@@ -140,17 +147,24 @@
                             </a>
                         </li>
                         
-                        <!-- Mobile Subscription Status -->
+                        <!-- Mobile Subscription Status - FIXED -->
                         <li class="nav-item border-top mt-2 pt-2">
                             <span id="subscriptionStatusMobile" class="nav-link nav-link-custom">
                                 <i class="fas fa-sync fa-spin"></i> Checking Subscription...
                             </span>
                         </li>
                         <li class="nav-item">
-                            <span id="prescriptionUsageMobile" class="nav-link nav-link-custom"></span>
+                            <span id="prescriptionUsageMobile" class="nav-link nav-link-custom">
+                                <div class="usage-container">
+                                    <small>Usage: <span class="badge bg-warning">0/0</span></small>
+                                    <div class="progress" style="height: 4px;">
+                                        <div class="progress-bar bg-warning" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </span>
                         </li>
                         <li class="nav-item">
-                            <button id="upgradeButtonMobile" class="nav-link nav-link-custom" onclick="showUpgradeModal()" data-bs-dismiss="offcanvas" style="display: none; border: none; background: none;">
+                            <button id="upgradeButtonMobile" class="nav-link nav-link-custom" onclick="showUpgradeModal()" data-bs-dismiss="offcanvas" style="display: none; border: none; background: none; cursor: pointer;">
                                 <i class="fas fa-crown"></i> Upgrade Plan
                             </button>
                         </li>
@@ -746,6 +760,7 @@
     </script>
 </body>
 </html>
+
 
 
 
