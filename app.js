@@ -51,6 +51,7 @@ function initializeApp() {
     
     if (!user) {
         console.error('No user found during initialization');
+        window.location.href = 'auth.html';
         return;
     }
 
@@ -60,14 +61,16 @@ function initializeApp() {
     // Set current date first
     setCurrentDate();
     
-    // Load user profile and check for completion
+    // Setup basic event listeners first
+    setupEventListeners();
+    
+    // Then load user profile (this will handle navigation)
     loadUserProfile();
     
-    // Setup event listeners
-    setupEventListeners();
+    // Setup PWA features
     setupPWA();
     
-    console.log('App initialized successfully');
+    console.log('App initialized successfully for user:', user.email);
 }
 
 function setCurrentDate() {
@@ -386,17 +389,21 @@ function navigateIfProfileComplete(navFunction, sectionName) {
     console.log('Navigation attempt:', sectionName, 'Profile complete:', isProfileComplete);
     
     if (isProfileComplete) {
-        // Update URL hash FIRST
-        window.location.hash = sectionName;
-        
-        // Then call the navigation function
+        hideAllSections();
         navFunction();
+        updateActiveNavLink(sectionName);
         lastValidSection = sectionName;
+        // Update URL hash AFTER navigation is complete
+        setTimeout(() => {
+            window.location.hash = sectionName;
+        }, 100);
     } else {
         console.log('Profile not complete, forcing setup');
-        // Force profile setup and update hash
-        window.location.hash = 'setup';
         showProfileSetup(true);
+        // Update hash for setup
+        setTimeout(() => {
+            window.location.hash = 'setup';
+        }, 100);
     }
 }
 
@@ -514,21 +521,21 @@ function updatePreviewBackButton() {
 
 // Hash change handler
 function handleHashChange() {
+    // Only handle hash changes if profile is complete
     if (!isProfileComplete) {
-        // If profile not complete, stay on setup
-        if (window.location.hash !== '#setup') {
-            window.location.hash = 'setup';
-        }
         return;
     }
     
-    const hash = window.location.hash.replace('#', '');
-    console.log('Hash changed to:', hash);
+    const hash = window.location.hash.replace('#', '').split('?')[0];
+    console.log('Hash navigation to:', hash);
     
-    // Handle query parameters for prescriptions and reports
-    const baseHash = hash.split('?')[0];
+    // Prevent recursive calls
+    const currentSection = document.querySelector('.page-section.active')?.id;
+    if (currentSection && currentSection.includes(hash)) {
+        return;
+    }
     
-    switch (baseHash) {
+    switch (hash) {
         case 'dashboard':
             showDashboard();
             break;
@@ -544,15 +551,8 @@ function handleHashChange() {
         case 'setup':
             showProfileSetup(false);
             break;
-        case 'preview':
-            // Preview is handled separately
-            break;
         default:
-            // Default to dashboard if no valid hash
-            if (!hash || hash === '') {
-                window.location.hash = 'dashboard';
-                showDashboard();
-            } else {
+            if (!hash) {
                 showDashboard();
             }
     }
@@ -620,30 +620,47 @@ async function loadUserProfile() {
             
             const isDataValid = userData.clinicName && userData.optometristName;
             
-            if (isDataValid) {
-                isProfileComplete = true;
-                updateProfileUI(userData);
-                localStorage.setItem('userProfile', JSON.stringify(userData));
-                
-                // Set up hash change listener AFTER profile is loaded
-                window.addEventListener('hashchange', handleHashChange);
-                
-                // Handle initial navigation with a slight delay
-                setTimeout(() => {
-                    const hash = window.location.hash.replace('#', '');
-                    console.log('Initial hash after profile load:', hash);
-                    
-                    if (hash && hash !== 'setup') {
-                        handleHashChange();
-                    } else {
-                        // Default to dashboard if no valid hash
-                        window.location.hash = 'dashboard';
-                        showDashboard();
-                    }
-                }, 100);
-                
-                return;
+           if (isDataValid) {
+    isProfileComplete = true;
+    updateProfileUI(userData);
+    localStorage.setItem('userProfile', JSON.stringify(userData));
+    
+    console.log('Profile loaded successfully, initializing navigation...');
+    
+    // Set up hash change listener AFTER profile is loaded
+    window.addEventListener('hashchange', handleHashChange);
+    
+    // Handle initial navigation with better timing
+    setTimeout(() => {
+        const hash = window.location.hash.replace('#', '').split('?')[0];
+        console.log('Initial navigation to hash:', hash);
+        
+        if (hash && hash !== 'setup' && hash !== '') {
+            // Use direct function calls instead of hash change to avoid loops
+            switch (hash) {
+                case 'dashboard':
+                    showDashboard();
+                    break;
+                case 'form':
+                    showPrescriptionForm();
+                    break;
+                case 'prescriptions':
+                    showPrescriptions();
+                    break;
+                case 'reports':
+                    showReports();
+                    break;
+                default:
+                    showDashboard();
             }
+        } else {
+            // Default to dashboard
+            showDashboard();
+        }
+    }, 300);
+    
+    return;
+}
             
             console.warn('User profile found but incomplete. Forcing setup.');
             isProfileComplete = false;
