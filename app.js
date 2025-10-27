@@ -1,5 +1,23 @@
 // app.js - Consolidated from app.js and script.js
 
+// Global state management
+let appState = {
+    prescriptionFilters: {
+        search: '',
+        dateFrom: '',
+        dateTo: '',
+        visionType: '',
+        lensType: '',
+        frameType: '',
+        paymentMode: ''
+    },
+    reportFilters: {
+        period: 'day',
+        customFrom: '',
+        customTo: ''
+    }
+};
+
 // Global Variables
 let currentPrescriptionData = null;
 let whatsappImageUrl = null;
@@ -44,7 +62,7 @@ function initializeApp() {
     
     // Setup event listeners
     setupEventListeners();
-    setupPWA(); // Enhanced PWA setup
+    setupPWA();
     
     console.log('App initialized successfully');
 }
@@ -99,10 +117,8 @@ function setupEventListeners() {
     // Browser back button handling for the form
     window.addEventListener('popstate', handleBrowserBack);
     
-    // Push a non-null state initially to manage the back button history stack
-    if (history.state === null) {
-        history.pushState({ page: 'initial' }, document.title, location.href);
-    }
+    // Update preview back button
+    updatePreviewBackButton();
     
     console.log('Event listeners setup completed');
 }
@@ -365,10 +381,13 @@ function installPWA() {
  */
 function navigateIfProfileComplete(navFunction, sectionName) {
     if (isProfileComplete) {
+        // Update URL hash
+        window.location.hash = sectionName;
+        
         navFunction();
-        lastValidSection = sectionName; // Update last valid section
+        lastValidSection = sectionName;
     } else {
-        showProfileSetup(true); // Force profile setup
+        showProfileSetup(true);
     }
 }
 
@@ -378,7 +397,6 @@ function showDashboard() {
         const dashboardSection = document.getElementById('dashboardSection');
         if (dashboardSection) dashboardSection.classList.add('active');
         updateActiveNavLink('dashboard');
-        history.pushState({ page: 'dashboard' }, 'Dashboard', 'app.html#dashboard');
     }, 'dashboard');
 }
 
@@ -390,10 +408,7 @@ function showPrescriptionForm() {
         updateActiveNavLink('prescription');
         resetForm();
         
-        // **FIX: Update lastValidSection to track prescription form**
         lastValidSection = 'form';
-        
-        history.pushState({ page: 'form' }, 'Add Prescription', 'app.html#form');
     }, 'form');
 }
 
@@ -404,7 +419,7 @@ function showPrescriptions() {
         if (prescriptionsSection) prescriptionsSection.classList.add('active');
         updateActiveNavLink('prescriptions');
         fetchPrescriptions();
-        history.pushState({ page: 'prescriptions' }, 'View Prescriptions', 'app.html#prescriptions');
+        initializePrescriptionFilters();
     }, 'prescriptions');
 }
 
@@ -414,7 +429,8 @@ function showReports() {
         const reportsSection = document.getElementById('reportsSection');
         if (reportsSection) reportsSection.classList.add('active');
         updateActiveNavLink('reports');
-        history.pushState({ page: 'reports' }, 'Reports', 'app.html#reports');
+        initializeReportFilters();
+        fetchDailyReport(); // Default report
     }, 'reports');
 }
 
@@ -423,48 +439,39 @@ function showReports() {
  * @param {boolean} isForced True if the user is being forced to set up the profile (e.g., after registration).
  */
 function showProfileSetup(isForced) {
-    hideAllSections();
-    const setupSection = document.getElementById('profileSetupSection');
-    if (setupSection) setupSection.classList.add('active');
-    
-    // **FIX: Track where we're coming from for proper navigation back**
-    const currentState = history.state?.page;
-    if (currentState === 'form') {
-        // If we're coming from the prescription form, remember that
-        lastValidSection = 'form';
-    }
-    
-    // Disable navigation if forced
-    const navButtons = document.querySelectorAll('.nav-link:not(.btn-logout)');
-    navButtons.forEach(btn => btn.style.pointerEvents = isForced ? 'none' : 'auto');
-    
-    // Hide continue button if just editing
-    const saveBtn = document.getElementById('saveSetupProfileBtn');
-    if (saveBtn) {
-        saveBtn.textContent = isForced ? 'Save Profile & Continue' : 'Save Changes';
-    }
-
-    // Populate current data for editing
-    if (!isForced) {
-        // If profile is already complete, use the data loaded in updateProfileUI
-        const clinicName = document.getElementById('clinicName')?.textContent;
-        const optometristName = document.getElementById('optometristName')?.textContent;
-        const address = document.getElementById('clinicAddress')?.textContent;
-        const contactNumber = document.getElementById('contactNumber')?.textContent;
+    navigateIfProfileComplete(() => {
+        hideAllSections();
+        const setupSection = document.getElementById('profileSetupSection');
+        if (setupSection) setupSection.classList.add('active');
         
-        document.getElementById('setupClinicName').value = clinicName || '';
-        document.getElementById('setupOptometristName').value = optometristName || '';
-        document.getElementById('setupAddress').value = address || '';
-        document.getElementById('setupContactNumber').value = contactNumber || '';
-    } else {
-         // Clear fields for new user or prompt
-         document.getElementById('setupClinicName').value = '';
-         document.getElementById('setupOptometristName').value = '';
-         document.getElementById('setupAddress').value = '';
-         document.getElementById('setupContactNumber').value = '';
-    }
-    
-    history.pushState({ page: 'setup' }, 'Profile Setup', 'app.html#setup');
+        // Disable navigation if forced
+        const navButtons = document.querySelectorAll('.nav-link:not(.btn-logout)');
+        navButtons.forEach(btn => btn.style.pointerEvents = isForced ? 'none' : 'auto');
+        
+        // Hide continue button if just editing
+        const saveBtn = document.getElementById('saveSetupProfileBtn');
+        if (saveBtn) {
+            saveBtn.textContent = isForced ? 'Save Profile & Continue' : 'Save Changes';
+        }
+
+        // Populate current data for editing
+        if (!isForced) {
+            const clinicName = document.getElementById('clinicName')?.textContent;
+            const optometristName = document.getElementById('optometristName')?.textContent;
+            const address = document.getElementById('clinicAddress')?.textContent;
+            const contactNumber = document.getElementById('contactNumber')?.textContent;
+            
+            document.getElementById('setupClinicName').value = clinicName || '';
+            document.getElementById('setupOptometristName').value = optometristName || '';
+            document.getElementById('setupAddress').value = address || '';
+            document.getElementById('setupContactNumber').value = contactNumber || '';
+        } else {
+            document.getElementById('setupClinicName').value = '';
+            document.getElementById('setupOptometristName').value = '';
+            document.getElementById('setupAddress').value = '';
+            document.getElementById('setupContactNumber').value = '';
+        }
+    }, 'setup');
 }
 
 function showPreview(prescriptionData = null) {
@@ -472,12 +479,60 @@ function showPreview(prescriptionData = null) {
     const previewSection = document.getElementById('previewSection');
     if (previewSection) previewSection.classList.add('active');
     
+    // Set preview hash (this won't interfere with navigation since it's transient)
+    window.location.hash = 'preview';
+    
     if (prescriptionData) {
         loadPreviewData(prescriptionData);
     } else {
         loadPreviewFromForm();
     }
-    // No history push needed for preview since it's transient, but ensure back returns to list/form
+}
+
+// Update back button in preview to return to prescriptions
+function updatePreviewBackButton() {
+    const backButton = document.querySelector('.btn-back');
+    if (backButton) {
+        backButton.onclick = () => {
+            window.location.hash = 'prescriptions';
+        };
+    }
+}
+
+// Hash change handler
+function handleHashChange() {
+    if (!isProfileComplete) return;
+    
+    const hash = window.location.hash.replace('#', '');
+    console.log('Hash changed to:', hash);
+    
+    switch (hash) {
+        case 'dashboard':
+            showDashboard();
+            break;
+        case 'form':
+            showPrescriptionForm();
+            break;
+        case 'prescriptions':
+            showPrescriptions();
+            break;
+        case 'reports':
+            showReports();
+            break;
+        case 'setup':
+            showProfileSetup(false);
+            break;
+        case 'preview':
+            // Preview is handled separately as it's transient
+            break;
+        default:
+            // If no hash or invalid hash, show dashboard
+            if (!hash) {
+                window.location.hash = 'dashboard';
+            } else {
+                showDashboard();
+            }
+    }
 }
 
 function hideAllSections() {
@@ -486,8 +541,21 @@ function hideAllSections() {
 }
 
 function updateActiveNavLink(activeSection) {
-    const navLinks = document.querySelectorAll('.nav-link');
-    navLinks.forEach(link => link.classList.remove('active'));
+    const navLinks = document.querySelectorAll('.nav-link-custom');
+    navLinks.forEach(link => {
+        link.classList.remove('active');
+        // Check if this link corresponds to the active section
+        const linkText = link.textContent.toLowerCase();
+        if (
+            (activeSection === 'dashboard' && linkText.includes('dashboard')) ||
+            (activeSection === 'form' && linkText.includes('add prescription')) ||
+            (activeSection === 'prescriptions' && linkText.includes('view prescriptions')) ||
+            (activeSection === 'reports' && linkText.includes('reports')) ||
+            (activeSection === 'setup' && linkText.includes('profile'))
+        ) {
+            link.classList.add('active');
+        }
+    });
 }
 
 // User Profile Management
@@ -500,7 +568,6 @@ async function loadUserProfile() {
 
     console.log('Loading user profile for:', user.uid);
 
-    // Check for fresh registration flag
     const isFreshRegistration = localStorage.getItem('freshRegistration') === 'true';
     if (isFreshRegistration) {
         localStorage.removeItem('freshRegistration');
@@ -515,32 +582,38 @@ async function loadUserProfile() {
             userData = doc.data();
             console.log('Loaded user profile from Firestore:', userData);
             
-            // Check if profile is sufficiently complete
             const isDataValid = userData.clinicName && userData.optometristName;
             
             if (isDataValid) {
                 isProfileComplete = true;
                 updateProfileUI(userData);
                 localStorage.setItem('userProfile', JSON.stringify(userData));
-                showDashboard(); // Default to dashboard if everything is fine
+                
+                // Set up hash change listener
+                window.addEventListener('hashchange', handleHashChange);
+                
+                // Handle initial hash
+                if (window.location.hash) {
+                    handleHashChange();
+                } else {
+                    window.location.hash = 'dashboard';
+                }
                 return;
             }
             
-            // If document exists but is incomplete/placeholder (e.g., from an old flow)
             console.warn('User profile found but incomplete. Forcing setup.');
             isProfileComplete = false;
+            window.location.hash = 'setup';
             showProfileSetup(true);
 
         } else {
             console.log('No user profile found in Firestore. Forcing setup.');
-            
-            // This is a brand new user after registration (or an old user whose doc was deleted)
             isProfileComplete = false;
+            window.location.hash = 'setup';
             showProfileSetup(true);
         }
     } catch (error) {
         console.error('Error loading user profile from Firestore:', error);
-        // Fallback to local storage or force setup if there's an error
         const localProfile = localStorage.getItem('userProfile');
         if (localProfile) {
             console.log('Firestore failed, using localStorage backup.');
@@ -548,13 +621,20 @@ async function loadUserProfile() {
             isProfileComplete = userData.clinicName && userData.optometristName;
             updateProfileUI(userData);
             if (isProfileComplete) {
-                showDashboard();
+                window.addEventListener('hashchange', handleHashChange);
+                if (window.location.hash) {
+                    handleHashChange();
+                } else {
+                    window.location.hash = 'dashboard';
+                }
             } else {
+                window.location.hash = 'setup';
                 showProfileSetup(true);
             }
         } else {
             console.error('No backup profile available, forcing setup.');
             isProfileComplete = false;
+            window.location.hash = 'setup';
             showProfileSetup(true);
         }
     }
@@ -630,6 +710,177 @@ async function saveSetupProfile() {
     }
 }
 
+function initializePrescriptionFilters() {
+    // Try to get filters from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const filters = {
+        search: urlParams.get('search') || '',
+        dateFrom: urlParams.get('from') || '',
+        dateTo: urlParams.get('to') || '',
+        visionType: urlParams.get('vision') || '',
+        lensType: urlParams.get('lens') || '',
+        frameType: urlParams.get('frame') || '',
+        paymentMode: urlParams.get('payment') || ''
+    };
+    
+    // Set filter values
+    document.getElementById('searchInput').value = filters.search;
+    document.getElementById('filterDateFrom').value = filters.dateFrom;
+    document.getElementById('filterDateTo').value = filters.dateTo;
+    document.getElementById('filterVisionType').value = filters.visionType;
+    document.getElementById('filterLensType').value = filters.lensType;
+    document.getElementById('filterFrameType').value = filters.frameType;
+    document.getElementById('filterPaymentMode').value = filters.paymentMode;
+    
+    // Save to app state
+    appState.prescriptionFilters = filters;
+}
+
+function applyPrescriptionFilters() {
+    const filters = {
+        search: document.getElementById('searchInput').value.toLowerCase(),
+        dateFrom: document.getElementById('filterDateFrom').value,
+        dateTo: document.getElementById('filterDateTo').value,
+        visionType: document.getElementById('filterVisionType').value,
+        lensType: document.getElementById('filterLensType').value,
+        frameType: document.getElementById('filterFrameType').value,
+        paymentMode: document.getElementById('filterPaymentMode').value
+    };
+    
+    // Save filters to app state
+    appState.prescriptionFilters = filters;
+    
+    // Update URL with filter parameters
+    updatePrescriptionsURL(filters);
+    
+    // Apply filters
+    filterPrescriptions();
+}
+
+function updatePrescriptionsURL(filters) {
+    const urlParams = new URLSearchParams();
+    
+    if (filters.search) urlParams.set('search', filters.search);
+    if (filters.dateFrom) urlParams.set('from', filters.dateFrom);
+    if (filters.dateTo) urlParams.set('to', filters.dateTo);
+    if (filters.visionType) urlParams.set('vision', filters.visionType);
+    if (filters.lensType) urlParams.set('lens', filters.lensType);
+    if (filters.frameType) urlParams.set('frame', filters.frameType);
+    if (filters.paymentMode) urlParams.set('payment', filters.paymentMode);
+    
+    const queryString = urlParams.toString();
+    const newURL = queryString ? `app.html#prescriptions?${queryString}` : 'app.html#prescriptions';
+    
+    // Update URL without reloading
+    window.history.replaceState(null, '', newURL);
+}
+
+function clearPrescriptionFilters() {
+    // Reset filter inputs
+    document.getElementById('searchInput').value = '';
+    document.getElementById('filterDateFrom').value = '';
+    document.getElementById('filterDateTo').value = '';
+    document.getElementById('filterVisionType').value = '';
+    document.getElementById('filterLensType').value = '';
+    document.getElementById('filterFrameType').value = '';
+    document.getElementById('filterPaymentMode').value = '';
+    
+    // Clear state
+    appState.prescriptionFilters = {
+        search: '',
+        dateFrom: '',
+        dateTo: '',
+        visionType: '',
+        lensType: '',
+        frameType: '',
+        paymentMode: ''
+    };
+    
+    // Clear URL parameters
+    window.history.replaceState(null, '', 'app.html#prescriptions');
+    
+    // Refresh prescriptions
+    fetchPrescriptions();
+}
+
+// Enhanced Report Filtering System with URL parameters
+function initializeReportFilters() {
+    // Try to get filters from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const filters = {
+        period: urlParams.get('period') || 'day',
+        customFrom: urlParams.get('from') || '',
+        customTo: urlParams.get('to') || ''
+    };
+    
+    document.getElementById('reportPeriod').value = filters.period;
+    document.getElementById('customDateFrom').value = filters.customFrom;
+    document.getElementById('customDateTo').value = filters.customTo;
+    
+    // Save to app state
+    appState.reportFilters = filters;
+    
+    // Show/hide custom date range based on period
+    toggleCustomDateRange();
+}
+
+function applyReportFilters() {
+    const period = document.getElementById('reportPeriod').value;
+    const customFrom = document.getElementById('customDateFrom').value;
+    const customTo = document.getElementById('customDateTo').value;
+    
+    appState.reportFilters = {
+        period,
+        customFrom,
+        customTo
+    };
+    
+    // Update URL with filter parameters
+    updateReportsURL(period, customFrom, customTo);
+    
+    // Fetch report based on selected period
+    switch (period) {
+        case 'day':
+            fetchDailyReport();
+            break;
+        case 'week':
+            fetchWeeklyReport();
+            break;
+        case 'month':
+            fetchMonthlyReport();
+            break;
+        case 'custom':
+            fetchCustomReport(customFrom, customTo);
+            break;
+    }
+}
+
+function updateReportsURL(period, customFrom, customTo) {
+    const urlParams = new URLSearchParams();
+    urlParams.set('period', period);
+    
+    if (period === 'custom') {
+        if (customFrom) urlParams.set('from', customFrom);
+        if (customTo) urlParams.set('to', customTo);
+    }
+    
+    const queryString = urlParams.toString();
+    const newURL = `app.html#reports?${queryString}`;
+    
+    // Update URL without reloading
+    window.history.replaceState(null, '', newURL);
+}
+
+function toggleCustomDateRange() {
+    const period = document.getElementById('reportPeriod').value;
+    const customDateRange = document.getElementById('customDateRange');
+    
+    if (period === 'custom') {
+        customDateRange.style.display = 'grid';
+    } else {
+        customDateRange.style.display = 'none';
+    }
+}
 
 function updateProfileUI(userData) {
     console.log('Updating UI with user data:', userData);
@@ -2044,13 +2295,17 @@ window.showPrescriptionForm = showPrescriptionForm;
 window.showPrescriptions = showPrescriptions;
 window.showReports = showReports;
 window.showPreview = showPreview;
-window.openEditProfile = openEditProfile; // Will now redirect to showProfileSetup(false)
-window.closeEditProfile = closeEditProfile; // Retained for modal compatibility
-window.saveProfile = saveProfile; // Retained for modal compatibility
-window.saveSetupProfile = saveSetupProfile; // New dedicated save function
-window.showProfileSetup = showProfileSetup; // New dedicated setup function
+window.openEditProfile = openEditProfile;
+window.closeEditProfile = closeEditProfile;
+window.saveProfile = saveProfile;
+window.saveSetupProfile = saveSetupProfile;
+window.showProfileSetup = showProfileSetup;
 window.submitPrescription = submitPrescription;
 window.filterPrescriptions = filterPrescriptions;
+window.applyPrescriptionFilters = applyPrescriptionFilters;
+window.clearPrescriptionFilters = clearPrescriptionFilters;
+window.applyReportFilters = applyReportFilters;
+window.toggleCustomDateRange = toggleCustomDateRange;
 window.generatePDF = generatePDF;
 window.printPreview = printPreview;
 window.sendWhatsApp = sendWhatsApp;
