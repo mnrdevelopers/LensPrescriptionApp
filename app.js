@@ -1206,6 +1206,11 @@ function generatePDF() {
     // Create a clone to avoid affecting the display
     const elementClone = element.cloneNode(true);
     
+    // ISOLATION FIX: To prevent global print styles from hiding content in the PDF clone
+    // Remove all class names from the clone to prevent external CSS rules (like @media print)
+    // from applying, except for the explicit styles we define below.
+    elementClone.className = '';
+    
     // Apply PDF-specific styles
     elementClone.style.width = '58mm';
     elementClone.style.margin = '0 auto';
