@@ -1,27 +1,66 @@
-// products.js - Products and Cart Management
+// products.js - Products and Cart Management with Neon Database
 
 let products = [];
 let cart = JSON.parse(localStorage.getItem('cart')) || [];
+let razorpayKey = null;
 
-// Load products from Firestore
+// Initialize Razorpay
+async function initializeRazorpay() {
+    try {
+        const response = await fetch('/.netlify/functions/get-razorpay-key');
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch Razorpay key');
+        }
+        
+        const data = await response.json();
+        razorpayKey = data.keyId;
+        
+        console.log('Razorpay initialized successfully');
+    } catch (error) {
+        console.error('Error initializing Razorpay:', error);
+        showStatusMessage('Payment system temporarily unavailable', 'error');
+    }
+}
+
+// Load products from Neon database
 async function loadProducts() {
     try {
-        const snapshot = await db.collection('products')
-            .where('active', '==', true)
-            .get();
+        const response = await fetch('/.netlify/functions/get-products');
         
-        products = [];
-        snapshot.forEach(doc => {
-            products.push({
-                id: doc.id,
-                ...doc.data()
-            });
-        });
+        if (!response.ok) {
+            throw new Error('Failed to fetch products');
+        }
+        
+        products = await response.json();
+        
+        // Load images for products
+        await loadProductImages();
         
         displayProducts(products);
     } catch (error) {
         console.error('Error loading products:', error);
         showStatusMessage('Error loading products', 'error');
+    }
+}
+
+// Load product images
+async function loadProductImages() {
+    for (let product of products) {
+        if (product.imageName && !product.imageUrl) {
+            try {
+                const imageResponse = await fetch(`/.netlify/functions/get-product-image?id=${product.id}`);
+                if (imageResponse.ok) {
+                    const imageData = await imageResponse.json();
+                    product.imageUrl = imageData.imageUrl;
+                }
+            } catch (error) {
+                console.error(`Error loading image for product ${product.id}:`, error);
+                product.imageUrl = 'https://via.placeholder.com/300x200?text=No+Image';
+            }
+        } else if (!product.imageUrl) {
+            product.imageUrl = 'https://via.placeholder.com/300x200?text=No+Image';
+        }
     }
 }
 
@@ -41,8 +80,10 @@ function displayProducts(productsToShow) {
     grid.innerHTML = productsToShow.map(product => `
         <div class="col-lg-4 col-md-6 mb-4">
             <div class="card product-card h-100">
-                <img src="${product.imageUrl || 'https://via.placeholder.com/300x200?text=No+Image'}" 
-                     class="card-img-top" alt="${product.name}" style="height: 200px; object-fit: cover;">
+                <img src="${product.imageUrl}" 
+                     class="card-img-top" alt="${product.name}" 
+                     style="height: 200px; object-fit: cover;"
+                     onerror="this.src='https://via.placeholder.com/300x200?text=No+Image'">
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title">${product.name}</h5>
                     <p class="card-text text-muted">${product.category}</p>
@@ -76,7 +117,7 @@ function filterProducts() {
     if (searchTerm) {
         filteredProducts = filteredProducts.filter(product => 
             product.name.toLowerCase().includes(searchTerm) ||
-            product.description.toLowerCase().includes(searchTerm)
+            (product.description && product.description.toLowerCase().includes(searchTerm))
         );
     }
     
@@ -98,7 +139,10 @@ function viewProduct(productId) {
     document.getElementById('productModalDescription').textContent = product.description || 'No description available.';
     document.getElementById('productModalPrice').textContent = product.price;
     document.getElementById('productModalStock').textContent = product.stock > 0 ? `${product.stock} in stock` : 'Out of stock';
-    document.getElementById('productModalImage').src = product.imageUrl || 'https://via.placeholder.com/400x300?text=No+Image';
+    document.getElementById('productModalImage').src = product.imageUrl;
+    document.getElementById('productModalImage').onerror = function() {
+        this.src = 'https://via.placeholder.com/400x300?text=No+Image';
+    };
     
     // Store current product ID in modal for cart operations
     document.getElementById('productModal').dataset.productId = productId;
@@ -165,8 +209,9 @@ function updateCart() {
         return `
             <div class="cart-item mb-3 p-2 border rounded">
                 <div class="d-flex align-items-center">
-                    <img src="${item.imageUrl || 'https://via.placeholder.com/50x50?text=No+Image'}" 
-                         class="rounded me-3" width="50" height="50" style="object-fit: cover;">
+                    <img src="${item.imageUrl}" 
+                         class="rounded me-3" width="50" height="50" style="object-fit: cover;"
+                         onerror="this.src='https://via.placeholder.com/50x50?text=No+Image'">
                     <div class="flex-grow-1">
                         <h6 class="mb-1">${item.name}</h6>
                         <p class="mb-1">₹${item.price} x ${item.quantity}</p>
@@ -191,6 +236,33 @@ function removeFromCart(productId) {
     showStatusMessage('Product removed from cart', 'success');
 }
 
+// Create Razorpay order (server-side)
+async function createRazorpayOrder(amount, orderId) {
+    try {
+        const response = await fetch('/.netlify/functions/create-razorpay-order', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                amount: amount * 100, // Convert to paise
+                currency: 'INR',
+                receipt: orderId
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to create Razorpay order');
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error creating Razorpay order:', error);
+        throw error;
+    }
+}
+
 // Checkout with Razorpay
 async function checkout() {
     if (cart.length === 0) return;
@@ -201,10 +273,19 @@ async function checkout() {
         return;
     }
     
+    // Ensure Razorpay is initialized
+    if (!razorpayKey) {
+        await initializeRazorpay();
+        if (!razorpayKey) {
+            showStatusMessage('Payment system unavailable. Please try again.', 'error');
+            return;
+        }
+    }
+    
     const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     
     try {
-        // Create order in Firestore
+        // Create order in Firestore first (or you can use Neon for orders too)
         const orderData = {
             userId: user.uid,
             userEmail: user.email,
@@ -216,45 +297,20 @@ async function checkout() {
         
         const orderRef = await db.collection('orders').add(orderData);
         
+        // Create Razorpay order
+        const razorpayOrder = await createRazorpayOrder(totalAmount, orderRef.id);
+        
         // Razorpay options
         const options = {
-            key: 'YOUR_RAZORPAY_KEY_ID', // Replace with your Razorpay key
-            amount: totalAmount * 100, // Amount in paise
-            currency: 'INR',
+            key: razorpayKey,
+            amount: razorpayOrder.amount,
+            currency: razorpayOrder.currency,
             name: 'Lens Prescription',
             description: 'Eyewear Products Order',
-            order_id: null, // We'll create order first if needed
+            order_id: razorpayOrder.id,
             handler: async function(response) {
-                // Payment successful
-                await orderRef.update({
-                    status: 'paid',
-                    paymentId: response.razorpay_payment_id,
-                    orderId: response.razorpay_order_id,
-                    paymentSignature: response.razorpay_signature,
-                    paidAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                
-                // Update product stock
-                for (const item of cart) {
-                    const productRef = db.collection('products').doc(item.id);
-                    const productDoc = await productRef.get();
-                    if (productDoc.exists) {
-                        const currentStock = productDoc.data().stock;
-                        await productRef.update({
-                            stock: currentStock - item.quantity
-                        });
-                    }
-                }
-                
-                // Clear cart
-                cart = [];
-                updateCart();
-                
-                showStatusMessage('Payment successful! Order confirmed.', 'success');
-                
-                // Close cart offcanvas
-                const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('cartOffcanvas'));
-                offcanvas.hide();
+                // Payment successful - verify payment
+                await verifyPayment(response, orderRef.id, totalAmount);
             },
             prefill: {
                 name: user.displayName || '',
@@ -263,6 +319,11 @@ async function checkout() {
             },
             theme: {
                 color: '#007bff'
+            },
+            modal: {
+                ondismiss: function() {
+                    showStatusMessage('Payment cancelled', 'warning');
+                }
             }
         };
         
@@ -272,6 +333,98 @@ async function checkout() {
     } catch (error) {
         console.error('Checkout error:', error);
         showStatusMessage('Checkout failed. Please try again.', 'error');
+    }
+}
+
+// Verify payment after success
+async function verifyPayment(paymentResponse, orderId, totalAmount) {
+    try {
+        const verifyResponse = await fetch('/.netlify/functions/verify-payment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                razorpay_order_id: paymentResponse.razorpay_order_id,
+                razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                razorpay_signature: paymentResponse.razorpay_signature
+            })
+        });
+
+        if (!verifyResponse.ok) {
+            throw new Error('Payment verification failed');
+        }
+
+        const verification = await verifyResponse.json();
+
+        if (verification.valid) {
+            // Payment verified successfully
+            await db.collection('orders').doc(orderId).update({
+                status: 'paid',
+                paymentId: paymentResponse.razorpay_payment_id,
+                orderId: paymentResponse.razorpay_order_id,
+                paymentSignature: paymentResponse.razorpay_signature,
+                paidAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            // Update product stock in Neon
+            for (const item of cart) {
+                await updateProductStock(item.id, item.quantity);
+            }
+
+            // Clear cart
+            cart = [];
+            updateCart();
+            
+            showStatusMessage('Payment successful! Order confirmed.', 'success');
+            
+            // Close cart offcanvas
+            const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('cartOffcanvas'));
+            offcanvas.hide();
+        } else {
+            throw new Error('Payment verification failed');
+        }
+        
+    } catch (error) {
+        console.error('Payment verification error:', error);
+        showStatusMessage('Payment verification failed. Please contact support.', 'error');
+    }
+}
+
+// Update product stock in Neon
+async function updateProductStock(productId, quantity) {
+    try {
+        const response = await fetch(`/.netlify/functions/update-product/${productId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                stock: await getCurrentStock(productId) - quantity
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to update product stock');
+        }
+    } catch (error) {
+        console.error('Error updating product stock:', error);
+        throw error;
+    }
+}
+
+// Get current stock from Neon
+async function getCurrentStock(productId) {
+    try {
+        const response = await fetch('/.netlify/functions/get-products');
+        if (!response.ok) throw new Error('Failed to fetch products');
+        
+        const products = await response.json();
+        const product = products.find(p => p.id === productId);
+        return product ? product.stock : 0;
+    } catch (error) {
+        console.error('Error getting current stock:', error);
+        return 0;
     }
 }
 
@@ -334,8 +487,9 @@ function getStatusColor(type) {
     return colors[type] || '#17a2b8';
 }
 
-// Initialize cart on page load
+// Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
+    initializeRazorpay();
     updateCart();
 });
 
