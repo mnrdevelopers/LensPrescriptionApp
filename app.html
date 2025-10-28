@@ -89,13 +89,19 @@
                     </a>
                 </li>
             </ul>
+
+              <!-- ADD SUBSCRIPTION STATUS HERE - Right side before logout button -->
+            <div id="navSubscriptionStatus" class="navbar-text me-3">
+                <!-- Subscription status will be dynamically updated -->
+            </div>
+            
             <!-- Desktop Logout Button (Visible >= lg) -->
             <button onclick="logoutUser()" class="btn btn-logout premium-logout">
                 <i class="fas fa-sign-out-alt"></i> Logout
             </button>
         </div>
 
-      <!-- Offcanvas Mobile Menu (FIXED: offcanvas-start for left-side) -->
+<!-- Offcanvas Mobile Menu -->
 <div class="offcanvas offcanvas-start d-lg-none" tabindex="-1" id="offcanvasNavbar">
     <div class="offcanvas-header premium-offcanvas-header">
         <h5 class="offcanvas-title">
@@ -105,6 +111,11 @@
     </div>
     <div class="offcanvas-body p-0">
         <div class="d-flex flex-column h-100">
+            <!-- ADD MOBILE SUBSCRIPTION STATUS HERE -->
+            <div id="mobileSubscriptionStatus" class="p-3 border-bottom bg-light">
+                <!-- Mobile subscription status will be dynamically updated -->
+            </div>
+            
             <!-- Navigation Links -->
             <ul class="navbar-nav justify-content-start flex-grow-1 p-3">
                 <li class="nav-item">
@@ -782,4 +793,5 @@
     </script>
 </body>
 </html>
+
 
