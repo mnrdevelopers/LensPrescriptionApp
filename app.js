@@ -1190,160 +1190,110 @@ function loadPreviewData(data) {
     });
 }
 
-// Simplified PDF Generation that works with CSS
+/**
+ * Renders the PDF in a new window using html2pdf and provides a download button.
+ */
 function generatePDF() {
     // We disable the button loading and show status message temporarily.
     const btn = document.querySelector('.btn-download');
     if (btn) {
         btn.classList.add('btn-loading');
-        btn.textContent = 'Preparing...';
+        btn.textContent = 'Generating PDF...';
     }
-    showStatusMessage('Preparing PDF Preview...', 'info');
+    showStatusMessage('Generating PDF...', 'info');
 
-    // **NEW LOGIC: Use a separate print window for reliable PDF preview and download**
-    
-    // 1. Get the patient name for the file name
     const patientName = document.getElementById('previewPatientName')?.textContent || 'Patient';
     const shortDate = new Date().toLocaleDateString('en-IN', { 
         day: '2-digit', 
         month: '2-digit', 
         year: 'numeric' 
     }).replace(/\//g, '-');
-    const filename = `Prescription_${patientName}_${shortDate}`;
+    const filename = `Prescription_${patientName}_${shortDate}.pdf`;
 
-    // 2. Load the data into a print window (this is essentially what printPreview does)
-    const printWindow = window.open('', '_blank', 'width=400,height=600');
+    const element = document.getElementById('prescriptionPreview');
     
-    if (!printWindow) {
-        showStatusMessage('Popup blocked. Please allow popups for PDF generation.', 'error');
+    // 1. Create a clone with minimal styling properties for reliable PDF generation
+    const elementClone = element.cloneNode(true);
+    elementClone.className = 'pdf-export-content'; // Add a unique class for targeting
+    elementClone.style.margin = '0';
+    elementClone.style.padding = '10px';
+    elementClone.style.background = 'white';
+    elementClone.style.color = 'black';
+    
+    // Attach to body temporarily for html2canvas to render it accurately
+    elementClone.style.position = 'absolute';
+    elementClone.style.left = '-9999px';
+    document.body.appendChild(elementClone);
+
+    const opt = {
+        margin: [5, 5, 5, 5],
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+            scale: 3,
+            useCORS: true,
+            allowTaint: true, // Allow tainting for local images
+            backgroundColor: '#ffffff'
+        },
+        jsPDF: { 
+            unit: 'mm', 
+            format: 'a4', // Default to A4 for a clear downloadable PDF
+            orientation: 'portrait' 
+        }
+    };
+
+    html2pdf().set(opt).from(elementClone).toPdf().get('pdf').then(function(pdf) {
+        // Convert the PDF blob to a data URL
+        const pdfBlob = new Blob([pdf.output('blob')], {type: 'application/pdf'});
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        
+        // Open the isolated preview page
+        openPDFPreviewWindow(pdfUrl, filename);
+        
+        // **NEW FIX:** Use the internal download method to trigger the download directly.
+        const downloadLink = document.createElement('a');
+        downloadLink.href = pdfUrl;
+        downloadLink.download = filename;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        URL.revokeObjectURL(pdfUrl); // Clean up the blob URL
+
+    }).catch((error) => {
+        console.error('PDF generation error:', error);
+        showStatusMessage('PDF generation failed. See console for details.', 'error');
+        
+    }).finally(() => {
+        // Ensure the clone is removed and button state is reset
+        if (document.querySelector('.pdf-export-content')) {
+            document.body.removeChild(document.querySelector('.pdf-export-content'));
+        }
         if (btn) {
             btn.classList.remove('btn-loading');
             btn.textContent = 'PDF';
         }
-        return;
-    }
+    });
+}
 
-    // 3. Assemble the HTML content for the popup, including a download script
-    const clinicName = document.getElementById('previewClinicName')?.textContent || 'Your Clinic';
-    const optometristName = document.getElementById('previewOptometristName')?.textContent || 'Optometrist Name';
-    
-    // We copy the exact content of the preview, plus a new script to trigger the download/print dialogue.
-    const previewContentHTML = document.getElementById('prescriptionPreview').innerHTML;
-    
-    const printHTML = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>${filename}</title>
-            <meta charset="UTF-8">
-            <style>
-                /* Import App styles needed for layout but stripped of print media queries */
-                body {
-                    margin: 0;
-                    padding: 0;
-                    box-sizing: border-box;
-                    font-family: 'Times New Roman', serif;
-                    background: #f8f9fa;
-                    color: #333;
-                }
-                .pdf-page {
-                    width: 58mm;
-                    margin: 10px auto;
-                    padding: 10px;
-                    background: white;
-                    border: 1px solid #ddd;
-                    box-sizing: border-box;
-                    font-family: 'Courier New', monospace;
-                    font-size: 10px;
-                    line-height: 1.2;
-                }
-                .preview-header, .preview-details, .preview-prescription, .preview-footer {
-                    /* Paste minimal styles to ensure readability */
-                    text-align: center;
-                    margin: 5px 0;
-                }
-                .preview-prescription table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    font-size: 8px;
-                }
-                .preview-prescription th, .preview-prescription td {
-                    border: 1px solid #000;
-                    padding: 2px;
-                    text-align: center;
-                }
-                .download-controls {
-                    text-align: center;
-                    padding: 15px;
-                    background: #e9ecef;
-                    border-top: 1px solid #ddd;
-                }
-                .download-btn {
-                    padding: 10px 20px;
-                    font-size: 14px;
-                    background-color: #007bff;
-                    color: white;
-                    border: none;
-                    border-radius: 5px;
-                    cursor: pointer;
-                    margin: 5px;
-                    transition: background-color 0.2s;
-                }
-                .download-btn:hover {
-                    background-color: #0056b3;
-                }
-                
-                /* Ensure only the content and controls are shown */
-                @media print {
-                    .download-controls {
-                        display: none !important;
-                    }
-                    /* Standard paper size print styles (Letter or A4) */
-                    .pdf-page {
-                         width: 100% !important; 
-                         margin: 0 !important;
-                         padding: 0.5cm !important;
-                         border: none !important;
-                         box-shadow: none !important;
-                    }
-                }
-            </style>
-        </head>
-        <body>
-            <div class="pdf-page">
-                ${previewContentHTML}
-            </div>
-            
-            <div class="download-controls">
-                <button class="download-btn" onclick="window.print()">
-                    <i class="fas fa-file-pdf"></i> Save/Print PDF
-                </button>
-                <button class="download-btn" style="background-color: #dc3545;" onclick="window.close()">
-                    <i class="fas fa-times"></i> Close Preview
-                </button>
-                <p style="font-size: 12px; color: #666; margin-top: 10px;">
-                    Use the 'Save/Print PDF' button, then select 'Save as PDF' from your browser's print dialogue.
-                </p>
-            </div>
-            
-            <script>
-                // Auto-focus to make sure the user sees the controls
-                window.focus();
-            </script>
-        </body>
-        </html>
-    `;
+/**
+ * Helper function to create the isolated preview window for the generated PDF blob.
+ * @param {string} pdfUrl The Blob URL of the generated PDF.
+ * @param {string} filename The suggested filename.
+ */
+function openPDFPreviewWindow(pdfUrl, filename) {
+    // Open a new window that focuses entirely on the PDF object
+    // This function is kept primarily for its successful blob URL creation, 
+    // but the direct download via link click is more reliable.
+    // We can comment out the window.open part since direct download is requested.
+    // const previewWindow = window.open(pdfUrl, '_blank', 'width=800,height=800');
 
-    printWindow.document.open();
-    printWindow.document.write(printHTML);
-    printWindow.document.close();
-
-    // 4. Update the button state
-    if (btn) {
-        btn.classList.remove('btn-loading');
-        btn.textContent = 'PDF';
-    }
-    showStatusMessage('PDF preview ready in new window.', 'success');
+    // if (previewWindow) {
+    //     showStatusMessage('PDF ready. Use the browser controls to download.', 'success');
+    //     previewWindow.document.title = filename;
+    // } else {
+    //     showStatusMessage('Popup blocked. PDF is ready but cannot be previewed.', 'error');
+    // }
+    showStatusMessage('PDF downloaded successfully!', 'success');
 }
 
 // Dedicated Thermal Print Function for 58mm Printer
