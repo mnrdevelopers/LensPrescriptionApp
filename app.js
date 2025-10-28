@@ -1,5 +1,9 @@
 // app.js - Consolidated from app.js and script.js
 
+// Payment and Subscription Management
+let RAZORPAY_KEY_ID = null;
+let selectedPlan = 'yearly';
+
 // Global Variables
 let currentPrescriptionData = null;
 let whatsappImageUrl = null;
@@ -57,6 +61,18 @@ function initializeApp() {
     
     // Set initial date filter values for prescriptions and reports
     setInitialDateFilters();
+
+     // Initialize payment system
+    await initializePaymentSystem();
+    
+    // Add usage counter to dashboard
+    addUsageCounterToDashboard();
+    
+    // Update subscription status
+    await updateSubscriptionStatus();
+    
+    // Check and update usage counter
+    await checkPrescriptionLimit();
     
     console.log('App initialized successfully');
 }
@@ -817,6 +833,12 @@ async function submitPrescription() {
     if (!isProfileComplete) {
         alert('Please complete your Clinic Profile before adding prescriptions.');
         showProfileSetup(true);
+        return;
+    }
+
+    // Check if user can submit prescription
+    const canSubmit = await checkPrescriptionLimit();
+    if (!canSubmit) {
         return;
     }
     
@@ -2415,3 +2437,312 @@ async function convertToBlobUrl(imageData) {
     const blob = dataURLToBlob(imageData);
     return URL.createObjectURL(blob);
 }
+
+// Initialize payment system
+async function initializePaymentSystem() {
+    try {
+        const response = await fetch('/.netlify/functions/get-razorpay-keys');
+        const data = await response.json();
+        
+        if (data.razorpayKeyId) {
+            RAZORPAY_KEY_ID = data.razorpayKeyId;
+            console.log('Razorpay keys loaded successfully');
+        } else {
+            console.error('Failed to load Razorpay keys');
+        }
+    } catch (error) {
+        console.error('Error loading Razorpay keys:', error);
+    }
+}
+
+// Check prescription limit before submitting
+async function checkPrescriptionLimit() {
+    const user = auth.currentUser;
+    if (!user) return false;
+
+    try {
+        // Get current month's start and end dates
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
+        // Check if user has active subscription
+        const subscription = await checkActiveSubscription(user.uid);
+        if (subscription.active) {
+            return true; // User has active subscription, no limit
+        }
+
+        // Count prescriptions for current month
+        const querySnapshot = await db.collection('prescriptions')
+            .where('userId', '==', user.uid)
+            .where('createdAt', '>=', monthStart)
+            .where('createdAt', '<=', monthEnd)
+            .get();
+
+        const prescriptionCount = querySnapshot.size;
+        
+        // Update usage counter in UI
+        updateUsageCounter(prescriptionCount);
+
+        if (prescriptionCount >= FREE_PRESCRIPTION_LIMIT) {
+            showPaymentModal();
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error checking prescription limit:', error);
+        return true; // Allow submission on error
+    }
+}
+
+// Update usage counter in UI
+function updateUsageCounter(currentCount) {
+    const usageElement = document.getElementById('usageCounter');
+    if (!usageElement) return;
+
+    const percentage = (currentCount / FREE_PRESCRIPTION_LIMIT) * 100;
+    
+    usageElement.innerHTML = `
+        <div class="usage-counter">
+            <h5><i class="fas fa-chart-line"></i> Monthly Usage</h5>
+            <p>${currentCount} of ${FREE_PRESCRIPTION_LIMIT} free prescriptions used</p>
+            <div class="progress">
+                <div class="progress-bar" style="width: ${percentage}%"></div>
+            </div>
+            <small>Upgrade for unlimited prescriptions</small>
+        </div>
+    `;
+}
+
+// Check active subscription
+async function checkActiveSubscription(userId) {
+    try {
+        const subscriptionDoc = await db.collection('subscriptions')
+            .doc(userId)
+            .get();
+
+        if (subscriptionDoc.exists) {
+            const subscription = subscriptionDoc.data();
+            const now = new Date();
+            const expiryDate = subscription.expiryDate.toDate();
+            
+            return {
+                active: expiryDate > now,
+                plan: subscription.plan,
+                expiryDate: expiryDate
+            };
+        }
+
+        return { active: false };
+    } catch (error) {
+        console.error('Error checking subscription:', error);
+        return { active: false };
+    }
+}
+
+// Show payment modal
+function showPaymentModal() {
+    const modal = document.getElementById('paymentModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        // Select yearly plan by default
+        selectPlan('yearly');
+    }
+}
+
+// Close payment modal
+function closePaymentModal() {
+    const modal = document.getElementById('paymentModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// Select plan
+function selectPlan(planType) {
+    selectedPlan = planType;
+    
+    // Update UI
+    document.querySelectorAll('.plan-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    document.querySelectorAll(`.${planType}-plan`).forEach(card => {
+        card.classList.add('selected');
+    });
+    
+    // Update radio buttons
+    document.getElementById(`${planType}Plan`).checked = true;
+}
+
+// Proceed to payment
+async function proceedToPayment() {
+    if (!RAZORPAY_KEY_ID) {
+        showStatusMessage('Payment system not ready. Please try again.', 'error');
+        return;
+    }
+
+    const plan = SUBSCRIPTION_PLANS[selectedPlan.toUpperCase()];
+    if (!plan) {
+        showStatusMessage('Invalid plan selected.', 'error');
+        return;
+    }
+
+    try {
+        // Show processing modal
+        document.getElementById('paymentProcessingModal').style.display = 'flex';
+
+        // Create order
+        const orderResponse = await fetch('/.netlify/functions/create-order', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                planType: selectedPlan,
+                amount: plan.amount,
+                currency: 'INR'
+            })
+        });
+
+        const orderData = await orderResponse.json();
+
+        if (!orderResponse.ok) {
+            throw new Error(orderData.error || 'Failed to create order');
+        }
+
+        // Initialize Razorpay
+        const options = {
+            key: RAZORPAY_KEY_ID,
+            amount: orderData.amount,
+            currency: orderData.currency,
+            name: 'Lens Prescription',
+            description: `${selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1)} Subscription`,
+            order_id: orderData.orderId,
+            handler: async function(response) {
+                await handlePaymentSuccess(response, selectedPlan, plan.amount);
+            },
+            prefill: {
+                name: auth.currentUser.displayName || '',
+                email: auth.currentUser.email
+            },
+            theme: {
+                color: '#007bff'
+            },
+            modal: {
+                ondismiss: function() {
+                    document.getElementById('paymentProcessingModal').style.display = 'none';
+                }
+            }
+        };
+
+        const razorpay = new Razorpay(options);
+        razorpay.open();
+        
+        // Hide processing modal when Razorpay opens
+        document.getElementById('paymentProcessingModal').style.display = 'none';
+
+    } catch (error) {
+        console.error('Payment error:', error);
+        document.getElementById('paymentProcessingModal').style.display = 'none';
+        showStatusMessage('Payment failed: ' + error.message, 'error');
+    }
+}
+
+// Handle successful payment
+async function handlePaymentSuccess(paymentResponse, planType, amount) {
+    try {
+        const user = auth.currentUser;
+        
+        // Calculate expiry date
+        const now = new Date();
+        const plan = SUBSCRIPTION_PLANS[planType.toUpperCase()];
+        const expiryDate = new Date(now.getTime() + plan.duration * 24 * 60 * 60 * 1000);
+
+        // Save subscription to Firestore
+        await db.collection('subscriptions').doc(user.uid).set({
+            userId: user.uid,
+            plan: planType,
+            amount: amount,
+            paymentId: paymentResponse.razorpay_payment_id,
+            orderId: paymentResponse.razorpay_order_id,
+            signature: paymentResponse.razorpay_signature,
+            purchaseDate: firebase.firestore.FieldValue.serverTimestamp(),
+            expiryDate: expiryDate,
+            status: 'active'
+        });
+
+        // Update UI
+        closePaymentModal();
+        showStatusMessage('Payment successful! Your subscription is now active.', 'success');
+        
+        // Refresh the page to update limits
+        setTimeout(() => {
+            window.location.reload();
+        }, 2000);
+
+    } catch (error) {
+        console.error('Error handling payment success:', error);
+        showStatusMessage('Payment verification failed. Please contact support.', 'error');
+    }
+}
+
+// Update dashboard to show subscription status
+async function updateSubscriptionStatus() {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const subscription = await checkActiveSubscription(user.uid);
+    const statusElement = document.getElementById('subscriptionStatus');
+    
+    if (statusElement) {
+        if (subscription.active) {
+            const expiryDate = subscription.expiryDate.toLocaleDateString();
+            statusElement.innerHTML = `
+                <div class="alert alert-success">
+                    <i class="fas fa-crown"></i> 
+                    <strong>Premium Member</strong> - Subscription active until ${expiryDate}
+                </div>
+            `;
+        } else {
+            statusElement.innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Free Plan</strong> - ${FREE_PRESCRIPTION_LIMIT} prescriptions per month
+                </div>
+            `;
+        }
+    }
+}
+
+// Add usage counter to dashboard
+function addUsageCounterToDashboard() {
+    const dashboardSection = document.getElementById('dashboardSection');
+    if (dashboardSection) {
+        const usageCounterHTML = `
+            <div id="usageCounter">
+                <!-- Usage counter will be dynamically updated -->
+            </div>
+        `;
+        
+        // Insert after the welcome text
+        const welcomeText = document.getElementById('dashboardWelcomeText');
+        if (welcomeText) {
+            welcomeText.insertAdjacentHTML('afterend', usageCounterHTML);
+        }
+        
+        // Add subscription status element
+        const subscriptionStatusHTML = `
+            <div id="subscriptionStatus" class="mb-4">
+                <!-- Subscription status will be dynamically updated -->
+            </div>
+        `;
+        
+        const statsSection = document.querySelector('.stats-filters');
+        if (statsSection) {
+            statsSection.insertAdjacentHTML('beforebegin', subscriptionStatusHTML);
+        }
+    }
+}
+
