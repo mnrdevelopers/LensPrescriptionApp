@@ -36,23 +36,26 @@
 <body>
  <!-- Enhanced Navigation - Updated with 'premium-nav' class and Logo -->
 <nav class="navbar navbar-expand-lg fixed-top premium-nav">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="#" onclick="navigateIfProfileComplete(showDashboard, 'dashboard')">
+    <div class="container-fluid d-flex justify-content-between align-items-center">
+        
+        <!-- 1. Mobile Menu Toggle (Far Left) -->
+        <!-- NOTE: The 'order-first' class ensures it comes before the brand on mobile/small screens -->
+        <button class="navbar-toggler d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- 2. Brand Logo and Title (Centered on Mobile, Left on Desktop) -->
+        <!-- On mobile, flex-grow-1 is added dynamically below to balance spacing -->
+        <a class="navbar-brand text-center" style="flex-grow: 1; margin: 0; padding: 0 10px;" href="#" onclick="navigateIfProfileComplete(showDashboard, 'dashboard')">
             <img src="lenslogo.png" alt="Lens Prescription Logo" class="nav-logo">
             <span>Lens Prescription</span>
         </a>
         
-        <!-- START: Mobile Logout Icon (Visible < lg) -->
+        <!-- 3. Mobile Logout Icon (Far Right) -->
         <button onclick="logoutUser()" class="btn btn-logout premium-logout d-lg-none" id="mobileLogoutIcon">
             <i class="fas fa-sign-out-alt"></i>
         </button>
-        <!-- END: Mobile Logout Icon -->
 
-        <!-- Mobile Menu Toggle -->
-        <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        
         <!-- Desktop Menu (hidden on mobile) -->
         <div class="collapse navbar-collapse d-none d-lg-flex">
             <ul class="navbar-nav me-auto">
@@ -88,8 +91,8 @@
             </button>
         </div>
 
-      <!-- Offcanvas Mobile Menu -->
-<div class="offcanvas offcanvas-end d-lg-none" tabindex="-1" id="offcanvasNavbar">
+      <!-- Offcanvas Mobile Menu (FIXED: offcanvas-start for left-side) -->
+<div class="offcanvas offcanvas-start d-lg-none" tabindex="-1" id="offcanvasNavbar">
     <div class="offcanvas-header premium-offcanvas-header">
         <h5 class="offcanvas-title">
             <i class="fas fa-bars me-2"></i>Navigation Menu
@@ -127,7 +130,7 @@
                 </li>
             </ul>
             
-            <!-- Removed the Logout Button from the Offcanvas Footer -->
+            <!-- Footer -->
             <div class="p-3 border-top">
                 <small class="text-muted">@2025 Lens-Prescription-App developed by <strong>MANITEJA (MNR DEVELOPERS)</strong></small>
             </div>
