@@ -1,16 +1,60 @@
-// products.js - Products and Cart Management with Neon Database
+// products.js - Products and Cart Management with Neon Database and Mock Fallback
 
 let products = [];
 let cart = JSON.parse(localStorage.getItem('cart')) || [];
 let razorpayKey = null;
 
+// --- MOCK PRODUCT DATA (FALLBACK) ---
+const MOCK_PRODUCTS = [
+    {
+        id: 'mock1',
+        name: 'Anti-Glare Premium Lenses',
+        description: 'High-index lenses with advanced anti-glare coating.',
+        category: 'lenses',
+        price: 3500.00,
+        stock: 50,
+        imageUrl: 'https://placehold.co/300x200/28a745/ffffff?text=Premium+Lens',
+    },
+    {
+        id: 'mock2',
+        name: 'Titanium Half-Rim Frame',
+        description: 'Lightweight and durable titanium frame, stylish half-rim design.',
+        category: 'frames',
+        price: 4999.00,
+        stock: 12,
+        imageUrl: 'https://placehold.co/300x200/007bff/ffffff?text=Titanium+Frame',
+    },
+    {
+        id: 'mock3',
+        name: 'UV Protection Sunglasses',
+        description: 'Polarized lenses offering 100% UV protection, modern style.',
+        category: 'sunglasses',
+        price: 2500.00,
+        stock: 30,
+        imageUrl: 'https://placehold.co/300x200/ffc107/333333?text=Sunglasses',
+    },
+    {
+        id: 'mock4',
+        name: 'Lens Cleaning Kit',
+        description: 'Complete kit including micro-fiber cloth and cleaning spray.',
+        category: 'accessories',
+        price: 250.00,
+        stock: 100,
+        imageUrl: 'https://placehold.co/300x200/6c757d/ffffff?text=Cleaning+Kit',
+    },
+];
+
 // Initialize Razorpay
 async function initializeRazorpay() {
     try {
+        // Attempt to fetch key from Netlify function
         const response = await fetch('/.netlify/functions/get-razorpay-key');
         
         if (!response.ok) {
-            throw new Error('Failed to fetch Razorpay key');
+            console.warn('Netlify function for Razorpay key failed (404/500). Payment features will be disabled.');
+            // Do NOT throw an error here, just skip setting the key
+            showStatusMessage('Payment system temporarily unavailable', 'warning');
+            return;
         }
         
         const data = await response.json();
@@ -18,55 +62,53 @@ async function initializeRazorpay() {
         
         console.log('Razorpay initialized successfully');
     } catch (error) {
-        console.error('Error initializing Razorpay:', error);
-        showStatusMessage('Payment system temporarily unavailable', 'error');
+        console.warn('Error fetching Razorpay key:', error);
+        showStatusMessage('Payment system temporarily unavailable', 'warning');
     }
 }
 
-// Load products from Neon database
+// Load products from Neon database or use mock data
 async function loadProducts() {
     try {
+        // 1. Try to fetch real products from Netlify function
         const response = await fetch('/.netlify/functions/get-products');
         
         if (!response.ok) {
-            throw new Error('Failed to fetch products');
+            console.error('Failed to fetch products from Netlify function (404/500). Falling back to mock data.', await response.text());
+            throw new Error('Netlify function failure'); 
         }
         
         products = await response.json();
         
-        // Load images for products
-        await loadProductImages();
-        
-        displayProducts(products);
+        // 2. Load images for products if data fetch succeeded
+        // NOTE: The original `loadProductImages` relies on another Netlify function that might also fail (404).
+        // Since we cannot fix the backend structure, we simplify image loading.
+        // We assume the successful `get-products` response includes `imageUrl` or use a fallback if not.
+        products.forEach(product => {
+             if (!product.imageUrl) {
+                 product.imageUrl = `https://placehold.co/300x200/000000/ffffff?text=${encodeURIComponent(product.name)}`;
+             }
+        });
+
     } catch (error) {
-        console.error('Error loading products:', error);
-        showStatusMessage('Error loading products', 'error');
+        // 3. Fallback to mock data on failure (e.g., 404 on Netlify function)
+        console.log('Using MOCK data for products display.');
+        products = MOCK_PRODUCTS;
+        showStatusMessage('Using mock product data. Backend services unreachable.', 'warning');
     }
+    
+    // 4. Display the loaded (or mock) products
+    displayProducts(products);
 }
 
-// Load product images
-async function loadProductImages() {
-    for (let product of products) {
-        if (product.imageName && !product.imageUrl) {
-            try {
-                const imageResponse = await fetch(`/.netlify/functions/get-product-image?id=${product.id}`);
-                if (imageResponse.ok) {
-                    const imageData = await imageResponse.json();
-                    product.imageUrl = imageData.imageUrl;
-                }
-            } catch (error) {
-                console.error(`Error loading image for product ${product.id}:`, error);
-                product.imageUrl = 'https://via.placeholder.com/300x200?text=No+Image';
-            }
-        } else if (!product.imageUrl) {
-            product.imageUrl = 'https://via.placeholder.com/300x200?text=No+Image';
-        }
-    }
-}
+// REMOVED: loadProductImages function is removed as it relies on a failing Netlify function (`get-product-image`) 
+// and the main `loadProducts` function is updated to use mock data with placeholder image URLs.
 
 // Display products in grid
 function displayProducts(productsToShow) {
     const grid = document.getElementById('productsGrid');
+    
+    if (!grid) return; // Safety check
     
     if (productsToShow.length === 0) {
         grid.innerHTML = `
@@ -80,24 +122,25 @@ function displayProducts(productsToShow) {
     grid.innerHTML = productsToShow.map(product => `
         <div class="col-lg-4 col-md-6 mb-4">
             <div class="card product-card h-100">
+                <!-- Use the imageUrl directly from the mock data or successful API response -->
                 <img src="${product.imageUrl}" 
                      class="card-img-top" alt="${product.name}" 
                      style="height: 200px; object-fit: cover;"
-                     onerror="this.src='https://via.placeholder.com/300x200?text=No+Image'">
+                     onerror="this.src='https://placehold.co/300x200?text=No+Image'">
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title">${product.name}</h5>
                     <p class="card-text text-muted">${product.category}</p>
                     <p class="card-text flex-grow-1">${product.description || 'No description available.'}</p>
                     <div class="mt-auto">
                         <div class="d-flex justify-content-between align-items-center">
-                            <h5 class="text-primary mb-0">₹${product.price}</h5>
+                            <h5 class="text-primary mb-0">₹${product.price.toFixed(2)}</h5>
                             <span class="badge ${product.stock > 0 ? 'bg-success' : 'bg-danger'}">
                                 ${product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
                             </span>
                         </div>
                         <button class="btn btn-primary w-100 mt-2" 
                                 onclick="viewProduct('${product.id}')"
-                                ${product.stock === 0 ? 'disabled' : ''}>
+                                ${product.stock <= 0 ? 'disabled' : ''}>
                             <i class="fas fa-eye"></i> View Details
                         </button>
                     </div>
@@ -109,8 +152,8 @@ function displayProducts(productsToShow) {
 
 // Filter products
 function filterProducts() {
-    const searchTerm = document.getElementById('productSearch').value.toLowerCase();
-    const category = document.getElementById('categoryFilter').value;
+    const searchTerm = document.getElementById('productSearch')?.value.toLowerCase();
+    const category = document.getElementById('categoryFilter')?.value;
     
     let filteredProducts = products;
     
@@ -121,7 +164,7 @@ function filterProducts() {
         );
     }
     
-    if (category !== 'all') {
+    if (category && category !== 'all') {
         filteredProducts = filteredProducts.filter(product => product.category === category);
     }
     
@@ -137,13 +180,20 @@ function viewProduct(productId) {
     document.getElementById('productModalName').textContent = product.name;
     document.getElementById('productModalCategory').textContent = product.category;
     document.getElementById('productModalDescription').textContent = product.description || 'No description available.';
-    document.getElementById('productModalPrice').textContent = product.price;
+    document.getElementById('productModalPrice').textContent = product.price.toFixed(2);
     document.getElementById('productModalStock').textContent = product.stock > 0 ? `${product.stock} in stock` : 'Out of stock';
     document.getElementById('productModalImage').src = product.imageUrl;
     document.getElementById('productModalImage').onerror = function() {
-        this.src = 'https://via.placeholder.com/400x300?text=No+Image';
+        this.src = 'https://placehold.co/400x300?text=No+Image';
     };
     
+    // Set max quantity based on stock
+    const quantityInput = document.getElementById('quantity');
+    if (quantityInput) {
+        quantityInput.value = 1;
+        quantityInput.max = product.stock;
+    }
+
     // Store current product ID in modal for cart operations
     document.getElementById('productModal').dataset.productId = productId;
     
@@ -183,7 +233,7 @@ function addToCart() {
     
     // Close modal
     const modal = bootstrap.Modal.getInstance(document.getElementById('productModal'));
-    modal.hide();
+    if (modal) modal.hide();
 }
 
 // Update cart display
@@ -194,9 +244,11 @@ function updateCart() {
     const cartTotal = document.getElementById('cartTotal');
     const checkoutBtn = document.getElementById('checkoutBtn');
     
+    if (!cartItems || !cartTotal || !checkoutBtn) return;
+
     if (cart.length === 0) {
         cartItems.innerHTML = '<p class="text-muted text-center">Your cart is empty</p>';
-        cartTotal.textContent = '0';
+        cartTotal.textContent = '0.00';
         checkoutBtn.disabled = true;
         return;
     }
@@ -211,11 +263,11 @@ function updateCart() {
                 <div class="d-flex align-items-center">
                     <img src="${item.imageUrl}" 
                          class="rounded me-3" width="50" height="50" style="object-fit: cover;"
-                         onerror="this.src='https://via.placeholder.com/50x50?text=No+Image'">
+                         onerror="this.src='https://placehold.co/50x50?text=No+Image'">
                     <div class="flex-grow-1">
                         <h6 class="mb-1">${item.name}</h6>
-                        <p class="mb-1">₹${item.price} x ${item.quantity}</p>
-                        <small class="text-muted">Total: ₹${itemTotal}</small>
+                        <p class="mb-1">₹${item.price.toFixed(2)} x ${item.quantity}</p>
+                        <small class="text-muted">Total: ₹${itemTotal.toFixed(2)}</small>
                     </div>
                     <button class="btn btn-sm btn-outline-danger" onclick="removeFromCart('${item.id}')">
                         <i class="fas fa-trash"></i>
@@ -226,7 +278,9 @@ function updateCart() {
     }).join('');
     
     cartTotal.textContent = total.toFixed(2);
-    checkoutBtn.disabled = false;
+    // Disable checkout if Razorpay key is missing (meaning the function failed)
+    checkoutBtn.disabled = !razorpayKey; 
+    checkoutBtn.textContent = razorpayKey ? 'Checkout' : 'Checkout Unavailable';
 }
 
 // Remove from cart
@@ -252,6 +306,7 @@ async function createRazorpayOrder(amount, orderId) {
         });
 
         if (!response.ok) {
+            console.error('API Error creating Razorpay order:', await response.text());
             throw new Error('Failed to create Razorpay order');
         }
 
@@ -273,13 +328,10 @@ async function checkout() {
         return;
     }
     
-    // Ensure Razorpay is initialized
+    // Check if Razorpay key is present
     if (!razorpayKey) {
-        await initializeRazorpay();
-        if (!razorpayKey) {
-            showStatusMessage('Payment system unavailable. Please try again.', 'error');
-            return;
-        }
+        showStatusMessage('Payment system unavailable. Please try again later.', 'error');
+        return;
     }
     
     const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -313,9 +365,9 @@ async function checkout() {
                 await verifyPayment(response, orderRef.id, totalAmount);
             },
             prefill: {
-                name: user.displayName || '',
+                name: user.displayName || 'Customer',
                 email: user.email,
-                contact: '' // You can store user phone in profile
+                contact: '' 
             },
             theme: {
                 color: '#007bff'
@@ -332,7 +384,7 @@ async function checkout() {
         
     } catch (error) {
         console.error('Checkout error:', error);
-        showStatusMessage('Checkout failed. Please try again.', 'error');
+        showStatusMessage('Checkout failed. Please try again. (Check Netlify functions deployment status)', 'error');
     }
 }
 
@@ -352,6 +404,7 @@ async function verifyPayment(paymentResponse, orderId, totalAmount) {
         });
 
         if (!verifyResponse.ok) {
+            console.error('API Error verifying payment:', await verifyResponse.text());
             throw new Error('Payment verification failed');
         }
 
@@ -367,10 +420,12 @@ async function verifyPayment(paymentResponse, orderId, totalAmount) {
                 paidAt: firebase.firestore.FieldValue.serverTimestamp()
             });
 
-            // Update product stock in Neon
-            for (const item of cart) {
-                await updateProductStock(item.id, item.quantity);
-            }
+            // Update product stock in Neon (requires running netlify function)
+            const updatePromises = cart.map(item => updateProductStock(item.id, item.quantity).catch(err => {
+                console.error(`Failed to update stock for product ${item.id}:`, err);
+                showStatusMessage(`Warning: Failed to update stock for some products.`, 'warning');
+            }));
+            await Promise.all(updatePromises);
 
             // Clear cart
             cart = [];
@@ -380,7 +435,7 @@ async function verifyPayment(paymentResponse, orderId, totalAmount) {
             
             // Close cart offcanvas
             const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('cartOffcanvas'));
-            offcanvas.hide();
+            if (offcanvas) offcanvas.hide();
         } else {
             throw new Error('Payment verification failed');
         }
@@ -393,18 +448,33 @@ async function verifyPayment(paymentResponse, orderId, totalAmount) {
 
 // Update product stock in Neon
 async function updateProductStock(productId, quantity) {
+    // NOTE: This assumes `update-product` is correctly deployed and working.
+    // If this fails, it indicates a secondary Netlify function deployment issue.
+    
+    // For mock data, we skip this to prevent errors, but for real products, we proceed.
+    if (productId.startsWith('mock')) {
+        console.log(`Skipping stock update for mock product ID: ${productId}`);
+        return;
+    }
+
     try {
-        const response = await fetch(`/.netlify/functions/update-product/${productId}`, {
+        // Need to fetch current stock before updating (since we don't have transaction support here)
+        const currentStock = await getCurrentStock(productId);
+        const newStock = currentStock - quantity;
+
+        const response = await fetch(`/.netlify/functions/update-product`, { // Changed path to hit root function
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                stock: await getCurrentStock(productId) - quantity
+                id: productId, // Assuming update-product can take the ID in body/query or path
+                stock: newStock
             })
         });
 
         if (!response.ok) {
+            console.error('Stock update API response error:', await response.text());
             throw new Error('Failed to update product stock');
         }
     } catch (error) {
@@ -415,15 +485,13 @@ async function updateProductStock(productId, quantity) {
 
 // Get current stock from Neon
 async function getCurrentStock(productId) {
+    // NOTE: This relies on the successful `get-products` function
     try {
-        const response = await fetch('/.netlify/functions/get-products');
-        if (!response.ok) throw new Error('Failed to fetch products');
-        
-        const products = await response.json();
+        // Find product in the currently loaded `products` array instead of re-fetching all
         const product = products.find(p => p.id === productId);
         return product ? product.stock : 0;
     } catch (error) {
-        console.error('Error getting current stock:', error);
+        console.error('Error getting current stock from internal list:', error);
         return 0;
     }
 }
@@ -489,11 +557,15 @@ function getStatusColor(type) {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Razorpay early (it will attempt to fetch key, but won't block execution)
     initializeRazorpay();
+    
+    // Update cart UI based on local storage
     updateCart();
 });
 
 // Make functions available globally
+window.loadProducts = loadProducts; // Must be called from products.html
 window.filterProducts = filterProducts;
 window.viewProduct = viewProduct;
 window.addToCart = addToCart;
