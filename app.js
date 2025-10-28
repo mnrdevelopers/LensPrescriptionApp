@@ -264,7 +264,7 @@ function showStatusMessage(message, type = 'info') {
     existingMessages.forEach(msg => msg.remove());
 
     const statusMessage = document.createElement('div');
-    statusMessage.className = `status-message alert alert-${type}`;
+    statusMessage.className = `status-message alert status-${type}`;
     statusMessage.innerHTML = `
         <i class="fas fa-${getStatusIcon(type)}"></i>
         ${message}
@@ -365,6 +365,8 @@ function installPWA() {
  */
 function navigateIfProfileComplete(navFunction, sectionName) {
     if (isProfileComplete) {
+        // Ensure navigation is enabled before proceeding
+        enableNavigationButtons();
         navFunction();
         lastValidSection = sectionName; // Update last valid section
     } else {
@@ -377,7 +379,7 @@ function showDashboard() {
         hideAllSections();
         const dashboardSection = document.getElementById('dashboardSection');
         if (dashboardSection) dashboardSection.classList.add('active');
-        updateActiveNavLink('dashboard');
+        updateActiveNavLink('showDashboard'); // Use function name for targeting
         history.pushState({ page: 'dashboard' }, 'Dashboard', 'app.html#dashboard');
     }, 'dashboard');
 }
@@ -387,7 +389,7 @@ function showPrescriptionForm() {
         hideAllSections();
         const formSection = document.getElementById('prescriptionFormSection');
         if (formSection) formSection.classList.add('active');
-        updateActiveNavLink('prescription');
+        updateActiveNavLink('showPrescriptionForm'); // Use function name for targeting
         resetForm();
         
         // **FIX: Update lastValidSection to track prescription form**
@@ -402,7 +404,7 @@ function showPrescriptions() {
         hideAllSections();
         const prescriptionsSection = document.getElementById('prescriptionsSection');
         if (prescriptionsSection) prescriptionsSection.classList.add('active');
-        updateActiveNavLink('prescriptions');
+        updateActiveNavLink('showPrescriptions'); // Use function name for targeting
         fetchPrescriptions();
         history.pushState({ page: 'prescriptions' }, 'View Prescriptions', 'app.html#prescriptions');
     }, 'prescriptions');
@@ -413,7 +415,7 @@ function showReports() {
         hideAllSections();
         const reportsSection = document.getElementById('reportsSection');
         if (reportsSection) reportsSection.classList.add('active');
-        updateActiveNavLink('reports');
+        updateActiveNavLink('showReports'); // Use function name for targeting
         history.pushState({ page: 'reports' }, 'Reports', 'app.html#reports');
     }, 'reports');
 }
@@ -427,6 +429,15 @@ function showProfileSetup(isForced) {
     const setupSection = document.getElementById('profileSetupSection');
     if (setupSection) setupSection.classList.add('active');
     
+    // Disable navigation if forced
+    if (isForced) {
+        disableNavigationButtons();
+    } else {
+        // If not forced (user is just editing), keep navigation enabled
+        enableNavigationButtons();
+    }
+    updateActiveNavLink('showProfileSetup'); // Set active state for the profile link
+
     // **FIX: Track where we're coming from for proper navigation back**
     const currentState = history.state?.page;
     if (currentState === 'form') {
@@ -434,28 +445,21 @@ function showProfileSetup(isForced) {
         lastValidSection = 'form';
     }
     
-    // Disable navigation if forced
-    const navButtons = document.querySelectorAll('.nav-link:not(.btn-logout)');
-    navButtons.forEach(btn => btn.style.pointerEvents = isForced ? 'none' : 'auto');
-    
     // Hide continue button if just editing
     const saveBtn = document.getElementById('saveSetupProfileBtn');
     if (saveBtn) {
         saveBtn.textContent = isForced ? 'Save Profile & Continue' : 'Save Changes';
     }
 
-    // Populate current data for editing
+    // Populate current data for editing (FIXED to fetch from localStorage)
     if (!isForced) {
-        // If profile is already complete, use the data loaded in updateProfileUI
-        const clinicName = document.getElementById('clinicName')?.textContent;
-        const optometristName = document.getElementById('optometristName')?.textContent;
-        const address = document.getElementById('clinicAddress')?.textContent;
-        const contactNumber = document.getElementById('contactNumber')?.textContent;
+        // If profile is already complete, use the data loaded in local storage
+        const userData = JSON.parse(localStorage.getItem('userProfile') || '{}');
         
-        document.getElementById('setupClinicName').value = clinicName || '';
-        document.getElementById('setupOptometristName').value = optometristName || '';
-        document.getElementById('setupAddress').value = address || '';
-        document.getElementById('setupContactNumber').value = contactNumber || '';
+        document.getElementById('setupClinicName').value = userData.clinicName || '';
+        document.getElementById('setupOptometristName').value = userData.optometristName || '';
+        document.getElementById('setupAddress').value = userData.address || '';
+        document.getElementById('setupContactNumber').value = userData.contactNumber || '';
     } else {
          // Clear fields for new user or prompt
          document.getElementById('setupClinicName').value = '';
@@ -485,9 +489,39 @@ function hideAllSections() {
     sections.forEach(section => section.classList.remove('active'));
 }
 
-function updateActiveNavLink(activeSection) {
-    const navLinks = document.querySelectorAll('.nav-link');
-    navLinks.forEach(link => link.classList.remove('active'));
+/**
+ * Updates the active state of navigation links.
+ * @param {string} activeFunction The name of the function called by the active link (e.g., 'showDashboard').
+ */
+function updateActiveNavLink(activeFunction) {
+    const navLinks = document.querySelectorAll('.nav-link-custom');
+    navLinks.forEach(link => {
+        link.classList.remove('active');
+        // Check both desktop and mobile links (based on the onclick attribute)
+        if (link.getAttribute('onclick')?.includes(activeFunction)) {
+            link.classList.add('active');
+        }
+    });
+}
+
+/**
+ * Disables all main navigation buttons.
+ */
+function disableNavigationButtons() {
+    const navButtons = document.querySelectorAll('.nav-link-custom');
+    navButtons.forEach(btn => {
+        btn.classList.add('nav-disabled');
+    });
+}
+
+/**
+ * Enables all main navigation buttons.
+ */
+function enableNavigationButtons() {
+    const navButtons = document.querySelectorAll('.nav-link-custom');
+    navButtons.forEach(btn => {
+        btn.classList.remove('nav-disabled');
+    });
 }
 
 // User Profile Management
@@ -522,6 +556,8 @@ async function loadUserProfile() {
                 isProfileComplete = true;
                 updateProfileUI(userData);
                 localStorage.setItem('userProfile', JSON.stringify(userData));
+                // Ensure buttons are enabled if loading dashboard successfully
+                enableNavigationButtons(); 
                 showDashboard(); // Default to dashboard if everything is fine
                 return;
             }
@@ -529,6 +565,7 @@ async function loadUserProfile() {
             // If document exists but is incomplete/placeholder (e.g., from an old flow)
             console.warn('User profile found but incomplete. Forcing setup.');
             isProfileComplete = false;
+            // showProfileSetup(true) will be called, which handles disabling buttons
             showProfileSetup(true);
 
         } else {
@@ -536,6 +573,7 @@ async function loadUserProfile() {
             
             // This is a brand new user after registration (or an old user whose doc was deleted)
             isProfileComplete = false;
+            // showProfileSetup(true) will be called, which handles disabling buttons
             showProfileSetup(true);
         }
     } catch (error) {
@@ -548,6 +586,7 @@ async function loadUserProfile() {
             isProfileComplete = userData.clinicName && userData.optometristName;
             updateProfileUI(userData);
             if (isProfileComplete) {
+                enableNavigationButtons();
                 showDashboard();
             } else {
                 showProfileSetup(true);
@@ -600,24 +639,20 @@ async function saveSetupProfile() {
         updateProfileUI(updatedData);
         localStorage.setItem('userProfile', JSON.stringify(updatedData));
         
-        // Re-enable navigation
-        const navButtons = document.querySelectorAll('.nav-link:not(.btn-logout)');
-        navButtons.forEach(btn => btn.style.pointerEvents = 'auto');
+        // **FIX: Re-enable navigation explicitly**
+        enableNavigationButtons();
 
         // **FIX: Determine where to navigate after saving**
         // Check if we came from the prescription form (edit profile scenario)
         const cameFromPrescriptionForm = document.getElementById('prescriptionFormSection')?.classList.contains('active') || 
-                                        history.state?.page === 'form';
+                                        lastValidSection === 'form';
         
         if (cameFromPrescriptionForm) {
             // If editing profile from prescription form, go back to form
             showPrescriptionForm();
-        } else if (lastValidSection === 'dashboard' || !lastValidSection) {
+        } else {
             // Default to dashboard
             showDashboard();
-        } else {
-            // For other cases, use browser back
-            window.history.back();
         }
 
     } catch (error) {
@@ -2044,11 +2079,11 @@ window.showPrescriptionForm = showPrescriptionForm;
 window.showPrescriptions = showPrescriptions;
 window.showReports = showReports;
 window.showPreview = showPreview;
+window.showProfileSetup = showProfileSetup; // New dedicated setup function
 window.openEditProfile = openEditProfile; // Will now redirect to showProfileSetup(false)
 window.closeEditProfile = closeEditProfile; // Retained for modal compatibility
 window.saveProfile = saveProfile; // Retained for modal compatibility
 window.saveSetupProfile = saveSetupProfile; // New dedicated save function
-window.showProfileSetup = showProfileSetup; // New dedicated setup function
 window.submitPrescription = submitPrescription;
 window.filterPrescriptions = filterPrescriptions;
 window.generatePDF = generatePDF;
@@ -2060,6 +2095,9 @@ window.fetchMonthlyReport = fetchMonthlyReport;
 window.logoutUser = logoutUser;
 window.installPWA = installPWA;
 window.resetStats = resetStats;
+window.enableNavigationButtons = enableNavigationButtons;
+window.disableNavigationButtons = disableNavigationButtons;
+
 
 // Add this function to debug Firestore data
 async function debugFirestoreData() {
