@@ -1191,16 +1191,16 @@ function loadPreviewData(data) {
 }
 
 /**
- * Renders the PDF in a new window using html2pdf and provides a download button.
+ * Renders the preview content as a downloadable PNG image.
  */
 function generatePDF() {
-    // We disable the button loading and show status message temporarily.
+    // The name is misleading, but we are now generating an IMAGE (PNG) for download.
     const btn = document.querySelector('.btn-download');
     if (btn) {
         btn.classList.add('btn-loading');
-        btn.textContent = 'Generating PDF...';
+        btn.textContent = 'Generating Image...';
     }
-    showStatusMessage('Generating PDF...', 'info');
+    showStatusMessage('Generating Image for Download...', 'info');
 
     const patientName = document.getElementById('previewPatientName')?.textContent || 'Patient';
     const shortDate = new Date().toLocaleDateString('en-IN', { 
@@ -1208,69 +1208,38 @@ function generatePDF() {
         month: '2-digit', 
         year: 'numeric' 
     }).replace(/\//g, '-');
-    const filename = `Prescription_${patientName}_${shortDate}.pdf`;
+    const filename = `Prescription_${patientName}_${shortDate}.png`;
 
     const element = document.getElementById('prescriptionPreview');
     
-    // 1. Create a clone with minimal styling properties for reliable PDF generation
-    const elementClone = element.cloneNode(true);
-    elementClone.className = 'pdf-export-content'; // Add a unique class for targeting
-    elementClone.style.margin = '0';
-    elementClone.style.padding = '10px';
-    elementClone.style.background = 'white';
-    elementClone.style.color = 'black';
-    
-    // Attach to body temporarily for html2canvas to render it accurately
-    elementClone.style.position = 'absolute';
-    elementClone.style.left = '-9999px';
-    document.body.appendChild(elementClone);
-
-    const opt = {
-        margin: [5, 5, 5, 5],
-        filename: filename,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
-            scale: 3,
-            useCORS: true,
-            allowTaint: true, // Allow tainting for local images
-            backgroundColor: '#ffffff'
-        },
-        jsPDF: { 
-            unit: 'mm', 
-            format: 'a4', // Default to A4 for a clear downloadable PDF
-            orientation: 'portrait' 
-        }
-    };
-
-    html2pdf().set(opt).from(elementClone).toPdf().get('pdf').then(function(pdf) {
-        // Convert the PDF blob to a data URL
-        const pdfBlob = new Blob([pdf.output('blob')], {type: 'application/pdf'});
-        const pdfUrl = URL.createObjectURL(pdfBlob);
+    // Use html2canvas to render the preview content as a Canvas element
+    html2canvas(element, {
+        scale: 3, // High resolution
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff'
+    }).then(canvas => {
+        // Convert canvas to a data URL
+        const imageDataURL = canvas.toDataURL('image/png');
         
-        // Open the isolated preview page
-        openPDFPreviewWindow(pdfUrl, filename);
-        
-        // **NEW FIX:** Use the internal download method to trigger the download directly.
+        // Trigger download using a temporary link
         const downloadLink = document.createElement('a');
-        downloadLink.href = pdfUrl;
+        downloadLink.href = imageDataURL;
         downloadLink.download = filename;
         document.body.appendChild(downloadLink);
         downloadLink.click();
         document.body.removeChild(downloadLink);
-        URL.revokeObjectURL(pdfUrl); // Clean up the blob URL
 
+        showStatusMessage('Image (PNG) downloaded successfully!', 'success');
+        
     }).catch((error) => {
-        console.error('PDF generation error:', error);
-        showStatusMessage('PDF generation failed. See console for details.', 'error');
+        console.error('Image generation/download error:', error);
+        showStatusMessage('Export failed. See console for details.', 'error');
         
     }).finally(() => {
-        // Ensure the clone is removed and button state is reset
-        if (document.querySelector('.pdf-export-content')) {
-            document.body.removeChild(document.querySelector('.pdf-export-content'));
-        }
         if (btn) {
             btn.classList.remove('btn-loading');
-            btn.textContent = 'PDF';
+            btn.textContent = 'PDF'; // Keep PDF label for user consistency, but it exports PNG
         }
     });
 }
