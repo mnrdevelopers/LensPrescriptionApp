@@ -34,28 +34,26 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
- <!-- Enhanced Navigation - Updated with 'premium-nav' class and Logo -->
+ <!-- Enhanced Navigation - Updated for Premium Mobile Layout -->
 <nav class="navbar navbar-expand-lg fixed-top premium-nav">
-    <div class="container-fluid d-flex justify-content-between align-items-center">
+    <div class="container-fluid">
         
-        <!-- 1. Mobile Menu Toggle (Far Left) -->
-        <!-- NOTE: The 'order-first' class ensures it comes before the brand on mobile/small screens -->
-        <button class="navbar-toggler d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+        <!-- 1. Mobile Menu Toggle (Left Side on Mobile) -->
+        <button class="navbar-toggler d-lg-none me-auto" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
             <span class="navbar-toggler-icon"></span>
         </button>
-
+        
         <!-- 2. Brand Logo and Title (Centered on Mobile, Left on Desktop) -->
-        <!-- On mobile, flex-grow-1 is added dynamically below to balance spacing -->
-        <a class="navbar-brand text-center" style="flex-grow: 1; margin: 0; padding: 0 10px;" href="#" onclick="navigateIfProfileComplete(showDashboard, 'dashboard')">
+        <a class="navbar-brand me-lg-0" href="#" onclick="navigateIfProfileComplete(showDashboard, 'dashboard')">
             <img src="lenslogo.png" alt="Lens Prescription Logo" class="nav-logo">
             <span>Lens Prescription</span>
         </a>
         
-        <!-- 3. Mobile Logout Icon (Far Right) -->
-        <button onclick="logoutUser()" class="btn btn-logout premium-logout d-lg-none" id="mobileLogoutIcon">
+        <!-- 3. Mobile Logout Button (Right Side on Mobile) -->
+        <button onclick="logoutUser()" class="btn btn-logout premium-logout d-lg-none ms-auto" id="mobileLogoutIcon">
             <i class="fas fa-sign-out-alt"></i>
         </button>
-
+        
         <!-- Desktop Menu (hidden on mobile) -->
         <div class="collapse navbar-collapse d-none d-lg-flex">
             <ul class="navbar-nav me-auto">
@@ -85,17 +83,16 @@
                     </a>
                 </li>
             </ul>
-            <!-- Desktop Logout Button (Visible >= lg) -->
             <button onclick="logoutUser()" class="btn btn-logout premium-logout">
                 <i class="fas fa-sign-out-alt"></i> Logout
             </button>
         </div>
 
-      <!-- Offcanvas Mobile Menu (FIXED: offcanvas-start for left-side) -->
-<div class="offcanvas offcanvas-start d-lg-none" tabindex="-1" id="offcanvasNavbar">
+      <!-- Offcanvas Mobile Menu -->
+<div class="offcanvas offcanvas-end d-lg-none" tabindex="-1" id="offcanvasNavbar">
     <div class="offcanvas-header premium-offcanvas-header">
         <h5 class="offcanvas-title">
-            <i class="fas fa-bars me-2"></i> Menu
+            <i class="fas fa-bars me-2"></i>Navigation Menu
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
     </div>
@@ -130,8 +127,15 @@
                 </li>
             </ul>
             
+            <!-- Logout Button -->
+            <div class="p-3 border-top d-lg-none">
+                <button onclick="logoutUser()" class="btn btn-logout premium-logout w-100">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+            
             <!-- Footer -->
-            <div class="p-3 border-top">
+            <div class="p-3 border-top mt-auto">
                 <small class="text-muted">@2025 Lens-Prescription-App developed by <strong>MANITEJA (MNR DEVELOPERS)</strong></small>
             </div>
         </div>
@@ -639,8 +643,8 @@
 
                 <!-- Buttons -->
                 <div class="preview-buttons">
-                    <button onclick="generateImage()" class="btn btn-download">
-                        <i class="fas fa-image"></i> Download 
+                    <button onclick="downloadImage()" class="btn btn-download">
+                        <i class="fas fa-download"></i> Download Image
                     </button>
                     <button onclick="printPreview()" class="btn btn-print">
                         <i class="fas fa-print"></i> Print
@@ -692,7 +696,3 @@
     </script>
 </body>
 </html>
-
-
-
-
