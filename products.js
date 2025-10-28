@@ -29,7 +29,8 @@ async function loadProducts() {
         const response = await fetch('/.netlify/functions/get-products');
         
         if (!response.ok) {
-            throw new Error('Failed to fetch products');
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
         }
         
         products = await response.json();
@@ -40,7 +41,10 @@ async function loadProducts() {
         displayProducts(products);
     } catch (error) {
         console.error('Error loading products:', error);
-        showStatusMessage('Error loading products', 'error');
+        showStatusMessage(`Error loading products: ${error.message}`, 'error');
+        
+        // Display fallback products or empty state
+        displayProducts([]);
     }
 }
 
