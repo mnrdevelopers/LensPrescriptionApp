@@ -2746,3 +2746,27 @@ function addUsageCounterToDashboard() {
     }
 }
 
+// Update navigation with subscription status
+async function updateNavSubscriptionStatus() {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const subscription = await checkActiveSubscription(user.uid);
+    const navStatusElement = document.getElementById('navSubscriptionStatus');
+    
+    if (navStatusElement) {
+        if (subscription.active) {
+            navStatusElement.innerHTML = `
+                <span class="badge bg-success">
+                    <i class="fas fa-crown"></i> Premium
+                </span>
+            `;
+        } else {
+            navStatusElement.innerHTML = `
+                <span class="badge bg-warning">
+                    <i class="fas fa-user"></i> Free
+                </span>
+            `;
+        }
+    }
+}
