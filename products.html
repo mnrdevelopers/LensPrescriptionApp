@@ -48,6 +48,16 @@
                 <span>Lens Prescription</span>
             </a>
             
+            <!-- Cart Toggle Button -->
+            <div class="d-flex align-items-center">
+                <button class="btn btn-outline-primary me-2 position-relative" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cartBadge" style="display: none;">
+                        0
+                    </span>
+                </button>
+            </div>
+
             <!-- Mobile Logout -->
             <button onclick="logoutUser()" class="btn btn-logout premium-logout d-lg-none">
                 <i class="fas fa-sign-out-alt"></i>
@@ -94,9 +104,11 @@
                 <!-- Search and Filter -->
                 <div class="row mb-4">
                     <div class="col-md-6">
-                        <div class="search-bar">
-                            <input type="text" id="productSearch" placeholder="Search products..." onkeyup="filterProducts()">
-                            <button class="btn-search">Search</button>
+                        <div class="input-group">
+                            <input type="text" id="productSearch" class="form-control" placeholder="Search products..." onkeyup="filterProducts()">
+                            <button class="btn btn-outline-secondary" type="button" onclick="filterProducts()">
+                                <i class="fas fa-search"></i>
+                            </button>
                         </div>
                     </div>
                     <div class="col-md-6">
