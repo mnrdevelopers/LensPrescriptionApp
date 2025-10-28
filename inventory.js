@@ -2,7 +2,6 @@
 
 // NOTE: The API Key is now loaded dynamically from a Netlify function.
 let IMGBB_API_KEY = null; 
-
 let inventory = [];
 
 // --- Initialization: Load API Key and Inventory ---
@@ -16,26 +15,22 @@ async function loadImgbbApiKey() {
     try {
         const response = await fetch('/.netlify/functions/get-imgbb-key');
         if (!response.ok) {
-            throw new Error('Failed to load key from Netlify function.');
+            throw new Error('Failed to load ImgBB API key');
         }
         const data = await response.json();
         IMGBB_API_KEY = data.key;
-        console.log('ImgBB API Key loaded successfully.');
+        console.log('ImgBB API Key loaded successfully');
     } catch (error) {
-        console.error('CRITICAL: Could not load ImgBB API Key.', error);
-        showStatusMessage('Image upload is disabled. Key retrieval failed.', 'error');
-        // Set to a dummy value to prevent constant attempts if the function failed
-        IMGBB_API_KEY = 'DISABLED'; 
+        console.error('Error loading ImgBB API key:', error);
+        showStatusMessage('Image upload temporarily unavailable', 'error');
+        IMGBB_API_KEY = 'DISABLED';
     }
 }
 
-// Override loadInventory to ensure key is loaded first
-const originalLoadInventory = loadInventory;
-window.loadInventory = async function() {
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', async function() {
     await loadImgbbApiKey();
-    originalLoadInventory();
-};
-
+});
 
 // --- ImgBB Image Handling Functions ---
 
@@ -85,7 +80,6 @@ async function uploadImageToImgBB(imageFile) {
 // we will only remove the image URL from Firestore. The remote image will remain.
 
 // --- End ImgBB Image Handling Functions ---
-
 
 // Load inventory from Firestore
 async function loadInventory() {
