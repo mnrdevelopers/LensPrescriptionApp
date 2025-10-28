@@ -37,7 +37,7 @@
  <!-- Enhanced Navigation - Updated with 'premium-nav' class and Logo -->
 <nav class="navbar navbar-expand-lg fixed-top premium-nav">
     <div class="container-fluid">
-        <a class="navbar-brand" href="#" onclick="showDashboard()">
+        <a class="navbar-brand" href="#" onclick="navigateIfProfileComplete(showDashboard, 'dashboard')">
             <img src="lenslogo.png" alt="Lens Prescription Logo" class="nav-logo">
             <span>Lens Prescription</span>
         </a>
@@ -51,27 +51,27 @@
         <div class="collapse navbar-collapse d-none d-lg-flex">
             <ul class="navbar-nav me-auto">
                 <li class="nav-item">
-                    <a class="nav-link nav-link-custom" href="#" onclick="showDashboard()">
+                    <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showDashboard, 'dashboard')">
                         <i class="fas fa-tachometer-alt"></i> Dashboard
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link nav-link-custom" href="#" onclick="showPrescriptionForm()">
+                    <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showPrescriptionForm, 'form')">
                         <i class="fas fa-plus-circle"></i> Add Prescription
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link nav-link-custom" href="#" onclick="showPrescriptions()">
+                    <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showPrescriptions, 'prescriptions')">
                         <i class="fas fa-list"></i> View Prescriptions
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link nav-link-custom" href="#" onclick="showReports()">
+                    <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showReports, 'reports')">
                         <i class="fas fa-chart-bar"></i> Reports
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link nav-link-custom" href="#" onclick="showProfileSetup(false)">
+                    <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showProfileSetup, 'setup')">
                         <i class="fas fa-user-circle"></i> Profile
                     </a>
                 </li>
@@ -94,27 +94,27 @@
             <!-- Navigation Links -->
             <ul class="navbar-nav justify-content-start flex-grow-1 p-3">
                 <li class="nav-item">
-                    <a class="nav-link nav-link-custom" href="#" onclick="showDashboard()" data-bs-dismiss="offcanvas">
+                    <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showDashboard, 'dashboard')" data-bs-dismiss="offcanvas">
                         <i class="fas fa-tachometer-alt"></i> Dashboard
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link nav-link-custom" href="#" onclick="showPrescriptionForm()" data-bs-dismiss="offcanvas">
+                    <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showPrescriptionForm, 'form')" data-bs-dismiss="offcanvas">
                         <i class="fas fa-plus-circle"></i> Add Prescription
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link nav-link-custom" href="#" onclick="showPrescriptions()" data-bs-dismiss="offcanvas">
+                    <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showPrescriptions, 'prescriptions')" data-bs-dismiss="offcanvas">
                         <i class="fas fa-list"></i> View Prescriptions
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link nav-link-custom" href="#" onclick="showReports()" data-bs-dismiss="offcanvas">
+                    <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showReports, 'reports')" data-bs-dismiss="offcanvas">
                         <i class="fas fa-chart-bar"></i> Reports
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link nav-link-custom" href="#" onclick="showProfileSetup(false)" data-bs-dismiss="offcanvas">
+                    <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showProfileSetup, 'setup')" data-bs-dismiss="offcanvas">
                         <i class="fas fa-user-circle"></i> Edit Profile
                     </a>
                 </li>
@@ -205,13 +205,13 @@
                 </div>
 
                 <div class="button-group mt-5">
-                    <button onclick="showPrescriptionForm()" class="btn btn-primary">
+                    <button onclick="navigateIfProfileComplete(showPrescriptionForm, 'form')" class="btn btn-primary">
                         <i class="fas fa-plus-circle"></i> Add New Prescription
                     </button>
-                    <button onclick="showPrescriptions()" class="btn btn-secondary">
+                    <button onclick="navigateIfProfileComplete(showPrescriptions, 'prescriptions')" class="btn btn-secondary">
                         <i class="fas fa-list"></i> View Prescriptions
                     </button>
-                    <button onclick="showReports()" class="btn btn-tertiary">
+                    <button onclick="navigateIfProfileComplete(showReports, 'reports')" class="btn btn-tertiary">
                         <i class="fas fa-chart-bar"></i> View Reports
                     </button>
                 </div>
@@ -250,7 +250,7 @@
                             <p><strong>Date:</strong> <span id="currentDate"></span></p>
                         </div>
                     </div>
-                    <button onclick="openEditProfile()" class="btn btn-edit">Edit Profile</button>
+                    <button onclick="navigateIfProfileComplete(showProfileSetup, 'setup')" class="btn btn-edit">Edit Profile</button>
 
                     <!-- Edit Profile Modal -->
                     <div id="editProfileModal" class="modal-overlay">
@@ -512,7 +512,7 @@
         <!-- Preview Section -->
         <section id="previewSection" class="page-section">
             <div class="preview-container">
-                <button onclick="showPrescriptions()" class="btn btn-back">
+                <button onclick="navigateIfProfileComplete(showPrescriptions, 'prescriptions')" class="btn btn-back">
                     <i class="fas fa-arrow-left"></i> Back
                 </button>
 
