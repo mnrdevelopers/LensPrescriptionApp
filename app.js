@@ -2443,20 +2443,27 @@ async function convertToBlobUrl(imageData) {
     return URL.createObjectURL(blob);
 }
 
-// Initialize payment system
 async function initializePaymentSystem() {
     try {
         const response = await fetch('/.netlify/functions/get-razorpay-keys');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const data = await response.json();
         
-        if (data.razorpayKeyId) {
+        if (data.razorpayKeyId && data.razorpayKeyId !== 'DISABLED') {
             RAZORPAY_KEY_ID = data.razorpayKeyId;
             console.log('Razorpay keys loaded successfully');
         } else {
-            console.error('Failed to load Razorpay keys');
+            console.warn('Razorpay keys not configured or disabled');
+            RAZORPAY_KEY_ID = null;
         }
     } catch (error) {
-        console.error('Error loading Razorpay keys:', error);
+        console.warn('Razorpay keys not available, payment features disabled:', error);
+        RAZORPAY_KEY_ID = null;
+        // Don't show error message to user as this is an optional feature
     }
 }
 
@@ -2471,8 +2478,14 @@ async function checkPrescriptionLimit() {
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
         const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
-        // Check if user has active subscription
-        const subscription = await checkActiveSubscription(user.uid);
+        // Check if user has active subscription (with error handling)
+        let subscription = { active: false };
+        try {
+            subscription = await checkActiveSubscription(user.uid);
+        } catch (subError) {
+            console.warn('Subscription check failed, defaulting to free plan:', subError);
+        }
+
         if (subscription.active) {
             return true; // User has active subscription, no limit
         }
@@ -2490,14 +2503,22 @@ async function checkPrescriptionLimit() {
         updateUsageCounter(prescriptionCount);
 
         if (prescriptionCount >= FREE_PRESCRIPTION_LIMIT) {
-            showPaymentModal();
-            return false;
+            // Only show payment modal if Razorpay is configured
+            if (RAZORPAY_KEY_ID) {
+                showPaymentModal();
+                return false;
+            } else {
+                // If payment not configured, allow unlimited usage
+                console.warn('Payment not configured, allowing unlimited prescriptions');
+                return true;
+            }
         }
 
         return true;
     } catch (error) {
         console.error('Error checking prescription limit:', error);
-        return true; // Allow submission on error
+        // Allow submission on error to not block users
+        return true;
     }
 }
 
@@ -2530,18 +2551,22 @@ async function checkActiveSubscription(userId) {
         if (subscriptionDoc.exists) {
             const subscription = subscriptionDoc.data();
             const now = new Date();
-            const expiryDate = subscription.expiryDate.toDate();
             
-            return {
-                active: expiryDate > now,
-                plan: subscription.plan,
-                expiryDate: expiryDate
-            };
+            // Check if expiryDate exists and is a valid timestamp
+            if (subscription.expiryDate && typeof subscription.expiryDate.toDate === 'function') {
+                const expiryDate = subscription.expiryDate.toDate();
+                return {
+                    active: expiryDate > now,
+                    plan: subscription.plan,
+                    expiryDate: expiryDate
+                };
+            }
         }
 
         return { active: false };
     } catch (error) {
-        console.error('Error checking subscription:', error);
+        console.warn('Error checking subscription (permissions or network issue):', error);
+        // Return false to allow free usage if there's an error
         return { active: false };
     }
 }
