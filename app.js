@@ -50,7 +50,36 @@ function initializeApp() {
     setupEventListeners();
     setupPWA(); // Enhanced PWA setup
     
+    // Set initial date filter values for prescriptions and reports
+    setInitialDateFilters();
+    
     console.log('App initialized successfully');
+}
+
+function setInitialDateFilters() {
+    const today = new Date().toISOString().split('T')[0];
+    const startDateElements = [
+        document.getElementById('prescriptionDateStart'),
+        document.getElementById('reportDateStart')
+    ];
+    const endDateElements = [
+        document.getElementById('prescriptionDateEnd'),
+        document.getElementById('reportDateEnd')
+    ];
+    
+    // Set end date to today for all
+    endDateElements.forEach(el => {
+        if (el) el.value = today;
+    });
+
+    // Set start date to 30 days ago for a default monthly view on initial load
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const defaultStart = thirtyDaysAgo.toISOString().split('T')[0];
+    
+    startDateElements.forEach(el => {
+        if (el) el.value = defaultStart;
+    });
 }
 
 function setCurrentDate() {
@@ -108,6 +137,12 @@ function setupEventListeners() {
         history.pushState({ page: 'initial' }, document.title, location.href);
     }
     
+    // Dashboard Stats listener
+    const statsSelect = document.getElementById('statsTimePeriod');
+    if (statsSelect) {
+        statsSelect.addEventListener('change', fetchDashboardStats);
+    }
+
     console.log('Event listeners setup completed');
 }
 
@@ -385,6 +420,10 @@ function showDashboard() {
         if (dashboardSection) dashboardSection.classList.add('active');
         updateActiveNavLink('showDashboard'); // Use function name for targeting
         history.pushState({ page: 'dashboard' }, 'Dashboard', 'app.html#dashboard');
+        
+        // Fetch dashboard stats on load, defaulting to daily
+        document.getElementById('statsTimePeriod').value = 'daily';
+        fetchDashboardStats();
     }, 'dashboard');
 }
 
@@ -409,7 +448,10 @@ function showPrescriptions() {
         const prescriptionsSection = document.getElementById('prescriptionsSection');
         if (prescriptionsSection) prescriptionsSection.classList.add('active');
         updateActiveNavLink('showPrescriptions'); // Use function name for targeting
+        
+        // Load initial date filtered data
         fetchPrescriptions();
+        
         history.pushState({ page: 'prescriptions' }, 'View Prescriptions', 'app.html#prescriptions');
     }, 'prescriptions');
 }
@@ -420,6 +462,10 @@ function showReports() {
         const reportsSection = document.getElementById('reportsSection');
         if (reportsSection) reportsSection.classList.add('active');
         updateActiveNavLink('showReports'); // Use function name for targeting
+        
+        // Load initial report data based on default filters
+        fetchReportDataByRange();
+        
         history.pushState({ page: 'reports' }, 'Reports', 'app.html#reports');
     }, 'reports');
 }
@@ -859,11 +905,36 @@ async function fetchPrescriptions() {
     const user = auth.currentUser;
     if (!user) return;
 
+    const startDateInput = document.getElementById('prescriptionDateStart').value;
+    const endDateInput = document.getElementById('prescriptionDateEnd').value;
+    
+    // Basic date validation
+    if (startDateInput && endDateInput && new Date(startDateInput) > new Date(endDateInput)) {
+        showStatusMessage('Start date cannot be after end date.', 'error');
+        return;
+    }
+
+    const startDate = startDateInput ? new Date(startDateInput) : null;
+    const endDate = endDateInput ? new Date(endDateInput) : null;
+    
+    // Set end time to end of day for inclusive filtering
+    if (endDate) {
+        endDate.setHours(23, 59, 59, 999);
+    }
+    
+    let baseQuery = db.collection('prescriptions')
+        .where('userId', '==', user.uid);
+
+    if (startDate) {
+        baseQuery = baseQuery.where('createdAt', '>=', startDate);
+    }
+    
+    if (endDate) {
+        baseQuery = baseQuery.where('createdAt', '<=', endDate);
+    }
+
     try {
-        const querySnapshot = await db.collection('prescriptions')
-            .where('userId', '==', user.uid)
-            .orderBy('createdAt', 'desc') 
-            .get();
+        const querySnapshot = await baseQuery.orderBy('createdAt', 'desc').get();
 
         const prescriptions = [];
         querySnapshot.forEach((doc) => {
@@ -876,6 +947,7 @@ async function fetchPrescriptions() {
         displayPrescriptions(prescriptions);
     } catch (error) {
         console.error('Error fetching prescriptions:', error);
+        showStatusMessage('Error fetching prescriptions. Check console for details.', 'error');
     }
 }
 
@@ -886,7 +958,7 @@ function displayPrescriptions(data) {
     tbody.innerHTML = '';
 
     if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="11" class="text-center">No prescriptions found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="11" class="text-center">No prescriptions found for selected filters</td></tr>';
         return;
     }
 
@@ -907,6 +979,9 @@ function displayPrescriptions(data) {
             addPrescriptionRow(tbody, prescription);
         });
     });
+    
+    // Re-apply text-based filter after new data load
+    filterPrescriptions();
 }
 
 function groupPrescriptionsByDate(prescriptions) {
@@ -935,13 +1010,14 @@ function groupPrescriptionsByDate(prescriptions) {
     });
 
     // Remove empty groups
+    const finalGrouped = {};
     Object.keys(grouped).forEach(group => {
-        if (grouped[group].length === 0) {
-            delete grouped[group];
+        if (grouped[group].length > 0) {
+            finalGrouped[group] = grouped[group];
         }
     });
 
-    return grouped;
+    return finalGrouped;
 }
 
 function addPrescriptionRow(tbody, prescription) {
@@ -1004,7 +1080,10 @@ function filterPrescriptions() {
         const name = row.cells[1]?.textContent.toLowerCase() || '';
         const mobile = row.cells[4]?.textContent.toLowerCase() || '';
         
-        row.style.display = (name.includes(input) || mobile.includes(input)) ? '' : 'none';
+        // Hide/show row based on search and visibility (to respect date filtering)
+        if (row.style.display !== 'none') {
+            row.style.display = (name.includes(input) || mobile.includes(input)) ? '' : 'none';
+        }
     }
 }
 
@@ -1860,127 +1939,180 @@ async function uploadImageToImgBB(base64Image) {
     }
 }
 
-// Reports Management
-async function fetchDailyReport() {
+// --- Dashboard Stats Logic ---
+async function fetchDashboardStats() {
+    const period = document.getElementById('statsTimePeriod').value;
     const user = auth.currentUser;
     if (!user) return;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    try {
-        // Use the Firestore Timestamp field for reliable range query
-        const querySnapshot = await db.collection('prescriptions')
-            .where('userId', '==', user.uid)
-            .where('createdAt', '>=', today)
-            .where('createdAt', '<', tomorrow)
-            .get();
-
-        const reportData = processReportData(querySnapshot, 'day');
-        displayReport(reportData);
-    } catch (error) {
-        console.error('Error fetching daily report:', error);
-    }
-}
-
-async function fetchWeeklyReport() {
-    const user = auth.currentUser;
-    if (!user) return;
-
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    oneWeekAgo.setHours(0, 0, 0, 0);
-
-    try {
-        const querySnapshot = await db.collection('prescriptions')
-            .where('userId', '==', user.uid)
-            .where('createdAt', '>=', oneWeekAgo)
-            .get();
-
-        const reportData = processReportData(querySnapshot, 'week');
-        displayReport(reportData);
-    } catch (error) {
-        console.error('Error fetching weekly report:', error);
-    }
-}
-
-async function fetchMonthlyReport() {
-    const user = auth.currentUser;
-    if (!user) return;
-
-    const oneMonthAgo = new Date();
-    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-    oneMonthAgo.setHours(0, 0, 0, 0);
-
-    try {
-        const querySnapshot = await db.collection('prescriptions')
-            .where('userId', '==', user.uid)
-            .where('createdAt', '>=', oneMonthAgo)
-            .get();
-
-        const reportData = processReportData(querySnapshot, 'month');
-        displayReport(reportData);
-    } catch (error) {
-        console.error('Error fetching monthly report:', error);
-    }
-}
-
-function processReportData(querySnapshot, period = 'day') {
-    const reportData = {};
     
-    querySnapshot.forEach((doc) => {
-        const data = doc.data();
+    let startDate = new Date();
+    let endDate = new Date();
+    endDate.setHours(23, 59, 59, 999); // End of today
+
+    switch (period) {
+        case 'daily':
+            startDate.setHours(0, 0, 0, 0); // Start of today
+            break;
+        case 'weekly':
+            startDate.setDate(startDate.getDate() - 7);
+            startDate.setHours(0, 0, 0, 0);
+            break;
+        case 'monthly':
+            startDate.setMonth(startDate.getMonth() - 1);
+            startDate.setHours(0, 0, 0, 0);
+            break;
+        case 'all':
+            startDate = new Date(0); // Epoch start
+            break;
+    }
+    
+    // Ensure all time periods are inclusive of the start date
+    if (period !== 'all') {
+        startDate.setHours(0, 0, 0, 0);
+    }
+    
+    let baseQuery = db.collection('prescriptions')
+        .where('userId', '==', user.uid);
+    
+    if (period !== 'all') {
+        baseQuery = baseQuery.where('createdAt', '>=', startDate);
+    }
+    
+    // Always limit by end date unless it's 'all'
+    if (period !== 'all' || endDate.getTime() !== new Date(2300, 0, 1).getTime()) { 
+        baseQuery = baseQuery.where('createdAt', '<=', endDate);
+    }
+
+
+    try {
+        const querySnapshot = await baseQuery.get();
+        let totalPrescriptions = 0;
+        let totalRevenue = 0;
         
-        // Use the Firestore Timestamp object for date calculation
-        const timestamp = data.createdAt; 
-        if (!timestamp || typeof timestamp.toDate !== 'function') return; // Skip if timestamp is missing or not a Firebase Timestamp
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            totalPrescriptions += 1;
+            totalRevenue += (data.amount || 0);
+        });
+        
+        document.getElementById('statPrescriptions').textContent = totalPrescriptions.toString();
+        document.getElementById('statRevenue').textContent = `₹ ${totalRevenue.toFixed(2)}`;
+        
+    } catch (error) {
+        console.error('Error fetching dashboard stats:', error);
+        document.getElementById('statPrescriptions').textContent = 'N/A';
+        document.getElementById('statRevenue').textContent = '₹ N/A';
+        showStatusMessage('Failed to load dashboard stats.', 'error');
+    }
+}
+// --- End Dashboard Stats Logic ---
+
+
+// --- Reports Logic ---
+async function fetchReportDataByRange() {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const startDateInput = document.getElementById('reportDateStart').value;
+    const endDateInput = document.getElementById('reportDateEnd').value;
+    
+    if (!startDateInput || !endDateInput) {
+        showStatusMessage('Please select both start and end dates for the report.', 'warning');
+        return;
+    }
+
+    let startDate = new Date(startDateInput);
+    let endDate = new Date(endDateInput);
+    
+    // Set end time to end of day for inclusive filtering
+    endDate.setHours(23, 59, 59, 999);
+    
+    if (startDate > endDate) {
+        showStatusMessage('Start date cannot be after end date.', 'error');
+        return;
+    }
+    
+    try {
+        const querySnapshot = await db.collection('prescriptions')
+            .where('userId', '==', user.uid)
+            .where('createdAt', '>=', startDate)
+            .where('createdAt', '<=', endDate)
+            .orderBy('createdAt', 'asc') // Order by date for display grouping
+            .get();
+
+        const prescriptions = [];
+        querySnapshot.forEach((doc) => {
+            prescriptions.push(doc.data());
+        });
+
+        const reportData = processReportDataByDate(prescriptions);
+        displayReport(reportData);
+        
+    } catch (error) {
+        console.error('Error fetching report data:', error);
+        showStatusMessage('Error fetching report data. Check console for details.', 'error');
+    }
+}
+
+function processReportDataByDate(prescriptions) {
+    const reportData = {};
+    let totalPrescriptions = 0;
+    let totalRevenue = 0;
+    
+    prescriptions.forEach((data) => {
+        const timestamp = data.createdAt;
+        if (!timestamp || typeof timestamp.toDate !== 'function') return;
         
         const date = timestamp.toDate();
-        let key;
-        
-        if (period === 'day') {
-            key = date.toLocaleDateString();
-        } else if (period === 'week') {
-            const startOfWeek = new Date(date);
-            // Adjust to Sunday (0) or Monday (1) start of week as preferred
-            startOfWeek.setDate(date.getDate() - date.getDay()); 
-            key = `Week of ${startOfWeek.toLocaleDateString()}`;
-        } else if (period === 'month') {
-            key = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-        }
+        // Group by day for the detailed report
+        const key = date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
         
         if (!reportData[key]) {
             reportData[key] = { prescriptions: 0, totalAmount: 0 };
         }
         
+        const amount = data.amount || 0;
+        
         reportData[key].prescriptions += 1;
-        // Ensure amount is treated as a number
-        reportData[key].totalAmount += (data.amount || 0); 
+        reportData[key].totalAmount += amount;
+        totalPrescriptions += 1;
+        totalRevenue += amount;
     });
     
-    return reportData;
+    return { dailyData: reportData, totalPrescriptions, totalRevenue };
 }
 
-function displayReport(data) {
+function displayReport(reportSummary) {
     const tbody = document.getElementById('reportTable')?.getElementsByTagName('tbody')[0];
     if (!tbody) return;
     
     tbody.innerHTML = '';
+    
+    const { dailyData, totalPrescriptions, totalRevenue } = reportSummary;
 
-    if (!data || Object.keys(data).length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" class="text-center">No data available</td></tr>';
-        return;
+    if (!dailyData || Object.keys(dailyData).length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center">No data available for the selected range</td></tr>';
+    } else {
+        Object.entries(dailyData).forEach(([date, report]) => {
+            const row = tbody.insertRow();
+            row.insertCell().textContent = date;
+            row.insertCell().textContent = report.prescriptions;
+            row.insertCell().textContent = `₹${report.totalAmount.toFixed(2)}`;
+        });
     }
-
-    Object.entries(data).forEach(([date, report]) => {
-        const row = tbody.insertRow();
-        row.insertCell().textContent = date;
-        row.insertCell().textContent = report.prescriptions;
-        row.insertCell().textContent = `₹${report.totalAmount.toFixed(2)}`;
-    });
+    
+    // Update summary footer
+    document.getElementById('reportTotalPrescriptions').textContent = totalPrescriptions.toString();
+    document.getElementById('reportTotalRevenue').textContent = `₹ ${totalRevenue.toFixed(2)}`;
 }
+// --- End Reports Logic ---
+
+
+// Old report functions replaced by unified range function:
+async function fetchDailyReport() { console.warn("fetchDailyReport is deprecated. Use fetchReportDataByRange."); }
+async function fetchWeeklyReport() { console.warn("fetchWeeklyReport is deprecated. Use fetchReportDataByRange."); }
+async function fetchMonthlyReport() { console.warn("fetchMonthlyReport is deprecated. Use fetchReportDataByRange."); }
+
 
 // Form Management
 function checkFormFilled() {
@@ -2138,9 +2270,8 @@ window.filterPrescriptions = filterPrescriptions;
 window.generatePDF = generatePDF;
 window.printPreview = printPreview;
 window.sendWhatsApp = sendWhatsApp;
-window.fetchDailyReport = fetchDailyReport;
-window.fetchWeeklyReport = fetchWeeklyReport;
-window.fetchMonthlyReport = fetchMonthlyReport;
+window.fetchReportDataByRange = fetchReportDataByRange; // New consolidated report function
+window.fetchDashboardStats = fetchDashboardStats; // New dashboard stats function
 window.logoutUser = logoutUser;
 window.installPWA = installPWA;
 window.resetStats = resetStats;
