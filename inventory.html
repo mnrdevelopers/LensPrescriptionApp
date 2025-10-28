@@ -266,26 +266,15 @@
     <script src="inventory.js"></script>
 
     <script>
-        // Check authentication and admin status
+        // Check authentication and load inventory for all authenticated users
         auth.onAuthStateChanged((user) => {
             if (!user) {
                 window.location.href = 'auth.html';
             } else {
-                checkAdminStatus(user.uid);
+                // Admin check removed: any logged-in user can manage inventory now
+                loadInventory();
             }
         });
-
-        function checkAdminStatus(userId) {
-            // For demo, you can set specific user IDs as admin
-            // In production, you should have a proper admin system
-            const adminUsers = ['your-admin-user-id-here']; // Add admin user IDs
-            if (!adminUsers.includes(userId)) {
-                alert('Access denied. Admin only.');
-                window.location.href = 'products.html';
-                return;
-            }
-            loadInventory();
-        }
 
         function logoutUser() {
             auth.signOut().then(() => {
