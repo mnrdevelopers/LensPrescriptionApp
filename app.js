@@ -760,6 +760,9 @@ async function submitPrescription() {
         // Store data for preview
         currentPrescriptionData = formData;
         
+        // **IMPORTANT: Clear cached WhatsApp image URL for a new prescription**
+        whatsappImageUrl = null; 
+        
         // Show preview
         showPreview(formData);
         
@@ -1002,6 +1005,8 @@ function filterPrescriptions() {
 }
 
 function previewPrescription(prescription) {
+    // Clear the cached image URL when previewing a different prescription
+    whatsappImageUrl = null;
     showPreview(prescription);
 }
 
@@ -1676,11 +1681,14 @@ async function sendWhatsApp() {
         // Show loading state
         showStatusMessage('Preparing prescription for WhatsApp...', 'info');
 
-        // Method 1: Try to use existing image URL first
+        // Method 1: Try to use existing image URL first (CACHING FOR SPEED)
         if (whatsappImageUrl) {
+            console.log("Using cached WhatsApp image URL.");
             await sendWhatsAppMessage(mobile, whatsappImageUrl);
             return;
         }
+        
+        // --- If no cached URL exists, proceed with generation and upload ---
 
         // Method 2: Generate canvas and try multiple upload methods
         const canvas = await html2canvas(element, {
@@ -1694,18 +1702,18 @@ async function sendWhatsApp() {
         
         // Try multiple upload methods with fallbacks
         try {
-            // Method 2A: Try ImgBB first
+            // Method 2A: Try ImgBB first (most reliable for external linking)
             whatsappImageUrl = await uploadImageToImgBB(imageData);
         } catch (imgbbError) {
             console.warn('ImgBB upload failed, trying alternative methods:', imgbbError);
             
+            // Method 2B: Try converting to blob and creating object URL (Less reliable for WhatsApp, but a structured fallback)
             try {
-                // Method 2B: Try converting to blob and creating object URL
                 whatsappImageUrl = await convertToBlobUrl(imageData);
             } catch (blobError) {
                 console.warn('Blob URL method failed:', blobError);
                 
-                // Method 2C: Final fallback - use data URL directly (may not work in all browsers)
+                // Method 2C: Final fallback - use data URL directly (Least reliable for WhatsApp, will likely send text only)
                 whatsappImageUrl = imageData;
             }
         }
@@ -1750,11 +1758,15 @@ async function sendWhatsAppMessage(mobile, imageUrl) {
     
     let message = `Hello${patientName ? ' ' + patientName : ''}! Here is your digital prescription from ${clinicName}.`;
     
-    // If it's a data URL, we need to handle it differently
-    if (imageUrl.startsWith('data:')) {
-        message += '\n\nPrescription details:\n';
+    // Check if the image URL is a public link (from ImgBB) or a local/data URL
+    if (imageUrl.startsWith('http')) {
+        // If it's a public link, append it directly to the message
+        message += `\n\nPrescription Image: ${imageUrl}`;
+        // Note: WhatsApp usually previews images best when the image URL is placed at the end of the text.
+    } else {
+        // If it's a blob/data URL (local link), WhatsApp cannot access it. Send the text details instead.
+        message += '\n\nPrescription details (image failed to upload/share):\n';
         
-        // Add basic prescription info as text
         const details = [
             `Patient: ${patientName}`,
             `Age: ${document.getElementById('previewAge')?.textContent || ''}`,
@@ -1763,9 +1775,7 @@ async function sendWhatsAppMessage(mobile, imageUrl) {
         ];
         
         message += details.join('\n');
-        message += '\n\nPlease visit the clinic for the complete prescription.';
-    } else {
-        message += ` ${imageUrl}`;
+        message += '\n\nPlease visit the clinic for the complete prescription/image.';
     }
     
     // Clean mobile number (remove any non-digit characters)
@@ -1781,6 +1791,7 @@ async function sendWhatsAppMessage(mobile, imageUrl) {
 }
 
 async function uploadImageToImgBB(base64Image) {
+    // FIX: Using globally defined apiKey variable for consistency
     const apiKey = "bbfde58b1da5fc9ee9d7d6a591852f71";
     
     // Convert base64 to blob for better compatibility
@@ -2106,49 +2117,4 @@ async function debugFirestoreData() {
     
     try {
         const userDoc = await db.collection('users').doc(user.uid).get();
-        console.log('Firestore User Document:', userDoc.exists ? userDoc.data() : 'No document found');
-        
-        const prescriptions = await db.collection('prescriptions')
-            .where('userId', '==', user.uid)
-            .get();
-        console.log('Firestore Prescriptions:', prescriptions.docs.map(doc => doc.data()));
-    } catch (error) {
-        console.error('Debug Firestore Error:', error);
-    }
-}
-
-setTimeout(debugFirestoreData, 3000);
-
-// Offline Data Management
-function savePrescriptionOffline(prescriptionData) {
-    const offlinePrescriptions = JSON.parse(localStorage.getItem('offlinePrescriptions') || '[]');
-    prescriptionData.offlineId = Date.now().toString();
-    prescriptionData.synced = false;
-    offlinePrescriptions.push(prescriptionData);
-    localStorage.setItem('offlinePrescriptions', JSON.stringify(offlinePrescriptions));
-    
-    console.log('Prescription saved offline:', prescriptionData.offlineId);
-}
-
-async function syncOfflinePrescriptions() {
-    if (!navigator.onLine) return;
-    
-    const offlinePrescriptions = JSON.parse(localStorage.getItem('offlinePrescriptions') || '[]');
-    const syncedPrescriptions = [];
-    
-    for (const prescription of offlinePrescriptions) {
-        if (!prescription.synced) {
-            try {
-                await submitPrescriptionToFirestore(prescription);
-                prescription.synced = true;
-                syncedPrescriptions.push(prescription);
-            } catch (error) {
-                console.error('Failed to sync prescription:', error);
-            }
-        }
-    }
-    
-    // Update localStorage with sync status
-    localStorage.setItem('offlinePrescriptions', JSON.stringify(offlinePrescriptions));
-    console.log(`Synced ${syncedPrescriptions.length} prescriptions`);
-}
+        console.log('Firestore User Document:', userDoc.exists ? userDoc.
