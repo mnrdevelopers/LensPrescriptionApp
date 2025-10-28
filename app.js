@@ -2108,13 +2108,3 @@ window.installPWA = installPWA;
 window.resetStats = resetStats;
 window.enableNavigationButtons = enableNavigationButtons;
 window.disableNavigationButtons = disableNavigationButtons;
-
-
-// Add this function to debug Firestore data
-async function debugFirestoreData() {
-    const user = auth.currentUser;
-    if (!user) return;
-    
-    try {
-        const userDoc = await db.collection('users').doc(user.uid).get();
-        console.log('Firestore User Document:', userDoc.exists ? userDoc.
