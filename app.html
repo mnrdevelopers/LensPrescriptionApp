@@ -88,11 +88,6 @@
                         <i class="fas fa-user-circle"></i> Profile
                     </a>
                 </li>
-                <li class="nav-item">
-    <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showWallet, 'wallet')">
-        <i class="fas fa-wallet"></i> Wallet
-    </a>
-</li>
             </ul>
             <!-- Desktop Logout Button (Visible >= lg) -->
             <button onclick="logoutUser()" class="btn btn-logout premium-logout">
@@ -662,95 +657,6 @@
         </section>
     </div>
 
-    <!-- Wallet Section -->
-<section id="walletSection" class="page-section">
-    <div class="wallet-container">
-        <h2><i class="fas fa-wallet"></i> My Wallet</h2>
-        
-        <!-- Wallet Balance -->
-        <div class="wallet-balance-card">
-            <div class="wallet-balance-label">Current Balance</div>
-            <div class="wallet-balance-amount" id="walletBalance">₹ 0.00</div>
-            <div class="wallet-balance-label">Available for withdrawal</div>
-        </div>
-
-        <!-- Wallet Actions -->
-        <div class="wallet-actions">
-            <!-- Add Money Card -->
-            <div class="wallet-action-card add-money">
-                <i class="fas fa-plus-circle wallet-action-icon"></i>
-                <div class="wallet-action-title">Add Money</div>
-                <div class="wallet-action-description">Add funds to your wallet using credit/debit card, UPI, or net banking</div>
-                
-                <div class="amount-input-group">
-                    <input type="number" id="addAmount" class="amount-input" placeholder="Enter amount" min="100" max="100000">
-                </div>
-                
-                <div class="quick-amounts">
-                    <button class="quick-amount-btn" data-amount="500">₹500</button>
-                    <button class="quick-amount-btn" data-amount="1000">₹1000</button>
-                    <button class="quick-amount-btn" data-amount="2000">₹2000</button>
-                    <button class="quick-amount-btn" data-amount="5000">₹5000</button>
-                </div>
-                
-                <button onclick="addMoneyToWallet()" class="btn btn-primary">
-                    <i class="fas fa-credit-card"></i> Add Money
-                </button>
-            </div>
-
-            <!-- Withdraw Money Card -->
-            <div class="wallet-action-card withdraw">
-                <i class="fas fa-money-bill-wave wallet-action-icon"></i>
-                <div class="wallet-action-title">Withdraw to Bank</div>
-                <div class="wallet-action-description">Transfer funds from your wallet to your bank account</div>
-                
-                <div class="amount-input-group">
-                    <input type="number" id="withdrawAmount" class="amount-input" placeholder="Enter amount" min="100">
-                </div>
-
-                <!-- Bank Account Form -->
-                <div class="bank-account-form">
-                    <div class="bank-form-group">
-                        <label for="bankAccountNumber">Bank Account Number</label>
-                        <input type="text" id="bankAccountNumber" placeholder="Enter account number" maxlength="18">
-                    </div>
-                    <div class="bank-form-group">
-                        <label for="bankIFSC">IFSC Code</label>
-                        <input type="text" id="bankIFSC" placeholder="Enter IFSC code" maxlength="11">
-                    </div>
-                    <div class="bank-form-group">
-                        <label for="accountHolderName">Account Holder Name</label>
-                        <input type="text" id="accountHolderName" placeholder="Enter account holder name">
-                    </div>
-                </div>
-
-                <!-- Withdrawal Limits Info -->
-                <div class="withdrawal-limits">
-                    <h4><i class="fas fa-info-circle"></i> Withdrawal Information</h4>
-                    <ul>
-                        <li>Minimum withdrawal: ₹100</li>
-                        <li>Maximum withdrawal: ₹50,000 per transaction</li>
-                        <li>Processing time: 2-4 business days</li>
-                        <li>No withdrawal fees</li>
-                    </ul>
-                </div>
-                
-                <button onclick="withdrawToBank()" class="btn btn-warning">
-                    <i class="fas fa-university"></i> Withdraw Funds
-                </button>
-            </div>
-        </div>
-
-        <!-- Transaction History -->
-        <div class="wallet-transactions">
-            <h3><i class="fas fa-history"></i> Transaction History</h3>
-            <div class="transaction-list" id="transactionList">
-                <!-- Transactions will be loaded here -->
-            </div>
-        </div>
-    </div>
-</section>
-
     <!-- START: Timer Modal for WhatsApp Loading -->
     <div id="whatsappTimerModal" class="modal-overlay">
         <div class="modal-content large" style="max-width: 350px;">
@@ -772,7 +678,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
     <script src="app.js"></script>
-    <script src="payment.js"></script>
 
     <!-- Service Worker Registration -->
     <script>
@@ -791,10 +696,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
