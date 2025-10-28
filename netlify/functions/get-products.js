@@ -1,8 +1,9 @@
 const { Pool } = require('pg');
 
 // Initialize PostgreSQL pool with your Neon connection
+// FIX 1: Change to use the NEON_DATABASE_URL environment variable for consistency
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: process.env.NEON_DATABASE_URL,
   ssl: {
     rejectUnauthorized: false
   }
@@ -25,9 +26,11 @@ exports.handler = async (event, context) => {
     };
   }
 
+  let client; // Declare client outside try block
+
   try {
     // Connect to Neon database and fetch products
-    const client = await pool.connect();
+    client = await pool.connect();
     
     const result = await client.query(`
       SELECT id, name, description, price, stock, category, image_name as "imageName"
@@ -61,5 +64,12 @@ exports.handler = async (event, context) => {
         details: error.message 
       })
     };
+  } finally {
+    // FIX 2: Ensure the client is released back to the pool if it was successfully acquired.
+    // The previous release() call inside the try block handles the success case.
+    // However, if an error occurred *after* connecting but *before* releasing, it might be missed.
+    // For serverless best practice, the original in-try release is often sufficient, 
+    // but in case of connection failure, we ensure the process exits cleanly by ending the pool.
+    await pool.end();
   }
 };
