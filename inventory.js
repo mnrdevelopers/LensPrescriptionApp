@@ -1,8 +1,91 @@
-// inventory.js - Inventory Management for Admin (Updated for Firebase-only operations)
+// inventory.js - Inventory Management (Updated for Firebase Firestore and ImgBB for Images)
 
-// NOTE: This file assumes Firebase has been initialized and the db and auth objects are available globally.
+// NOTE: The API Key is now loaded dynamically from a Netlify function.
+let IMGBB_API_KEY = null; 
 
 let inventory = [];
+
+// --- Initialization: Load API Key and Inventory ---
+
+/**
+ * Loads the ImgBB API key from the Netlify environment variable via a serverless function.
+ */
+async function loadImgbbApiKey() {
+    if (IMGBB_API_KEY) return; // Already loaded
+
+    try {
+        const response = await fetch('/.netlify/functions/get-imgbb-key');
+        if (!response.ok) {
+            throw new Error('Failed to load key from Netlify function.');
+        }
+        const data = await response.json();
+        IMGBB_API_KEY = data.key;
+        console.log('ImgBB API Key loaded successfully.');
+    } catch (error) {
+        console.error('CRITICAL: Could not load ImgBB API Key.', error);
+        showStatusMessage('Image upload is disabled. Key retrieval failed.', 'error');
+        // Set to a dummy value to prevent constant attempts if the function failed
+        IMGBB_API_KEY = 'DISABLED'; 
+    }
+}
+
+// Override loadInventory to ensure key is loaded first
+const originalLoadInventory = loadInventory;
+window.loadInventory = async function() {
+    await loadImgbbApiKey();
+    originalLoadInventory();
+};
+
+
+// --- ImgBB Image Handling Functions ---
+
+/**
+ * Uploads a File object to ImgBB using a FormData POST request.
+ * @param {File} imageFile The product image file.
+ * @returns {Promise<string>} The public URL of the uploaded image.
+ */
+async function uploadImageToImgBB(imageFile) {
+    if (!imageFile) return null;
+    if (!IMGBB_API_KEY || IMGBB_API_KEY === 'DISABLED') {
+        throw new Error('Image upload key is unavailable.');
+    }
+    
+    // Convert file to base64 for ImgBB API
+    const base64Image = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = error => reject(error);
+        reader.readAsDataURL(imageFile);
+    });
+
+    const formData = new FormData();
+    formData.append("image", base64Image); // ImgBB expects the base64 string under 'image'
+
+    const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+        method: "POST",
+        body: formData
+    });
+    
+    if (!response.ok) {
+        throw new Error(`ImgBB upload failed with status ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.success) {
+        return data.data.url;
+    } else {
+        throw new Error(data.error?.message || 'ImgBB upload failed due to API error');
+    }
+}
+
+// NOTE: ImgBB does not offer an easy way to delete images via a simple URL.
+// Deletion would require storing a separate 'delete_url' or 'delete_hash' 
+// from the ImgBB response. Since we are not storing the delete hash, 
+// we will only remove the image URL from Firestore. The remote image will remain.
+
+// --- End ImgBB Image Handling Functions ---
+
 
 // Load inventory from Firestore
 async function loadInventory() {
@@ -64,7 +147,7 @@ function displayInventory() {
                 <button class="btn btn-sm btn-outline-primary me-1" onclick="editProduct('${product.id}')">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button class="btn btn-sm btn-outline-danger" onclick="confirmDeleteProduct('${product.id}')">
+                <button class="btn btn-sm btn-outline-danger" id="deleteBtn-${product.id}" onclick="confirmDeleteProduct('${product.id}')">
                     <i class="fas fa-trash"></i>
                 </button>
             </td>
@@ -98,19 +181,16 @@ async function addProduct() {
     }
     
     const addButton = document.querySelector('#addProductModal .modal-footer .btn-primary');
-    const originalText = addButton.textContent;
-    addButton.textContent = 'Adding...';
+    const originalText = addButton.innerHTML; 
+    addButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Adding...';
     addButton.disabled = true;
 
     try {
         let imageUrl = '';
         
-        // Upload image if provided
+        // Upload image to ImgBB
         if (imageFile) {
-            const storageRef = firebase.storage().ref();
-            const imageRef = storageRef.child(`products/${Date.now()}_${imageFile.name}`);
-            const snapshot = await imageRef.put(imageFile);
-            imageUrl = await snapshot.ref.getDownloadURL();
+            imageUrl = await uploadImageToImgBB(imageFile);
             productData.imageUrl = imageUrl;
         }
         
@@ -129,9 +209,9 @@ async function addProduct() {
         
     } catch (error) {
         console.error('Error adding product:', error);
-        showStatusMessage('Error adding product: ' + error.message, 'error');
+        showStatusMessage('Error adding product: ' + (error.message || 'Check network connection or Netlify function.'), 'error');
     } finally {
-        addButton.textContent = originalText;
+        addButton.innerHTML = originalText;
         addButton.disabled = false;
     }
 }
@@ -150,6 +230,10 @@ async function editProduct(productId) {
     document.getElementById('editProductStatus').checked = product.active;
     document.getElementById('currentImageName').textContent = product.imageUrl ? 'Image uploaded' : 'No image';
     
+    // Clear the file input when opening the modal
+    const editImageInput = document.getElementById('editProductImage');
+    if (editImageInput) editImageInput.value = '';
+
     const modal = new bootstrap.Modal(document.getElementById('editProductModal'));
     modal.show();
 }
@@ -180,23 +264,14 @@ async function updateProduct() {
     }
     
     const updateButton = document.querySelector('#editProductModal .modal-footer .btn-primary');
-    const originalText = updateButton.textContent;
-    updateButton.textContent = 'Updating...';
+    const originalText = updateButton.innerHTML;
+    updateButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Updating...';
     updateButton.disabled = true;
 
     try {
-        // Upload new image if provided
+        // Upload new image to ImgBB
         if (imageFile) {
-            const storageRef = firebase.storage().ref();
-            // Delete old image if it exists and we have the URL (optional but good practice)
-            // const oldProduct = inventory.find(p => p.id === productId);
-            // if (oldProduct && oldProduct.imageUrl) {
-            //     // Logic to delete old image from storage if necessary
-            // }
-
-            const imageRef = storageRef.child(`products/${Date.now()}_${imageFile.name}`);
-            const snapshot = await imageRef.put(imageFile);
-            productData.imageUrl = await snapshot.ref.getDownloadURL();
+            productData.imageUrl = await uploadImageToImgBB(imageFile);
         }
         
         // Update product in Firestore
@@ -213,9 +288,9 @@ async function updateProduct() {
         
     } catch (error) {
         console.error('Error updating product:', error);
-        showStatusMessage('Error updating product: ' + error.message, 'error');
+        showStatusMessage('Error updating product: ' + (error.message || 'Check network connection or Netlify function.'), 'error');
     } finally {
-        updateButton.textContent = originalText;
+        updateButton.innerHTML = originalText;
         updateButton.disabled = false;
     }
 }
@@ -228,15 +303,19 @@ function confirmDeleteProduct(productId) {
     showStatusMessage(`Are you sure you want to delete product: ${product.name}? Click the trash icon again within 5 seconds to confirm.`, 'warning');
     
     // Temporarily change the delete button's onclick to the actual delete function
-    const deleteBtn = document.querySelector(`button[onclick="confirmDeleteProduct('${productId}')"]`);
+    const deleteBtn = document.querySelector(`#deleteBtn-${productId}`);
     if (deleteBtn) {
+        // Store original onclick string to revert later if needed
+        const originalOnclick = deleteBtn.getAttribute('onclick');
+        
+        // Update the button's action to call the deletion function directly
         deleteBtn.onclick = () => deleteProduct(productId);
         
         // Revert the button action after 5 seconds if not clicked
         setTimeout(() => {
-            // Only revert if the button hasn't been clicked/changed
-            if (deleteBtn && deleteBtn.getAttribute('onclick').includes('deleteProduct')) {
-                deleteBtn.onclick = () => confirmDeleteProduct(productId);
+            // Check if the button is still in the confirmation state (i.e., its current onclick is still the direct deleteProduct call)
+            if (deleteBtn && deleteBtn.getAttribute('onclick') === `deleteProduct('${productId}')`) {
+                 deleteBtn.setAttribute('onclick', originalOnclick);
             }
         }, 5000);
     }
@@ -244,30 +323,31 @@ function confirmDeleteProduct(productId) {
 
 // Delete product
 async function deleteProduct(productId) {
+    const deleteBtn = document.querySelector(`#deleteBtn-${productId}`);
+    const originalContent = deleteBtn ? deleteBtn.innerHTML : '';
+    
+    if (deleteBtn) {
+        deleteBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+        deleteBtn.disabled = true;
+    }
+    
     try {
-        // Find the product to get image reference
-        const productToDelete = inventory.find(p => p.id === productId);
-
         // Delete product from Firestore
         await db.collection('products').doc(productId).delete();
         
-        // Delete image from Storage (optional but good practice)
-        if (productToDelete && productToDelete.imageUrl) {
-             try {
-                 const imageRef = firebase.storage().refFromURL(productToDelete.imageUrl);
-                 await imageRef.delete();
-                 console.log('Image deleted from storage.');
-             } catch (storageError) {
-                 // Log storage deletion error but continue with success message
-                 console.warn('Could not delete image from Firebase Storage (might not exist or permission issue):', storageError);
-             }
-        }
-
+        // NOTE: We skip attempting to delete the image from ImgBB 
+        // because we don't store the necessary delete hash.
+        
         showStatusMessage('Product deleted successfully', 'success');
         loadInventory();
     } catch (error) {
         console.error('Error deleting product:', error);
-        showStatusMessage('Error deleting product: ' + error.message, 'error');
+        showStatusMessage('Error deleting product: ' + (error.message || 'Check network connection or Netlify function.'), 'error');
+    } finally {
+        if (deleteBtn) {
+             deleteBtn.innerHTML = originalContent;
+             deleteBtn.disabled = false;
+        }
     }
 }
 
