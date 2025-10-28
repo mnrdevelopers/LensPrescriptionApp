@@ -56,9 +56,8 @@ function initializeApp() {
     console.log('App initialized successfully');
     
     // NEW FIX: Check URL hash on app initialization to restore correct section
-    // The loadUserProfile function will ultimately call this if the profile is complete.
+    // The loadUserProfile function will ultimately call routeToHashedSection() if the profile is complete.
     // If profile is incomplete, it will call showProfileSetup(true) instead.
-    // We defer hash checking until loadUserProfile confirms profile completion.
 }
 
 function setInitialDateFilters() {
@@ -411,6 +410,15 @@ function navigateIfProfileComplete(navFunction, sectionName) {
     if (isProfileComplete) {
         // Ensure navigation is enabled before proceeding
         enableNavigationButtons();
+        // Since we are clicking a button/link, we manually push the history state
+        const hash = sectionName === 'dashboard' ? 'dashboard' : 
+                     sectionName === 'form' ? 'form' : 
+                     sectionName === 'prescriptions' ? 'prescriptions' : 
+                     sectionName === 'reports' ? 'reports' : 'setup';
+        
+        // This line ensures the URL hash is updated correctly before calling the view function
+        history.pushState({ page: sectionName }, sectionName, `app.html#${hash}`);
+
         navFunction();
         lastValidSection = sectionName; // Update last valid section
     } else {
@@ -452,10 +460,10 @@ function showDashboard() {
     const dashboardSection = document.getElementById('dashboardSection');
     if (dashboardSection) dashboardSection.classList.add('active');
     updateActiveNavLink('showDashboard'); // Use function name for targeting
+    
     // Ensure history state is pushed only if needed to manage back button.
-    if (window.location.hash !== '#dashboard') {
-        history.pushState({ page: 'dashboard' }, 'Dashboard', 'app.html#dashboard');
-    }
+    // This logic is now handled in navigateIfProfileComplete for user clicks.
+    // When called internally (like from routeToHashedSection), we rely on the hash already being present.
     
     // Fetch dashboard stats on load, defaulting to daily
     document.getElementById('statsTimePeriod').value = 'daily';
@@ -472,9 +480,7 @@ function showPrescriptionForm() {
     
     lastValidSection = 'form';
     
-    if (window.location.hash !== '#form') {
-        history.pushState({ page: 'form' }, 'Add Prescription', 'app.html#form');
-    }
+    // History push logic removed here, handled by navigateIfProfileComplete
 }
 
 function showPrescriptions() {
@@ -486,9 +492,7 @@ function showPrescriptions() {
     // Load initial date filtered data
     fetchPrescriptions();
     
-    if (window.location.hash !== '#prescriptions') {
-        history.pushState({ page: 'prescriptions' }, 'View Prescriptions', 'app.html#prescriptions');
-    }
+    // History push logic removed here, handled by navigateIfProfileComplete
 }
 
 function showReports() {
@@ -500,9 +504,7 @@ function showReports() {
     // Load initial report data based on default filters
     fetchReportDataByRange();
     
-    if (window.location.hash !== '#reports') {
-        history.pushState({ page: 'reports' }, 'Reports', 'app.html#reports');
-    }
+    // History push logic removed here, handled by navigateIfProfileComplete
 }
 
 /**
@@ -560,9 +562,7 @@ function showProfileSetup(isForced) {
          document.getElementById('setupContactNumber').value = '';
     }
     
-    if (window.location.hash !== '#setup') {
-        history.pushState({ page: 'setup' }, 'Profile Setup', 'app.html#setup');
-    }
+    // History push logic removed here, handled by navigateIfProfileComplete
 }
 
 function showPreview(prescriptionData = null) {
@@ -746,10 +746,10 @@ async function saveSetupProfile() {
         
         if (cameFromPrescriptionForm) {
             // If editing profile from prescription form, go back to form
-            showPrescriptionForm();
+            navigateIfProfileComplete(showPrescriptionForm, 'form');
         } else {
             // Default to dashboard
-            showDashboard();
+            navigateIfProfileComplete(showDashboard, 'dashboard');
         }
 
     } catch (error) {
@@ -804,7 +804,7 @@ function openEditProfile() {
     // Hide the edit modal, as it's now handled by the dedicated section
     const modal = document.getElementById('editProfileModal');
     if (modal) modal.style.display = 'none'; 
-    showProfileSetup(false); // Go to profile setup/edit screen
+    navigateIfProfileComplete(showProfileSetup, 'setup'); // Use navigateIfProfileComplete
 }
 
 function closeEditProfile() {
