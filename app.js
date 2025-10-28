@@ -1192,95 +1192,164 @@ function loadPreviewData(data) {
 
 // Simplified PDF Generation that works with CSS
 function generatePDF() {
-    showStatusMessage('Generating PDF...', 'info');
-    
-    // Use the existing preview element for PDF generation
-    const element = document.getElementById('prescriptionPreview');
-    
-    if (element) {
-        const btn = document.querySelector('.btn-download');
+    // We disable the button loading and show status message temporarily.
+    const btn = document.querySelector('.btn-download');
+    if (btn) {
         btn.classList.add('btn-loading');
-        btn.textContent = 'Generating...';
+        btn.textContent = 'Preparing...';
     }
+    showStatusMessage('Preparing PDF Preview...', 'info');
 
-    // Create a clone to avoid affecting the display
-    const elementClone = element.cloneNode(true);
+    // **NEW LOGIC: Use a separate print window for reliable PDF preview and download**
     
-    // ISOLATION FIX: To prevent global print styles from hiding content in the PDF clone
-    // Remove all class names from the clone to prevent external CSS rules (like @media print)
-    // from applying, except for the explicit styles we define below.
-    elementClone.className = '';
-    
-    // Apply PDF-specific styles
-    elementClone.style.width = '58mm';
-    elementClone.style.margin = '0 auto';
-    elementClone.style.padding = '3mm';
-    elementClone.style.background = 'white';
-    elementClone.style.fontFamily = 'Courier New, monospace';
-    elementClone.style.fontSize = '9px';
-    elementClone.style.lineHeight = '1.1';
-    elementClone.style.color = 'black';
-    
-    // Hide the clone
-    elementClone.style.position = 'fixed';
-    elementClone.style.left = '-9999px';
-    elementClone.style.top = '0';
-    document.body.appendChild(elementClone);
-
+    // 1. Get the patient name for the file name
     const patientName = document.getElementById('previewPatientName')?.textContent || 'Patient';
     const shortDate = new Date().toLocaleDateString('en-IN', { 
         day: '2-digit', 
         month: '2-digit', 
         year: 'numeric' 
-    });
+    }).replace(/\//g, '-');
+    const filename = `Prescription_${patientName}_${shortDate}`;
 
-    const opt = {
-        margin: [2, 2, 2, 2],
-        filename: `Prescription_${patientName}_${shortDate.replace(/\//g, '-')}.pdf`,
-        image: { 
-            type: 'jpeg', 
-            quality: 0.98 
-        },
-        html2canvas: { 
-            scale: 3,
-            useCORS: true,
-            allowTaint: false,
-            backgroundColor: '#ffffff',
-            width: 165,
-            windowWidth: 165
-        },
-        jsPDF: { 
-            unit: 'mm', 
-            format: [58, 400],
-            orientation: 'portrait',
-            compress: true
+    // 2. Load the data into a print window (this is essentially what printPreview does)
+    const printWindow = window.open('', '_blank', 'width=400,height=600');
+    
+    if (!printWindow) {
+        showStatusMessage('Popup blocked. Please allow popups for PDF generation.', 'error');
+        if (btn) {
+            btn.classList.remove('btn-loading');
+            btn.textContent = 'PDF';
         }
-    };
+        return;
+    }
 
-    html2pdf()
-        .set(opt)
-        .from(elementClone)
-        .save()
-        .then(() => {
-            document.body.removeChild(elementClone);
-            showStatusMessage('PDF downloaded successfully!', 'success');
-        })
-        .catch((error) => {
-            document.body.removeChild(elementClone);
-            console.error('PDF generation error:', error);
-            showStatusMessage('PDF generation failed: ' + error.message, 'error');
-        })
-        .finally(() => {
-            if (element) {
-                const btn = document.querySelector('.btn-download');
-                btn.classList.remove('btn-loading');
-                btn.textContent = 'PDF';
-            }
-        });
+    // 3. Assemble the HTML content for the popup, including a download script
+    const clinicName = document.getElementById('previewClinicName')?.textContent || 'Your Clinic';
+    const optometristName = document.getElementById('previewOptometristName')?.textContent || 'Optometrist Name';
+    
+    // We copy the exact content of the preview, plus a new script to trigger the download/print dialogue.
+    const previewContentHTML = document.getElementById('prescriptionPreview').innerHTML;
+    
+    const printHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>${filename}</title>
+            <meta charset="UTF-8">
+            <style>
+                /* Import App styles needed for layout but stripped of print media queries */
+                body {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                    font-family: 'Times New Roman', serif;
+                    background: #f8f9fa;
+                    color: #333;
+                }
+                .pdf-page {
+                    width: 58mm;
+                    margin: 10px auto;
+                    padding: 10px;
+                    background: white;
+                    border: 1px solid #ddd;
+                    box-sizing: border-box;
+                    font-family: 'Courier New', monospace;
+                    font-size: 10px;
+                    line-height: 1.2;
+                }
+                .preview-header, .preview-details, .preview-prescription, .preview-footer {
+                    /* Paste minimal styles to ensure readability */
+                    text-align: center;
+                    margin: 5px 0;
+                }
+                .preview-prescription table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-size: 8px;
+                }
+                .preview-prescription th, .preview-prescription td {
+                    border: 1px solid #000;
+                    padding: 2px;
+                    text-align: center;
+                }
+                .download-controls {
+                    text-align: center;
+                    padding: 15px;
+                    background: #e9ecef;
+                    border-top: 1px solid #ddd;
+                }
+                .download-btn {
+                    padding: 10px 20px;
+                    font-size: 14px;
+                    background-color: #007bff;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    margin: 5px;
+                    transition: background-color 0.2s;
+                }
+                .download-btn:hover {
+                    background-color: #0056b3;
+                }
+                
+                /* Ensure only the content and controls are shown */
+                @media print {
+                    .download-controls {
+                        display: none !important;
+                    }
+                    /* Standard paper size print styles (Letter or A4) */
+                    .pdf-page {
+                         width: 100% !important; 
+                         margin: 0 !important;
+                         padding: 0.5cm !important;
+                         border: none !important;
+                         box-shadow: none !important;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="pdf-page">
+                ${previewContentHTML}
+            </div>
+            
+            <div class="download-controls">
+                <button class="download-btn" onclick="window.print()">
+                    <i class="fas fa-file-pdf"></i> Save/Print PDF
+                </button>
+                <button class="download-btn" style="background-color: #dc3545;" onclick="window.close()">
+                    <i class="fas fa-times"></i> Close Preview
+                </button>
+                <p style="font-size: 12px; color: #666; margin-top: 10px;">
+                    Use the 'Save/Print PDF' button, then select 'Save as PDF' from your browser's print dialogue.
+                </p>
+            </div>
+            
+            <script>
+                // Auto-focus to make sure the user sees the controls
+                window.focus();
+            </script>
+        </body>
+        </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(printHTML);
+    printWindow.document.close();
+
+    // 4. Update the button state
+    if (btn) {
+        btn.classList.remove('btn-loading');
+        btn.textContent = 'PDF';
+    }
+    showStatusMessage('PDF preview ready in new window.', 'success');
 }
 
 // Dedicated Thermal Print Function for 58mm Printer
 function printPreview() {
+    // This function is still used for the thermal print path, which uses the 
+    // print dialogue directly without a download prompt.
     const printWindow = window.open('', '_blank', 'width=350,height=600');
     
     if (!printWindow) {
@@ -1892,70 +1961,6 @@ async function sendWhatsApp() {
         // --- STOP TIMER and hide modal regardless of success/failure ---
         stopWhatsappTimer(); 
     }
-}
-
-async function convertToBlobUrl(dataUrl) {
-    return new Promise((resolve, reject) => {
-        try {
-            const blob = dataURLToBlob(dataUrl);
-            const blobUrl = URL.createObjectURL(blob);
-            resolve(blobUrl);
-        } catch (error) {
-            reject(error);
-        }
-    });
-}
-
-function dataURLToBlob(dataUrl) {
-    const arr = dataUrl.split(',');
-    const mime = arr[0].match(/:(.*?);/)[1];
-    const bstr = atob(arr[1]);
-    let n = bstr.length;
-    const u8arr = new Uint8Array(n);
-    
-    while (n--) {
-        u8arr[n] = bstr.charCodeAt(n);
-    }
-    
-    return new Blob([u8arr], { type: mime });
-}
-
-async function sendWhatsAppMessage(mobile, imageUrl) {
-    const clinicName = document.getElementById('previewClinicName')?.textContent || 'Your Clinic';
-    const patientName = document.getElementById('previewPatientName')?.textContent || '';
-    
-    let message = `Hello${patientName ? ' ' + patientName : ''}! Here is your digital prescription from ${clinicName}.`;
-    
-    // Check if the image URL is a public link (from ImgBB) or a local/data URL
-    if (imageUrl.startsWith('http')) {
-        // If it's a public link, append it directly to the message
-        message += `\n\nPrescription Image: ${imageUrl}`;
-        // Note: WhatsApp usually previews images best when the image URL is placed at the end of the text.
-    } else {
-        // If it's a blob/data URL (local link), WhatsApp cannot access it. Send the text details instead.
-        message += '\n\nPrescription details (image failed to upload/share):\n';
-        
-        const details = [
-            `Patient: ${patientName}`,
-            `Age: ${document.getElementById('previewAge')?.textContent || ''}`,
-            `Vision Type: ${document.getElementById('previewVisionType')?.textContent || ''}`,
-            `Amount: ₹${document.getElementById('previewAmount')?.textContent || ''}`
-        ];
-        
-        message += details.join('\n');
-        message += '\n\nPlease visit the clinic for the complete prescription/image.';
-    }
-    
-    // Clean mobile number (remove any non-digit characters)
-    const cleanMobile = mobile.replace(/\D/g, '');
-    
-    // Create WhatsApp URL
-    const whatsappURL = `https://wa.me/${cleanMobile}?text=${encodeURIComponent(message)}`;
-    
-    // Open in new tab
-    window.open(whatsappURL, '_blank');
-    
-    showStatusMessage('WhatsApp opened with prescription!', 'success');
 }
 
 async function uploadImageToImgBB(base64Image) {
