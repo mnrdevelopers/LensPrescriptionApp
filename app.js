@@ -9,6 +9,10 @@ let deferredPrompt;
 let isProfileComplete = false;
 // Store the last valid section to return to after setup
 let lastValidSection = 'dashboard'; 
+// --- NEW TIMER VARIABLES ---
+let timerInterval;
+let timerSeconds = 0;
+// ---------------------------
 
 // 🛑 CRITICAL FIX: Use onAuthStateChanged to prevent the redirect loop.
 firebase.auth().onAuthStateChanged((user) => {
@@ -1664,31 +1668,62 @@ function printPreview() {
     printWindow.document.close();
 }
 
+/**
+ * Starts the visible timer and displays the modal.
+ */
+function startWhatsappTimer() {
+    const modal = document.getElementById('whatsappTimerModal');
+    const timerDisplay = document.getElementById('timerDisplay');
+    
+    if (modal) modal.style.display = 'flex';
+    timerSeconds = 0;
+    
+    // Initial display
+    if (timerDisplay) timerDisplay.textContent = '00:00';
+
+    // Update timer every second
+    timerInterval = setInterval(() => {
+        timerSeconds++;
+        const minutes = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
+        const seconds = String(timerSeconds % 60).padStart(2, '0');
+        if (timerDisplay) timerDisplay.textContent = `${minutes}:${seconds}`;
+    }, 1000);
+}
+
+/**
+ * Stops the visible timer and hides the modal.
+ */
+function stopWhatsappTimer() {
+    clearInterval(timerInterval);
+    const modal = document.getElementById('whatsappTimerModal');
+    if (modal) modal.style.display = 'none';
+}
+
+
 async function sendWhatsApp() {
     const mobile = document.getElementById('previewMobile')?.textContent;
     if (!mobile) {
         showStatusMessage('No mobile number available for WhatsApp', 'error');
         return;
     }
-
+    
+    // Check if the link is already cached
+    if (whatsappImageUrl) {
+        console.log("Using cached WhatsApp image URL.");
+        await sendWhatsAppMessage(mobile, whatsappImageUrl);
+        return;
+    }
+    
+    // --- If not cached, start timer and processing ---
+    startWhatsappTimer(); 
+    
     try {
         const element = document.getElementById('prescriptionPreview');
         if (!element) {
             showStatusMessage('Prescription preview not found', 'error');
+            stopWhatsappTimer();
             return;
         }
-
-        // Show loading state
-        showStatusMessage('Preparing prescription for WhatsApp...', 'info');
-
-        // Method 1: Try to use existing image URL first (CACHING FOR SPEED)
-        if (whatsappImageUrl) {
-            console.log("Using cached WhatsApp image URL.");
-            await sendWhatsAppMessage(mobile, whatsappImageUrl);
-            return;
-        }
-        
-        // --- If no cached URL exists, proceed with generation and upload ---
 
         // Method 2: Generate canvas and try multiple upload methods
         const canvas = await html2canvas(element, {
@@ -1723,6 +1758,9 @@ async function sendWhatsApp() {
     } catch (error) {
         console.error('Error sending WhatsApp:', error);
         showStatusMessage('Failed to send WhatsApp: ' + error.message, 'error');
+    } finally {
+        // --- STOP TIMER and hide modal regardless of success/failure ---
+        stopWhatsappTimer(); 
     }
 }
 
