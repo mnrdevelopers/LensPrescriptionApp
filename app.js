@@ -1203,9 +1203,6 @@ function generatePDF() {
         btn.textContent = 'Generating...';
     }
 
-    // CRITICAL FIX START: Add a temporary class to body to prevent @media print rules from firing
-    document.body.classList.add('pdf-generating');
-
     // Create a clone to avoid affecting the display
     const elementClone = element.cloneNode(true);
     
@@ -1274,9 +1271,6 @@ function generatePDF() {
             showStatusMessage('PDF generation failed: ' + error.message, 'error');
         })
         .finally(() => {
-            // CRITICAL FIX END: Remove the temporary class
-            document.body.classList.remove('pdf-generating');
-            
             if (element) {
                 const btn = document.querySelector('.btn-download');
                 btn.classList.remove('btn-loading');
