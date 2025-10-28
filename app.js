@@ -37,7 +37,7 @@ firebase.auth().onAuthStateChanged((user) => {
     }
 });
 
-function initializeApp() {
+async function initializeApp() {
     console.log('Initializing app...');
     const user = auth.currentUser;
     
@@ -62,19 +62,24 @@ function initializeApp() {
     // Set initial date filter values for prescriptions and reports
     setInitialDateFilters();
 
-     // Initialize payment system
-    await initializePaymentSystem();
-    
-    // Add usage counter to dashboard
-    addUsageCounterToDashboard();
-    
-    // Update subscription status
-    await updateSubscriptionStatus();
-    
-    // Check and update usage counter
-    await checkPrescriptionLimit();
-    
-    console.log('App initialized successfully');
+    try {
+        // Initialize payment system
+        await initializePaymentSystem();
+        
+        // Add usage counter to dashboard
+        addUsageCounterToDashboard();
+        
+        // Update subscription status
+        await updateSubscriptionStatus();
+        
+        // Check and update usage counter
+        await checkPrescriptionLimit();
+        
+        console.log('App initialized successfully');
+    } catch (error) {
+        console.error('Error during app initialization:', error);
+        // Continue with app initialization even if payment/subscription features fail
+    }
 }
 
 function setInitialDateFilters() {
