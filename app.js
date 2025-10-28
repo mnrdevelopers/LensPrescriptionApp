@@ -55,7 +55,6 @@ function initializeApp() {
     
     console.log('App initialized successfully');
     
-    // NEW FIX: Check URL hash on app initialization to restore correct section
     // The loadUserProfile function will ultimately call routeToHashedSection() if the profile is complete.
     // If profile is incomplete, it will call showProfileSetup(true) instead.
 }
@@ -422,6 +421,7 @@ function navigateIfProfileComplete(navFunction, sectionName) {
                      sectionName === 'prescriptions' ? 'prescriptions' : 
                      sectionName === 'reports' ? 'reports' : 'setup';
         
+        // Use replaceState to update the URL without polluting the browser history for internal navigation
         history.replaceState({ page: sectionName }, sectionName, `app.html#${hash}`);
 
         navFunction();
@@ -644,7 +644,7 @@ async function loadUserProfile() {
                 // Ensure buttons are enabled if loading dashboard successfully
                 enableNavigationButtons(); 
                 
-                // FIX: Route to the section defined in the URL hash instead of always dashboard
+                // CRITICAL FIX: Route to the section defined in the URL hash immediately after load
                 routeToHashedSection(); 
                 return;
             }
@@ -674,7 +674,7 @@ async function loadUserProfile() {
             updateProfileUI(userData);
             if (isProfileComplete) {
                 enableNavigationButtons();
-                // FIX: Route to the section defined in the URL hash instead of always dashboard
+                // CRITICAL FIX: Route to the section defined in the URL hash immediately after load
                 routeToHashedSection();
             } else {
                 showProfileSetup(true);
