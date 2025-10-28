@@ -1,16 +1,11 @@
 // inventory.js - Inventory Management (Updated for Firebase Firestore and ImgBB for Images)
 
-// NOTE: The API Key is now loaded dynamically from a Netlify function.
-let IMGBB_API_KEY = null; 
+let IMGBB_API_KEY = null;
 let inventory = [];
 
-// --- Initialization: Load API Key and Inventory ---
-
-/**
- * Loads the ImgBB API key from the Netlify environment variable via a serverless function.
- */
+// Load ImgBB API Key
 async function loadImgbbApiKey() {
-    if (IMGBB_API_KEY) return; // Already loaded
+    if (IMGBB_API_KEY) return;
 
     try {
         const response = await fetch('/.netlify/functions/get-imgbb-key');
@@ -27,25 +22,13 @@ async function loadImgbbApiKey() {
     }
 }
 
-// Initialize when page loads
-document.addEventListener('DOMContentLoaded', async function() {
-    await loadImgbbApiKey();
-});
-
-// --- ImgBB Image Handling Functions ---
-
-/**
- * Uploads a File object to ImgBB using a FormData POST request.
- * @param {File} imageFile The product image file.
- * @returns {Promise<string>} The public URL of the uploaded image.
- */
+// Upload image to ImgBB
 async function uploadImageToImgBB(imageFile) {
     if (!imageFile) return null;
     if (!IMGBB_API_KEY || IMGBB_API_KEY === 'DISABLED') {
         throw new Error('Image upload key is unavailable.');
     }
     
-    // Convert file to base64 for ImgBB API
     const base64Image = await new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result.split(',')[1]);
@@ -54,7 +37,7 @@ async function uploadImageToImgBB(imageFile) {
     });
 
     const formData = new FormData();
-    formData.append("image", base64Image); // ImgBB expects the base64 string under 'image'
+    formData.append("image", base64Image);
 
     const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
         method: "POST",
@@ -74,17 +57,9 @@ async function uploadImageToImgBB(imageFile) {
     }
 }
 
-// NOTE: ImgBB does not offer an easy way to delete images via a simple URL.
-// Deletion would require storing a separate 'delete_url' or 'delete_hash' 
-// from the ImgBB response. Since we are not storing the delete hash, 
-// we will only remove the image URL from Firestore. The remote image will remain.
-
-// --- End ImgBB Image Handling Functions ---
-
 // Load inventory from Firestore
 async function loadInventory() {
     try {
-        // Fetch all products for admin view, regardless of stock or active status
         const snapshot = await db.collection('products').orderBy('name', 'asc').get();
         
         inventory = [];
@@ -153,7 +128,6 @@ function displayInventory() {
 async function addProduct() {
     const form = document.getElementById('addProductForm');
     
-    // Validate stock and price are numbers
     const priceValue = parseFloat(document.getElementById('productPrice').value);
     const stockValue = parseInt(document.getElementById('productStock').value);
 
@@ -182,23 +156,19 @@ async function addProduct() {
     try {
         let imageUrl = '';
         
-        // Upload image to ImgBB
         if (imageFile) {
             imageUrl = await uploadImageToImgBB(imageFile);
             productData.imageUrl = imageUrl;
         }
         
-        // Add product to Firestore
         await db.collection('products').add(productData);
         
         showStatusMessage('Product added successfully', 'success');
         
-        // Reset form and close modal
         form.reset();
         const modal = bootstrap.Modal.getInstance(document.getElementById('addProductModal'));
         if (modal) modal.hide();
         
-        // Reload inventory
         loadInventory();
         
     } catch (error) {
@@ -210,7 +180,7 @@ async function addProduct() {
     }
 }
 
-// Edit product - Populates the modal
+// Edit product
 async function editProduct(productId) {
     const product = inventory.find(p => p.id === productId);
     if (!product) return;
@@ -224,7 +194,6 @@ async function editProduct(productId) {
     document.getElementById('editProductStatus').checked = product.active;
     document.getElementById('currentImageName').textContent = product.imageUrl ? 'Image uploaded' : 'No image';
     
-    // Clear the file input when opening the modal
     const editImageInput = document.getElementById('editProductImage');
     if (editImageInput) editImageInput.value = '';
 
@@ -236,7 +205,6 @@ async function editProduct(productId) {
 async function updateProduct() {
     const productId = document.getElementById('editProductId').value;
 
-    // Validate stock and price are numbers
     const priceValue = parseFloat(document.getElementById('editProductPrice').value);
     const stockValue = parseInt(document.getElementById('editProductStock').value);
     
@@ -263,21 +231,17 @@ async function updateProduct() {
     updateButton.disabled = true;
 
     try {
-        // Upload new image to ImgBB
         if (imageFile) {
             productData.imageUrl = await uploadImageToImgBB(imageFile);
         }
         
-        // Update product in Firestore
         await db.collection('products').doc(productId).update(productData);
         
         showStatusMessage('Product updated successfully', 'success');
         
-        // Close modal
         const modal = bootstrap.Modal.getInstance(document.getElementById('editProductModal'));
         if (modal) modal.hide();
         
-        // Reload inventory
         loadInventory();
         
     } catch (error) {
@@ -289,25 +253,20 @@ async function updateProduct() {
     }
 }
 
-// Confirmation for deletion (Replaced confirm() with visual status message)
+// Confirmation for deletion
 function confirmDeleteProduct(productId) {
     const product = inventory.find(p => p.id === productId);
     if (!product) return;
 
     showStatusMessage(`Are you sure you want to delete product: ${product.name}? Click the trash icon again within 5 seconds to confirm.`, 'warning');
     
-    // Temporarily change the delete button's onclick to the actual delete function
     const deleteBtn = document.querySelector(`#deleteBtn-${productId}`);
     if (deleteBtn) {
-        // Store original onclick string to revert later if needed
         const originalOnclick = deleteBtn.getAttribute('onclick');
         
-        // Update the button's action to call the deletion function directly
         deleteBtn.onclick = () => deleteProduct(productId);
         
-        // Revert the button action after 5 seconds if not clicked
         setTimeout(() => {
-            // Check if the button is still in the confirmation state (i.e., its current onclick is still the direct deleteProduct call)
             if (deleteBtn && deleteBtn.getAttribute('onclick') === `deleteProduct('${productId}')`) {
                  deleteBtn.setAttribute('onclick', originalOnclick);
             }
@@ -326,11 +285,7 @@ async function deleteProduct(productId) {
     }
     
     try {
-        // Delete product from Firestore
         await db.collection('products').doc(productId).delete();
-        
-        // NOTE: We skip attempting to delete the image from ImgBB 
-        // because we don't store the necessary delete hash.
         
         showStatusMessage('Product deleted successfully', 'success');
         loadInventory();
@@ -345,7 +300,7 @@ async function deleteProduct(productId) {
     }
 }
 
-// Show status message (copied for self-containment)
+// Show status message
 function showStatusMessage(message, type = 'info') {
     const existingMessages = document.querySelectorAll('.status-message');
     existingMessages.forEach(msg => msg.remove());
@@ -403,9 +358,15 @@ function getStatusColor(type) {
     return colors[type] || '#17a2b8';
 }
 
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', async function() {
+    await loadImgbbApiKey();
+});
+
 // Make functions available globally
 window.addProduct = addProduct;
 window.editProduct = editProduct;
 window.updateProduct = updateProduct;
 window.deleteProduct = deleteProduct;
-window.confirmDeleteProduct = confirmDeleteProduct; // New confirmation step
+window.confirmDeleteProduct = confirmDeleteProduct;
+window.loadInventory = loadInventory;
