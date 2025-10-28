@@ -108,6 +108,21 @@ body.dark-mode {
     overflow: hidden;
 }
 
+/* --- ADDED NAV DISABLED CLASS --- */
+.nav-link-custom.nav-disabled {
+    pointer-events: none; /* Critical: Disables clicks */
+    opacity: 0.5; /* Visual feedback */
+    background: rgba(255, 255, 255, 0.05); /* Slightly darker background */
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.nav-link-custom.nav-disabled i {
+    color: #6c757d; /* Gray out icon */
+}
+/* --- END ADDED NAV DISABLED CLASS --- */
+
 .nav-link-custom i {
     font-size: 1.05rem;
     width: 20px;
@@ -208,7 +223,7 @@ body.dark-mode {
     }
     
     .offcanvas-body {
-        min-height: calc(100vh - 70px);
+        min-height: calc(100vh - 80px);
     }
 }
 
