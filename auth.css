@@ -7,8 +7,7 @@
 
 body {
     font-family: 'Times New Roman', serif;
-    /* Enhanced background gradient for premium look */
-    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); 
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
     display: flex;
     justify-content: center;
@@ -21,11 +20,9 @@ body {
     max-width: 450px;
     background: white;
     border-radius: 15px;
-    /* Premium shadow with a slight blue glow */
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3), 0 0 40px rgba(60, 150, 255, 0.1); 
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
     overflow: hidden;
     animation: slideUp 0.5s ease-out;
-    position: relative; /* Needed for shake animation */
 }
 
 @keyframes slideUp {
@@ -39,29 +36,11 @@ body {
     }
 }
 
-/* --- SHAKE ANIMATION --- */
-@keyframes shake {
-    0%, 100% {
-        transform: translateX(0);
-    }
-    20%, 60% {
-        transform: translateX(-10px);
-    }
-    40%, 80% {
-        transform: translateX(10px);
-    }
-}
-
-.shake-animation {
-    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
-}
-
 /* Logo Section */
 .logo-section {
     text-align: center;
     padding: 30px 20px 20px;
-    /* Darker, more professional header */
-    background: linear-gradient(135deg, #1e3a8a, #0056b3); 
+    background: linear-gradient(135deg, #007bff, #0056b3);
     color: white;
 }
 
@@ -69,9 +48,6 @@ body {
     width: 80px;
     height: 80px;
     margin-bottom: 15px;
-    border: 3px solid #fbbf24; /* Gold border */
-    border-radius: 50%;
-    box-shadow: 0 0 15px rgba(251, 191, 36, 0.5);
 }
 
 .app-title {
@@ -98,10 +74,9 @@ body {
 
 .form-container h2 {
     text-align: center;
-    color: #1e3a8a; /* Deep blue title */
+    color: #333;
     margin-bottom: 20px;
     font-size: 24px;
-    font-weight: 700;
 }
 
 .subtitle {
@@ -115,14 +90,13 @@ body {
 .form-group {
     margin-bottom: 20px;
     text-align: left;
-    position: relative; /* Ensure error messages position correctly */
 }
 
 .form-group label {
     display: block;
     margin-bottom: 8px;
     font-weight: bold;
-    color: #1e3a8a; /* Deep blue label */
+    color: #333;
     font-size: 14px;
 }
 
@@ -139,9 +113,9 @@ body {
 
 .form-group input:focus {
     outline: none;
-    border-color: #3b82f6; /* Lighter blue focus */
+    border-color: #007bff;
     background: white;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
 }
 
 /* Password Container */
@@ -165,7 +139,7 @@ body {
 }
 
 .toggle-password:hover {
-    color: #3b82f6;
+    color: #007bff;
 }
 
 /* Remember Me */
@@ -188,7 +162,7 @@ body {
 .remember-me input[type="checkbox"] {
     width: 16px;
     height: 16px;
-    accent-color: #3b82f6;
+    accent-color: #007bff;
 }
 
 /* Buttons */
@@ -204,19 +178,16 @@ body {
     font-family: 'Times New Roman', serif;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-bottom: 10px; /* Space for the new button */
 }
 
 .btn-primary {
-    /* Bold, modern primary color */
-    background: linear-gradient(135deg, #3b82f6, #1e40af);
+    background: linear-gradient(135deg, #007bff, #0056b3);
     color: white;
-    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
 }
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+    box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
 }
 
 .btn-primary:active {
@@ -229,40 +200,6 @@ body {
     transform: none;
     box-shadow: none;
 }
-
-/* --- GOOGLE SIGN-IN BUTTON STYLE (Icon Only) --- */
-.btn-google {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: white;
-    border: 2px solid #e1e5e9;
-    color: #1e3a8a;
-    padding: 12px;
-    margin-top: 15px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.btn-google:hover {
-    border-color: #3b82f6;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-}
-
-.google-icon {
-    width: 24px;
-    height: 24px;
-    /* Inline SVG for Google Logo - only need the icon */
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath fill='%23FFC107' d='M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 8.08 3.0L39.227 5.613C34.095 2.188 28.328 0 24 0 10.745 0 0 10.745 0 24s10.745 24 24 24c11.087 0 20.552-7.859 23.839-18.498l-4.227-3.354z'/%3E%3Cpath fill='%23FF3D00' d='M6.306 14.697l6.643 5.269C14.654 17.348 15.655 16 17 16c1.657 0 3 1.343 3 3s-1.343 3-3 3c-.432 0-.848-.092-1.238-.256l-5.6 4.444-1.299.775C10.729 27.535 12 30.685 12 34s-1.271 6.465-3.342 8.783L6.306 37.303C8.88 34.696 10.5 30.298 10.5 24s-1.62-10.696-4.194-12.303z'/%3E%3Cpath fill='%234CAF50' d='M43.611 20.083H42V20H24v8h11.303c-.628 1.93-1.611 3.593-2.873 4.965l5.227 4.155C40.672 32.222 43.02 28.538 43.611 24s-2.028-7.864-4.227-9.522l-4.148-3.305c-1.348 2.373-2.185 4.93-2.522 7.643z'/%3E%3Cpath fill='%231976D2' d='M24 48c6.915 0 13.064-2.893 17.395-7.585L35.611 36.23c-2.238 1.846-5.021 3.0-8.08 3.0-6.627 0-12-5.373-12-12s5.373-12 12-12c3.21 0 5.92 1.258 8.169 3.328l5.446-4.329C37.03 9.47 31.06 6 24 6 15.148 6 7.678 10.957 4.542 18.006l1.299-.775 5.6 4.444c1.077-2.618 2.597-4.93 4.582-6.865C17.78 12.02 20.675 11 24 11s5.842 1.154 8.08 3.0L39.227 5.613C34.095 2.188 28.328 0 24 0z'/%3E%3C/svg%3E");
-    background-size: cover;
-    margin-right: 10px;
-}
-
-.google-text {
-    font-size: 16px;
-    font-weight: 600;
-}
-/* --- END GOOGLE SIGN-IN BUTTON STYLE --- */
 
 /* Form Links */
 .form-links {
@@ -277,14 +214,14 @@ body {
 }
 
 .form-links a {
-    color: #3b82f6; /* Lighter blue link */
+    color: #007bff;
     text-decoration: none;
     font-weight: bold;
     transition: color 0.3s ease;
 }
 
 .form-links a:hover {
-    color: #1e3a8a;
+    color: #0056b3;
     text-decoration: underline;
 }
 
@@ -332,16 +269,34 @@ body {
     display: none !important;
 }
 
-/* Loading State (from existing CSS) */
+/* Loading State */
 .loading {
     position: relative;
     pointer-events: none;
 }
 
-/* Error States (from existing CSS) */
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    border-right-color: transparent;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Error States */
 .error {
     border-color: #dc3545 !important;
-    background-color: #fff5f5 !important;
 }
 
 .error-message {
@@ -351,13 +306,7 @@ body {
     display: block;
 }
 
-/* Success state for matching passwords */
-.password-match-success {
-    border-color: #28a745 !important;
-    background-color: #f8fff9 !important;
-}
-
-/* Responsive Design (from existing CSS) */
+/* Responsive Design */
 @media (max-width: 480px) {
     .auth-container {
         margin: 10px;
@@ -390,7 +339,52 @@ body {
         font-size: 14px;
     }
 }
-/* Remaining styles were already present and robust, kept for completeness */
+
+/* Add to auth.css */
+.password-match .error-message {
+    display: block;
+    font-size: 12px;
+    margin-top: 5px;
+}
+
+/* Style for valid password match */
+input:valid + .toggle-password {
+    color: #28a745;
+}
+
+/* Style for invalid password match */
+input:invalid + .toggle-password {
+    color: #dc3545;
+}
+
+/* Success state for matching passwords */
+.password-match-success {
+    border-color: #28a745 !important;
+}
+
+/* Error state for non-matching passwords */
+.password-match-error {
+    border-color: #dc3545 !important;
+}
+
+/* Add to auth.css - Enhanced Error Styles */
+.error {
+    border-color: #dc3545 !important;
+    background-color: #fff5f5 !important;
+}
+
+.error-message {
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: 5px;
+    display: block;
+}
+
+.password-match-success {
+    border-color: #28a745 !important;
+    background-color: #f8fff9 !important;
+}
+
 .suggestion-message {
     background: #d1ecf1;
     color: #0c5460;
@@ -401,6 +395,7 @@ body {
     border: 1px solid #bee5eb;
     font-size: 13px;
 }
+
 .success-message {
     background: #d4edda;
     color: #155724;
@@ -412,6 +407,21 @@ body {
     font-size: 14px;
     font-weight: bold;
 }
+
+/* Enhanced form group spacing */
+.form-group {
+    margin-bottom: 20px;
+    text-align: left;
+    position: relative;
+}
+
+/* Loading state improvements */
+.loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.7;
+}
+
 .loading::after {
     content: '';
     position: absolute;
@@ -425,10 +435,19 @@ body {
     border-right-color: transparent;
     animation: spin 0.8s linear infinite;
 }
+
 @keyframes spin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
+
+/* Enhanced loading states */
+.btn-loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.7;
+}
+
 .btn-loading::after {
     content: '';
     position: absolute;
@@ -440,6 +459,13 @@ body {
     animation: spin 1s linear infinite;
     right: 15px;
 }
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Success message enhancements */
 .success-message-enhanced {
     background: #d4edda;
     color: #155724;
@@ -450,14 +476,9 @@ body {
     border: 1px solid #c3e6cb;
     animation: fadeIn 0.5s ease-in;
 }
+
 .success-message-enhanced i {
     font-size: 24px;
     margin-bottom: 10px;
     display: block;
 }
-.form-group {
-    margin-bottom: 20px;
-    text-align: left;
-    position: relative;
-}
-
