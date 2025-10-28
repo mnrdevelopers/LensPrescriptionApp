@@ -657,6 +657,92 @@
         </section>
     </div>
 
+    <!-- Payment Modal -->
+<div id="paymentModal" class="modal-overlay">
+  <div class="modal-content large">
+    <div class="text-center">
+      <i class="fas fa-crown fa-3x text-warning mb-3"></i>
+      <h2>Upgrade Required</h2>
+      <p class="text-muted">You've reached the free limit of 10 prescriptions this month.</p>
+      <p>Choose a plan to continue using Lens Prescription:</p>
+    </div>
+
+    <div class="subscription-plans mt-4">
+      <!-- Monthly Plan -->
+      <div class="plan-card monthly-plan" onclick="selectPlan('monthly')">
+        <div class="plan-header">
+          <h4>Monthly Plan</h4>
+          <div class="plan-price">
+            <span class="price">₹99</span>
+            <span class="period">/month</span>
+          </div>
+        </div>
+        <ul class="plan-features">
+          <li>✓ Unlimited Prescriptions</li>
+          <li>✓ All Features Included</li>
+          <li>✓ Priority Support</li>
+          <li>✓ Cancel Anytime</li>
+        </ul>
+        <div class="plan-selector">
+          <input type="radio" name="plan" id="monthlyPlan" value="monthly">
+          <label for="monthlyPlan">Select Monthly</label>
+        </div>
+      </div>
+
+      <!-- Yearly Plan -->
+      <div class="plan-card yearly-plan" onclick="selectPlan('yearly')">
+        <div class="plan-header">
+          <div class="popular-badge">Most Popular</div>
+          <h4>Yearly Plan</h4>
+          <div class="plan-price">
+            <span class="price">₹499</span>
+            <span class="period">/year</span>
+          </div>
+          <div class="savings">Save 58%</div>
+        </div>
+        <ul class="plan-features">
+          <li>✓ Unlimited Prescriptions</li>
+          <li>✓ All Features Included</li>
+          <li>✓ Priority Support</li>
+          <li>✓ Best Value</li>
+        </ul>
+        <div class="plan-selector">
+          <input type="radio" name="plan" id="yearlyPlan" value="yearly" checked>
+          <label for="yearlyPlan">Select Yearly</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-buttons mt-4">
+      <button onclick="proceedToPayment()" class="btn btn-primary btn-lg">
+        <i class="fas fa-lock"></i> Proceed to Payment
+      </button>
+      <button onclick="closePaymentModal()" class="btn btn-secondary">
+        Maybe Later
+      </button>
+    </div>
+
+    <div class="text-center mt-3">
+      <small class="text-muted">
+        Secure payment powered by Razorpay
+      </small>
+    </div>
+  </div>
+</div>
+
+<!-- Payment Processing Modal -->
+<div id="paymentProcessingModal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="text-center">
+      <div class="spinner-border text-primary mb-3" role="status">
+        <span class="visually-hidden">Processing...</span>
+      </div>
+      <h4>Processing Payment</h4>
+      <p>Please wait while we process your payment...</p>
+    </div>
+  </div>
+</div>
+
     <!-- START: Timer Modal for WhatsApp Loading -->
     <div id="whatsappTimerModal" class="modal-overlay">
         <div class="modal-content large" style="max-width: 350px;">
@@ -696,3 +782,4 @@
     </script>
 </body>
 </html>
+
