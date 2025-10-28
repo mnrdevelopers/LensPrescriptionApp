@@ -72,12 +72,14 @@ body.dark-mode {
     transform: rotate(10deg) scale(1.05);
 }
 
+/* Positioning for toggler and mobile elements */
 .navbar-toggler {
     border: 1px solid white;
     padding: 8px;
     border-radius: 10px;
     background: rgba(255, 255, 255, 0.1);
     transition: all 0.3s ease;
+    margin-left: 10px; /* Space from logout button */
 }
 
 .navbar-toggler:focus {
@@ -88,6 +90,25 @@ body.dark-mode {
     /* White icon for dark background */
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='white' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
 }
+
+/* --- Mobile Logout Button Styling (Icon only on navbar) --- */
+#mobileLogoutIcon {
+    /* Ensure it behaves like a control element in the navbar */
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    
+    /* Overrides for mobile appearance */
+    padding: 8px; 
+    width: 40px; 
+    height: 40px; 
+    border-radius: 10px;
+    font-size: 1.2rem;
+    
+    /* Ensure it's hidden on desktop (d-lg-none class handles this) */
+}
+/* --- END Mobile Logout Button Styling --- */
+
 
 /* Enhanced Nav Links (Custom Class: nav-link-custom) */
 .navbar-nav {
@@ -223,7 +244,7 @@ body.dark-mode {
     }
     
     .offcanvas-body {
-        min-height: calc(100vh - 70px);
+        min-height: calc(100vh - 80px);
     }
 }
 
@@ -232,7 +253,7 @@ body.dark-mode {
     background-color: rgba(0, 0, 0, 0.5);
 }
 
-/* Improved button styles in offcanvas */
+/* Improved button styles in offcanvas (NOTE: The full button was removed from HTML) */
 .offcanvas-body .premium-logout {
     margin: 0;
     padding: 12px;
@@ -1391,157 +1412,21 @@ body.offline .navbar {
 
 /* Print styles for PWA */
 @media print {
-    .install-prompt,
-    .update-notification,
-    .status-message {
-        display: none !important;
-    }
-}
-
-/* Enhanced preview container for better printing */
-#prescriptionPreview {
-    width: 100%;
-    max-width: 58mm;
-    margin: 0 auto;
-    padding: 15px;
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    font-family: 'Times New Roman', serif;
-    font-size: 12px;
-    line-height: 1.2;
-    box-sizing: border-box;
-}
-
-/* WhatsApp button specific styles */
-.btn-whatsapp {
-    background: #25D366 !important;
-    color: white !important;
-    border: none !important;
-}
-
-.btn-whatsapp:hover {
-    background: #128C7E !important;
-    transform: translateY(-2px) !important;
-}
-
-.btn-whatsapp:disabled {
-    background: #ccc !important;
-    cursor: not-allowed !important;
-    transform: none !important;
-}
-
-/* Print button specific styles */
-.btn-print {
-    background: #6c757d !important;
-    color: white !important;
-    border: none !important;
-}
-
-.btn-print:hover {
-    background: #545b62 !important;
-    transform: translateY(-2px) !important;
-}
-
-/* Enhanced preview buttons container */
-.preview-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    margin-top: 25px;
-    flex-wrap: wrap;
-}
-
-.preview-buttons .btn {
-    padding: 12px 20px;
-    font-size: 14px;
-    min-width: 120px;
-    border-radius: 8px;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-/* Mobile responsive for preview buttons */
-@media (max-width: 768px) {
-    .preview-buttons {
-        flex-direction: column;
-        gap: 10px;
-    }
-    
-    .preview-buttons .btn {
-        width: 100%;
-        min-width: auto;
-    }
-}
-
-/* Animation for status messages */
-@keyframes slideInRight {
-    from {
-        opacity: 0;
-        transform: translateX(100%);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-/* Loading states for buttons */
-.btn-loading {
-    position: relative;
-    pointer-events: none;
-    opacity: 0.7;
-}
-
-.btn-loading::after {
-    content: '';
-    position: absolute;
-    width: 16px;
-    height: 16px;
-    border: 2px solid transparent;
-    border-top: 2px solid currentColor;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* Clean 58mm Thermal Printer Print & PDF Styles */
-@media print {
-    /* Reset everything for thermal printer */
-    * {
-        margin: 0 !important;
-        padding: 0 !important;
-        box-shadow: none !important;
-        text-shadow: none !important;
-        background: transparent !important;
-        color: black !important;
-        float: none !important;
-        position: static !important;
-    }
-    
-    /* Hide everything except prescription */
-    body * {
+    /* CRITICAL FIX: Only apply hiding rules if the PDF-generating class is NOT present */
+    body:not(.pdf-generating) * {
         display: none !important;
         visibility: hidden !important;
     }
     
-    /* Show only prescription preview */
-    #prescriptionPreview,
-    #prescriptionPreview * {
+    /* Show only prescription preview when printing normally */
+    body:not(.pdf-generating) #prescriptionPreview,
+    body:not(.pdf-generating) #prescriptionPreview * {
         display: block !important;
         visibility: visible !important;
     }
     
-    /* Thermal printer specific container */
-    #prescriptionPreview {
+    /* Thermal printer specific container when printing normally */
+    body:not(.pdf-generating) #prescriptionPreview {
         width: 58mm !important;
         min-height: auto !important;
         margin: 0 !important;
@@ -1558,13 +1443,13 @@ body.offline .navbar {
         top: 0 !important;
     }
     
-    /* Hide all UI elements */
-    .navbar,
-    .preview-buttons,
-    .btn-back,
-    .install-prompt,
-    .update-notification,
-    .status-message {
+    /* Hide all UI elements when printing normally */
+    body:not(.pdf-generating) .navbar,
+    body:not(.pdf-generating) .preview-buttons,
+    body:not(.pdf-generating) .btn-back,
+    body:not(.pdf-generating) .install-prompt,
+    body:not(.pdf-generating) .update-notification,
+    body:not(.pdf-generating) .status-message {
         display: none !important;
     }
     
@@ -1575,6 +1460,8 @@ body.offline .navbar {
         size: 58mm auto;
     }
 }
+/* --- END PRINT FIX --- */
+
 
 /* Enhanced on-screen preview for 58mm */
 #prescriptionPreview {
@@ -1677,7 +1564,7 @@ body.offline .navbar {
     margin: 6px 0;
 }
 
-/* PDF Generation Specific Styles */
+/* PDF Generation Specific Styles (Note: These are largely redundant due to JS style injection, but kept for reference) */
 .pdf-container {
     width: 58mm;
     margin: 0 auto;
