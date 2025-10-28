@@ -12,13 +12,6 @@ const firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
-// Initialize Firebase services
+// Add these global declarations
 const auth = firebase.auth();
 const db = firebase.firestore();
-const storage = firebase.storage();
-
-// Enable offline persistence
-db.enablePersistence()
-  .catch((err) => {
-      console.log('Firebase persistence error: ', err);
-  });
