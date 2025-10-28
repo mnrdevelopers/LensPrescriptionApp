@@ -170,7 +170,33 @@
         <section id="dashboardSection" class="page-section active">
             <div class="dashboard-container">
                 <h2 id="dashboardWelcomeText">Welcome to Lens Prescription</h2>
-                <div class="button-group">
+                
+                <!-- Stats Section -->
+                <div class="section-title mt-4">Practice Overview</div>
+                <div class="stats-filters">
+                    <label for="statsTimePeriod">View Stats:</label>
+                    <select id="statsTimePeriod" onchange="fetchDashboardStats()">
+                        <option value="daily">Today</option>
+                        <option value="weekly">Last 7 Days</option>
+                        <option value="monthly">Last 30 Days</option>
+                        <option value="all">All Time</option>
+                    </select>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card stat-prescriptions">
+                        <i class="fas fa-file-medical"></i>
+                        <p class="stat-value" id="statPrescriptions">0</p>
+                        <p class="stat-label">Prescriptions</p>
+                    </div>
+                    <div class="stat-card stat-revenue">
+                        <i class="fas fa-rupee-sign"></i>
+                        <p class="stat-value" id="statRevenue">₹ 0.00</p>
+                        <p class="stat-label">Total Revenue</p>
+                    </div>
+                </div>
+
+                <div class="button-group mt-5">
                     <button onclick="showPrescriptionForm()" class="btn btn-primary">
                         <i class="fas fa-plus-circle"></i> Add New Prescription
                     </button>
@@ -401,14 +427,22 @@
             </div>
         </section>
 
-        <!-- View Prescriptions Section -->
+        <!-- View Prescriptions Section (Updated with Date Filters) -->
         <section id="prescriptionsSection" class="page-section">
             <div class="container">
                 <h2>Prescription History</h2>
                 
-                <div class="search-bar">
-                    <input type="text" id="searchInput" placeholder="Search by Name or Mobile" onkeyup="filterPrescriptions()">
-                    <button class="btn-search">Search</button>
+                <div class="filter-controls">
+                    <div class="search-bar">
+                        <input type="text" id="searchInput" placeholder="Search by Name or Mobile" onkeyup="filterPrescriptions()">
+                        <button class="btn-search">Search</button>
+                    </div>
+                    <div class="date-filter-group">
+                        <label for="prescriptionDateStart">Start Date:</label>
+                        <input type="date" id="prescriptionDateStart" onchange="fetchPrescriptions()">
+                        <label for="prescriptionDateEnd">End Date:</label>
+                        <input type="date" id="prescriptionDateEnd" onchange="fetchPrescriptions()">
+                    </div>
                 </div>
 
                 <table id="prescriptionTable">
@@ -432,27 +466,38 @@
             </div>
         </section>
 
-        <!-- Reports Section -->
+        <!-- Reports Section (Updated with Date Filters) -->
         <section id="reportsSection" class="page-section">
             <div class="reports-container">
                 <h2>Reports</h2>
-                <div class="button-group">
-                    <button onclick="fetchDailyReport()" class="btn btn-primary">Daily Report</button>
-                    <button onclick="fetchWeeklyReport()" class="btn btn-secondary">Weekly Report</button>
-                    <button onclick="fetchMonthlyReport()" class="btn btn-tertiary">Monthly Report</button>
+                
+                <div class="date-filter-group report-date-filters">
+                    <label for="reportDateStart">Start Date:</label>
+                    <input type="date" id="reportDateStart" onchange="fetchReportDataByRange()">
+                    <label for="reportDateEnd">End Date:</label>
+                    <input type="date" id="reportDateEnd" onchange="fetchReportDataByRange()">
+                    <button onclick="fetchReportDataByRange()" class="btn btn-primary btn-sm">Generate Report</button>
                 </div>
 
                 <!-- Report Table -->
                 <table id="reportTable">
                     <thead>
                         <tr>
-                            <th>Date</th>
+                            <th>Date Group</th>
                             <th>Prescriptions</th>
                             <th>Amount Earned</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
                 </table>
+                
+                <!-- Report Summary -->
+                <div class="report-summary mt-4">
+                    <h3>Summary:</h3>
+                    <p>Total Prescriptions: <strong id="reportTotalPrescriptions">0</strong></p>
+                    <p>Total Revenue: <strong id="reportTotalRevenue">₹ 0.00</strong></p>
+                </div>
+
             </div>
         </section>
 
