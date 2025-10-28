@@ -223,7 +223,7 @@ body.dark-mode {
     }
     
     .offcanvas-body {
-        min-height: calc(100vh - 80px);
+        min-height: calc(100vh - 70px);
     }
 }
 
