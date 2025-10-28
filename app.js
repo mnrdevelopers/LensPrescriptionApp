@@ -5,6 +5,7 @@ let currentPrescriptionData = null;
 let whatsappImageUrl = null;
 let isFormFilled = false;
 let deferredPrompt;
+let IMGBB_API_KEY = null;
 // Flag to track if the user profile is complete
 let isProfileComplete = false;
 // Store the last valid section to return to after setup
@@ -46,6 +47,9 @@ function initializeApp() {
     // Load user profile and check for completion
     loadUserProfile();
     
+    // Load ImgBB API key
+    loadImgbbApiKey();
+    
     // Setup event listeners
     setupEventListeners();
     setupPWA(); // Enhanced PWA setup
@@ -54,9 +58,6 @@ function initializeApp() {
     setInitialDateFilters();
     
     console.log('App initialized successfully');
-    
-    // The loadUserProfile function will ultimately call routeToHashedSection() if the profile is complete.
-    // If profile is incomplete, it will call showProfileSetup(true) instead.
 }
 
 function setInitialDateFilters() {
@@ -1883,8 +1884,10 @@ async function sendWhatsApp() {
 }
 
 async function uploadImageToImgBB(base64Image) {
-    // FIX: Using globally defined apiKey variable for consistency
-    const apiKey = "bbfde58b1da5fc9ee9d7d6a591852f71";
+    // Use the dynamically loaded API key
+    if (!IMGBB_API_KEY || IMGBB_API_KEY === 'DISABLED') {
+        throw new Error('Image upload key is unavailable.');
+    }
     
     // Convert base64 to blob for better compatibility
     const blob = dataURLToBlob(base64Image);
@@ -1892,7 +1895,7 @@ async function uploadImageToImgBB(base64Image) {
     formData.append("image", blob);
 
     try {
-        const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+        const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
             method: "POST",
             body: formData
         });
@@ -2306,4 +2309,42 @@ async function syncOfflinePrescriptions() {
     // Update localStorage with sync status
     localStorage.setItem('offlinePrescriptions', JSON.stringify(offlinePrescriptions));
     console.log(`Synced ${syncedPrescriptions.length} prescriptions`);
+}
+
+// Add this function to load the ImgBB API key
+async function loadImgbbApiKey() {
+    if (IMGBB_API_KEY) return;
+
+    try {
+        const response = await fetch('/.netlify/functions/get-imgbb-key');
+        if (!response.ok) {
+            throw new Error('Failed to load ImgBB API key');
+        }
+        const data = await response.json();
+        IMGBB_API_KEY = data.key;
+        console.log('ImgBB API Key loaded successfully');
+    } catch (error) {
+        console.error('Error loading ImgBB API key:', error);
+        showStatusMessage('Image upload temporarily unavailable', 'error');
+        IMGBB_API_KEY = 'DISABLED';
+    }
+}
+
+// Helper function to convert data URL to blob
+function dataURLToBlob(dataURL) {
+    const parts = dataURL.split(';base64,');
+    const contentType = parts[0].split(':')[1];
+    const raw = window.atob(parts[1]);
+    const uInt8Array = new Uint8Array(raw.length);
+    
+    for (let i = 0; i < raw.length; ++i) {
+        uInt8Array[i] = raw.charCodeAt(i);
+    }
+    
+    return new Blob([uInt8Array], { type: contentType });
+}
+
+async function convertToBlobUrl(imageData) {
+    const blob = dataURLToBlob(imageData);
+    return URL.createObjectURL(blob);
 }
