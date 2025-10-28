@@ -290,7 +290,7 @@ body.dark-mode {
 
 /* Dashboard */
 .dashboard-container {
-    max-width: 500px;
+    max-width: 800px; /* Increased max width for stats */
     margin: 50px auto;
     padding: 30px;
     background: white;
@@ -310,6 +310,82 @@ body.dark-mode {
     flex-direction: column;
     gap: 20px;
 }
+
+/* --- New Stats Section Styles --- */
+.stats-filters {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 30px;
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.stats-filters select {
+    padding: 8px 15px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    background-color: var(--light-color);
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.stat-card {
+    background: var(--light-color);
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease;
+    border-bottom: 5px solid;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-card i {
+    font-size: 2.5rem;
+    margin-bottom: 15px;
+    display: block;
+    color: var(--primary-color);
+}
+
+.stat-card.stat-prescriptions {
+    border-bottom-color: var(--success-color);
+}
+.stat-card.stat-prescriptions i {
+    color: var(--success-color);
+}
+
+.stat-card.stat-revenue {
+    border-bottom-color: var(--warning-color);
+}
+.stat-card.stat-revenue i {
+    color: var(--warning-color);
+}
+
+.stat-value {
+    font-size: 2.2rem;
+    font-weight: 900;
+    margin: 0 0 5px 0;
+    color: var(--dark-color);
+}
+
+.stat-label {
+    font-size: 1rem;
+    color: var(--secondary-color);
+    margin: 0;
+}
+/* --- End New Stats Section Styles --- */
+
 
 .btn {
     padding: 15px 20px;
@@ -569,10 +645,15 @@ body.dark-mode {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 
+/* --- Filter Controls Styles --- */
+.filter-controls {
+    margin-bottom: 25px;
+}
+
 .search-bar {
     display: flex;
     gap: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
 }
 
 .search-bar input {
@@ -591,6 +672,37 @@ body.dark-mode {
     border-radius: 5px;
     cursor: pointer;
 }
+
+.date-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.date-filter-group label {
+    font-weight: bold;
+    font-size: 14px;
+    color: var(--dark-color);
+}
+
+.date-filter-group input[type="date"] {
+    padding: 8px;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+    font-size: 14px;
+    max-width: 150px;
+}
+
+.date-filter-group .btn {
+    padding: 8px 15px;
+    font-size: 14px;
+}
+/* --- End Filter Controls Styles --- */
 
 #prescriptionTable {
     width: 100%;
@@ -649,16 +761,32 @@ body.dark-mode {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 
-.reports-container .button-group {
-    flex-direction: row;
-    justify-content: center;
+.reports-container .report-date-filters {
     margin-bottom: 30px;
+    justify-content: center;
 }
 
-.reports-container .btn {
-    flex: 1;
-    max-width: 200px;
+.report-summary {
+    text-align: left;
+    padding: 15px;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    background: #f8f9fa;
 }
+
+.report-summary h3 {
+    font-size: 1.3rem;
+    color: var(--primary-color);
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 5px;
+    margin-bottom: 10px;
+}
+
+.report-summary p {
+    font-size: 1.1rem;
+    margin-bottom: 5px;
+}
+
 
 #reportTable {
     width: 100%;
@@ -1067,8 +1195,18 @@ button:disabled {
         grid-template-columns: 1fr;
     }
     
-    .reports-container .button-group {
+    .reports-container .report-date-filters {
         flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .reports-container .report-date-filters input,
+    .reports-container .report-date-filters button {
+        max-width: none;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
     }
     
     .reports-container .btn {
@@ -1133,6 +1271,10 @@ button:disabled {
         min-width: auto;
         padding: 6px 10px;
         font-size: 12px;
+    }
+    
+    .date-filter-group input[type="date"] {
+        max-width: 100%;
     }
 }
 
