@@ -1193,7 +1193,7 @@ function loadPreviewData(data) {
 /**
  * Renders the preview content as a downloadable PNG image.
  */
-function generatePDF() {
+function generateImage() {
     // The name is misleading, but we are now generating an IMAGE (PNG) for download.
     const btn = document.querySelector('.btn-download');
     if (btn) {
