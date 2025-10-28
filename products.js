@@ -1,4 +1,4 @@
-// products.js - Products and Cart Management with Neon Database
+// products.js - Products and Cart Management with Firebase
 
 let products = [];
 let cart = JSON.parse(localStorage.getItem('cart')) || [];
@@ -23,52 +23,51 @@ async function initializeRazorpay() {
     }
 }
 
-// Load products from Neon database
+// Load products from Firebase
 async function loadProducts() {
     try {
-        const response = await fetch('/.netlify/functions/get-products');
-        
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-        }
-        
-        products = await response.json();
-        
-        // Load images for products
-        await loadProductImages();
+        const snapshot = await db.collection('products').where('stock', '>', 0).get();
+        products = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
         
         displayProducts(products);
     } catch (error) {
         console.error('Error loading products:', error);
-        showStatusMessage(`Error loading products: ${error.message}`, 'error');
+        showStatusMessage('Error loading products', 'error');
         
-        // Display fallback products or empty state
-        displayProducts([]);
+        // Load fallback products
+        loadFallbackProducts();
     }
 }
 
-// Load product images
-async function loadProductImages() {
-    for (let product of products) {
-        if (product.imageName && !product.imageUrl) {
-            try {
-                const imageResponse = await fetch(`/.netlify/functions/get-product-image?id=${product.id}`);
-                if (imageResponse.ok) {
-                    const imageData = await imageResponse.json();
-                    product.imageUrl = imageData.imageUrl;
-                }
-            } catch (error) {
-                console.error(`Error loading image for product ${product.id}:`, error);
-                product.imageUrl = 'https://via.placeholder.com/300x200?text=No+Image';
-            }
-        } else if (!product.imageUrl) {
-            product.imageUrl = 'https://via.placeholder.com/300x200?text=No+Image';
+// Fallback products if Firebase fails
+function loadFallbackProducts() {
+    products = [
+        {
+            id: '1',
+            name: 'Classic Eyeglasses',
+            description: 'Premium classic eyeglasses with anti-glare coating',
+            price: 2999,
+            stock: 10,
+            category: 'Eyeglasses',
+            imageUrl: 'https://i.ibb.co/0Q8Lz1N/glasses1.jpg'
+        },
+        {
+            id: '2',
+            name: 'Sunglasses Pro', 
+            description: 'UV protection sunglasses with polarized lenses',
+            price: 1999,
+            stock: 15,
+            category: 'Sunglasses',
+            imageUrl: 'https://i.ibb.co/7W0sL5p/sunglasses1.jpg'
         }
-    }
+    ];
+    displayProducts(products);
 }
 
-// Display products in grid
+// Display products in grid (same as before, but simplified)
 function displayProducts(productsToShow) {
     const grid = document.getElementById('productsGrid');
     
@@ -111,7 +110,7 @@ function displayProducts(productsToShow) {
     `).join('');
 }
 
-// Filter products
+// Filter products (same as before)
 function filterProducts() {
     const searchTerm = document.getElementById('productSearch').value.toLowerCase();
     const category = document.getElementById('categoryFilter').value;
@@ -132,7 +131,7 @@ function filterProducts() {
     displayProducts(filteredProducts);
 }
 
-// View product details
+// View product details (same as before)
 function viewProduct(productId) {
     const product = products.find(p => p.id === productId);
     if (!product) return;
@@ -148,14 +147,13 @@ function viewProduct(productId) {
         this.src = 'https://via.placeholder.com/400x300?text=No+Image';
     };
     
-    // Store current product ID in modal for cart operations
     document.getElementById('productModal').dataset.productId = productId;
     
     const modal = new bootstrap.Modal(document.getElementById('productModal'));
     modal.show();
 }
 
-// Add to cart
+// Add to cart (same as before)
 function addToCart() {
     const productId = document.getElementById('productModal').dataset.productId;
     const quantity = parseInt(document.getElementById('quantity').value) || 1;
@@ -185,12 +183,11 @@ function addToCart() {
     updateCart();
     showStatusMessage('Product added to cart', 'success');
     
-    // Close modal
     const modal = bootstrap.Modal.getInstance(document.getElementById('productModal'));
     modal.hide();
 }
 
-// Update cart display
+// Update cart (same as before)
 function updateCart() {
     localStorage.setItem('cart', JSON.stringify(cart));
     
@@ -233,11 +230,82 @@ function updateCart() {
     checkoutBtn.disabled = false;
 }
 
-// Remove from cart
+// Remove from cart (same as before)
 function removeFromCart(productId) {
     cart = cart.filter(item => item.id !== productId);
     updateCart();
     showStatusMessage('Product removed from cart', 'success');
+}
+
+// Checkout with Razorpay (Updated for Firebase)
+async function checkout() {
+    if (cart.length === 0) return;
+    
+    const user = auth.currentUser;
+    if (!user) {
+        showStatusMessage('Please login to checkout', 'error');
+        return;
+    }
+    
+    if (!razorpayKey) {
+        await initializeRazorpay();
+        if (!razorpayKey) {
+            showStatusMessage('Payment system unavailable. Please try again.', 'error');
+            return;
+        }
+    }
+    
+    const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    
+    try {
+        // Create order in Firestore
+        const orderData = {
+            userId: user.uid,
+            userEmail: user.email,
+            userName: user.displayName || 'Customer',
+            items: cart,
+            totalAmount: totalAmount,
+            status: 'pending',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        
+        const orderRef = await db.collection('orders').add(orderData);
+        
+        // Create Razorpay order
+        const razorpayOrder = await createRazorpayOrder(totalAmount, orderRef.id);
+        
+        // Razorpay options
+        const options = {
+            key: razorpayKey,
+            amount: razorpayOrder.amount,
+            currency: razorpayOrder.currency,
+            name: 'Lens Prescription',
+            description: 'Eyewear Products Order',
+            order_id: razorpayOrder.id,
+            handler: async function(response) {
+                await verifyPayment(response, orderRef.id, totalAmount);
+            },
+            prefill: {
+                name: user.displayName || '',
+                email: user.email,
+            },
+            theme: {
+                color: '#007bff'
+            },
+            modal: {
+                ondismiss: function() {
+                    showStatusMessage('Payment cancelled', 'warning');
+                }
+            }
+        };
+        
+        const rzp = new Razorpay(options);
+        rzp.open();
+        
+    } catch (error) {
+        console.error('Checkout error:', error);
+        showStatusMessage('Checkout failed. Please try again.', 'error');
+    }
 }
 
 // Create Razorpay order (server-side)
@@ -267,79 +335,6 @@ async function createRazorpayOrder(amount, orderId) {
     }
 }
 
-// Checkout with Razorpay
-async function checkout() {
-    if (cart.length === 0) return;
-    
-    const user = auth.currentUser;
-    if (!user) {
-        showStatusMessage('Please login to checkout', 'error');
-        return;
-    }
-    
-    // Ensure Razorpay is initialized
-    if (!razorpayKey) {
-        await initializeRazorpay();
-        if (!razorpayKey) {
-            showStatusMessage('Payment system unavailable. Please try again.', 'error');
-            return;
-        }
-    }
-    
-    const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    
-    try {
-        // Create order in Firestore first (or you can use Neon for orders too)
-        const orderData = {
-            userId: user.uid,
-            userEmail: user.email,
-            items: cart,
-            totalAmount: totalAmount,
-            status: 'pending',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
-        
-        const orderRef = await db.collection('orders').add(orderData);
-        
-        // Create Razorpay order
-        const razorpayOrder = await createRazorpayOrder(totalAmount, orderRef.id);
-        
-        // Razorpay options
-        const options = {
-            key: razorpayKey,
-            amount: razorpayOrder.amount,
-            currency: razorpayOrder.currency,
-            name: 'Lens Prescription',
-            description: 'Eyewear Products Order',
-            order_id: razorpayOrder.id,
-            handler: async function(response) {
-                // Payment successful - verify payment
-                await verifyPayment(response, orderRef.id, totalAmount);
-            },
-            prefill: {
-                name: user.displayName || '',
-                email: user.email,
-                contact: '' // You can store user phone in profile
-            },
-            theme: {
-                color: '#007bff'
-            },
-            modal: {
-                ondismiss: function() {
-                    showStatusMessage('Payment cancelled', 'warning');
-                }
-            }
-        };
-        
-        const rzp = new Razorpay(options);
-        rzp.open();
-        
-    } catch (error) {
-        console.error('Checkout error:', error);
-        showStatusMessage('Checkout failed. Please try again.', 'error');
-    }
-}
-
 // Verify payment after success
 async function verifyPayment(paymentResponse, orderId, totalAmount) {
     try {
@@ -362,7 +357,7 @@ async function verifyPayment(paymentResponse, orderId, totalAmount) {
         const verification = await verifyResponse.json();
 
         if (verification.valid) {
-            // Payment verified successfully
+            // Payment verified successfully - update order status
             await db.collection('orders').doc(orderId).update({
                 status: 'paid',
                 paymentId: paymentResponse.razorpay_payment_id,
@@ -371,7 +366,7 @@ async function verifyPayment(paymentResponse, orderId, totalAmount) {
                 paidAt: firebase.firestore.FieldValue.serverTimestamp()
             });
 
-            // Update product stock in Neon
+            // Update product stock in Firebase
             for (const item of cart) {
                 await updateProductStock(item.id, item.quantity);
             }
@@ -395,21 +390,17 @@ async function verifyPayment(paymentResponse, orderId, totalAmount) {
     }
 }
 
-// Update product stock in Neon
+// Update product stock in Firebase
 async function updateProductStock(productId, quantity) {
     try {
-        const response = await fetch(`/.netlify/functions/update-product/${productId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                stock: await getCurrentStock(productId) - quantity
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to update product stock');
+        const productRef = db.collection('products').doc(productId);
+        const productDoc = await productRef.get();
+        
+        if (productDoc.exists) {
+            const currentStock = productDoc.data().stock;
+            await productRef.update({
+                stock: currentStock - quantity
+            });
         }
     } catch (error) {
         console.error('Error updating product stock:', error);
@@ -417,24 +408,58 @@ async function updateProductStock(productId, quantity) {
     }
 }
 
-// Get current stock from Neon
-async function getCurrentStock(productId) {
+// Admin function to add product with image upload to ImgBB
+async function addProductWithImage(productData, imageFile) {
     try {
-        const response = await fetch('/.netlify/functions/get-products');
-        if (!response.ok) throw new Error('Failed to fetch products');
+        // First upload image to ImgBB
+        const imageUrl = await uploadImageToImgBB(imageFile);
         
-        const products = await response.json();
-        const product = products.find(p => p.id === productId);
-        return product ? product.stock : 0;
+        // Then add product to Firebase with the image URL
+        const productWithImage = {
+            ...productData,
+            imageUrl: imageUrl,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        
+        const docRef = await db.collection('products').add(productWithImage);
+        showStatusMessage('Product added successfully!', 'success');
+        return docRef.id;
+        
     } catch (error) {
-        console.error('Error getting current stock:', error);
-        return 0;
+        console.error('Error adding product:', error);
+        showStatusMessage('Failed to add product', 'error');
+        throw error;
     }
 }
 
-// Show status message
+// Upload image to ImgBB
+async function uploadImageToImgBB(imageFile) {
+    const formData = new FormData();
+    formData.append('image', imageFile);
+    
+    // You'll need to get a free API key from imgbb.com
+    const imgbbApiKey = 'your-imgbb-api-key'; // Replace with your actual key
+    
+    try {
+        const response = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbApiKey}`, {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            throw new Error('Image upload failed');
+        }
+        
+        const data = await response.json();
+        return data.data.url; // Return the image URL
+    } catch (error) {
+        console.error('ImgBB upload error:', error);
+        throw error;
+    }
+}
+
+// Show status message (same as before)
 function showStatusMessage(message, type = 'info') {
-    // Remove existing messages
     const existingMessages = document.querySelectorAll('.status-message');
     existingMessages.forEach(msg => msg.remove());
     
@@ -495,6 +520,7 @@ function getStatusColor(type) {
 document.addEventListener('DOMContentLoaded', function() {
     initializeRazorpay();
     updateCart();
+    // Products will be loaded after Firebase auth
 });
 
 // Make functions available globally
