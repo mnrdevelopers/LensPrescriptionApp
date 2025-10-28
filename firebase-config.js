@@ -15,3 +15,19 @@ firebase.initializeApp(firebaseConfig);
 // Add these global declarations
 const auth = firebase.auth();
 const db = firebase.firestore();
+
+// Subscription constants
+const SUBSCRIPTION_PLANS = {
+  MONTHLY: {
+    name: 'monthly',
+    amount: 99,
+    duration: 30 // days
+  },
+  YEARLY: {
+    name: 'yearly',
+    amount: 499,
+    duration: 365 // days
+  }
+};
+
+const FREE_PRESCRIPTION_LIMIT = 10;
