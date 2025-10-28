@@ -54,6 +54,11 @@ function initializeApp() {
     setInitialDateFilters();
     
     console.log('App initialized successfully');
+    
+    // NEW FIX: Check URL hash on app initialization to restore correct section
+    // The loadUserProfile function will ultimately call this if the profile is complete.
+    // If profile is incomplete, it will call showProfileSetup(true) instead.
+    // We defer hash checking until loadUserProfile confirms profile completion.
 }
 
 function setInitialDateFilters() {
@@ -413,61 +418,91 @@ function navigateIfProfileComplete(navFunction, sectionName) {
     }
 }
 
+// NEW FUNCTION: Handles routing based on the URL hash
+function routeToHashedSection() {
+    const hash = window.location.hash.substring(1); // Get hash without '#'
+
+    switch (hash) {
+        case 'dashboard':
+            showDashboard();
+            break;
+        case 'form':
+            showPrescriptionForm();
+            break;
+        case 'prescriptions':
+            showPrescriptions();
+            break;
+        case 'reports':
+            showReports();
+            break;
+        case 'setup':
+            showProfileSetup(false);
+            break;
+        default:
+            // Default to dashboard if no valid hash is found
+            showDashboard();
+            break;
+    }
+}
+
 function showDashboard() {
-    navigateIfProfileComplete(() => {
-        hideAllSections();
-        const dashboardSection = document.getElementById('dashboardSection');
-        if (dashboardSection) dashboardSection.classList.add('active');
-        updateActiveNavLink('showDashboard'); // Use function name for targeting
+    // We only call navigateIfProfileComplete from external events or if we want to ensure setup is done.
+    // When called from routeToHashedSection, we assume profile completion has been verified.
+    hideAllSections();
+    const dashboardSection = document.getElementById('dashboardSection');
+    if (dashboardSection) dashboardSection.classList.add('active');
+    updateActiveNavLink('showDashboard'); // Use function name for targeting
+    // Ensure history state is pushed only if needed to manage back button.
+    if (window.location.hash !== '#dashboard') {
         history.pushState({ page: 'dashboard' }, 'Dashboard', 'app.html#dashboard');
-        
-        // Fetch dashboard stats on load, defaulting to daily
-        document.getElementById('statsTimePeriod').value = 'daily';
-        fetchDashboardStats();
-    }, 'dashboard');
+    }
+    
+    // Fetch dashboard stats on load, defaulting to daily
+    document.getElementById('statsTimePeriod').value = 'daily';
+    fetchDashboardStats();
 }
 
 function showPrescriptionForm() {
-    navigateIfProfileComplete(() => {
-        hideAllSections();
-        const formSection = document.getElementById('prescriptionFormSection');
-        if (formSection) formSection.classList.add('active');
-        updateActiveNavLink('showPrescriptionForm'); // Use function name for targeting
-        resetForm();
-        
-        // **FIX: Update lastValidSection to track prescription form**
-        lastValidSection = 'form';
-        
+    hideAllSections();
+    const formSection = document.getElementById('prescriptionFormSection');
+    if (formSection) formSection.classList.add('active');
+    updateActiveNavLink('showPrescriptionForm'); // Use function name for targeting
+    // Reset form is usually only called on initial entry to clear fields, not on reload.
+    // resetForm(); 
+    
+    lastValidSection = 'form';
+    
+    if (window.location.hash !== '#form') {
         history.pushState({ page: 'form' }, 'Add Prescription', 'app.html#form');
-    }, 'form');
+    }
 }
 
 function showPrescriptions() {
-    navigateIfProfileComplete(() => {
-        hideAllSections();
-        const prescriptionsSection = document.getElementById('prescriptionsSection');
-        if (prescriptionsSection) prescriptionsSection.classList.add('active');
-        updateActiveNavLink('showPrescriptions'); // Use function name for targeting
-        
-        // Load initial date filtered data
-        fetchPrescriptions();
-        
+    hideAllSections();
+    const prescriptionsSection = document.getElementById('prescriptionsSection');
+    if (prescriptionsSection) prescriptionsSection.classList.add('active');
+    updateActiveNavLink('showPrescriptions'); // Use function name for targeting
+    
+    // Load initial date filtered data
+    fetchPrescriptions();
+    
+    if (window.location.hash !== '#prescriptions') {
         history.pushState({ page: 'prescriptions' }, 'View Prescriptions', 'app.html#prescriptions');
-    }, 'prescriptions');
+    }
 }
 
 function showReports() {
-    navigateIfProfileComplete(() => {
-        hideAllSections();
-        const reportsSection = document.getElementById('reportsSection');
-        if (reportsSection) reportsSection.classList.add('active');
-        updateActiveNavLink('showReports'); // Use function name for targeting
-        
-        // Load initial report data based on default filters
-        fetchReportDataByRange();
-        
+    hideAllSections();
+    const reportsSection = document.getElementById('reportsSection');
+    if (reportsSection) reportsSection.classList.add('active');
+    updateActiveNavLink('showReports'); // Use function name for targeting
+    
+    // Load initial report data based on default filters
+    fetchReportDataByRange();
+    
+    if (window.location.hash !== '#reports') {
         history.pushState({ page: 'reports' }, 'Reports', 'app.html#reports');
-    }, 'reports');
+    }
 }
 
 /**
@@ -525,7 +560,9 @@ function showProfileSetup(isForced) {
          document.getElementById('setupContactNumber').value = '';
     }
     
-    history.pushState({ page: 'setup' }, 'Profile Setup', 'app.html#setup');
+    if (window.location.hash !== '#setup') {
+        history.pushState({ page: 'setup' }, 'Profile Setup', 'app.html#setup');
+    }
 }
 
 function showPreview(prescriptionData = null) {
@@ -615,7 +652,9 @@ async function loadUserProfile() {
                 localStorage.setItem('userProfile', JSON.stringify(userData));
                 // Ensure buttons are enabled if loading dashboard successfully
                 enableNavigationButtons(); 
-                showDashboard(); // Default to dashboard if everything is fine
+                
+                // FIX: Route to the section defined in the URL hash instead of always dashboard
+                routeToHashedSection(); 
                 return;
             }
             
@@ -644,7 +683,8 @@ async function loadUserProfile() {
             updateProfileUI(userData);
             if (isProfileComplete) {
                 enableNavigationButtons();
-                showDashboard();
+                // FIX: Route to the section defined in the URL hash instead of always dashboard
+                routeToHashedSection();
             } else {
                 showProfileSetup(true);
             }
