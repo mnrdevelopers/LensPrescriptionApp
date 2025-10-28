@@ -28,6 +28,7 @@ firebase.auth().onAuthStateChanged((user) => {
         }
     } else {
         // User is confirmed signed out. Redirect to the login page immediately.
+        // NOTE: auth.html will handle the logic if they explicitly logged out.
         window.location.replace('auth.html');
     }
 });
@@ -2275,7 +2276,12 @@ function logoutUser() {
         // Clear only user-specific local storage items, not PWA cache or 'rememberMe'
         localStorage.removeItem('username');
         localStorage.removeItem('userId');
-        window.location.href = 'auth.html';
+        
+        // CRITICAL FIX: Set flag to prevent immediate re-login from index.html check
+        sessionStorage.setItem("explicitLogout", "true");
+        
+        // Redirect to index.html (landing page) as requested by the user
+        window.location.replace('index.html');
     }).catch(error => {
         console.error('Logout failed:', error);
     });
