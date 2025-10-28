@@ -1,11 +1,14 @@
-// inventory.js - Inventory Management for Admin
+// inventory.js - Inventory Management for Admin (Updated for Firebase-only operations)
+
+// NOTE: This file assumes Firebase has been initialized and the db and auth objects are available globally.
 
 let inventory = [];
 
 // Load inventory from Firestore
 async function loadInventory() {
     try {
-        const snapshot = await db.collection('products').get();
+        // Fetch all products for admin view, regardless of stock or active status
+        const snapshot = await db.collection('products').orderBy('name', 'asc').get();
         
         inventory = [];
         snapshot.forEach(doc => {
@@ -39,13 +42,14 @@ function displayInventory() {
         <tr>
             <td>
                 <img src="${product.imageUrl || 'https://via.placeholder.com/50x50?text=No+Image'}" 
-                     width="50" height="50" style="object-fit: cover;" class="rounded">
+                     width="50" height="50" style="object-fit: cover;" class="rounded"
+                     onerror="this.src='https://via.placeholder.com/50x50?text=No+Image'">
             </td>
             <td>${product.name}</td>
             <td>
                 <span class="badge bg-secondary">${product.category}</span>
             </td>
-            <td>₹${product.price}</td>
+            <td>₹${(product.price || 0).toFixed(2)}</td>
             <td>
                 <span class="badge ${product.stock > 10 ? 'bg-success' : product.stock > 0 ? 'bg-warning' : 'bg-danger'}">
                     ${product.stock}
@@ -60,7 +64,7 @@ function displayInventory() {
                 <button class="btn btn-sm btn-outline-primary me-1" onclick="editProduct('${product.id}')">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct('${product.id}')">
+                <button class="btn btn-sm btn-outline-danger" onclick="confirmDeleteProduct('${product.id}')">
                     <i class="fas fa-trash"></i>
                 </button>
             </td>
@@ -71,25 +75,33 @@ function displayInventory() {
 // Add new product
 async function addProduct() {
     const form = document.getElementById('addProductForm');
-    const formData = new FormData();
     
+    // Validate stock and price are numbers
+    const priceValue = parseFloat(document.getElementById('productPrice').value);
+    const stockValue = parseInt(document.getElementById('productStock').value);
+
     const productData = {
-        name: document.getElementById('productName').value,
-        category: document.getElementById('productCategory').value,
-        price: parseFloat(document.getElementById('productPrice').value),
-        stock: parseInt(document.getElementById('productStock').value),
-        description: document.getElementById('productDescription').value,
+        name: document.getElementById('productName').value.trim(),
+        category: document.getElementById('productCategory').value.trim(),
+        price: priceValue,
+        stock: stockValue,
+        description: document.getElementById('productDescription').value.trim(),
         active: document.getElementById('productStatus').checked,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
     };
     
     const imageFile = document.getElementById('productImage').files[0];
     
-    if (!productData.name || !productData.category || !productData.price || !productData.stock) {
-        showStatusMessage('Please fill all required fields', 'error');
+    if (!productData.name || !productData.category || isNaN(productData.price) || productData.price <= 0 || isNaN(productData.stock) || productData.stock < 0) {
+        showStatusMessage('Please fill all required fields correctly (Price > 0, Stock >= 0)', 'error');
         return;
     }
     
+    const addButton = document.querySelector('#addProductModal .modal-footer .btn-primary');
+    const originalText = addButton.textContent;
+    addButton.textContent = 'Adding...';
+    addButton.disabled = true;
+
     try {
         let imageUrl = '';
         
@@ -110,18 +122,21 @@ async function addProduct() {
         // Reset form and close modal
         form.reset();
         const modal = bootstrap.Modal.getInstance(document.getElementById('addProductModal'));
-        modal.hide();
+        if (modal) modal.hide();
         
         // Reload inventory
         loadInventory();
         
     } catch (error) {
         console.error('Error adding product:', error);
-        showStatusMessage('Error adding product', 'error');
+        showStatusMessage('Error adding product: ' + error.message, 'error');
+    } finally {
+        addButton.textContent = originalText;
+        addButton.disabled = false;
     }
 }
 
-// Edit product
+// Edit product - Populates the modal
 async function editProduct(productId) {
     const product = inventory.find(p => p.id === productId);
     if (!product) return;
@@ -142,22 +157,43 @@ async function editProduct(productId) {
 // Update product
 async function updateProduct() {
     const productId = document.getElementById('editProductId').value;
+
+    // Validate stock and price are numbers
+    const priceValue = parseFloat(document.getElementById('editProductPrice').value);
+    const stockValue = parseInt(document.getElementById('editProductStock').value);
+    
     const productData = {
-        name: document.getElementById('editProductName').value,
-        category: document.getElementById('editProductCategory').value,
-        price: parseFloat(document.getElementById('editProductPrice').value),
-        stock: parseInt(document.getElementById('editProductStock').value),
-        description: document.getElementById('editProductDescription').value,
+        name: document.getElementById('editProductName').value.trim(),
+        category: document.getElementById('editProductCategory').value.trim(),
+        price: priceValue,
+        stock: stockValue,
+        description: document.getElementById('editProductDescription').value.trim(),
         active: document.getElementById('editProductStatus').checked,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
     
     const imageFile = document.getElementById('editProductImage').files[0];
+
+    if (!productData.name || !productData.category || isNaN(productData.price) || productData.price <= 0 || isNaN(productData.stock) || productData.stock < 0) {
+        showStatusMessage('Please fill all required fields correctly (Price > 0, Stock >= 0)', 'error');
+        return;
+    }
     
+    const updateButton = document.querySelector('#editProductModal .modal-footer .btn-primary');
+    const originalText = updateButton.textContent;
+    updateButton.textContent = 'Updating...';
+    updateButton.disabled = true;
+
     try {
         // Upload new image if provided
         if (imageFile) {
             const storageRef = firebase.storage().ref();
+            // Delete old image if it exists and we have the URL (optional but good practice)
+            // const oldProduct = inventory.find(p => p.id === productId);
+            // if (oldProduct && oldProduct.imageUrl) {
+            //     // Logic to delete old image from storage if necessary
+            // }
+
             const imageRef = storageRef.child(`products/${Date.now()}_${imageFile.name}`);
             const snapshot = await imageRef.put(imageFile);
             productData.imageUrl = await snapshot.ref.getDownloadURL();
@@ -170,34 +206,72 @@ async function updateProduct() {
         
         // Close modal
         const modal = bootstrap.Modal.getInstance(document.getElementById('editProductModal'));
-        modal.hide();
+        if (modal) modal.hide();
         
         // Reload inventory
         loadInventory();
         
     } catch (error) {
         console.error('Error updating product:', error);
-        showStatusMessage('Error updating product', 'error');
+        showStatusMessage('Error updating product: ' + error.message, 'error');
+    } finally {
+        updateButton.textContent = originalText;
+        updateButton.disabled = false;
+    }
+}
+
+// Confirmation for deletion (Replaced confirm() with visual status message)
+function confirmDeleteProduct(productId) {
+    const product = inventory.find(p => p.id === productId);
+    if (!product) return;
+
+    showStatusMessage(`Are you sure you want to delete product: ${product.name}? Click the trash icon again within 5 seconds to confirm.`, 'warning');
+    
+    // Temporarily change the delete button's onclick to the actual delete function
+    const deleteBtn = document.querySelector(`button[onclick="confirmDeleteProduct('${productId}')"]`);
+    if (deleteBtn) {
+        deleteBtn.onclick = () => deleteProduct(productId);
+        
+        // Revert the button action after 5 seconds if not clicked
+        setTimeout(() => {
+            // Only revert if the button hasn't been clicked/changed
+            if (deleteBtn && deleteBtn.getAttribute('onclick').includes('deleteProduct')) {
+                deleteBtn.onclick = () => confirmDeleteProduct(productId);
+            }
+        }, 5000);
     }
 }
 
 // Delete product
 async function deleteProduct(productId) {
-    if (!confirm('Are you sure you want to delete this product?')) {
-        return;
-    }
-    
     try {
+        // Find the product to get image reference
+        const productToDelete = inventory.find(p => p.id === productId);
+
+        // Delete product from Firestore
         await db.collection('products').doc(productId).delete();
+        
+        // Delete image from Storage (optional but good practice)
+        if (productToDelete && productToDelete.imageUrl) {
+             try {
+                 const imageRef = firebase.storage().refFromURL(productToDelete.imageUrl);
+                 await imageRef.delete();
+                 console.log('Image deleted from storage.');
+             } catch (storageError) {
+                 // Log storage deletion error but continue with success message
+                 console.warn('Could not delete image from Firebase Storage (might not exist or permission issue):', storageError);
+             }
+        }
+
         showStatusMessage('Product deleted successfully', 'success');
         loadInventory();
     } catch (error) {
         console.error('Error deleting product:', error);
-        showStatusMessage('Error deleting product', 'error');
+        showStatusMessage('Error deleting product: ' + error.message, 'error');
     }
 }
 
-// Show status message (same as in products.js)
+// Show status message (copied for self-containment)
 function showStatusMessage(message, type = 'info') {
     const existingMessages = document.querySelectorAll('.status-message');
     existingMessages.forEach(msg => msg.remove());
@@ -260,3 +334,4 @@ window.addProduct = addProduct;
 window.editProduct = editProduct;
 window.updateProduct = updateProduct;
 window.deleteProduct = deleteProduct;
+window.confirmDeleteProduct = confirmDeleteProduct; // New confirmation step
