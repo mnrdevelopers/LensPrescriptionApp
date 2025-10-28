@@ -2349,7 +2349,7 @@ window.installPWA = installPWA;
 window.resetStats = resetStats;
 window.enableNavigationButtons = enableNavigationButtons;
 window.disableNavigationButtons = disableNavigationButtons;
-
+window.navigateIfProfileComplete = navigateIfProfileComplete;
 
 // Add this function to debug Firestore data
 async function debugFirestoreData() {
