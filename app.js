@@ -495,6 +495,13 @@ function showProfileSetup(isForced) {
         lastValidSection = 'form';
     }
     
+    // Set the user's email in the display field
+    const user = auth.currentUser;
+    const emailDisplay = document.getElementById('userEmailDisplay');
+    if (emailDisplay) {
+        emailDisplay.textContent = user ? user.email : 'N/A';
+    }
+
     // Hide continue button if just editing
     const saveBtn = document.getElementById('saveSetupProfileBtn');
     if (saveBtn) {
@@ -665,7 +672,7 @@ async function saveSetupProfile() {
         address: document.getElementById('setupAddress').value.trim(),
         contactNumber: document.getElementById('setupContactNumber').value.trim(),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        email: user.email
+        email: user.email // Ensure email is saved with profile data
     };
     
     // Enhanced validation (basic check)
@@ -1159,9 +1166,10 @@ function generatePDF() {
     // Use the existing preview element for PDF generation
     const element = document.getElementById('prescriptionPreview');
     
-    if (!element) {
-        showStatusMessage('Prescription preview not found', 'error');
-        return;
+    if (element) {
+        const btn = document.querySelector('.btn-download');
+        btn.classList.add('btn-loading');
+        btn.textContent = 'Generating...';
     }
 
     // Create a clone to avoid affecting the display
@@ -1225,6 +1233,13 @@ function generatePDF() {
             document.body.removeChild(elementClone);
             console.error('PDF generation error:', error);
             showStatusMessage('PDF generation failed: ' + error.message, 'error');
+        })
+        .finally(() => {
+            if (element) {
+                const btn = document.querySelector('.btn-download');
+                btn.classList.remove('btn-loading');
+                btn.textContent = 'PDF';
+            }
         });
 }
 
