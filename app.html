@@ -42,6 +42,12 @@
             <span>Lens Prescription</span>
         </a>
         
+        <!-- START: Mobile Logout Icon (Visible < lg) -->
+        <button onclick="logoutUser()" class="btn btn-logout premium-logout d-lg-none" id="mobileLogoutIcon">
+            <i class="fas fa-sign-out-alt"></i>
+        </button>
+        <!-- END: Mobile Logout Icon -->
+
         <!-- Mobile Menu Toggle -->
         <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
             <span class="navbar-toggler-icon"></span>
@@ -76,6 +82,7 @@
                     </a>
                 </li>
             </ul>
+            <!-- Desktop Logout Button (Visible >= lg) -->
             <button onclick="logoutUser()" class="btn btn-logout premium-logout">
                 <i class="fas fa-sign-out-alt"></i> Logout
             </button>
@@ -120,15 +127,8 @@
                 </li>
             </ul>
             
-            <!-- Logout Button -->
+            <!-- Removed the Logout Button from the Offcanvas Footer -->
             <div class="p-3 border-top">
-                <button onclick="logoutUser()" class="btn btn-logout premium-logout w-100">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </button>
-            </div>
-            
-            <!-- Footer -->
-            <div class="p-3 border-top mt-auto">
                 <small class="text-muted">@2025 Lens-Prescription-App developed by <strong>MANITEJA (MNR DEVELOPERS)</strong></small>
             </div>
         </div>
