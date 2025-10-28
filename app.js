@@ -138,7 +138,8 @@ function setupEventListeners() {
     
     // Push a non-null state initially to manage the back button history stack
     if (history.state === null) {
-        history.pushState({ page: 'initial' }, document.title, location.href);
+        // FIX: Replaced with replaceState to prevent the initial load counting as a back button step
+        history.replaceState({ page: 'initial' }, document.title, location.href); 
     }
     
     // Dashboard Stats listener
@@ -410,14 +411,16 @@ function navigateIfProfileComplete(navFunction, sectionName) {
     if (isProfileComplete) {
         // Ensure navigation is enabled before proceeding
         enableNavigationButtons();
-        // Since we are clicking a button/link, we manually push the history state
+        
+        // **FIX**: Use replaceState here instead of pushState for navigation Clicks.
+        // This stops back button from cycling through internal nav clicks, but ensures the
+        // URL is updated for the user to copy/reload.
         const hash = sectionName === 'dashboard' ? 'dashboard' : 
                      sectionName === 'form' ? 'form' : 
                      sectionName === 'prescriptions' ? 'prescriptions' : 
                      sectionName === 'reports' ? 'reports' : 'setup';
         
-        // This line ensures the URL hash is updated correctly before calling the view function
-        history.pushState({ page: sectionName }, sectionName, `app.html#${hash}`);
+        history.replaceState({ page: sectionName }, sectionName, `app.html#${hash}`);
 
         navFunction();
         lastValidSection = sectionName; // Update last valid section
@@ -461,10 +464,6 @@ function showDashboard() {
     if (dashboardSection) dashboardSection.classList.add('active');
     updateActiveNavLink('showDashboard'); // Use function name for targeting
     
-    // Ensure history state is pushed only if needed to manage back button.
-    // This logic is now handled in navigateIfProfileComplete for user clicks.
-    // When called internally (like from routeToHashedSection), we rely on the hash already being present.
-    
     // Fetch dashboard stats on load, defaulting to daily
     document.getElementById('statsTimePeriod').value = 'daily';
     fetchDashboardStats();
@@ -475,12 +474,8 @@ function showPrescriptionForm() {
     const formSection = document.getElementById('prescriptionFormSection');
     if (formSection) formSection.classList.add('active');
     updateActiveNavLink('showPrescriptionForm'); // Use function name for targeting
-    // Reset form is usually only called on initial entry to clear fields, not on reload.
-    // resetForm(); 
     
     lastValidSection = 'form';
-    
-    // History push logic removed here, handled by navigateIfProfileComplete
 }
 
 function showPrescriptions() {
@@ -491,8 +486,6 @@ function showPrescriptions() {
     
     // Load initial date filtered data
     fetchPrescriptions();
-    
-    // History push logic removed here, handled by navigateIfProfileComplete
 }
 
 function showReports() {
@@ -503,8 +496,6 @@ function showReports() {
     
     // Load initial report data based on default filters
     fetchReportDataByRange();
-    
-    // History push logic removed here, handled by navigateIfProfileComplete
 }
 
 /**
@@ -561,8 +552,6 @@ function showProfileSetup(isForced) {
          document.getElementById('setupAddress').value = '';
          document.getElementById('setupContactNumber').value = '';
     }
-    
-    // History push logic removed here, handled by navigateIfProfileComplete
 }
 
 function showPreview(prescriptionData = null) {
