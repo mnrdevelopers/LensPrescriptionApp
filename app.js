@@ -137,9 +137,11 @@ function setupEventListeners() {
     window.addEventListener('popstate', handleBrowserBack);
     
     // Push a non-null state initially to manage the back button history stack
-    if (history.state === null) {
+    if (history.state === null || history.state?.page === 'initial') {
         // FIX: Replaced with replaceState to prevent the initial load counting as a back button step
-        history.replaceState({ page: 'initial' }, document.title, location.href); 
+        // We set the initial page to the current hash if one exists, otherwise 'dashboard'
+        const initialPage = window.location.hash.substring(1) || 'dashboard';
+        history.replaceState({ page: initialPage }, initialPage, location.href); 
     }
     
     // Dashboard Stats listener
