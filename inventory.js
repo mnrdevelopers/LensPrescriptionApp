@@ -3,6 +3,31 @@
 let IMGBB_API_KEY = null;
 let inventory = [];
 
+// Helper function to convert data URL to blob (Moved from app.js/recreated for reliability)
+function dataURLToBlob(dataURL) {
+    const parts = dataURL.split(';base64,');
+    if (parts.length < 2) {
+        // Handle case where it might not be a full data URL, fallback to binary-safe decode
+        const mime = 'application/octet-stream';
+        const raw = window.atob(dataURL);
+        const uInt8Array = new Uint8Array(raw.length);
+        for (let i = 0; i < raw.length; ++i) {
+            uInt8Array[i] = raw.charCodeAt(i);
+        }
+        return new Blob([uInt8Array], { type: mime });
+    }
+
+    const contentType = parts[0].split(':')[1];
+    const raw = window.atob(parts[1]);
+    const uInt8Array = new Uint8Array(raw.length);
+    
+    for (let i = 0; i < raw.length; ++i) {
+        uInt8Array[i] = raw.charCodeAt(i);
+    }
+    
+    return new Blob([uInt8Array], { type: contentType });
+}
+
 // Load ImgBB API Key
 async function loadImgbbApiKey() {
     if (IMGBB_API_KEY) return;
@@ -22,38 +47,50 @@ async function loadImgbbApiKey() {
     }
 }
 
-// Upload image to ImgBB
+// Upload image to ImgBB (REFACTORED to use Blob/File format)
 async function uploadImageToImgBB(imageFile) {
     if (!imageFile) return null;
     if (!IMGBB_API_KEY || IMGBB_API_KEY === 'DISABLED') {
-        throw new Error('Image upload key is unavailable.');
+        throw new Error('Image upload key is unavailable. Check Netlify function/environment variable.');
     }
     
-    const base64Image = await new Promise((resolve, reject) => {
+    // 1. Convert File to Data URL
+    const dataUrl = await new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onload = () => resolve(reader.result); // Get full data URL
         reader.onerror = error => reject(error);
         reader.readAsDataURL(imageFile);
     });
 
-    const formData = new FormData();
-    formData.append("image", base64Image);
+    // 2. Convert Data URL to Blob/File object
+    const imageBlob = dataURLToBlob(dataUrl);
 
-    const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-        method: "POST",
-        body: formData
-    });
-    
-    if (!response.ok) {
-        throw new Error(`ImgBB upload failed with status ${response.status}`);
-    }
-    
-    const data = await response.json();
-    
-    if (data.success) {
-        return data.data.url;
-    } else {
-        throw new Error(data.error?.message || 'ImgBB upload failed due to API error');
+    // 3. Create FormData and append the Blob/File object (Standard multipart upload)
+    const formData = new FormData();
+    // ImgBB requires the file to be under the 'image' field
+    formData.append("image", imageBlob, imageFile.name); 
+
+    try {
+        const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+            method: "POST",
+            body: formData
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`ImgBB upload failed with status ${response.status}. Response: ${errorText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            return data.data.url;
+        } else {
+            throw new Error(data.error?.message || 'ImgBB upload failed due to API error');
+        }
+    } catch (error) {
+        console.error('ImgBB upload error:', error);
+        throw error;
     }
 }
 
