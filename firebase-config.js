@@ -15,3 +15,6 @@ firebase.initializeApp(firebaseConfig);
 // Add these global declarations
 const auth = firebase.auth();
 const db = firebase.firestore();
+
+// Razorpay configuration
+const RAZORPAY_KEY_ID = "rzp_live_RYqhlx0mYy2C0E"; // Replace with your actual key
