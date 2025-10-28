@@ -9,6 +9,9 @@
     <link rel="icon" type="image/x-icon" href="lenslogo.png">
     <link rel="apple-touch-icon" href="lenslogo.png">
 
+    <!-- Razorpay Integration -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
     
@@ -17,13 +20,11 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="LensPrescription">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#1e3a8a"> <!-- Updated Theme Color -->
+    <meta name="theme-color" content="#007bff">
     
     <!-- iOS Specific -->
     <link rel="apple-touch-icon" href="https://i.postimg.cc/2S2Pcrt6/glasses-220002.png">
     
-    <!-- Styles: Font Awesome for Google Icon -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="auth.css">    
 </head>
 <body>
@@ -59,14 +60,6 @@
 
                 <button type="submit" class="btn btn-primary">Login</button>
                 
-                <hr style="margin: 25px 0;">
-                
-                <!-- Google Sign-In Button (Icon Only) -->
-                <button type="button" class="btn btn-google" onclick="handleGoogleSignIn()">
-                    <span class="google-icon"></span>
-                    <span class="google-text">Sign in with Google</span>
-                </button>
-                
                 <div class="form-links">
                     <p>Don't have an account? <a href="#" onclick="showRegister()">Register</a></p>
                     <p><a href="#" onclick="showForgotPassword()">Forgot Password?</a></p>
@@ -74,48 +67,40 @@
             </form>
         </div>
 
-        <!-- Register Form -->
-        <div id="registerForm" class="form-container">
-            <h2>Create Your Account</h2>
-            <form id="registerFormElement">
-                <div class="form-group">
-                    <label for="registerEmail">Email Address</label>
-                    <input type="email" id="registerEmail" placeholder="Enter Email Address" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="registerPassword">Password</label>
-                    <div class="password-container">
-                        <input type="password" id="registerPassword" placeholder="Enter Password" required minlength="6">
-                        <span class="toggle-password" onclick="togglePassword('registerPassword')">👁️</span>
-                    </div>
-                </div>
-
-                <!-- CONFIRM PASSWORD FIELD -->
-                <div class="form-group">
-                    <label for="registerConfirmPassword">Confirm Password</label>
-                    <div class="password-container">
-                        <input type="password" id="registerConfirmPassword" placeholder="Confirm Password" required minlength="6">
-                        <span class="toggle-password" onclick="togglePassword('registerConfirmPassword')">👁️</span>
-                    </div>
-                    <small id="passwordMatchError" class="error-message" style="display: none; color: #dc3545;"></small>
-                </div>
-
-                <button type="submit" class="btn btn-primary">Register</button>
-                
-                <hr style="margin: 25px 0;">
-                
-                <!-- Google Sign-In Button (Icon Only) -->
-                <button type="button" class="btn btn-google" onclick="handleGoogleSignIn()">
-                    <span class="google-icon"></span>
-                    <span class="google-text">Sign up with Google</span>
-                </button>
-                
-                <div class="form-links">
-                    <p>Already have an account? <a href="#" onclick="showLogin()">Login</a></p>
-                </div>
-            </form>
+     <!-- In the register form section of auth.html -->
+<div id="registerForm" class="form-container">
+    <h2>Create Your Account</h2>
+    <form id="registerFormElement">
+        <div class="form-group">
+            <label for="registerEmail">Email Address</label>
+            <input type="email" id="registerEmail" placeholder="Enter Email Address" required>
         </div>
+
+        <div class="form-group">
+            <label for="registerPassword">Password</label>
+            <div class="password-container">
+                <input type="password" id="registerPassword" placeholder="Enter Password" required>
+                <span class="toggle-password" onclick="togglePassword('registerPassword')">👁️</span>
+            </div>
+        </div>
+
+        <!-- ADD CONFIRM PASSWORD FIELD -->
+        <div class="form-group">
+            <label for="registerConfirmPassword">Confirm Password</label>
+            <div class="password-container">
+                <input type="password" id="registerConfirmPassword" placeholder="Confirm Password" required>
+                <span class="toggle-password" onclick="togglePassword('registerConfirmPassword')">👁️</span>
+            </div>
+            <small id="passwordMatchError" class="error-message" style="display: none; color: #dc3545;"></small>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Register</button>
+        
+        <div class="form-links">
+            <p>Already have an account? <a href="#" onclick="showLogin()">Login</a></p>
+        </div>
+    </form>
+</div>
 
         <!-- Forgot Password Form -->
         <div id="forgotPasswordForm" class="form-container">
@@ -145,10 +130,8 @@
         </div>
     </div>
 
-    <!-- Firebase SDK - Include the needed provider support -->
+     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <!-- We need the Google Auth Provider for the JS logic -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
@@ -172,3 +155,5 @@
     </script>
 </body>
 </html>
+
+
