@@ -2752,20 +2752,49 @@ async function updateNavSubscriptionStatus() {
     if (!user) return;
 
     const subscription = await checkActiveSubscription(user.uid);
-    const navStatusElement = document.getElementById('navSubscriptionStatus');
     
+    // Desktop navigation status
+    const navStatusElement = document.getElementById('navSubscriptionStatus');
     if (navStatusElement) {
         if (subscription.active) {
+            const expiryDate = subscription.expiryDate.toLocaleDateString();
             navStatusElement.innerHTML = `
-                <span class="badge bg-success">
+                <span class="badge bg-success" title="Premium until ${expiryDate}">
                     <i class="fas fa-crown"></i> Premium
                 </span>
             `;
         } else {
             navStatusElement.innerHTML = `
-                <span class="badge bg-warning">
+                <span class="badge bg-warning" title="Free plan - ${FREE_PRESCRIPTION_LIMIT} prescriptions/month">
                     <i class="fas fa-user"></i> Free
                 </span>
+            `;
+        }
+    }
+    
+    // Mobile navigation status
+    const mobileStatusElement = document.getElementById('mobileSubscriptionStatus');
+    if (mobileStatusElement) {
+        if (subscription.active) {
+            const expiryDate = subscription.expiryDate.toLocaleDateString();
+            mobileStatusElement.innerHTML = `
+                <div class="text-center">
+                    <span class="badge bg-success mb-2">
+                        <i class="fas fa-crown"></i> Premium Member
+                    </span>
+                    <br>
+                    <small class="text-muted">Valid until ${expiryDate}</small>
+                </div>
+            `;
+        } else {
+            mobileStatusElement.innerHTML = `
+                <div class="text-center">
+                    <span class="badge bg-warning mb-2">
+                        <i class="fas fa-user"></i> Free Plan
+                    </span>
+                    <br>
+                    <small class="text-muted">${FREE_PRESCRIPTION_LIMIT} prescriptions/month</small>
+                </div>
             `;
         }
     }
