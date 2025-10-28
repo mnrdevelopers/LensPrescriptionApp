@@ -1818,6 +1818,67 @@ function stopWhatsappTimer() {
     if (modal) modal.style.display = 'none';
 }
 
+/**
+ * Sends WhatsApp message with prescription image
+ * @param {string} mobile - Patient's mobile number
+ * @param {string} imageUrl - URL of the prescription image
+ */
+async function sendWhatsAppMessage(mobile, imageUrl) {
+    try {
+        // Format mobile number (remove any non-digit characters)
+        const formattedMobile = mobile.replace(/\D/g, '');
+        
+        // Get clinic information for the message
+        const clinicName = document.getElementById('previewClinicName')?.textContent || 'Our Clinic';
+        const optometristName = document.getElementById('previewOptometristName')?.textContent || 'Optometrist';
+        const patientName = document.getElementById('previewPatientName')?.textContent || 'Patient';
+        
+        // Create message text
+        const message = `Hello ${patientName},\n\nYour eye prescription from ${clinicName} is ready.\n\nThank you for visiting us!\n\n- ${optometristName}`;
+        
+        // Encode the message for URL
+        const encodedMessage = encodeURIComponent(message);
+        
+        // Create WhatsApp URL
+        let whatsappUrl;
+        
+        if (imageUrl.startsWith('data:')) {
+            // For data URLs, we can only send text (WhatsApp API limitation)
+            console.warn('Data URL detected, sending text only');
+            whatsappUrl = `https://wa.me/${formattedMobile}?text=${encodedMessage}`;
+        } else if (imageUrl.startsWith('blob:')) {
+            // For blob URLs, we can only send text (WhatsApp API limitation)
+            console.warn('Blob URL detected, sending text only');
+            whatsappUrl = `https://wa.me/${formattedMobile}?text=${encodedMessage}`;
+        } else {
+            // For external URLs (like ImgBB), we can include the image in the message
+            const messageWithImage = `${message}\n\nView your prescription: ${imageUrl}`;
+            const encodedMessageWithImage = encodeURIComponent(messageWithImage);
+            whatsappUrl = `https://wa.me/${formattedMobile}?text=${encodedMessageWithImage}`;
+        }
+        
+        // Open WhatsApp in a new tab
+        const whatsappWindow = window.open(whatsappUrl, '_blank');
+        
+        if (!whatsappWindow) {
+            showStatusMessage('Popup blocked. Please allow popups for WhatsApp.', 'warning');
+            // Fallback: copy message to clipboard and show instructions
+            try {
+                await navigator.clipboard.writeText(message + (imageUrl.startsWith('http') ? `\n\nPrescription: ${imageUrl}` : ''));
+                showStatusMessage('Message copied to clipboard. Please paste it in WhatsApp manually.', 'info');
+            } catch (clipboardError) {
+                console.error('Clipboard copy failed:', clipboardError);
+                showStatusMessage('Please manually share this in WhatsApp.', 'info');
+            }
+        } else {
+            showStatusMessage('Opening WhatsApp...', 'success');
+        }
+        
+    } catch (error) {
+        console.error('Error in sendWhatsAppMessage:', error);
+        throw new Error('Failed to send WhatsApp message: ' + error.message);
+    }
+}
 
 async function sendWhatsApp() {
     const mobile = document.getElementById('previewMobile')?.textContent;
