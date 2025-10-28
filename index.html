@@ -38,6 +38,50 @@
             font-family: 'Times New Roman', serif;
         }
         
+        /* Navigation Bar for Landing Page */
+        .landing-nav {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .landing-nav .navbar-brand {
+            color: #333 !important;
+            font-weight: 700;
+        }
+        
+        .landing-nav .nav-link {
+            color: #333 !important;
+            font-weight: 500;
+            margin: 0 10px;
+            transition: color 0.3s ease;
+        }
+        
+        .landing-nav .nav-link:hover {
+            color: #007bff !important;
+        }
+        
+        .landing-nav .nav-link.active {
+            color: #007bff !important;
+            font-weight: 600;
+        }
+        
+        .landing-nav .btn-login {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .landing-nav .btn-login:hover {
+            background: #0056b3;
+            transform: translateY(-1px);
+        }
+
         .hero-section {
             min-height: 100vh;
             display: flex;
@@ -310,6 +354,15 @@
             .section-title h2 {
                 font-size: 2rem;
             }
+            
+            .landing-nav .navbar-nav {
+                text-align: center;
+                padding: 10px 0;
+            }
+            
+            .landing-nav .navbar-nav .nav-link {
+                margin: 5px 0;
+            }
         }
         
         @media (max-width: 480px) {
@@ -328,8 +381,51 @@
     </style>
 </head>
 <body class="landing-page">
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top landing-nav">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <img src="lenslogo.png" alt="Lens Prescription Logo" width="30" height="30" class="d-inline-block align-text-top me-2">
+                Lens Prescription
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#home">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#features">Features</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#instructions">How It Works</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#guide">User Guide</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="products.html">Products</a>
+                    </li>
+                    <li class="nav-item" id="inventoryNavItem" style="display: none;">
+                        <a class="nav-link" href="inventory.html">Inventory</a>
+                    </li>
+                </ul>
+                
+                <div class="d-flex">
+                    <a href="auth.html" class="btn btn-login">
+                        <i class="fas fa-sign-in-alt me-2"></i>Login
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
     <!-- Hero Section -->
-    <section class="hero-section">
+    <section id="home" class="hero-section">
         <div class="container">
             <div class="row justify-content-center">
                 <div class="col-lg-8">
@@ -340,6 +436,9 @@
                     <div class="hero-buttons">
                         <a href="auth.html" class="btn btn-hero btn-hero-primary">
                             <i class="fas fa-sign-in-alt"></i> Login to App
+                        </a>
+                        <a href="products.html" class="btn btn-hero btn-hero-secondary">
+                            <i class="fas fa-shopping-cart"></i> Browse Products
                         </a>
                         <a href="#features" class="btn btn-hero btn-hero-secondary">
                             <i class="fas fa-info-circle"></i> Learn More
@@ -391,6 +490,16 @@
                 <div class="col-lg-4 col-md-6">
                     <div class="feature-card">
                         <div class="feature-icon">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <h3>E-Commerce Store</h3>
+                        <p>Sell eyewear products directly to your customers with integrated payment processing and inventory management.</p>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon">
                             <i class="fas fa-search"></i>
                         </div>
                         <h3>Smart Search</h3>
@@ -431,6 +540,26 @@
                 <div class="col-lg-4 col-md-6">
                     <div class="feature-card">
                         <div class="feature-icon">
+                            <i class="fas fa-boxes"></i>
+                        </div>
+                        <h3>Inventory Management</h3>
+                        <p>Complete inventory system to manage your eyewear products, stock levels, and product categories.</p>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-credit-card"></i>
+                        </div>
+                        <h3>Secure Payments</h3>
+                        <p>Integrated Razorpay payment gateway for secure and seamless online transactions.</p>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon">
                             <i class="fas fa-shield-alt"></i>
                         </div>
                         <h3>Secure & Private</h3>
@@ -442,7 +571,7 @@
     </section>
 
     <!-- Instructions Section -->
-    <section class="instructions-section">
+    <section id="instructions" class="instructions-section">
         <div class="container">
             <div class="section-title">
                 <h2>How It Works</h2>
@@ -478,6 +607,14 @@
                     <div class="instruction-step">
                         <div class="step-number">4</div>
                         <div class="step-content">
+                            <h3>Sell Products & Manage Inventory</h3>
+                            <p>Add eyewear products to your store, manage inventory levels, and process customer orders with integrated payment processing.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="instruction-step">
+                        <div class="step-number">5</div>
+                        <div class="step-content">
                             <h3>Print & Share</h3>
                             <p>Generate professional prescriptions that can be printed, saved as PDF, or shared via WhatsApp with your patients instantly.</p>
                         </div>
@@ -488,7 +625,7 @@
     </section>
 
     <!-- User Guide Section -->
-    <section class="guide-section">
+    <section id="guide" class="guide-section">
         <div class="container">
             <div class="section-title">
                 <h2>User Guide</h2>
@@ -503,6 +640,8 @@
                         <ul>
                             <li><strong>Add Prescription:</strong> Create new patient prescriptions</li>
                             <li><strong>View Prescriptions:</strong> Access your prescription history</li>
+                            <li><strong>Products Store:</strong> Browse and manage eyewear products</li>
+                            <li><strong>Inventory:</strong> Manage product stock and categories (Admin)</li>
                             <li><strong>Reports:</strong> Generate business analytics and reports</li>
                             <li><strong>Profile:</strong> Manage your clinic information</li>
                         </ul>
@@ -522,6 +661,18 @@
                 </div>
                 
                 <div class="col-lg-6">
+                    <div class="guide-item">
+                        <h3><i class="fas fa-shopping-cart"></i> E-Commerce Features</h3>
+                        <p>Sell eyewear products with our integrated store:</p>
+                        <ul>
+                            <li><strong>Product Catalog:</strong> Browse available eyewear products</li>
+                            <li><strong>Shopping Cart:</strong> Add products and manage quantities</li>
+                            <li><strong>Secure Checkout:</strong> Razorpay integrated payments</li>
+                            <li><strong>Order Management:</strong> Track customer orders</li>
+                            <li><strong>Inventory Control:</strong> Real-time stock management</li>
+                        </ul>
+                    </div>
+                    
                     <div class="guide-item">
                         <h3><i class="fas fa-print"></i> Printing & Export</h3>
                         <p>Multiple ways to share prescriptions:</p>
@@ -551,6 +702,7 @@
                             <li>Daily, weekly, and monthly reports</li>
                             <li>Custom date range analysis</li>
                             <li>Prescription count and revenue tracking</li>
+                            <li>Sales reports for product sales</li>
                             <li>Exportable report data</li>
                         </ul>
                     </div>
@@ -564,15 +716,41 @@
         <div class="container">
             <h2 class="cta-title">Ready to Transform Your Practice?</h2>
             <p class="cta-subtitle">Join hundreds of optometrists who trust Lens Prescription for their daily practice management</p>
-            <a href="auth.html" class="btn btn-hero btn-hero-primary">
-                <i class="fas fa-rocket"></i> Get Started Now
-            </a>
+            <div class="hero-buttons">
+                <a href="auth.html" class="btn btn-hero btn-hero-primary">
+                    <i class="fas fa-rocket"></i> Get Started Now
+                </a>
+                <a href="products.html" class="btn btn-hero btn-hero-secondary">
+                    <i class="fas fa-shopping-cart"></i> Browse Products
+                </a>
+            </div>
         </div>
     </section>
 
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="app.html" class="text-light">Dashboard</a></li>
+                        <li><a href="products.html" class="text-light">Products</a></li>
+                        <li><a href="auth.html" class="text-light">Login</a></li>
+                        <li><a href="auth.html" class="text-light">Register</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h5>Features</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#features" class="text-light">Digital Prescriptions</a></li>
+                        <li><a href="#features" class="text-light">E-Commerce Store</a></li>
+                        <li><a href="#features" class="text-light">Inventory Management</a></li>
+                        <li><a href="#features" class="text-light">Analytics & Reports</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="my-4" style="border-color: #6c757d;">
             <p>&copy; 2025 Lens Prescription App. All rights reserved.</p>
             <p class="developer-credit">Developed with ❤️ by <strong>MANITEJA (MNR DEVELOPERS)</strong></p>
         </div>
@@ -582,6 +760,11 @@
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
     
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    
     <script>
         // Check if user is logged in and redirect to app
         document.addEventListener("DOMContentLoaded", function () {
@@ -589,7 +772,8 @@
             
             // If user is logged in, redirect to app (unless they explicitly logged out)
             if (isLoggedIn && !sessionStorage.getItem("explicitLogout")) {
-                window.location.replace("app.html");
+                // Check if user is admin to show inventory link
+                checkAdminStatus();
             }
             
             // Clear explicit logout flag when page loads
@@ -608,15 +792,59 @@
                     }
                 });
             });
+            
+            // Update navigation active state based on scroll
+            updateNavigationOnScroll();
         });
+        
+        // Check if current user is admin and show inventory link
+        function checkAdminStatus() {
+            const user = auth.currentUser;
+            if (user) {
+                // For demo purposes - in production, you should check against a proper admin list
+                const adminUsers = ['your-admin-user-id-here']; // Add actual admin user IDs
+                if (adminUsers.includes(user.uid)) {
+                    document.getElementById('inventoryNavItem').style.display = 'block';
+                }
+            }
+        }
+        
+        // Update navigation active state on scroll
+        function updateNavigationOnScroll() {
+            const sections = document.querySelectorAll('section[id]');
+            const navLinks = document.querySelectorAll('.landing-nav .nav-link');
+            
+            window.addEventListener('scroll', () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop - 100;
+                    const sectionHeight = section.clientHeight;
+                    if (scrollY >= sectionTop && scrollY < sectionTop + sectionHeight) {
+                        current = section.getAttribute('id');
+                    }
+                });
+                
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === `#${current}`) {
+                        link.classList.add('active');
+                    }
+                });
+            });
+        }
         
         // Function to handle logout redirection (called from app.js)
         function redirectToLandingPage() {
             sessionStorage.setItem("explicitLogout", "true");
             window.location.replace("index.html");
         }
+        
+        // Initialize Firebase auth state listener
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                checkAdminStatus();
+            }
+        });
     </script>
 </body>
 </html>
-
-
