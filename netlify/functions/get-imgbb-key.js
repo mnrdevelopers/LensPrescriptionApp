@@ -1,3 +1,4 @@
+// netlify/functions/get-imgbb-key.js
 exports.handler = async function(event, context) {
     if (event.httpMethod !== 'GET') {
         return {
