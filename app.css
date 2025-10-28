@@ -1949,3 +1949,24 @@ body.offline .navbar {
     padding: 15px;
   }
 }
+
+/* Subscription Badge Styles */
+.navbar .badge {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    border-radius: 12px;
+}
+
+#mobileSubscriptionStatus .badge {
+    font-size: 0.8rem;
+    padding: 6px 12px;
+}
+
+/* Badge hover effects */
+.badge.bg-success:hover {
+    background-color: #1e7e34 !important;
+}
+
+.badge.bg-warning:hover {
+    background-color: #e0a800 !important;
+}
