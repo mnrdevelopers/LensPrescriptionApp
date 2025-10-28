@@ -1,6 +1,6 @@
 // service-worker.js - UPDATED VERSION WITH CORS SUPPORT
 
-const CACHE_NAME = 'lens-prescription-v5';
+const CACHE_NAME = 'lens-prescription-v7';
 const ASSETS = [
   '/',
   '/index.html',
