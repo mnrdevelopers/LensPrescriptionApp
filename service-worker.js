@@ -1,105 +1,20 @@
-// service-worker.js - UPDATED VERSION WITH STALE-WHILE-REVALIDATE STRATEGY
+// service-worker.js - UPDATED VERSION WITH CORS SUPPORT
 
-const CACHE_NAME = 'lens-prescription-v6'; // Increment version to force update
+const CACHE_NAME = 'lens-prescription-v5';
 const ASSETS = [
   '/',
   '/index.html',
   '/auth.html',
   '/app.html',
-  '/inventory.html',
-  '/products.html',
-  '/reset-password.html',
   '/app.css',
   '/auth.css',
   '/app.js',
   '/auth.js',
-  '/inventory.js',
-  '/products.js',
-  '/payment.js',
-  '/reset-password.js',
   '/firebase-config.js',
   '/manifest.json'
-  // Note: lenslogo.png and other non-text assets are handled by runtime caching
 ];
 
-// -----------------------------------------------------
-// Cache Strategies
-// -----------------------------------------------------
-
-/**
- * Cache First Strategy
- * @param {Request} request 
- */
-async function cacheFirst(request) {
-  const cachedResponse = await caches.match(request);
-  if (cachedResponse) {
-    return cachedResponse;
-  }
-  
-  // Try network if no cache
-  const networkResponse = await fetch(request);
-  if (networkResponse && networkResponse.status === 200) {
-    const cache = await caches.open(CACHE_NAME);
-    cache.put(request, networkResponse.clone());
-  }
-  return networkResponse;
-}
-
-/**
- * Network First (for HTML/always fresh content)
- * @param {Request} request 
- */
-async function networkFirst(request) {
-    try {
-        const networkResponse = await fetch(request);
-        if (networkResponse && networkResponse.status === 200) {
-            const responseClone = networkResponse.clone();
-            const cache = await caches.open(CACHE_NAME);
-            cache.put(request, responseClone);
-            return networkResponse;
-        }
-        // Fallback to cache if network fails or response is bad (e.g., 500)
-        return await caches.match(request);
-    } catch (error) {
-        // Network failure, serve from cache
-        return await caches.match(request);
-    }
-}
-
-
-/**
- * Stale While Revalidate (for APIs)
- * Immediately serves cached data, while fetching a fresh update from the network.
- * @param {Request} request 
- */
-async function staleWhileRevalidate(request) {
-    const cache = await caches.open(CACHE_NAME);
-    
-    // Check if the asset is in the cache
-    const cachedResponsePromise = cache.match(request);
-    
-    // Try to get a fresh response from the network
-    const networkFetchPromise = fetch(request).then(networkResponse => {
-        // If fetch succeeds, update the cache
-        if (networkResponse.status === 200) {
-            cache.put(request, networkResponse.clone());
-        }
-        return networkResponse;
-    }).catch(error => {
-        // Network failed. We rely on the cached response.
-        console.warn(`SWR failed for ${request.url}:`, error);
-        throw error;
-    });
-
-    // Return the cached response immediately if available, otherwise wait for the network response.
-    return (await cachedResponsePromise) || networkFetchPromise;
-}
-
-// -----------------------------------------------------
-// Core Service Worker Events
-// -----------------------------------------------------
-
-// Install event: Pre-cache the core shell assets
+// Install event
 self.addEventListener('install', (event) => {
   console.log('Service Worker: Installing...');
   event.waitUntil(
@@ -112,7 +27,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate event: Clear old caches
+// Activate event
 self.addEventListener('activate', (event) => {
   console.log('Service Worker: Activating...');
   event.waitUntil(
@@ -129,43 +44,76 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch event: Apply routing strategies
+// Fetch event - Enhanced for CORS and external resources
 self.addEventListener('fetch', (event) => {
+  // Skip non-GET requests
+  if (event.request.method !== 'GET') return;
+
   const url = new URL(event.request.url);
-  const isSameOrigin = url.origin === location.origin;
   
-  // 1. Skip non-GET requests (e.g., POST, PUT, DELETE) for safety
-  if (event.request.method !== 'GET') {
-      return;
-  }
-
-  // 2. Third-party APIs/Services (ImgBB, Netlify Functions - Stale While Revalidate)
-  if (url.href.includes('api.imgbb.com') || url.pathname.includes('/.netlify/functions/')) {
-      console.log('Service Worker: Applying SWR for API:', url.pathname);
-      // SWR is best for APIs to ensure responsiveness while keeping data fresh.
-      event.respondWith(staleWhileRevalidate(event.request));
-      return;
-  }
-
-  // 3. Third-party CDNs/Scripts (Firebase, Bootstrap, FontAwesome - Cache First)
-  // We generally don't want to mess with the caching of these, but this provides a fallback.
-  if (url.href.includes('gstatic.com') || 
-      url.href.includes('googleapis') ||
-      url.href.includes('jsdelivr.net') ||
-      url.href.includes('cdnjs.cloudflare.com')) {
-      event.respondWith(cacheFirst(event.request));
-      return;
-  }
-  
-  // 4. Local HTML files (Network First, with cache fallback)
-  if (event.request.headers.get('accept')?.includes('text/html')) {
-    event.respondWith(networkFirst(event.request));
+  // Handle external resources (ImgBB, etc.) with CORS
+  if (url.href.includes('imgbb.com') || 
+      url.href.includes('api.imgbb.com')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          // Cache the CORS response
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
+          return response;
+        })
+        .catch(() => {
+          // Fallback to cache if network fails
+          return caches.match(event.request);
+        })
+    );
     return;
   }
-  
-  // 5. All other local assets (JS, CSS, Images, Manifest - Cache First)
-  if (isSameOrigin) {
-      event.respondWith(cacheFirst(event.request));
-      return;
+
+  // Don't cache other external requests aggressively
+  if (url.href.includes('firebase') || 
+      url.href.includes('googleapis') ||
+      url.href.includes('gstatic.com')) {
+    return;
   }
+
+  // For HTML files, use network first strategy
+  if (event.request.headers.get('accept')?.includes('text/html')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
+          return response;
+        })
+        .catch(() => {
+          return caches.match(event.request) || caches.match('/index.html');
+        })
+    );
+    return;
+  }
+
+  // For other assets, use cache first
+  event.respondWith(
+    caches.match(event.request)
+      .then((cachedResponse) => {
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        return fetch(event.request).then((response) => {
+          if (!response || response.status !== 200) {
+            return response;
+          }
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+          return response;
+        });
+      })
+  );
 });
