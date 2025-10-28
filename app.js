@@ -2108,3 +2108,58 @@ window.installPWA = installPWA;
 window.resetStats = resetStats;
 window.enableNavigationButtons = enableNavigationButtons;
 window.disableNavigationButtons = disableNavigationButtons;
+
+
+// Add this function to debug Firestore data
+async function debugFirestoreData() {
+    const user = auth.currentUser;
+    if (!user) return;
+    
+    try {
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        console.log('Firestore User Document:', userDoc.exists ? userDoc.data() : 'No document found');
+        
+        const prescriptions = await db.collection('prescriptions')
+            .where('userId', '==', user.uid)
+            .get();
+        console.log('Firestore Prescriptions:', prescriptions.docs.map(doc => doc.data()));
+    } catch (error) {
+        console.error('Debug Firestore Error:', error);
+    }
+}
+
+setTimeout(debugFirestoreData, 3000);
+
+// Offline Data Management
+function savePrescriptionOffline(prescriptionData) {
+    const offlinePrescriptions = JSON.parse(localStorage.getItem('offlinePrescriptions') || '[]');
+    prescriptionData.offlineId = Date.now().toString();
+    prescriptionData.synced = false;
+    offlinePrescriptions.push(prescriptionData);
+    localStorage.setItem('offlinePrescriptions', JSON.stringify(offlinePrescriptions));
+    
+    console.log('Prescription saved offline:', prescriptionData.offlineId);
+}
+
+async function syncOfflinePrescriptions() {
+    if (!navigator.onLine) return;
+    
+    const offlinePrescriptions = JSON.parse(localStorage.getItem('offlinePrescriptions') || '[]');
+    const syncedPrescriptions = [];
+    
+    for (const prescription of offlinePrescriptions) {
+        if (!prescription.synced) {
+            try {
+                await submitPrescriptionToFirestore(prescription);
+                prescription.synced = true;
+                syncedPrescriptions.push(prescription);
+            } catch (error) {
+                console.error('Failed to sync prescription:', error);
+            }
+        }
+    }
+    
+    // Update localStorage with sync status
+    localStorage.setItem('offlinePrescriptions', JSON.stringify(offlinePrescriptions));
+    console.log(`Synced ${syncedPrescriptions.length} prescriptions`);
+}
