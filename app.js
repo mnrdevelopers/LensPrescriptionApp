@@ -1191,10 +1191,10 @@ function loadPreviewData(data) {
 }
 
 /**
- * Renders the preview content as a downloadable PNG image (Replaces PDF logic).
+ * Renders the preview content as a downloadable PNG image.
  */
-function downloadImage() {
-    // We are now generating an IMAGE (PNG) for download instead of PDF.
+function generateImage() {
+    // The name is misleading, but we are now generating an IMAGE (PNG) for download.
     const btn = document.querySelector('.btn-download');
     if (btn) {
         btn.classList.add('btn-loading');
@@ -1208,7 +1208,6 @@ function downloadImage() {
         month: '2-digit', 
         year: 'numeric' 
     }).replace(/\//g, '-');
-    // Renamed file extension to PNG
     const filename = `Prescription_${patientName}_${shortDate}.png`;
 
     const element = document.getElementById('prescriptionPreview');
@@ -1238,10 +1237,9 @@ function downloadImage() {
         showStatusMessage('Export failed. See console for details.', 'error');
         
     }).finally(() => {
-        // Ensure button state is reset
         if (btn) {
             btn.classList.remove('btn-loading');
-            btn.textContent = 'Download Image'; 
+            btn.textContent = 'PDF'; // Keep PDF label for user consistency, but it exports PNG
         }
     });
 }
@@ -1252,8 +1250,19 @@ function downloadImage() {
  * @param {string} filename The suggested filename.
  */
 function openPDFPreviewWindow(pdfUrl, filename) {
-    // This function is obsolete now that downloadImage directly triggers an image download.
-    showStatusMessage('PDF download helper is obsolete and will not run.', 'warning');
+    // Open a new window that focuses entirely on the PDF object
+    // This function is kept primarily for its successful blob URL creation, 
+    // but the direct download via link click is more reliable.
+    // We can comment out the window.open part since direct download is requested.
+    // const previewWindow = window.open(pdfUrl, '_blank', 'width=800,height=800');
+
+    // if (previewWindow) {
+    //     showStatusMessage('PDF ready. Use the browser controls to download.', 'success');
+    //     previewWindow.document.title = filename;
+    // } else {
+    //     showStatusMessage('Popup blocked. PDF is ready but cannot be previewed.', 'error');
+    // }
+    showStatusMessage('PDF downloaded successfully!', 'success');
 }
 
 // Dedicated Thermal Print Function for 58mm Printer
@@ -2233,7 +2242,7 @@ window.saveProfile = saveProfile; // Retained for modal compatibility
 window.saveSetupProfile = saveSetupProfile; // New dedicated save function
 window.submitPrescription = submitPrescription;
 window.filterPrescriptions = filterPrescriptions;
-window.downloadImage = downloadImage; // Renamed from generatePDF
+window.generatePDF = generatePDF;
 window.printPreview = printPreview;
 window.sendWhatsApp = sendWhatsApp;
 window.fetchReportDataByRange = fetchReportDataByRange; // New consolidated report function
