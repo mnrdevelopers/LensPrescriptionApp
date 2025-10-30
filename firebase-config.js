@@ -16,8 +16,26 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// Subscription constants
-const SUBSCRIPTION_PLANS = {
+// Initialize Remote Config
+const remoteConfig = firebase.remoteConfig();
+
+// Remote Config settings
+remoteConfig.settings = {
+  minimumFetchIntervalMillis: 3600000, // 1 hour in milliseconds
+  fetchTimeoutMillis: 60000, // 1 minute timeout
+};
+
+// Define default values for Remote Config
+remoteConfig.defaultConfig = {
+  "razorpay_key_id": "DISABLED",
+  "imgbb_api_key": "DISABLED",
+  "free_prescription_limit": "10",
+  "monthly_plan_price": "99",
+  "yearly_plan_price": "499"
+};
+
+// Subscription constants (will be updated from Remote Config)
+let SUBSCRIPTION_PLANS = {
   MONTHLY: {
     name: 'monthly',
     amount: 99,
@@ -30,4 +48,4 @@ const SUBSCRIPTION_PLANS = {
   }
 };
 
-const FREE_PRESCRIPTION_LIMIT = 10;
+let FREE_PRESCRIPTION_LIMIT = 10;
