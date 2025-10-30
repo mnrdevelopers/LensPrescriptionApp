@@ -1,15 +1,9 @@
 // app.js - Consolidated from app.js and script.js
-
-// Payment and Subscription Management
-let RAZORPAY_KEY_ID = null;
-let selectedPlan = 'yearly';
-
 // Global Variables
 let currentPrescriptionData = null;
 let whatsappImageUrl = null;
 let isFormFilled = false;
 let deferredPrompt;
-let IMGBB_API_KEY = null;
 // Flag to track if the user profile is complete
 let isProfileComplete = false;
 // Store the last valid section to return to after setup
