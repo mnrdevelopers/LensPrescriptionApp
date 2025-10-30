@@ -1,6 +1,6 @@
-// service-worker.js - UPDATED VERSION WITH OFFLINE FALLBACK
+// service-worker.js - OPTIMIZED VERSION WITH BETTER CACHING
 
-const CACHE_NAME = 'lens-prescription-v6'; // Incrementing cache version
+const CACHE_NAME = 'lens-prescription-v7'; // Incremented version
 const ASSETS = [
   '/', // Root of the app
   '/index.html', // Offline Fallback
@@ -11,6 +11,8 @@ const ASSETS = [
   '/app.js',
   '/auth.js',
   '/firebase-config.js',
+  '/reset-password.html',
+  '/reset-password.js',
   '/manifest.json',
   '/lenslogo.png' // Icon/Logo
 ];
@@ -22,8 +24,14 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Service Worker: Caching app shell');
-        // Ensure all critical assets are pre-cached
-        return cache.addAll(ASSETS);
+        // Cache critical assets, but don't block installation if some fail
+        return Promise.allSettled(
+          ASSETS.map(asset => 
+            cache.add(asset).catch(err => 
+              console.warn(`Failed to cache ${asset}:`, err)
+            )
+          )
+        );
       })
       .then(() => self.skipWaiting())
   );
@@ -46,24 +54,42 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch event - Enhanced for CORS, external resources, and offline fallback
+// Fetch event - Enhanced caching strategy
 self.addEventListener('fetch', (event) => {
-  // Skip non-GET requests
-  if (event.request.method !== 'GET') return;
+  // Skip non-GET requests and browser extensions
+  if (event.request.method !== 'GET' || 
+      event.request.url.startsWith('chrome-extension://') ||
+      event.request.url.includes('extension')) {
+    return;
+  }
 
   const url = new URL(event.request.url);
   
-  // Handle external resources (ImgBB, etc.) with CORS
+  // Skip Remote Config requests - always fetch fresh
+  if (url.href.includes('firebaseremoteconfig.googleapis.com')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // Skip Razorpay and payment-related requests
+  if (url.href.includes('checkout.razorpay.com') ||
+      url.href.includes('api.razorpay.com')) {
+    return;
+  }
+
+  // Handle external APIs (ImgBB) with network-first strategy
   if (url.href.includes('imgbb.com') || 
       url.href.includes('api.imgbb.com')) {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          // Cache the CORS response
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
+          // Only cache successful responses
+          if (response.status === 200) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseClone);
+            });
+          }
           return response;
         })
         .catch(() => {
@@ -74,29 +100,96 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Don't cache other external requests aggressively (Firebase, Google APIs)
+  // Dynamic resources (Firebase, CDNs) - network first, no aggressive caching
   if (url.href.includes('firebase') || 
       url.href.includes('googleapis') ||
       url.href.includes('gstatic.com') ||
-      url.href.includes('cdn.jsdelivr.net') || // Bootstrap, FontAwesome
-      url.href.includes('checkout.razorpay.com')) {
+      url.href.includes('cdn.jsdelivr.net') ||
+      url.href.includes('bootstrap') ||
+      url.href.includes('fontawesome')) {
+    
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          // Cache successful responses for CDN resources
+          if (response.status === 200) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseClone);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          // Try cache as fallback
+          return caches.match(event.request);
+        })
+    );
     return;
   }
 
-  // For internal requests, use cache first, falling back to network, and finally to offline page
+  // App shell and internal resources - cache first strategy
   event.respondWith(
     caches.match(event.request)
       .then((cachedResponse) => {
+        // Return cached version if available
         if (cachedResponse) {
+          // Update cache in background for next visit
+          fetchAndCache(event.request);
           return cachedResponse;
         }
         
-        // Try network
-        return fetch(event.request).catch(() => {
-            // If both cache and network fail, serve the offline page (index.html)
-            console.log('Serving offline fallback for:', event.request.url);
-            return caches.match('/index.html');
-        });
+        // Otherwise, fetch from network
+        return fetchAndCache(event.request)
+          .catch(() => {
+            // If both cache and network fail, serve appropriate offline page
+            if (event.request.destination === 'document') {
+              return caches.match('/index.html');
+            }
+            // For other resources, return a generic offline response
+            return new Response('Offline', {
+              status: 503,
+              statusText: 'Service Unavailable',
+              headers: new Headers({
+                'Content-Type': 'text/plain'
+              })
+            });
+          });
       })
   );
 });
+
+// Helper function to fetch and cache requests
+function fetchAndCache(request) {
+  return fetch(request)
+    .then((response) => {
+      // Check if we received a valid response
+      if (!response || response.status !== 200 || response.type !== 'basic') {
+        return response;
+      }
+
+      // Clone the response
+      const responseToCache = response.clone();
+
+      caches.open(CACHE_NAME)
+        .then((cache) => {
+          cache.put(request, responseToCache);
+        });
+
+      return response;
+    });
+}
+
+// Background sync for offline data (optional enhancement)
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'background-sync') {
+    console.log('Background sync triggered');
+    event.waitUntil(doBackgroundSync());
+  }
+});
+
+async function doBackgroundSync() {
+  // Implement background sync logic here if needed
+  // For example, sync offline prescriptions when back online
+  console.log('Performing background sync...');
+}
