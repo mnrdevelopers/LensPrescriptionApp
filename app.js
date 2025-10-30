@@ -52,8 +52,8 @@ async function initializeApp() {
     // Load user profile and check for completion
     loadUserProfile();
     
-    // Load ImgBB API key
-    loadImgbbApiKey();
+    // Initialize Remote Config (replaces both payment and ImgBB initialization)
+    await initializeRemoteConfig();
     
     // Setup event listeners
     setupEventListeners();
@@ -63,9 +63,6 @@ async function initializeApp() {
     setInitialDateFilters();
 
     try {
-        // Initialize payment system
-        await initializePaymentSystem();
-        
         // Add usage counter to dashboard
         addUsageCounterToDashboard();
         
@@ -446,7 +443,7 @@ function navigateIfProfileComplete(navFunction, sectionName) {
                      sectionName === 'form' ? 'form' : 
                      sectionName === 'prescriptions' ? 'prescriptions' : 
                      sectionName === 'reports' ? 'reports' : 'setup';
-
+        
         // Use replaceState to update the URL without polluting the browser history for internal navigation
         history.replaceState({ page: sectionName }, sectionName, `app.html#${hash}`);
 
@@ -1118,254 +1115,888 @@ function addPrescriptionRow(tbody, prescription) {
         cell.textContent = field;
     });
 
-    // Action buttons
-    const actionCell = row.insertCell();
-    actionCell.innerHTML = `
-        <button class="btn btn-sm btn-outline-primary" onclick="viewPrescription('${prescription.id}')">
-            <i class="fas fa-eye"></i>
-        </button>
-        <button class="btn btn-sm btn-outline-danger" onclick="deletePrescription('${prescription.id}')">
-            <i class="fas fa-trash"></i>
-        </button>
-    `;
+    // Actions cell
+    const actionsCell = row.insertCell();
+    
+    const previewBtn = document.createElement('button');
+    previewBtn.innerHTML = '👁️';
+    previewBtn.className = 'btn-preview';
+    previewBtn.title = 'Preview';
+    // Create a deep copy to avoid mutation issues
+    previewBtn.onclick = () => previewPrescription(JSON.parse(JSON.stringify(prescription))); 
+    
+    const deleteBtn = document.createElement('button');
+    deleteBtn.innerHTML = '🗑️';
+    deleteBtn.className = 'btn-delete';
+    deleteBtn.title = 'Delete';
+    deleteBtn.onclick = () => deletePrescription(prescription);
+    
+    actionsCell.appendChild(previewBtn);
+    actionsCell.appendChild(deleteBtn);
 }
 
 function filterPrescriptions() {
-    const searchTerm = document.getElementById('prescriptionSearch').value.toLowerCase();
+    const input = document.getElementById('searchInput')?.value.toLowerCase();
     const table = document.getElementById('prescriptionTable');
-    const rows = table?.getElementsByTagName('tbody')[0]?.getElementsByTagName('tr');
+    const tbody = table?.getElementsByTagName('tbody')[0];
+    if (!tbody || !input) return;
     
-    if (!rows) return;
-    
-    for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-        // Skip group header rows
-        if (row.cells.length === 1 && row.cells[0].className === 'prescription-group-header') {
-            continue;
-        }
+    const rows = tbody.getElementsByTagName('tr');
+
+    for (let row of rows) {
+        if (row.classList.contains('prescription-group-header')) continue;
         
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
+        const name = row.cells[1]?.textContent.toLowerCase() || '';
+        const mobile = row.cells[4]?.textContent.toLowerCase() || '';
+        
+        // Hide/show row based on search and visibility (to respect date filtering)
+        if (row.style.display !== 'none') {
+            row.style.display = (name.includes(input) || mobile.includes(input)) ? '' : 'none';
+        }
     }
 }
 
-function viewPrescription(prescriptionId) {
-    // Navigate to preview with the specific prescription ID
-    // This will be handled in the preview section
-    console.log('View prescription:', prescriptionId);
-    // You can implement this by fetching the specific prescription and showing preview
+function previewPrescription(prescription) {
+    // Clear the cached image URL when previewing a different prescription
+    whatsappImageUrl = null;
+    showPreview(prescription);
 }
 
-function deletePrescription(prescriptionId) {
-    if (!confirm('Are you sure you want to delete this prescription?')) {
+async function deletePrescription(prescription) {
+    // ⚠️ CRITICAL FIX: Replaced confirm() with a prompt as alerts/confirms are disallowed.
+    console.warn(`Attempting to delete prescription ID: ${prescription.id}.`);
+    
+    const confirmed = window.prompt("Type 'DELETE' to confirm deletion of this prescription:") === 'DELETE';
+
+    if (!confirmed) {
+        console.log('Deletion cancelled by user.');
         return;
     }
-    
-    db.collection('prescriptions').doc(prescriptionId).delete()
-        .then(() => {
-            console.log('Prescription deleted successfully');
-            fetchPrescriptions(); // Refresh the list
-        })
-        .catch((error) => {
-            console.error('Error deleting prescription:', error);
-        });
+
+    try {
+        await db.collection('prescriptions').doc(prescription.id).delete();
+        console.log('Prescription deleted successfully!');
+        fetchPrescriptions(); // Refresh the list
+    } catch (error) {
+        console.error('Error deleting prescription:', error);
+    }
 }
 
 // Preview Management
-function loadPreviewData(prescriptionData) {
-    // Store the data for later use
-    currentPrescriptionData = prescriptionData;
-    
-    // Update preview fields
-    const fields = {
-        'previewPatientName': prescriptionData.patientName,
-        'previewAge': prescriptionData.age,
-        'previewGender': prescriptionData.gender,
-        'previewMobile': prescriptionData.mobile,
-        'previewAmount': `₹${prescriptionData.amount?.toFixed(2) || '0.00'}`,
-        'previewVisionType': prescriptionData.visionType,
-        'previewLensType': prescriptionData.lensType,
-        'previewFrameType': prescriptionData.frameType,
-        'previewPaymentMode': prescriptionData.paymentMode,
-        'previewDate': new Date().toLocaleDateString('en-US', { 
-            year: 'numeric', month: 'long', day: 'numeric' 
-        })
-    };
-    
-    Object.keys(fields).forEach(fieldId => {
-        const element = document.getElementById(fieldId);
-        if (element) {
-            element.textContent = fields[fieldId];
-        }
-    });
-    
-    // Update prescription data in preview
-    const prescriptionFields = {
-        'previewRightDistSPH': prescriptionData.prescriptionData?.rightDistSPH || '',
-        'previewRightDistCYL': prescriptionData.prescriptionData?.rightDistCYL || '',
-        'previewRightDistAXIS': prescriptionData.prescriptionData?.rightDistAXIS || '',
-        'previewRightDistVA': prescriptionData.prescriptionData?.rightDistVA || '',
-        'previewLeftDistSPH': prescriptionData.prescriptionData?.leftDistSPH || '',
-        'previewLeftDistCYL': prescriptionData.prescriptionData?.leftDistCYL || '',
-        'previewLeftDistAXIS': prescriptionData.prescriptionData?.leftDistAXIS || '',
-        'previewLeftDistVA': prescriptionData.prescriptionData?.leftDistVA || '',
-        'previewRightAddSPH': prescriptionData.prescriptionData?.rightAddSPH || '',
-        'previewRightAddCYL': prescriptionData.prescriptionData?.rightAddCYL || '',
-        'previewRightAddAXIS': prescriptionData.prescriptionData?.rightAddAXIS || '',
-        'previewRightAddVA': prescriptionData.prescriptionData?.rightAddVA || '',
-        'previewLeftAddSPH': prescriptionData.prescriptionData?.leftAddSPH || '',
-        'previewLeftAddCYL': prescriptionData.prescriptionData?.leftAddCYL || '',
-        'previewLeftAddAXIS': prescriptionData.prescriptionData?.leftAddAXIS || '',
-        'previewLeftAddVA': prescriptionData.prescriptionData?.leftAddVA || ''
-    };
-    
-    Object.keys(prescriptionFields).forEach(fieldId => {
-        const element = document.getElementById(fieldId);
-        if (element) {
-            element.textContent = prescriptionFields[fieldId];
-        }
-    });
-    
-    // Clear any previous WhatsApp image URL
-    whatsappImageUrl = null;
-}
-
 function loadPreviewFromForm() {
     const formData = getFormData();
+    if (!validateFormData(formData)) {
+        // If form is invalid, switch back to form view
+        showPrescriptionForm();
+        return;
+    }
     loadPreviewData(formData);
 }
 
-function goBackFromPreview() {
-    // Go back to the form or prescriptions list based on context
-    if (lastValidSection === 'form') {
-        showPrescriptionForm();
-    } else {
-        showPrescriptions();
-    }
+function loadPreviewData(data) {
+    // Patient details
+    document.getElementById('previewPatientName').textContent = data.patientName || '';
+    document.getElementById('previewAge').textContent = data.age || '';
+    document.getElementById('previewGender').textContent = data.gender || '';
+    document.getElementById('previewMobile').textContent = data.mobile || '';
+    document.getElementById('previewAmount').textContent = data.amount?.toFixed(2) || '0.00';
+    document.getElementById('previewVisionType').textContent = data.visionType || '';
+    document.getElementById('previewLensType').textContent = data.lensType || '';
+    document.getElementById('previewFrameType').textContent = data.frameType || '';
+    document.getElementById('previewPaymentMode').textContent = data.paymentMode || '';
+
+    // Prescription data
+    const prescriptionFields = [
+        'rightDistSPH', 'rightDistCYL', 'rightDistAXIS', 'rightDistVA',
+        'leftDistSPH', 'leftDistCYL', 'leftDistAXIS', 'leftDistVA',
+        'rightAddSPH', 'rightAddCYL', 'rightAddAXIS', 'rightAddVA',
+        'leftAddSPH', 'leftAddCYL', 'leftAddAXIS', 'leftAddVA'
+    ];
+
+    prescriptionFields.forEach(field => {
+        const element = document.getElementById(`preview${field}`);
+        if (element && data.prescriptionData) {
+            element.textContent = data.prescriptionData[field] || '';
+        }
+    });
 }
 
-// WhatsApp Sharing
-async function shareOnWhatsApp() {
-    if (!currentPrescriptionData) {
-        alert('No prescription data available to share.');
+/**
+ * Renders the preview content as a downloadable PNG image.
+ */
+function generateImage() {
+    // The name is misleading, but we are now generating an IMAGE (PNG) for download.
+    const btn = document.querySelector('.btn-download');
+    if (btn) {
+        btn.classList.add('btn-loading');
+        btn.textContent = 'Generating Image...';
+    }
+    showStatusMessage('Generating Image for Download...', 'info');
+
+    const patientName = document.getElementById('previewPatientName')?.textContent || 'Patient';
+    const shortDate = new Date().toLocaleDateString('en-IN', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric' 
+    }).replace(/\//g, '-');
+    const filename = `Prescription_${patientName}_${shortDate}.png`;
+
+    const element = document.getElementById('prescriptionPreview');
+    
+    // Use html2canvas to render the preview content as a Canvas element
+    html2canvas(element, {
+        scale: 3, // High resolution
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff'
+    }).then(canvas => {
+        // Convert canvas to a data URL
+        const imageDataURL = canvas.toDataURL('image/png');
+        
+        // Trigger download using a temporary link
+        const downloadLink = document.createElement('a');
+        downloadLink.href = imageDataURL;
+        downloadLink.download = filename;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+
+        showStatusMessage('Image (PNG) downloaded successfully!', 'success');
+        
+    }).catch((error) => {
+        console.error('Image generation/download error:', error);
+        showStatusMessage('Export failed. See console for details.', 'error');
+        
+    }).finally(() => {
+        if (btn) {
+            btn.classList.remove('btn-loading');
+            btn.textContent = 'PDF'; // Keep PDF label for user consistency, but it exports PNG
+        }
+    });
+}
+
+/**
+ * Helper function to create the isolated preview window for the generated PDF blob.
+ * @param {string} pdfUrl The Blob URL of the generated PDF.
+ * @param {string} filename The suggested filename.
+ */
+function openPDFPreviewWindow(pdfUrl, filename) {
+    // Open a new window that focuses entirely on the PDF object
+    // This function is kept primarily for its successful blob URL creation, 
+    // but the direct download via link click is more reliable.
+    // We can comment out the window.open part since direct download is requested.
+    // const previewWindow = window.open(pdfUrl, '_blank', 'width=800,height=800');
+
+    // if (previewWindow) {
+    //     showStatusMessage('PDF ready. Use the browser controls to download.', 'success');
+    //     previewWindow.document.title = filename;
+    // } else {
+    //     showStatusMessage('Popup blocked. PDF is ready but cannot be previewed.', 'error');
+    // }
+    showStatusMessage('PDF downloaded successfully!', 'success');
+}
+
+// Dedicated Thermal Print Function for 58mm Printer
+function printPreview() {
+    // This function is still used for the thermal print path, which uses the 
+    // print dialogue directly without a download prompt.
+    const printWindow = window.open('', '_blank', 'width=350,height=600');
+    
+    if (!printWindow) {
+        // Fallback to direct print if popup blocked
+        window.print();
         return;
     }
 
+    // Get all the data for thermal print
+    const clinicName = document.getElementById('previewClinicName')?.textContent || 'Your Clinic';
+    const clinicAddress = document.getElementById('previewClinicAddress')?.textContent || 'Clinic Address';
+    const optometristName = document.getElementById('previewOptometristName')?.textContent || 'Optometrist Name';
+    const contactNumber = document.getElementById('previewContactNumber')?.textContent || 'Contact Number';
+    
+    // Get short date with time
+    const now = new Date();
+    const shortDate = now.toLocaleDateString('en-IN', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric' 
+    });
+    const shortTime = now.toLocaleTimeString('en-IN', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: true 
+    });
+    const currentDateTime = `${shortDate} ${shortTime}`;
+    
+    const patientName = document.getElementById('previewPatientName')?.textContent || '';
+    const age = document.getElementById('previewAge')?.textContent || '';
+    const gender = document.getElementById('previewGender')?.textContent || '';
+    const mobile = document.getElementById('previewMobile')?.textContent || '';
+    
+    const visionType = document.getElementById('previewVisionType')?.textContent || '';
+    const lensType = document.getElementById('previewLensType')?.textContent || '';
+    const frameType = document.getElementById('previewFrameType')?.textContent || '';
+    const amount = document.getElementById('previewAmount')?.textContent || '';
+    const paymentMode = document.getElementById('previewPaymentMode')?.textContent || '';
+
+    // Get prescription data
+    const prescriptionData = {
+        rightDist: {
+            SPH: document.getElementById('previewrightDistSPH')?.textContent || '',
+            CYL: document.getElementById('previewrightDistCYL')?.textContent || '',
+            AXIS: document.getElementById('previewrightDistAXIS')?.textContent || '',
+            VA: document.getElementById('previewrightDistVA')?.textContent || ''
+        },
+        rightAdd: {
+            SPH: document.getElementById('previewrightAddSPH')?.textContent || '',
+            CYL: document.getElementById('previewrightAddCYL')?.textContent || '',
+            AXIS: document.getElementById('previewrightAddAXIS')?.textContent || '',
+            VA: document.getElementById('previewrightAddVA')?.textContent || ''
+        },
+        leftDist: {
+            SPH: document.getElementById('previewleftDistSPH')?.textContent || '',
+            CYL: document.getElementById('previewleftDistCYL')?.textContent || '',
+            AXIS: document.getElementById('previewleftDistAXIS')?.textContent || '',
+            VA: document.getElementById('previewleftDistVA')?.textContent || ''
+        },
+        leftAdd: {
+            SPH: document.getElementById('previewleftAddSPH')?.textContent || '',
+            CYL: document.getElementById('previewleftAddCYL')?.textContent || '',
+            AXIS: document.getElementById('previewleftAddAXIS')?.textContent || '',
+            VA: document.getElementById('previewleftAddVA')?.textContent || ''
+        }
+    };
+
+    const printHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Prescription - ${patientName}</title>
+            <meta charset="UTF-8">
+            <style>
+                /* 58mm Thermal Printer Specific Styles */
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                    font-family: 'Courier New', monospace;
+                }
+                
+                body {
+                    width: 58mm;
+                    margin: 0 auto;
+                    padding: 3mm;
+                    background: white;
+                    color: black;
+                    font-size: 9px;
+                    line-height: 1.1;
+                }
+                
+                /* Clinic Header */
+                .clinic-header {
+                    text-align: center;
+                    margin-bottom: 4px;
+                    padding-bottom: 3px;
+                    border-bottom: 1px solid #000;
+                }
+                
+                .clinic-name {
+                    font-size: 11px;
+                    font-weight: bold;
+                    margin-bottom: 1px;
+                    text-transform: uppercase;
+                }
+                
+                .clinic-address {
+                    font-size: 8px;
+                    margin-bottom: 1px;
+                }
+                
+                .clinic-contact {
+                    font-size: 8px;
+                    font-weight: bold;
+                }
+                
+                /* Name and Date - UPDATED */
+                .header-info {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-bottom: 4px;
+                    font-size: 8px;
+                }
+                
+                .name-section {
+                    font-weight: bold;
+                }
+                
+                .date-section {
+                    text-align: right;
+                    font-weight: bold;
+                }
+                
+                /* Prescription Title */
+                .prescription-title {
+                    text-align: center;
+                    font-size: 10px;
+                    font-weight: bold;
+                    margin: 4px 0;
+                    text-decoration: underline;
+                }
+                
+                /* Patient Information */
+                .patient-info {
+                    margin-bottom: 4px;
+                    padding: 3px;
+                    border: 1px solid #000;
+                }
+                
+                .patient-row {
+                    display: flex;
+                    margin-bottom: 1px;
+                }
+                
+                .patient-label {
+                    font-weight: bold;
+                    width: 25mm;
+                }
+                
+                .patient-value {
+                    flex: 1;
+                }
+                
+                /* Prescription Tables */
+                .prescription-section {
+                    margin: 4px 0;
+                }
+                
+                .eye-title {
+                    text-align: center;
+                    background: #e0e0e0;
+                    padding: 2px;
+                    font-weight: bold;
+                    font-size: 9px;
+                    border: 1px solid #000;
+                    border-bottom: none;
+                }
+                
+                .prescription-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-bottom: 3px;
+                    font-size: 7px;
+                }
+                
+                .prescription-table th {
+                    background: #f0f0f0;
+                    border: 1px solid #000;
+                    padding: 2px 1px;
+                    text-align: center;
+                    font-weight: bold;
+                }
+                
+                .prescription-table td {
+                    border: 1px solid #000;
+                    padding: 2px 1px;
+                    text-align: center;
+                }
+                
+                .section-heading {
+                    background: #e8e8e8 !important;
+                    font-weight: bold;
+                }
+                
+                /* Options Section */
+                .options-section {
+                    margin: 4px 0;
+                    border: 1px solid #000;
+                }
+                
+                .options-title {
+                    background: #e0e0e0;
+                    padding: 2px;
+                    text-align: center;
+                    font-weight: bold;
+                    font-size: 9px;
+                }
+                
+                .options-content {
+                    padding: 3px;
+                }
+                
+                .option-row {
+                    display: flex;
+                    margin-bottom: 1px;
+                }
+                
+                .option-label {
+                    font-weight: bold;
+                    width: 20mm;
+                }
+                
+                .option-value {
+                    flex: 1;
+                }
+                
+                /* Amount Section */
+                .amount-section {
+                    border: 1px solid #000;
+                    margin: 4px 0;
+                }
+                
+                .amount-row {
+                    display: flex;
+                    padding: 2px 3px;
+                }
+                
+                .amount-label {
+                    font-weight: bold;
+                    width: 25mm;
+                }
+                
+                .amount-value {
+                    flex: 1;
+                    font-weight: bold;
+                    font-size: 10px;
+                }
+                
+                /* Footer */
+                .footer {
+                    margin-top: 6px;
+                    padding-top: 3px;
+                    border-top: 1px solid #000;
+                    text-align: center;
+                    font-size: 7px;
+                }
+                
+                .thank-you {
+                    margin-bottom: 2px;
+                    font-style: italic;
+                }
+                
+                .signature {
+                    margin-top: 8px;
+                    text-align: right;
+                }
+                
+                .signature-line {
+                    border-top: 1px solid #000;
+                    width: 30mm;
+                    margin-left: auto;
+                    padding-top: 1px;
+                    text-align: center;
+                    font-size: 7px;
+                }
+                
+                /* Print Specific */
+                @media print {
+                    body {
+                        margin: 0;
+                        padding: 2mm;
+                        width: 58mm;
+                    }
+                    
+                    @page {
+                        margin: 0;
+                        padding: 0;
+                        size: 58mm auto;
+                    }
+                    
+                    .no-print {
+                        display: none !important;
+                    }
+                }
+                
+                /* On-screen preview styling */
+                .print-controls {
+                    text-align: center;
+                    margin-top: 10px;
+                    padding: 10px;
+                    background: #f5f5f5;
+                    border-radius: 5px;
+                }
+                
+                .print-btn {
+                    padding: 8px 16px;
+                    margin: 0 5px;
+                    border: none;
+                    border-radius: 3px;
+                    cursor: pointer;
+                    font-size: 10px;
+                }
+                
+                .print-primary {
+                    background: #007bff;
+                    color: white;
+                }
+                
+                .print-secondary {
+                    background: #6c757d;
+                    color: white;
+                }
+            </style>
+        </head>
+        <body>
+            <!-- Clinic Header -->
+            <div class="clinic-header">
+                <div class="clinic-name">${clinicName}</div>
+                <div class="clinic-address">${clinicAddress}</div>
+                <div class="clinic-contact">📞 ${contactNumber}</div>
+            </div>
+            
+            <!-- Name and Date - UPDATED -->
+            <div class="header-info">
+                <div class="name-section"><strong>${optometristName}</strong></div>
+                <div class="date-section"><strong>${currentDateTime}</strong></div>
+            </div>
+            
+            <!-- Prescription Title -->
+            <div class="prescription-title">EYE PRESCRIPTION</div>
+            
+            <!-- Patient Information -->
+            <div class="patient-info">
+                <div class="patient-row">
+                    <div class="patient-label">Patient Name:</div>
+                    <div class="patient-value">${patientName}</div>
+                </div>
+                <div class="patient-row">
+                    <div class="patient-label">Age / Gender:</div>
+                    <div class="patient-value">${age} / ${gender}</div>
+                </div>
+                <div class="patient-row">
+                    <div class="patient-label">Mobile:</div>
+                    <div class="patient-value">${mobile}</div>
+                </div>
+            </div>
+            
+            <!-- Right Eye Prescription -->
+            <div class="prescription-section">
+                <div class="eye-title">RIGHT EYE (OD)</div>
+                <table class="prescription-table">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>SPH</th>
+                            <th>CYL</th>
+                            <th>AXIS</th>
+                            <th>V/A</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="section-heading">DIST</td>
+                            <td>${prescriptionData.rightDist.SPH}</td>
+                            <td>${prescriptionData.rightDist.CYL}</td>
+                            <td>${prescriptionData.rightDist.AXIS}</td>
+                            <td>${prescriptionData.rightDist.VA}</td>
+                        </tr>
+                        <tr>
+                            <td class="section-heading">ADD</td>
+                            <td>${prescriptionData.rightAdd.SPH}</td>
+                            <td>${prescriptionData.rightAdd.CYL}</td>
+                            <td>${prescriptionData.rightAdd.AXIS}</td>
+                            <td>${prescriptionData.rightAdd.VA}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Left Eye Prescription -->
+            <div class="prescription-section">
+                <div class="eye-title">LEFT EYE (OS)</div>
+                <table class="prescription-table">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>SPH</th>
+                            <th>CYL</th>
+                            <th>AXIS</th>
+                            <th>V/A</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="section-heading">DIST</td>
+                            <td>${prescriptionData.leftDist.SPH}</td>
+                            <td>${prescriptionData.leftDist.CYL}</td>
+                            <td>${prescriptionData.leftDist.AXIS}</td>
+                            <td>${prescriptionData.leftDist.VA}</td>
+                        </tr>
+                        <tr>
+                            <td class="section-heading">ADD</td>
+                            <td>${prescriptionData.leftAdd.SPH}</td>
+                            <td>${prescriptionData.leftAdd.CYL}</td>
+                            <td>${prescriptionData.leftAdd.AXIS}</td>
+                            <td>${prescriptionData.leftAdd.VA}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Recommended Options -->
+            <div class="options-section">
+                <div class="options-title">RECOMMENDED OPTIONS</div>
+                <div class="options-content">
+                    <div class="option-row">
+                        <div class="option-label">Vision Type:</div>
+                        <div class="option-value">${visionType}</div>
+                    </div>
+                    <div class="option-row">
+                        <div class="option-label">Lens Type:</div>
+                        <div class="option-value">${lensType}</div>
+                    </div>
+                    <div class="option-row">
+                        <div class="option-label">Frame Type:</div>
+                        <div class="option-value">${frameType}</div>
+                    </div>
+                    <div class="option-row">
+                        <div class="option-label">Payment Mode:</div>
+                        <div class="option-value">${paymentMode}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Amount -->
+            <div class="amount-section">
+                <div class="amount-row">
+                    <div class="amount-label">TOTAL AMOUNT:</div>
+                    <div class="amount-value">₹ ${amount}</div>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="footer">
+                <div class="thank-you">
+                    Thank you for choosing ${clinicName}
+                </div>
+                <div>For queries: ${contactNumber}</div>
+                
+                <div class="signature">
+                    <div class="signature-line">
+                        Authorized Signature<br>
+                        <strong>${optometristName}</strong>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Print Controls (Visible on screen only) -->
+            <div class="no-print print-controls">
+                <button class="print-btn print-primary" onclick="window.print()">
+                    🖨️ Print Now
+                </button>
+                <button class="print-btn print-secondary" onclick="window.close()">
+                    ❌ Close
+                </button>
+            </div>
+
+            <script>
+                // Auto-print after short delay
+                setTimeout(function() {
+                    window.print();
+                }, 500);
+                
+                // Auto-close after printing
+                window.onafterprint = function() {
+                    setTimeout(function() {
+                        window.close();
+                    }, 1000);
+                };
+                
+                // Fallback close
+                setTimeout(function() {
+                    if (!window.closed) {
+                        window.close();
+                    }
+                }, 10000);
+            </script>
+        </body>
+        </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(printHTML);
+    printWindow.document.close();
+}
+
+/**
+ * Starts the visible timer and displays the modal.
+ */
+function startWhatsappTimer() {
+    const modal = document.getElementById('whatsappTimerModal');
+    const timerDisplay = document.getElementById('timerDisplay');
+    
+    if (modal) modal.style.display = 'flex';
+    timerSeconds = 0;
+    
+    // Initial display
+    if (timerDisplay) timerDisplay.textContent = '00:00';
+
+    // Update timer every second
+    timerInterval = setInterval(() => {
+        timerSeconds++;
+        const minutes = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
+        const seconds = String(timerSeconds % 60).padStart(2, '0');
+        if (timerDisplay) timerDisplay.textContent = `${minutes}:${seconds}`;
+    }, 1000);
+}
+
+/**
+ * Stops the visible timer and hides the modal.
+ */
+function stopWhatsappTimer() {
+    clearInterval(timerInterval);
+    const modal = document.getElementById('whatsappTimerModal');
+    if (modal) modal.style.display = 'none';
+}
+
+/**
+ * Sends WhatsApp message with prescription image
+ * @param {string} mobile - Patient's mobile number
+ * @param {string} imageUrl - URL of the prescription image
+ */
+async function sendWhatsAppMessage(mobile, imageUrl) {
     try {
-        // Show loading state
-        const whatsappBtn = document.querySelector('#previewSection .btn-success');
-        if (whatsappBtn) {
-            whatsappBtn.disabled = true;
-            whatsappBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
-        }
-
-        // Generate or use cached WhatsApp image
-        if (!whatsappImageUrl) {
-            whatsappImageUrl = await generateWhatsAppImage();
-        }
-
-        if (whatsappImageUrl) {
-            // Create WhatsApp message
-            const message = createWhatsAppMessage();
-            const encodedMessage = encodeURIComponent(message);
-            const encodedImageUrl = encodeURIComponent(whatsappImageUrl);
-            
-            // Create WhatsApp share URL
-            const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
-            
-            // Open WhatsApp in a new tab
-            window.open(whatsappUrl, '_blank');
+        // Format mobile number (remove any non-digit characters)
+        const formattedMobile = mobile.replace(/\D/g, '');
+        
+        // Get clinic information for the message
+        const clinicName = document.getElementById('previewClinicName')?.textContent || 'Our Clinic';
+        const optometristName = document.getElementById('previewOptometristName')?.textContent || 'Optometrist';
+        const patientName = document.getElementById('previewPatientName')?.textContent || 'Patient';
+        
+        // Create message text
+        const message = `Hello ${patientName},\n\nYour eye prescription from ${clinicName} is ready.\n\nThank you for visiting us!\n\n- ${optometristName}`;
+        
+        // Encode the message for URL
+        const encodedMessage = encodeURIComponent(message);
+        
+        // Create WhatsApp URL
+        let whatsappUrl;
+        
+        if (imageUrl.startsWith('data:')) {
+            // For data URLs, we can only send text (WhatsApp API limitation)
+            console.warn('Data URL detected, sending text only');
+            whatsappUrl = `https://wa.me/${formattedMobile}?text=${encodedMessage}`;
+        } else if (imageUrl.startsWith('blob:')) {
+            // For blob URLs, we can only send text (WhatsApp API limitation)
+            console.warn('Blob URL detected, sending text only');
+            whatsappUrl = `https://wa.me/${formattedMobile}?text=${encodedMessage}`;
         } else {
-            throw new Error('Failed to generate prescription image');
+            // For external URLs (like ImgBB), we can include the image in the message
+            const messageWithImage = `${message}\n\nView your prescription: ${imageUrl}`;
+            const encodedMessageWithImage = encodeURIComponent(messageWithImage);
+            whatsappUrl = `https://wa.me/${formattedMobile}?text=${encodedMessageWithImage}`;
         }
-
+        
+        // Open WhatsApp in a new tab
+        const whatsappWindow = window.open(whatsappUrl, '_blank');
+        
+        if (!whatsappWindow) {
+            showStatusMessage('Popup blocked. Please allow popups for WhatsApp.', 'warning');
+            // Fallback: copy message to clipboard and show instructions
+            try {
+                await navigator.clipboard.writeText(message + (imageUrl.startsWith('http') ? `\n\nPrescription: ${imageUrl}` : ''));
+                showStatusMessage('Message copied to clipboard. Please paste it in WhatsApp manually.', 'info');
+            } catch (clipboardError) {
+                console.error('Clipboard copy failed:', clipboardError);
+                showStatusMessage('Please manually share this in WhatsApp.', 'info');
+            }
+        } else {
+            showStatusMessage('Opening WhatsApp...', 'success');
+        }
+        
     } catch (error) {
-        console.error('Error sharing on WhatsApp:', error);
-        alert('Error sharing prescription: ' + error.message);
-    } finally {
-        // Reset button state
-        const whatsappBtn = document.querySelector('#previewSection .btn-success');
-        if (whatsappBtn) {
-            whatsappBtn.disabled = false;
-            whatsappBtn.innerHTML = '<i class="fab fa-whatsapp"></i> Share on WhatsApp';
-        }
+        console.error('Error in sendWhatsAppMessage:', error);
+        throw new Error('Failed to send WhatsApp message: ' + error.message);
     }
 }
 
-function createWhatsAppMessage() {
-    const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-    
-    return `👁️ *Prescription Details*\n\n` +
-           `*Patient Details:*\n` +
-           `Name: ${currentPrescriptionData.patientName}\n` +
-           `Age: ${currentPrescriptionData.age}\n` +
-           `Gender: ${currentPrescriptionData.gender}\n` +
-           `Mobile: ${currentPrescriptionData.mobile}\n\n` +
-           `*Prescription:*\n` +
-           `Vision Type: ${currentPrescriptionData.visionType}\n` +
-           `Lens Type: ${currentPrescriptionData.lensType}\n` +
-           `Frame Type: ${currentPrescriptionData.frameType}\n` +
-           `Amount: ₹${currentPrescriptionData.amount?.toFixed(2) || '0.00'}\n` +
-           `Payment Mode: ${currentPrescriptionData.paymentMode}\n\n` +
-           `*Clinic Details:*\n` +
-           `${userProfile.clinicName || 'Your Clinic'}\n` +
-           `${userProfile.optometristName || 'Optometrist'}\n` +
-           `${userProfile.address || 'Clinic Address'}\n` +
-           `Contact: ${userProfile.contactNumber || 'N/A'}\n\n` +
-           `*Thank you for your visit!*`;
-}
-
-async function generateWhatsAppImage() {
-    const previewElement = document.getElementById('prescriptionPreview');
-    
-    if (!previewElement) {
-        throw new Error('Preview element not found');
+async function sendWhatsApp() {
+    const mobile = document.getElementById('previewMobile')?.textContent;
+    if (!mobile) {
+        showStatusMessage('No mobile number available for WhatsApp', 'error');
+        return;
     }
-
+    
+    // Check if the link is already cached
+    if (whatsappImageUrl) {
+        console.log("Using cached WhatsApp image URL.");
+        await sendWhatsAppMessage(mobile, whatsappImageUrl);
+        return;
+    }
+    
+    // --- If not cached, start timer and processing ---
+    startWhatsappTimer(); 
+    
     try {
-        // Use html2canvas to capture the preview
-        const canvas = await html2canvas(previewElement, {
-            scale: 2, // Higher quality
+        const element = document.getElementById('prescriptionPreview');
+        if (!element) {
+            showStatusMessage('Prescription preview not found', 'error');
+            stopWhatsappTimer();
+            return;
+        }
+
+        // Method 2: Generate canvas and try multiple upload methods
+        const canvas = await html2canvas(element, {
+            scale: 2,
             useCORS: true,
-            allowTaint: true,
+            allowTaint: false,
             backgroundColor: '#ffffff'
         });
 
-        // Convert canvas to blob
-        return new Promise((resolve, reject) => {
-            canvas.toBlob(async (blob) => {
-                try {
-                    // Upload to ImgBB
-                    const imageUrl = await uploadToImgBB(blob);
-                    resolve(imageUrl);
-                } catch (error) {
-                    reject(error);
-                }
-            }, 'image/png');
-        });
+        const imageData = canvas.toDataURL('image/png');
+        
+        // Try multiple upload methods with fallbacks
+        try {
+            // Method 2A: Try ImgBB first (most reliable for external linking)
+            whatsappImageUrl = await uploadImageToImgBB(imageData);
+        } catch (imgbbError) {
+            console.warn('ImgBB upload failed, trying alternative methods:', imgbbError);
+            
+            // Method 2B: Try converting to blob and creating object URL (Less reliable for WhatsApp, but a structured fallback)
+            try {
+                whatsappImageUrl = await convertToBlobUrl(imageData);
+            } catch (blobError) {
+                console.warn('Blob URL method failed:', blobError);
+                
+                // Method 2C: Final fallback - use data URL directly (Least reliable for WhatsApp, will likely send text only)
+                whatsappImageUrl = imageData;
+            }
+        }
 
+        await sendWhatsAppMessage(mobile, whatsappImageUrl);
+        
     } catch (error) {
-        console.error('Error generating image:', error);
-        throw new Error('Failed to generate prescription image');
+        console.error('Error sending WhatsApp:', error);
+        showStatusMessage('Failed to send WhatsApp: ' + error.message, 'error');
+    } finally {
+        // --- STOP TIMER and hide modal regardless of success/failure ---
+        stopWhatsappTimer(); 
     }
 }
 
-async function uploadToImgBB(blob) {
-    if (!IMGBB_API_KEY) {
-        throw new Error('Image upload service not configured');
+async function uploadImageToImgBB(base64Image) {
+    // Use the dynamically loaded API key
+    if (!IMGBB_API_KEY || IMGBB_API_KEY === 'DISABLED') {
+        throw new Error('Image upload key is unavailable.');
     }
-
+    
+    // Convert base64 to blob for better compatibility
+    const blob = dataURLToBlob(base64Image);
     const formData = new FormData();
-    formData.append('image', blob);
+    formData.append("image", blob);
 
     try {
         const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-            method: 'POST',
+            method: "POST",
             body: formData
         });
-
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const data = await response.json();
-
+        
         if (data.success) {
             return data.data.url;
         } else {
@@ -1373,439 +2004,100 @@ async function uploadToImgBB(blob) {
         }
     } catch (error) {
         console.error('ImgBB upload error:', error);
-        throw new Error('Failed to upload image: ' + error.message);
+        throw error;
     }
 }
 
-// PDF Generation
-async function downloadPDF() {
-    if (!currentPrescriptionData) {
-        alert('No prescription data available to download.');
-        return;
+// Helper function to convert data URL to blob
+function dataURLToBlob(dataURL) {
+    const parts = dataURL.split(';base64,');
+    const contentType = parts[0].split(':')[1];
+    const raw = window.atob(parts[1]);
+    const uInt8Array = new Uint8Array(raw.length);
+    
+    for (let i = 0; i < raw.length; ++i) {
+        uInt8Array[i] = raw.charCodeAt(i);
     }
-
-    try {
-        // Show loading state
-        const pdfBtn = document.querySelector('#previewSection .btn-primary');
-        if (pdfBtn) {
-            pdfBtn.disabled = true;
-            pdfBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating PDF...';
-        }
-
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        
-        // Add content to PDF
-        await addPrescriptionToPDF(doc);
-        
-        // Generate and download PDF
-        const fileName = `prescription_${currentPrescriptionData.patientName}_${Date.now()}.pdf`;
-        doc.save(fileName);
-        
-        showStatusMessage('PDF downloaded successfully!', 'success');
-
-    } catch (error) {
-        console.error('Error generating PDF:', error);
-        showStatusMessage('Error generating PDF: ' + error.message, 'error');
-    } finally {
-        // Reset button state
-        const pdfBtn = document.querySelector('#previewSection .btn-primary');
-        if (pdfBtn) {
-            pdfBtn.disabled = false;
-            pdfBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Download PDF';
-        }
-    }
+    
+    return new Blob([uInt8Array], { type: contentType });
 }
 
-async function addPrescriptionToPDF(doc) {
-    const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-    
-    // Set initial coordinates
-    let yPosition = 20;
-    
-    // Add clinic header
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.text(userProfile.clinicName || 'Your Clinic Name', 105, yPosition, { align: 'center' });
-    
-    yPosition += 10;
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(userProfile.address || 'Clinic Address', 105, yPosition, { align: 'center' });
-    
-    yPosition += 5;
-    doc.text(`Contact: ${userProfile.contactNumber || 'N/A'}`, 105, yPosition, { align: 'center' });
-    
-    yPosition += 10;
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('PRESCRIPTION', 105, yPosition, { align: 'center' });
-    
-    // Add patient details
-    yPosition += 15;
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Patient Details:', 20, yPosition);
-    
-    yPosition += 7;
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Name: ${currentPrescriptionData.patientName}`, 20, yPosition);
-    doc.text(`Age: ${currentPrescriptionData.age}`, 100, yPosition);
-    doc.text(`Gender: ${currentPrescriptionData.gender}`, 150, yPosition);
-    
-    yPosition += 7;
-    doc.text(`Mobile: ${currentPrescriptionData.mobile}`, 20, yPosition);
-    doc.text(`Date: ${new Date().toLocaleDateString()}`, 100, yPosition);
-    
-    // Add prescription details
-    yPosition += 15;
-    doc.setFont('helvetica', 'bold');
-    doc.text('Prescription Details:', 20, yPosition);
-    
-    yPosition += 7;
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Vision Type: ${currentPrescriptionData.visionType}`, 20, yPosition);
-    doc.text(`Lens Type: ${currentPrescriptionData.lensType}`, 100, yPosition);
-    
-    yPosition += 7;
-    doc.text(`Frame Type: ${currentPrescriptionData.frameType}`, 20, yPosition);
-    doc.text(`Amount: ₹${currentPrescriptionData.amount?.toFixed(2) || '0.00'}`, 100, yPosition);
-    
-    yPosition += 7;
-    doc.text(`Payment Mode: ${currentPrescriptionData.paymentMode}`, 20, yPosition);
-    
-    // Add prescription data table
-    yPosition += 15;
-    addPrescriptionTableToPDF(doc, yPosition);
-    
-    // Add footer
-    const pageHeight = doc.internal.pageSize.height;
-    doc.setFontSize(8);
-    doc.text('Generated by Lens Prescription App', 105, pageHeight - 10, { align: 'center' });
+async function convertToBlobUrl(imageData) {
+    const blob = dataURLToBlob(imageData);
+    return URL.createObjectURL(blob);
 }
 
-function addPrescriptionTableToPDF(doc, startY) {
-    const prescriptionData = currentPrescriptionData.prescriptionData;
-    if (!prescriptionData) return startY;
-    
-    let yPosition = startY;
-    
-    // Table headers
-    const headers = ['', 'SPH', 'CYL', 'AXIS', 'VA'];
-    const colWidths = [30, 30, 30, 30, 30];
-    const xStart = 20;
-    
-    // Draw table headers
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    
-    let xPosition = xStart;
-    headers.forEach((header, index) => {
-        doc.text(header, xPosition, yPosition);
-        xPosition += colWidths[index];
-    });
-    
-    yPosition += 5;
-    
-    // Draw horizontal line
-    doc.line(xStart, yPosition, xStart + colWidths.reduce((a, b) => a + b, 0), yPosition);
-    yPosition += 5;
-    
-    // Distance Vision data
-    doc.setFont('helvetica', 'bold');
-    doc.text('Distance Vision', xStart, yPosition);
-    yPosition += 5;
-    
-    doc.setFont('helvetica', 'normal');
-    const distanceRows = [
-        ['Right', prescriptionData.rightDistSPH, prescriptionData.rightDistCYL, prescriptionData.rightDistAXIS, prescriptionData.rightDistVA],
-        ['Left', prescriptionData.leftDistSPH, prescriptionData.leftDistCYL, prescriptionData.leftDistAXIS, prescriptionData.leftDistVA]
-    ];
-    
-    distanceRows.forEach(row => {
-        xPosition = xStart;
-        row.forEach((cell, index) => {
-            doc.text(cell || '', xPosition, yPosition);
-            xPosition += colWidths[index];
-        });
-        yPosition += 5;
-    });
-    
-    yPosition += 5;
-    
-    // Near Vision data
-    doc.setFont('helvetica', 'bold');
-    doc.text('Near Vision', xStart, yPosition);
-    yPosition += 5;
-    
-    doc.setFont('helvetica', 'normal');
-    const nearRows = [
-        ['Right', prescriptionData.rightAddSPH, prescriptionData.rightAddCYL, prescriptionData.rightAddAXIS, prescriptionData.rightAddVA],
-        ['Left', prescriptionData.leftAddSPH, prescriptionData.leftAddCYL, prescriptionData.leftAddAXIS, prescriptionData.leftAddVA]
-    ];
-    
-    nearRows.forEach(row => {
-        xPosition = xStart;
-        row.forEach((cell, index) => {
-            doc.text(cell || '', xPosition, yPosition);
-            xPosition += colWidths[index];
-        });
-        yPosition += 5;
-    });
-    
-    return yPosition;
-}
 
-// Form Validation and Exit Handling
-function checkFormFilled() {
-    const requiredFields = ['patientName', 'age', 'patientMobile'];
-    let filled = true;
-    
-    requiredFields.forEach(field => {
-        const element = document.getElementById(field);
-        if (element && !element.value.trim()) {
-            filled = false;
-        }
-    });
-    
-    isFormFilled = filled;
-}
-
-function handleBrowserBack(event) {
-    if (isFormFilled) {
-        // Show exit confirmation modal
-        document.getElementById('exitConfirmationModal').style.display = 'block';
-        // Prevent the actual navigation
-        history.pushState(null, document.title, location.href);
-        event.preventDefault();
-        return false;
-    }
-}
-
-function confirmExitAction() {
-    // User confirmed exit, reset form and allow navigation
-    resetForm();
-    document.getElementById('exitConfirmationModal').style.display = 'none';
-    // Go back in history
-    history.back();
-}
-
-function cancelExitAction() {
-    // User canceled exit, hide modal and stay on page
-    document.getElementById('exitConfirmationModal').style.display = 'none';
-}
-
-function setupInputValidation() {
-    // Mobile number validation (10 digits)
-    const mobileInput = document.getElementById('patientMobile');
-    if (mobileInput) {
-        mobileInput.addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, '');
-            if (value.length > 10) {
-                value = value.substring(0, 10);
-            }
-            e.target.value = value;
-        });
-    }
-
-    // Age validation (1-120)
-    const ageInput = document.getElementById('age');
-    if (ageInput) {
-        ageInput.addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, '');
-            if (value) {
-                const age = parseInt(value);
-                if (age > 120) {
-                    value = '120';
-                }
-            }
-            e.target.value = value;
-        });
-    }
-
-    // Amount validation (positive numbers)
-    const amountInput = document.getElementById('amount');
-    if (amountInput) {
-        amountInput.addEventListener('input', function(e) {
-            let value = e.target.value.replace(/[^\d.]/g, '');
-            // Ensure only one decimal point
-            const parts = value.split('.');
-            if (parts.length > 2) {
-                value = parts[0] + '.' + parts.slice(1).join('');
-            }
-            e.target.value = value;
-        });
-    }
-}
-
-// Dashboard Stats
+// --- Dashboard Stats Logic ---
 async function fetchDashboardStats() {
+    const period = document.getElementById('statsTimePeriod').value;
     const user = auth.currentUser;
     if (!user) return;
-
-    const timePeriod = document.getElementById('statsTimePeriod').value;
-    let startDate = new Date();
     
-    switch (timePeriod) {
+    let startDate = new Date();
+    let endDate = new Date();
+    endDate.setHours(23, 59, 59, 999); // End of today
+
+    switch (period) {
         case 'daily':
-            startDate.setHours(0, 0, 0, 0);
+            startDate.setHours(0, 0, 0, 0); // Start of today
             break;
         case 'weekly':
             startDate.setDate(startDate.getDate() - 7);
+            startDate.setHours(0, 0, 0, 0);
             break;
         case 'monthly':
             startDate.setMonth(startDate.getMonth() - 1);
+            startDate.setHours(0, 0, 0, 0);
             break;
-        case 'yearly':
-            startDate.setFullYear(startDate.getFullYear() - 1);
+        case 'all':
+            startDate = new Date(0); // Epoch start
             break;
     }
+    
+    // Ensure all time periods are inclusive of the start date
+    if (period !== 'all') {
+        startDate.setHours(0, 0, 0, 0);
+    }
+    
+    let baseQuery = db.collection('prescriptions')
+        .where('userId', '==', user.uid);
+    
+    if (period !== 'all') {
+        baseQuery = baseQuery.where('createdAt', '>=', startDate);
+    }
+    
+    // Always limit by end date unless it's 'all'
+    if (period !== 'all' || endDate.getTime() !== new Date(2300, 0, 1).getTime()) { 
+        baseQuery = baseQuery.where('createdAt', '<=', endDate);
+    }
+
 
     try {
-        const prescriptionsSnapshot = await db.collection('prescriptions')
-            .where('userId', '==', user.uid)
-            .where('createdAt', '>=', startDate)
-            .get();
-
-        let totalPatients = 0;
+        const querySnapshot = await baseQuery.get();
+        let totalPrescriptions = 0;
         let totalRevenue = 0;
-        const visionTypeCount = {};
-        const lensTypeCount = {};
-
-        prescriptionsSnapshot.forEach(doc => {
+        
+        querySnapshot.forEach((doc) => {
             const data = doc.data();
-            totalPatients++;
-            totalRevenue += data.amount || 0;
-            
-            // Count vision types
-            if (data.visionType) {
-                visionTypeCount[data.visionType] = (visionTypeCount[data.visionType] || 0) + 1;
-            }
-            
-            // Count lens types
-            if (data.lensType) {
-                lensTypeCount[data.lensType] = (lensTypeCount[data.lensType] || 0) + 1;
-            }
+            totalPrescriptions += 1;
+            totalRevenue += (data.amount || 0);
         });
-
-        // Update dashboard cards
-        updateDashboardCards(totalPatients, totalRevenue, visionTypeCount, lensTypeCount);
+        
+        document.getElementById('statPrescriptions').textContent = totalPrescriptions.toString();
+        document.getElementById('statRevenue').textContent = `₹ ${totalRevenue.toFixed(2)}`;
         
     } catch (error) {
         console.error('Error fetching dashboard stats:', error);
+        document.getElementById('statPrescriptions').textContent = 'N/A';
+        document.getElementById('statRevenue').textContent = '₹ N/A';
+        showStatusMessage('Failed to load dashboard stats.', 'error');
     }
 }
+// --- End Dashboard Stats Logic ---
 
-function updateDashboardCards(totalPatients, totalRevenue, visionTypeCount, lensTypeCount) {
-    // Update basic stats
-    const totalPatientsElement = document.getElementById('totalPatients');
-    const totalRevenueElement = document.getElementById('totalRevenue');
-    
-    if (totalPatientsElement) {
-        totalPatientsElement.textContent = totalPatients;
-    }
-    
-    if (totalRevenueElement) {
-        totalRevenueElement.textContent = `₹${totalRevenue.toFixed(2)}`;
-    }
-    
-    // Update vision type chart
-    updateVisionTypeChart(visionTypeCount);
-    
-    // Update lens type chart
-    updateLensTypeChart(lensTypeCount);
-}
 
-function updateVisionTypeChart(visionTypeCount) {
-    const ctx = document.getElementById('visionTypeChart')?.getContext('2d');
-    if (!ctx) return;
-    
-    // Destroy existing chart if it exists
-    if (window.visionTypeChartInstance) {
-        window.visionTypeChartInstance.destroy();
-    }
-    
-    const labels = Object.keys(visionTypeCount);
-    const data = Object.values(visionTypeCount);
-    
-    window.visionTypeChartInstance = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: labels,
-            datasets: [{
-                data: data,
-                backgroundColor: [
-                    '#FF6384',
-                    '#36A2EB',
-                    '#FFCE56',
-                    '#4BC0C0',
-                    '#9966FF'
-                ]
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'bottom'
-                },
-                title: {
-                    display: true,
-                    text: 'Vision Type Distribution'
-                }
-            }
-        }
-    });
-}
-
-function updateLensTypeChart(lensTypeCount) {
-    const ctx = document.getElementById('lensTypeChart')?.getContext('2d');
-    if (!ctx) return;
-    
-    // Destroy existing chart if it exists
-    if (window.lensTypeChartInstance) {
-        window.lensTypeChartInstance.destroy();
-    }
-    
-    const labels = Object.keys(lensTypeCount);
-    const data = Object.values(lensTypeCount);
-    
-    window.lensTypeChartInstance = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Number of Prescriptions',
-                data: data,
-                backgroundColor: '#36A2EB',
-                borderColor: '#36A2EB',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    display: false
-                },
-                title: {
-                    display: true,
-                    text: 'Lens Type Distribution'
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1
-                    }
-                }
-            }
-        }
-    });
-}
-
-// Reports Management
+// --- Reports Logic ---
 async function fetchReportDataByRange() {
     const user = auth.currentUser;
     if (!user) return;
@@ -1813,908 +2105,862 @@ async function fetchReportDataByRange() {
     const startDateInput = document.getElementById('reportDateStart').value;
     const endDateInput = document.getElementById('reportDateEnd').value;
     
-    // Basic date validation
-    if (startDateInput && endDateInput && new Date(startDateInput) > new Date(endDateInput)) {
-        showStatusMessage('Start date cannot be after end date.', 'error');
+    if (!startDateInput || !endDateInput) {
+        showStatusMessage('Please select both start and end dates for the report.', 'warning');
         return;
     }
 
-    const startDate = startDateInput ? new Date(startDateInput) : null;
-    const endDate = endDateInput ? new Date(endDateInput) : null;
+    let startDate = new Date(startDateInput);
+    let endDate = new Date(endDateInput);
     
     // Set end time to end of day for inclusive filtering
-    if (endDate) {
-        endDate.setHours(23, 59, 59, 999);
+    endDate.setHours(23, 59, 59, 999);
+    
+    if (startDate > endDate) {
+        showStatusMessage('Start date cannot be after end date.', 'error');
+        return;
     }
     
-    let baseQuery = db.collection('prescriptions')
-        .where('userId', '==', user.uid);
-
-    if (startDate) {
-        baseQuery = baseQuery.where('createdAt', '>=', startDate);
-    }
-    
-    if (endDate) {
-        baseQuery = baseQuery.where('createdAt', '<=', endDate);
-    }
-
     try {
-        const querySnapshot = await baseQuery.orderBy('createdAt', 'desc').get();
+        const querySnapshot = await db.collection('prescriptions')
+            .where('userId', '==', user.uid)
+            .where('createdAt', '>=', startDate)
+            .where('createdAt', '<=', endDate)
+            .orderBy('createdAt', 'asc') // Order by date for display grouping
+            .get();
 
         const prescriptions = [];
         querySnapshot.forEach((doc) => {
-            prescriptions.push({
-                id: doc.id,
-                ...doc.data()
-            });
+            prescriptions.push(doc.data());
         });
 
-        generateReport(prescriptions);
+        const reportData = processReportDataByDate(prescriptions);
+        displayReport(reportData);
+        
     } catch (error) {
         console.error('Error fetching report data:', error);
         showStatusMessage('Error fetching report data. Check console for details.', 'error');
     }
 }
 
-function generateReport(prescriptions) {
-    const reportBody = document.getElementById('reportBody');
-    if (!reportBody) return;
-    
-    reportBody.innerHTML = '';
-
-    if (!prescriptions || prescriptions.length === 0) {
-        reportBody.innerHTML = '<tr><td colspan="9" class="text-center">No prescriptions found for selected date range</td></tr>';
-        return;
-    }
-
+function processReportDataByDate(prescriptions) {
+    const reportData = {};
+    let totalPrescriptions = 0;
     let totalRevenue = 0;
     
-    prescriptions.forEach(prescription => {
-        const row = reportBody.insertRow();
+    prescriptions.forEach((data) => {
+        const timestamp = data.createdAt;
+        if (!timestamp || typeof timestamp.toDate !== 'function') return;
         
-        const date = new Date(prescription.date).toLocaleDateString('en-US', { 
-            year: 'numeric', month: 'short', day: 'numeric' 
-        });
+        const date = timestamp.toDate();
+        // Group by day for the detailed report
+        const key = date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
         
-        const fields = [
-            date,
-            prescription.patientName,
-            prescription.age,
-            prescription.gender,
-            prescription.mobile,
-            prescription.visionType,
-            prescription.lensType,
-            prescription.frameType,
-            `₹${prescription.amount?.toFixed(2) || '0.00'}`
-        ];
-
-        fields.forEach((field) => {
-            const cell = row.insertCell();
-            cell.textContent = field;
-        });
+        if (!reportData[key]) {
+            reportData[key] = { prescriptions: 0, totalAmount: 0 };
+        }
         
-        totalRevenue += prescription.amount || 0;
+        const amount = data.amount || 0;
+        
+        reportData[key].prescriptions += 1;
+        reportData[key].totalAmount += amount;
+        totalPrescriptions += 1;
+        totalRevenue += amount;
     });
-
-    // Update report summary
-    updateReportSummary(prescriptions.length, totalRevenue);
-}
-
-function updateReportSummary(totalPrescriptions, totalRevenue) {
-    const summaryElement = document.getElementById('reportSummary');
-    if (!summaryElement) return;
     
-    summaryElement.innerHTML = `
-        <div class="report-summary-card">
-            <h4>Report Summary</h4>
-            <div class="summary-stats">
-                <div class="stat-item">
-                    <span class="stat-label">Total Prescriptions:</span>
-                    <span class="stat-value">${totalPrescriptions}</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Total Revenue:</span>
-                    <span class="stat-value">₹${totalRevenue.toFixed(2)}</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Average per Prescription:</span>
-                    <span class="stat-value">₹${totalPrescriptions > 0 ? (totalRevenue / totalPrescriptions).toFixed(2) : '0.00'}</span>
-                </div>
-            </div>
-        </div>
-    `;
+    return { dailyData: reportData, totalPrescriptions, totalRevenue };
 }
 
-async function exportReportToPDF() {
-    const reportBody = document.getElementById('reportBody');
-    if (!reportBody || reportBody.children.length === 0) {
-        alert('No report data to export.');
+function displayReport(reportSummary) {
+    const tbody = document.getElementById('reportTable')?.getElementsByTagName('tbody')[0];
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    const { dailyData, totalPrescriptions, totalRevenue } = reportSummary;
+
+    if (!dailyData || Object.keys(dailyData).length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center">No data available for the selected range</td></tr>';
+    } else {
+        Object.entries(dailyData).forEach(([date, report]) => {
+            const row = tbody.insertRow();
+            row.insertCell().textContent = date;
+            row.insertCell().textContent = report.prescriptions;
+            row.insertCell().textContent = `₹${report.totalAmount.toFixed(2)}`;
+        });
+    }
+    
+    // Update summary footer
+    document.getElementById('reportTotalPrescriptions').textContent = totalPrescriptions.toString();
+    document.getElementById('reportTotalRevenue').textContent = `₹ ${totalRevenue.toFixed(2)}`;
+}
+// --- End Reports Logic ---
+
+
+// Old report functions replaced by unified range function:
+async function fetchDailyReport() { console.warn("fetchDailyReport is deprecated. Use fetchReportDataByRange."); }
+async function fetchWeeklyReport() { console.warn("fetchWeeklyReport is deprecated. Use fetchReportDataByRange."); }
+async function fetchMonthlyReport() { console.warn("fetchMonthlyReport is deprecated. Use fetchReportDataByRange."); }
+
+
+// Form Management
+function checkFormFilled() {
+    const patientName = document.getElementById('patientName')?.value.trim();
+    const age = document.getElementById('age')?.value.trim();
+    const mobile = document.getElementById('patientMobile')?.value.trim();
+    
+    isFormFilled = !!(patientName || age || mobile);
+}
+
+function confirmExitAction() {
+    document.getElementById('exitPromptModal').style.display = 'none';
+    isFormFilled = false; // Reset flag to prevent re-triggering the modal immediately
+    window.history.back(); // Navigate back
+}
+
+function cancelExitAction() {
+    document.getElementById('exitPromptModal').style.display = 'none';
+    // When the user clicks cancel, we restore the history state to the form page
+    // to prevent the user from being stuck in the back button loop.
+    history.pushState({ page: 'form' }, 'Add Prescription', 'app.html#form');
+}
+
+function handleBrowserBack(event) {
+    const currentState = history.state?.page;
+    
+    if (currentState === 'setup' && !isProfileComplete) {
+        // Prevent navigating away from the setup page if the profile is not complete
+        history.pushState({ page: 'setup' }, 'Profile Setup', 'app.html#setup');
+        alert('Please save your profile details to continue.');
         return;
     }
-
-    try {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
+    
+    // Only show the modal if the user is leaving the form AND the form is filled
+    if (currentState === 'form' && isFormFilled) {
         
-        // Add report title
-        const startDate = document.getElementById('reportDateStart').value;
-        const endDate = document.getElementById('reportDateEnd').value;
-        const reportTitle = `Prescription Report (${startDate} to ${endDate})`;
+        const modal = document.getElementById('exitPromptModal');
+        if (modal) modal.style.display = 'flex';
         
-        doc.setFontSize(16);
-        doc.setFont('helvetica', 'bold');
-        doc.text(reportTitle, 105, 20, { align: 'center' });
-        
-        // Add report data
-        await addReportTableToPDF(doc);
-        
-        // Generate and download PDF
-        const fileName = `prescription_report_${Date.now()}.pdf`;
-        doc.save(fileName);
-        
-        showStatusMessage('Report exported successfully!', 'success');
-
-    } catch (error) {
-        console.error('Error exporting report:', error);
-        showStatusMessage('Error exporting report: ' + error.message, 'error');
+        // CRITICAL: Prevent the user from navigating away immediately
+        // We must push the current state back to the history stack to keep the user on the page
+        // until they explicitly confirm the exit.
+        history.pushState({ page: 'form' }, 'Add Prescription', 'app.html#form');
+    } else {
+        // If the user is on the dashboard, list, or reports, allow navigation naturally
+        // or re-route to dashboard if navigating away from the app base URL.
     }
 }
 
-async function addReportTableToPDF(doc) {
-    const rows = document.querySelectorAll('#reportBody tr');
-    let yPosition = 40;
-    
-    // Table headers
-    const headers = ['Date', 'Patient', 'Age', 'Gender', 'Mobile', 'Vision Type', 'Lens Type', 'Frame Type', 'Amount'];
-    const colWidths = [25, 25, 15, 20, 30, 25, 25, 25, 20];
-    
-    // Draw table headers
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    
-    let xPosition = 10;
-    headers.forEach((header, index) => {
-        doc.text(header, xPosition, yPosition);
-        xPosition += colWidths[index];
-    });
-    
-    yPosition += 10;
-    
-    // Draw table rows
-    doc.setFont('helvetica', 'normal');
-    
-    rows.forEach(row => {
-        if (yPosition > 270) { // Check if we need a new page
-            doc.addPage();
-            yPosition = 20;
+// Input Validation
+function setupInputValidation() {
+    // Age validation
+    const ageInput = document.getElementById('age');
+    if (ageInput) {
+        ageInput.addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+    }
+
+    // Prescription fields validation
+    const prescriptionInputs = [
+        { id: 'rightDistSPH', type: 'number' },
+        { id: 'rightDistCYL', type: 'number' },
+        { id: 'rightDistAXIS', type: 'number' },
+        { id: 'rightDistVA', type: 'va' },
+        { id: 'leftDistSPH', type: 'number' },
+        { id: 'leftDistCYL', type: 'number' },
+        { id: 'leftDistAXIS', type: 'number' },
+        { id: 'leftDistVA', type: 'va' },
+        { id: 'rightAddSPH', type: 'number' },
+        { id: 'rightAddCYL', type: 'number' },
+        { id: 'rightAddAXIS', type: 'number' },
+        { id: 'rightAddVA', type: 'va' },
+        { id: 'leftAddSPH', type: 'number' },
+        { id: 'leftAddCYL', type: 'number' },
+        { id: 'leftAddAXIS', type: 'number' },
+        { id: 'leftAddVA', type: 'va' }
+    ];
+
+    prescriptionInputs.forEach(field => {
+        const element = document.getElementById(field.id);
+        if (element) {
+            element.addEventListener('input', function() {
+                // Ensure only allowed characters are kept
+                if (field.type === 'number') {
+                    // Allows numbers, decimal point, and sign (for SPH/CYL)
+                    this.value = this.value.replace(/[^0-9.-]/g, ''); 
+                } else if (field.type === 'va') {
+                    // Allows numbers, '/', and 'N' (for V/A fields)
+                    this.value = this.value.replace(/[^0-9/N]/g, '');
+                }
+            });
         }
-        
-        const cells = row.getElementsByTagName('td');
-        xPosition = 10;
-        
-        for (let i = 0; i < cells.length; i++) {
-            doc.text(cells[i].textContent, xPosition, yPosition);
-            xPosition += colWidths[i];
-        }
-        
-        yPosition += 10;
     });
 }
 
-// Payment and Subscription Management
-async function initializePaymentSystem() {
-    try {
-        // Load Razorpay key from GitHub Secrets
-        await loadRazorpayKey();
-        
-        // Check subscription status
-        await checkSubscriptionStatus();
-        
-        console.log('Payment system initialized successfully');
-    } catch (error) {
-        console.error('Error initializing payment system:', error);
+// PWA Installation
+function installPWA() {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === "accepted") {
+                console.log("User accepted the install prompt.");
+            } else {
+                console.log("User dismissed the install prompt.");
+            }
+            deferredPrompt = null;
+        });
     }
 }
 
-async function loadRazorpayKey() {
-    try {
-        // Use GitHub Secrets environment variable
-        const response = await fetch('/LensPrescriptionApp/api/get-razorpay-key');
-        const data = await response.json();
-        
-        if (data.key) {
-            RAZORPAY_KEY_ID = data.key;
-            console.log('Razorpay key loaded successfully');
-        } else {
-            throw new Error('Razorpay key not found in response');
-        }
-    } catch (error) {
-        console.error('Error loading Razorpay key:', error);
-        throw error;
-    }
+// Stats Management
+function resetStats() {
+    // Since Firebase is used for persistent data, local storage stats are obsolete.
+    console.warn("Local stats reset function is deprecated as data is stored in Firebase.");
 }
 
-async function loadImgbbApiKey() {
-    try {
-        // Use GitHub Secrets environment variable
-        const response = await fetch('/LensPrescriptionApp/api/get-imgbb-key');
-        const data = await response.json();
+// Logout Function
+function logoutUser() {
+    auth.signOut().then(() => {
+        // Clear only user-specific local storage items, not PWA cache or 'rememberMe'
+        localStorage.removeItem('username');
+        localStorage.removeItem('userId');
         
-        if (data.key) {
-            IMGBB_API_KEY = data.key;
-            console.log('ImgBB API key loaded successfully');
-        } else {
-            throw new Error('ImgBB API key not found in response');
-        }
-    } catch (error) {
-        console.error('Error loading ImgBB API key:', error);
-        // Continue without image upload functionality
-    }
+        // CRITICAL FIX: Set flag to prevent immediate re-login from index.html check
+        sessionStorage.setItem("explicitLogout", "true");
+        
+        // Redirect to index.html (landing page) as requested by the user
+        window.location.replace('index.html');
+    }).catch(error => {
+        console.error('Logout failed:', error);
+    });
 }
 
-async function checkSubscriptionStatus() {
+// Handle beforeunload event for closing the PWA
+window.addEventListener("beforeunload", (event) => {
+    // Only set the flag if the form is actually active to avoid unnecessary prompts
+    const formActive = document.getElementById('prescriptionFormSection')?.classList.contains('active');
+    
+    if (formActive && isFormFilled) {
+        event.preventDefault();
+        event.returnValue = "You have unsaved changes. Are you sure you want to leave?";
+        return "You have unsaved changes. Are you sure you want to leave?";
+    }
+});
+
+// Make functions globally available
+window.showDashboard = showDashboard;
+window.showPrescriptionForm = showPrescriptionForm;
+window.showPrescriptions = showPrescriptions;
+window.showReports = showReports;
+window.showPreview = showPreview;
+window.showProfileSetup = showProfileSetup; // New dedicated setup function
+window.openEditProfile = openEditProfile; // Will now redirect to showProfileSetup(false)
+window.closeEditProfile = closeEditProfile; // Retained for modal compatibility
+window.saveProfile = saveProfile; // Retained for modal compatibility
+window.saveSetupProfile = saveSetupProfile; // New dedicated save function
+window.submitPrescription = submitPrescription;
+window.filterPrescriptions = filterPrescriptions;
+window.generateImage = generateImage;
+window.printPreview = printPreview;
+window.sendWhatsApp = sendWhatsApp;
+window.fetchReportDataByRange = fetchReportDataByRange; // New consolidated report function
+window.fetchDashboardStats = fetchDashboardStats; // New dashboard stats function
+window.logoutUser = logoutUser;
+window.installPWA = installPWA;
+window.resetStats = resetStats;
+window.enableNavigationButtons = enableNavigationButtons;
+window.disableNavigationButtons = disableNavigationButtons;
+window.navigateIfProfileComplete = navigateIfProfileComplete;
+window.showLimitReachedPrompt = showLimitReachedPrompt; // NEW
+window.closeLimitReachedPrompt = closeLimitReachedPrompt; // NEW
+
+
+// Add this function to debug Firestore data
+async function debugFirestoreData() {
     const user = auth.currentUser;
     if (!user) return;
-
+    
     try {
         const userDoc = await db.collection('users').doc(user.uid).get();
-        const userData = userDoc.data();
+        console.log('Firestore User Document:', userDoc.exists ? userDoc.data() : 'No document found');
         
-        const subscriptionStatus = document.getElementById('subscriptionStatus');
-        const upgradeBtn = document.getElementById('upgradeBtn');
-        
-        if (userData?.subscription?.status === 'active') {
-            // User has active subscription
-            if (subscriptionStatus) {
-                subscriptionStatus.innerHTML = '<span class="badge badge-success">Premium</span>';
-            }
-            if (upgradeBtn) {
-                upgradeBtn.style.display = 'none';
-            }
-        } else {
-            // User is on free tier
-            if (subscriptionStatus) {
-                subscriptionStatus.innerHTML = '<span class="badge badge-secondary">Free</span>';
-            }
-            if (upgradeBtn) {
-                upgradeBtn.style.display = 'block';
+        const prescriptions = await db.collection('prescriptions')
+            .where('userId', '==', user.uid)
+            .get();
+        console.log('Firestore Prescriptions:', prescriptions.docs.map(doc => doc.data()));
+    } catch (error) {
+        console.error('Debug Firestore Error:', error);
+    }
+}
+
+setTimeout(debugFirestoreData, 3000);
+
+// Offline Data Management
+function savePrescriptionOffline(prescriptionData) {
+    const offlinePrescriptions = JSON.parse(localStorage.getItem('offlinePrescriptions') || '[]');
+    prescriptionData.offlineId = Date.now().toString();
+    prescriptionData.synced = false;
+    offlinePrescriptions.push(prescriptionData);
+    localStorage.setItem('offlinePrescriptions', JSON.stringify(offlinePrescriptions));
+    
+    console.log('Prescription saved offline:', prescriptionData.offlineId);
+}
+
+async function syncOfflinePrescriptions() {
+    if (!navigator.onLine) return;
+    
+    const offlinePrescriptions = JSON.parse(localStorage.getItem('offlinePrescriptions') || '[]');
+    const syncedPrescriptions = [];
+    
+    for (const prescription of offlinePrescriptions) {
+        if (!prescription.synced) {
+            try {
+                await submitPrescriptionToFirestore(prescription);
+                prescription.synced = true;
+                syncedPrescriptions.push(prescription);
+            } catch (error) {
+                console.error('Failed to sync prescription:', error);
             }
         }
-    } catch (error) {
-        console.error('Error checking subscription status:', error);
-    }
-}
-
-function openUpgradeModal() {
-    const modal = document.getElementById('upgradeModal');
-    if (modal) {
-        modal.style.display = 'block';
-    }
-}
-
-function closeUpgradeModal() {
-    const modal = document.getElementById('upgradeModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-}
-
-function selectPlan(plan) {
-    selectedPlan = plan;
-    
-    // Update UI to show selected plan
-    document.querySelectorAll('.plan-option').forEach(option => {
-        option.classList.remove('selected');
-    });
-    
-    const selectedOption = document.querySelector(`[data-plan="${plan}"]`);
-    if (selectedOption) {
-        selectedOption.classList.add('selected');
     }
     
-    // Update payment amount
-    const amount = plan === 'yearly' ? 2999 : 299; // ₹299/month or ₹2999/year
-    document.getElementById('paymentAmount').textContent = `₹${amount}`;
+    // Update localStorage with sync status
+    localStorage.setItem('offlinePrescriptions', JSON.stringify(offlinePrescriptions));
+    console.log(`Synced ${syncedPrescriptions.length} prescriptions`);
 }
 
-async function proceedToPayment() {
-    if (!selectedPlan) {
-        alert('Please select a plan');
-        return;
-    }
-
-    if (!RAZORPAY_KEY_ID) {
-        alert('Payment system not available. Please try again later.');
-        return;
-    }
-
-    const user = auth.currentUser;
-    if (!user) {
-        alert('Please login to continue');
-        return;
-    }
-
-    const amount = selectedPlan === 'yearly' ? 2999 : 299; // in rupees
-    const planName = selectedPlan === 'yearly' ? 'Yearly Premium' : 'Monthly Premium';
-
-    try {
-        // Create order on your backend
-        const orderResponse = await fetch('/LensPrescriptionApp/api/create-order', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                amount: amount * 100, // Convert to paise
-                currency: 'INR',
-                plan: selectedPlan
-            })
-        });
-
-        const orderData = await orderResponse.json();
-
-        if (!orderData.id) {
-            throw new Error('Failed to create order');
-        }
-
-        // Razorpay options
-        const options = {
-            key: RAZORPAY_KEY_ID,
-            amount: amount * 100,
-            currency: 'INR',
-            name: 'Lens Prescription App',
-            description: planName,
-            order_id: orderData.id,
-            handler: async function(response) {
-                // Payment successful
-                await handlePaymentSuccess(response, user.uid, selectedPlan, amount);
-            },
-            prefill: {
-                name: user.displayName || '',
-                email: user.email || ''
-            },
-            theme: {
-                color: '#4f46e5'
-            }
-        };
-
-        const razorpay = new Razorpay(options);
-        razorpay.open();
-
-    } catch (error) {
-        console.error('Payment error:', error);
-        alert('Payment failed: ' + error.message);
-    }
-}
-
-async function handlePaymentSuccess(paymentResponse, userId, plan, amount) {
-    try {
-        // Verify payment with your backend
-        const verifyResponse = await fetch('/LensPrescriptionApp/api/verify-payment', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                paymentId: paymentResponse.razorpay_payment_id,
-                orderId: paymentResponse.razorpay_order_id,
-                signature: paymentResponse.razorpay_signature,
-                plan: plan,
-                amount: amount
-            })
-        });
-
-        const verifyData = await verifyResponse.json();
-
-        if (verifyData.success) {
-            // Update user subscription in Firestore
-            const subscriptionData = {
-                subscription: {
-                    status: 'active',
-                    plan: plan,
-                    amount: amount,
-                    paymentId: paymentResponse.razorpay_payment_id,
-                    orderId: paymentResponse.razorpay_order_id,
-                    startDate: new Date().toISOString(),
-                    endDate: plan === 'yearly' 
-                        ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 year
-                        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 1 month
-                },
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            };
-
-            await db.collection('users').doc(userId).set(subscriptionData, { merge: true });
-
-            // Update UI
-            await checkSubscriptionStatus();
-            closeUpgradeModal();
-            
-            showStatusMessage('Subscription activated successfully!', 'success');
-            
-            // Track conversion
-            if (typeof gtag !== 'undefined') {
-                gtag('event', 'purchase', {
-                    transaction_id: paymentResponse.razorpay_payment_id,
-                    value: amount,
-                    currency: 'INR',
-                    items: [{
-                        item_id: plan,
-                        item_name: plan === 'yearly' ? 'Yearly Premium' : 'Monthly Premium',
-                        price: amount,
-                        quantity: 1
-                    }]
-                });
-            }
-        } else {
-            throw new Error('Payment verification failed');
-        }
-    } catch (error) {
-        console.error('Error handling payment success:', error);
-        alert('Payment verification failed: ' + error.message);
-    }
-}
-
+// Check prescription limit before submitting
 async function checkPrescriptionLimit() {
     const user = auth.currentUser;
     if (!user) return false;
 
     try {
-        const userDoc = await db.collection('users').doc(user.uid).get();
-        const userData = userDoc.data();
-        
-        // If user has active subscription, no limit
-        if (userData?.subscription?.status === 'active') {
-            return true;
+        // Get current month's start and end dates
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
+        // Check if user has active subscription (with error handling)
+        let subscription = { active: false };
+        try {
+            subscription = await checkActiveSubscription(user.uid);
+        } catch (subError) {
+            console.warn('Subscription check failed, defaulting to free plan:', subError);
         }
 
-        // Check free tier limit (10 prescriptions per month)
-        const startOfMonth = new Date();
-        startOfMonth.setDate(1);
-        startOfMonth.setHours(0, 0, 0, 0);
+        if (subscription.active) {
+            return true; // User has active subscription, no limit
+        }
 
-        const prescriptionsSnapshot = await db.collection('prescriptions')
+        // Count prescriptions for current month
+        const querySnapshot = await db.collection('prescriptions')
             .where('userId', '==', user.uid)
-            .where('createdAt', '>=', startOfMonth)
+            .where('createdAt', '>=', monthStart)
+            .where('createdAt', '<=', monthEnd)
             .get();
 
-        const currentMonthCount = prescriptionsSnapshot.size;
-        const freeLimit = 10;
+        const prescriptionCount = querySnapshot.size;
+        
+        // Update usage counter in UI
+        updateUsageCounter(prescriptionCount);
 
-        if (currentMonthCount >= freeLimit) {
-            showPrescriptionLimitModal();
-            return false;
+        if (prescriptionCount >= FREE_PRESCRIPTION_LIMIT) {
+            // NEW: Show the limit reached prompt instead of the payment modal directly
+            if (RAZORPAY_KEY_ID) {
+                showLimitReachedPrompt();
+                return false;
+            } else {
+                // If payment not configured, allow unlimited usage
+                console.warn('Payment not configured, allowing unlimited prescriptions');
+                return true;
+            }
         }
 
         return true;
     } catch (error) {
         console.error('Error checking prescription limit:', error);
-        return true; // Allow submission if there's an error
+        // Allow submission on error to not block users
+        return true;
     }
 }
 
-function showPrescriptionLimitModal() {
-    const modal = document.getElementById('limitModal');
+// Update usage counter display
+function updateUsageCounter(currentCount) {
+    const usageElement = document.getElementById('usageCounter');
+    if (!usageElement) return;
+
+    const percentage = (currentCount / FREE_PRESCRIPTION_LIMIT) * 100;
+    
+    usageElement.innerHTML = `
+        <div class="usage-counter">
+            <h5><i class="fas fa-chart-line"></i> Monthly Usage</h5>
+            <p>${currentCount} of ${FREE_PRESCRIPTION_LIMIT} free prescriptions used</p>
+            <div class="progress">
+                <div class="progress-bar" style="width: ${percentage}%"></div>
+            </div>
+            <small>Upgrade for unlimited prescriptions</small>
+        </div>
+    `;
+}
+
+/**
+ * Checks active subscription and returns remaining days.
+ * @param {string} userId The current user's ID.
+ * @returns {Promise<{active: boolean, plan?: string, expiryDate?: Date, remainingDays?: number}>} Subscription status.
+ */
+async function checkActiveSubscription(userId) {
+    try {
+        const subscriptionDoc = await db.collection('subscriptions')
+            .doc(userId)
+            .get();
+
+        if (subscriptionDoc.exists) {
+            const subscription = subscriptionDoc.data();
+            const now = new Date();
+            
+            // Check if expiryDate exists and is a valid timestamp
+            if (subscription.expiryDate && typeof subscription.expiryDate.toDate === 'function') {
+                const expiryDate = subscription.expiryDate.toDate();
+                
+                const isActive = expiryDate > now;
+                let remainingDays = 0;
+                
+                if (isActive) {
+                    const diffTime = expiryDate.getTime() - now.getTime();
+                    // Calculate remaining days, rounding up to include the current day
+                    remainingDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                }
+                
+                return {
+                    active: isActive,
+                    plan: subscription.plan,
+                    expiryDate: expiryDate,
+                    remainingDays: remainingDays
+                };
+            }
+        }
+
+        return { active: false };
+    } catch (error) {
+        console.warn('Error checking subscription (permissions or network issue):', error);
+        // Return false to allow free usage if there's an error
+        return { active: false };
+    }
+}
+
+// Add this function to update plan prices dynamically
+function updatePlanPrices() {
+    const monthlyPrice = SUBSCRIPTION_PLANS.MONTHLY.amount;
+    const yearlyPrice = SUBSCRIPTION_PLANS.YEARLY.amount;
+    
+    // Update monthly plan
+    const monthlyPriceElement = document.querySelector('.monthly-plan .price');
+    const monthlyPlan = document.querySelector('.monthly-plan');
+    if (monthlyPriceElement && monthlyPlan) {
+        monthlyPriceElement.textContent = `₹${monthlyPrice}`;
+        
+        // Update features list if needed
+        const features = monthlyPlan.querySelector('.plan-features');
+        if (features) {
+            features.innerHTML = `
+                <li>✓ Unlimited Prescriptions</li>
+                <li>✓ All Features Included</li>
+                <li>✓ Priority Support</li>
+                <li>✓ Cancel Anytime</li>
+            `;
+        }
+    }
+    
+    // Update yearly plan
+    const yearlyPriceElement = document.querySelector('.yearly-plan .price');
+    const yearlyPlan = document.querySelector('.yearly-plan');
+    if (yearlyPriceElement && yearlyPlan) {
+        yearlyPriceElement.textContent = `₹${yearlyPrice}`;
+        
+        // Calculate and update savings
+        const monthlyCost = monthlyPrice * 12;
+        const savings = monthlyCost - yearlyPrice;
+        const savingsPercentage = Math.round((savings / monthlyCost) * 100);
+        
+        const savingsElement = yearlyPlan.querySelector('.savings');
+        if (savingsElement) {
+            savingsElement.textContent = `Save ${savingsPercentage}%`;
+        }
+    }
+}
+
+// Show payment modal
+function showPaymentModal() {
+    const modal = document.getElementById('paymentModal');
     if (modal) {
-        modal.style.display = 'block';
+        modal.style.display = 'flex';
+        // Update prices before showing
+        updatePlanPrices();
+        // Select yearly plan by default
+        selectPlan('yearly');
     }
 }
 
-function closeLimitModal() {
-    const modal = document.getElementById('limitModal');
+// Close payment modal
+function closePaymentModal() {
+    const modal = document.getElementById('paymentModal');
     if (modal) {
         modal.style.display = 'none';
     }
 }
 
-function addUsageCounterToDashboard() {
-    const dashboardSection = document.getElementById('dashboardSection');
-    if (!dashboardSection) return;
-
-    // Check if usage counter already exists
-    if (document.getElementById('usageCounter')) return;
-
-    const usageCounter = document.createElement('div');
-    usageCounter.id = 'usageCounter';
-    usageCounter.className = 'usage-counter';
-    usageCounter.innerHTML = `
-        <div class="usage-counter-card">
-            <div class="usage-counter-header">
-                <i class="fas fa-chart-line"></i>
-                <span>Monthly Usage</span>
-            </div>
-            <div class="usage-counter-body">
-                <div class="usage-progress">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="usageProgressFill"></div>
-                    </div>
-                    <div class="usage-text" id="usageText">0/10 prescriptions used</div>
-                </div>
-                <div class="usage-upgrade">
-                    <small>Upgrade to Premium for unlimited prescriptions</small>
-                    <button class="btn btn-primary btn-sm" onclick="openUpgradeModal()">Upgrade Now</button>
-                </div>
-            </div>
-        </div>
-    `;
-
-    // Insert after dashboard stats
-    const dashboardStats = document.querySelector('.dashboard-stats');
-    if (dashboardStats) {
-        dashboardStats.parentNode.insertBefore(usageCounter, dashboardStats.nextSibling);
+// In the limit reached prompt, update the message
+function showLimitReachedPrompt() {
+    const modal = document.getElementById('limitReachedPromptModal');
+    if (modal) {
+        // Update the message with dynamic limit
+        const messageElement = modal.querySelector('p.text-muted');
+        if (messageElement) {
+            messageElement.innerHTML = `You have used all **<span class="fw-bold">${FREE_PRESCRIPTION_LIMIT} free prescriptions</span>** for this month.`;
+        }
+        modal.style.display = 'flex';
     }
-
-    // Update usage counter
-    updateUsageCounter();
+    // Also display a status message (acting as an alert)
+    showStatusMessage(`You've hit the monthly limit of ${FREE_PRESCRIPTION_LIMIT} free prescriptions.`, 'warning');
 }
 
-async function updateUsageCounter() {
-    const user = auth.currentUser;
-    if (!user) return;
+// NEW: Close limit reached prompt modal
+function closeLimitReachedPrompt() {
+    const modal = document.getElementById('limitReachedPromptModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+
+// Select plan
+function selectPlan(planType) {
+    selectedPlan = planType;
+    
+    // Update UI
+    document.querySelectorAll('.plan-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    document.querySelectorAll(`.${planType}-plan`).forEach(card => {
+        card.classList.add('selected');
+    });
+    
+    // Update radio buttons
+    document.getElementById(`${planType}Plan`).checked = true;
+}
+
+// Proceed to payment
+async function proceedToPayment() {
+    if (!RAZORPAY_KEY_ID || RAZORPAY_KEY_ID === 'DISABLED') {
+        showStatusMessage('Payment system not ready. Please try again.', 'error');
+        return;
+    }
+
+    const plan = SUBSCRIPTION_PLANS[selectedPlan.toUpperCase()];
+    if (!plan) {
+        showStatusMessage('Invalid plan selected.', 'error');
+        return;
+    }
 
     try {
-        const userDoc = await db.collection('users').doc(user.uid).get();
-        const userData = userDoc.data();
-        
-        // If user has active subscription, hide usage counter
-        if (userData?.subscription?.status === 'active') {
-            const usageCounter = document.getElementById('usageCounter');
-            if (usageCounter) {
-                usageCounter.style.display = 'none';
+        // Show processing modal
+        document.getElementById('paymentProcessingModal').style.display = 'flex';
+
+        // Create order using client-side Razorpay (no server needed)
+        const options = {
+            key: RAZORPAY_KEY_ID,
+            amount: plan.amount * 100, // Convert to paise
+            currency: 'INR',
+            name: 'Lens Prescription',
+            description: `${selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1)} Subscription`,
+            handler: async function(response) {
+                await handlePaymentSuccess(response, selectedPlan, plan.amount);
+            },
+            prefill: {
+                name: auth.currentUser.displayName || '',
+                email: auth.currentUser.email
+            },
+            theme: {
+                color: '#007bff'
+            },
+            modal: {
+                ondismiss: function() {
+                    document.getElementById('paymentProcessingModal').style.display = 'none';
+                }
             }
-            return;
-        }
+        };
 
-        // Calculate current month usage
-        const startOfMonth = new Date();
-        startOfMonth.setDate(1);
-        startOfMonth.setHours(0, 0, 0, 0);
-
-        const prescriptionsSnapshot = await db.collection('prescriptions')
-            .where('userId', '==', user.uid)
-            .where('createdAt', '>=', startOfMonth)
-            .get();
-
-        const currentUsage = prescriptionsSnapshot.size;
-        const freeLimit = 10;
-        const percentage = Math.min((currentUsage / freeLimit) * 100, 100);
-
-        // Update UI
-        const progressFill = document.getElementById('usageProgressFill');
-        const usageText = document.getElementById('usageText');
+        const razorpay = new Razorpay(options);
+        razorpay.open();
         
-        if (progressFill) {
-            progressFill.style.width = `${percentage}%`;
-            progressFill.className = `progress-fill ${percentage >= 80 ? 'warning' : ''}`;
-        }
-        
-        if (usageText) {
-            usageText.textContent = `${currentUsage}/${freeLimit} prescriptions used`;
-            usageText.className = `usage-text ${percentage >= 80 ? 'warning' : ''}`;
-        }
+        // Hide processing modal when Razorpay opens
+        document.getElementById('paymentProcessingModal').style.display = 'none';
 
     } catch (error) {
-        console.error('Error updating usage counter:', error);
+        console.error('Payment error:', error);
+        document.getElementById('paymentProcessingModal').style.display = 'none';
+        showStatusMessage('Payment failed: ' + error.message, 'error');
     }
 }
 
+// Handle successful payment
+async function handlePaymentSuccess(paymentResponse, planType, amount) {
+    try {
+        const user = auth.currentUser;
+        
+        // Calculate expiry date
+        const now = new Date();
+        const plan = SUBSCRIPTION_PLANS[planType.toUpperCase()];
+        const expiryDate = new Date(now.getTime() + plan.duration * 24 * 60 * 60 * 1000);
+
+        // Save subscription to Firestore
+        await db.collection('subscriptions').doc(user.uid).set({
+            userId: user.uid,
+            plan: planType,
+            amount: amount,
+            paymentId: paymentResponse.razorpay_payment_id,
+            orderId: paymentResponse.razorpay_order_id,
+            signature: paymentResponse.razorpay_signature,
+            purchaseDate: firebase.firestore.FieldValue.serverTimestamp(),
+            expiryDate: expiryDate,
+            status: 'active'
+        });
+
+        // Update UI
+        closePaymentModal();
+        showStatusMessage('Payment successful! Your subscription is now active.', 'success');
+        
+        // Refresh the page to update limits
+        setTimeout(() => {
+            window.location.reload();
+        }, 2000);
+
+    } catch (error) {
+        console.error('Error handling payment success:', error);
+        showStatusMessage('Payment verification failed. Please contact support.', 'error');
+    }
+}
+
+// Update dashboard to show subscription status
 async function updateSubscriptionStatus() {
     const user = auth.currentUser;
     if (!user) return;
 
-    try {
-        const userDoc = await db.collection('users').doc(user.uid).get();
-        const userData = userDoc.data();
-        
-        const subscriptionStatus = document.getElementById('subscriptionStatus');
-        
-        if (userData?.subscription?.status === 'active') {
-            if (subscriptionStatus) {
-                subscriptionStatus.innerHTML = '<span class="badge badge-success">Premium</span>';
-            }
+    const subscription = await checkActiveSubscription(user.uid);
+    const statusElement = document.getElementById('subscriptionStatus');
+    
+    if (statusElement) {
+        if (subscription.active) {
+            const expiryDate = subscription.expiryDate.toLocaleDateString();
+            statusElement.innerHTML = `
+                <div class="alert alert-success">
+                    <i class="fas fa-crown"></i> 
+                    <strong>Premium Member</strong> - Subscription active until ${expiryDate}
+                </div>
+            `;
         } else {
-            if (subscriptionStatus) {
-                subscriptionStatus.innerHTML = '<span class="badge badge-secondary">Free</span>';
-            }
+            statusElement.innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Free Plan</strong> - ${FREE_PRESCRIPTION_LIMIT} prescriptions per month
+                </div>
+            `;
         }
-    } catch (error) {
-        console.error('Error updating subscription status:', error);
     }
 }
 
-// NEW FUNCTION: Update Premium status in navigation and profile
+// Add usage counter to dashboard
+function addUsageCounterToDashboard() {
+    const dashboardSection = document.getElementById('dashboardSection');
+    if (dashboardSection) {
+        const usageCounterHTML = `
+            <div id="usageCounter">
+                <!-- Usage counter will be dynamically updated -->
+            </div>
+        `;
+        
+        // Insert after the welcome text
+        const welcomeText = document.getElementById('dashboardWelcomeText');
+        if (welcomeText) {
+            welcomeText.insertAdjacentHTML('afterend', usageCounterHTML);
+        }
+        
+        // Add subscription status element
+        const subscriptionStatusHTML = `
+            <div id="subscriptionStatus" class="mb-4">
+                <!-- Subscription status will be dynamically updated -->
+            </div>
+        `;
+        
+        const statsSection = document.querySelector('.stats-filters');
+        if (statsSection) {
+            statsSection.insertAdjacentHTML('beforebegin', subscriptionStatusHTML);
+        }
+    }
+}
+
+/**
+ * Updates premium/subscription status across the Navigation Bar and Profile screen.
+ */
 async function updatePremiumUI() {
     const user = auth.currentUser;
     if (!user) return;
 
-    try {
-        const userDoc = await db.collection('users').doc(user.uid).get();
-        const userData = userDoc.data();
-        
-        const isPremium = userData?.subscription?.status === 'active';
-        
-        // Update profile page premium status
-        const premiumStatusElement = document.getElementById('premiumStatus');
-        if (premiumStatusElement) {
-            if (isPremium) {
-                premiumStatusElement.innerHTML = '<span class="badge badge-success">Premium Member</span>';
-            } else {
-                premiumStatusElement.innerHTML = '<span class="badge badge-secondary">Free Plan</span>';
+    const subscription = await checkActiveSubscription(user.uid);
+    const isPremium = subscription.active;
+    const remainingDays = subscription.remainingDays || 0;
+    
+    // Determine the days count display format
+    const daysCountDisplay = isPremium && remainingDays > 0 ? `(${remainingDays}d)` : '';
+
+    // --- 1. Navigation Bar Update (Desktop) ---
+    const navStatusContainer = document.getElementById('navSubscriptionStatus');
+    const navBuyButtonContainer = document.getElementById('navBuyPremiumButton'); // NEW
+    
+    if (navStatusContainer) {
+        if (isPremium) {
+            // Premium Status
+            navStatusContainer.innerHTML = `
+                <span class="badge bg-success" title="Premium until ${subscription.expiryDate.toLocaleDateString()}">
+                    <i class="fas fa-crown me-1"></i> Premium ${daysCountDisplay}
+                </span>
+            `;
+            if (navBuyButtonContainer) navBuyButtonContainer.innerHTML = ''; // Hide button
+        } else {
+            // Free Status
+            navStatusContainer.innerHTML = `
+                <span class="badge bg-warning" title="Free plan - ${FREE_PRESCRIPTION_LIMIT} prescriptions/month">
+                    <i class="fas fa-user me-1"></i> Free
+                </span>
+            `;
+            // Show Buy Premium button if free
+            if (navBuyButtonContainer) {
+                navBuyButtonContainer.innerHTML = `
+                    <button onclick="showPaymentModal()" class="btn btn-sm btn-primary ms-2" style="background: var(--premium-gold); color: var(--premium-navy); border: none; font-weight: 600; padding: 6px 12px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <i class="fas fa-arrow-up"></i> Upgrade
+                    </button>
+                `;
             }
         }
-        
-        // Update navigation premium indicator (if any)
-        const navPremiumIndicator = document.querySelector('.nav-premium-indicator');
-        if (navPremiumIndicator) {
-            navPremiumIndicator.style.display = isPremium ? 'inline' : 'none';
+    }
+    
+    // --- 2. Mobile Offcanvas Status ---
+    const mobileStatusElement = document.getElementById('mobileSubscriptionStatus');
+    const mobileBuyButtonElement = document.getElementById('mobileBuyPremiumButton'); // NEW
+    
+    if (mobileStatusElement && mobileBuyButtonElement) {
+        if (isPremium) {
+            mobileStatusElement.innerHTML = `
+                <div class="text-center">
+                    <span class="badge bg-success mb-2">
+                        <i class="fas fa-crown"></i> Premium Member ${daysCountDisplay}
+                    </span>
+                    <br>
+                    <small class="text-muted">Valid until ${subscription.expiryDate.toLocaleDateString()}</small>
+                </div>
+            `;
+             mobileBuyButtonElement.innerHTML = ''; // Hide button
+        } else {
+            mobileStatusElement.innerHTML = `
+                <div class="text-center">
+                    <span class="badge bg-warning mb-2">
+                        <i class="fas fa-user"></i> Free Plan
+                    </span>
+                    <br>
+                    <small class="text-muted">${FREE_PRESCRIPTION_LIMIT} prescriptions/month</small>
+                </div>
+            `;
+            // Show Buy Premium button if free
+            mobileBuyButtonElement.innerHTML = `
+                <div class="text-center mt-3">
+                    <button onclick="showPaymentModal()" class="btn btn-primary w-75" style="background: var(--premium-navy); border: none; font-weight: 600;">
+                        <i class="fas fa-arrow-up"></i> Buy Premium
+                    </button>
+                </div>
+            `;
         }
+    }
+
+    
+    // --- 3. Profile Screen Update (Premium beside email) ---
+    const premiumTag = document.getElementById('profilePremiumTag');
+    
+    if (premiumTag) {
+        if (isPremium) {
+            premiumTag.innerHTML = `
+                <span class="badge bg-success ms-2" title="Premium until ${subscription.expiryDate.toLocaleDateString()}">
+                    <i class="fas fa-crown me-1"></i> PREMIUM ${daysCountDisplay}
+                </span>
+            `;
+        } else {
+            premiumTag.innerHTML = ''; // Clear if not premium
+        }
+    }
+}
+
+// Remote Config Management
+async function initializeRemoteConfig() {
+    try {
+        console.log('Initializing Firebase Remote Config...');
+        
+        // Fetch and activate Remote Config
+        await remoteConfig.fetchAndActivate();
+        
+        // Get values from Remote Config
+        const razorpayKeyId = remoteConfig.getString('razorpay_key_id');
+        const imgbbApiKey = remoteConfig.getString('imgbb_api_key');
+        const freeLimit = remoteConfig.getValue('free_prescription_limit').asNumber();
+        const monthlyPrice = remoteConfig.getValue('monthly_plan_price').asNumber();
+        const yearlyPrice = remoteConfig.getValue('yearly_plan_price').asNumber();
+        
+        // Update global variables
+        RAZORPAY_KEY_ID = razorpayKeyId;
+        IMGBB_API_KEY = imgbbApiKey;
+        FREE_PRESCRIPTION_LIMIT = freeLimit;
+        
+        // Update subscription plans with dynamic pricing
+        SUBSCRIPTION_PLANS = {
+            MONTHLY: {
+                name: 'monthly',
+                amount: monthlyPrice,
+                duration: 30
+            },
+            YEARLY: {
+                name: 'yearly',
+                amount: yearlyPrice,
+                duration: 365
+            }
+        };
+        
+        console.log('Remote Config initialized successfully');
+        console.log('Razorpay Key:', RAZORPAY_KEY_ID !== 'DISABLED' ? '✓ Configured' : '✗ Disabled');
+        console.log('ImgBB Key:', IMGBB_API_KEY !== 'DISABLED' ? '✓ Configured' : '✗ Disabled');
+        console.log('Free Limit:', FREE_PRESCRIPTION_LIMIT);
+        console.log('Monthly Price:', monthlyPrice);
+        console.log('Yearly Price:', yearlyPrice);
         
     } catch (error) {
-        console.error('Error updating premium UI:', error);
+        console.error('Error initializing Remote Config:', error);
+        // Use default values if Remote Config fails
+        RAZORPAY_KEY_ID = 'DISABLED';
+        IMGBB_API_KEY = 'DISABLED';
+        showStatusMessage('Configuration load failed, using default settings', 'warning');
     }
 }
 
-// Timer Functions for Prescription Form
-function startTimer() {
-    if (timerInterval) {
-        clearInterval(timerInterval);
+// Replace the old payment system initialization
+async function initializePaymentSystem() {
+    // Now handled by initializeRemoteConfig
+    await initializeRemoteConfig();
+}
+
+// Replace the old ImgBB key loading function
+async function loadImgbbApiKey() {
+    // Now handled by initializeRemoteConfig
+    // This function is kept for compatibility but does nothing
+    if (!IMGBB_API_KEY) {
+        await initializeRemoteConfig();
     }
-    
-    timerSeconds = 0;
-    updateTimerDisplay();
-    
-    timerInterval = setInterval(() => {
-        timerSeconds++;
-        updateTimerDisplay();
-    }, 1000);
-}
-
-function stopTimer() {
-    if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-    }
-}
-
-function resetTimer() {
-    stopTimer();
-    timerSeconds = 0;
-    updateTimerDisplay();
-}
-
-function updateTimerDisplay() {
-    const minutes = Math.floor(timerSeconds / 60);
-    const seconds = timerSeconds % 60;
-    const timerDisplay = document.getElementById('formTimer');
-    
-    if (timerDisplay) {
-        timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    }
-}
-
-// Auto-save form data
-function setupAutoSave() {
-    const form = document.getElementById('prescriptionForm');
-    if (!form) return;
-    
-    const autoSaveKey = 'prescriptionFormDraft';
-    let autoSaveTimeout;
-    
-    // Load saved draft
-    const savedDraft = localStorage.getItem(autoSaveKey);
-    if (savedDraft) {
-        try {
-            const draftData = JSON.parse(savedDraft);
-            loadFormDraft(draftData);
-            console.log('Loaded auto-saved draft');
-        } catch (error) {
-            console.error('Error loading auto-saved draft:', error);
-        }
-    }
-    
-    // Auto-save on input
-    form.addEventListener('input', function() {
-        clearTimeout(autoSaveTimeout);
-        autoSaveTimeout = setTimeout(() => {
-            const formData = getFormData();
-            localStorage.setItem(autoSaveKey, JSON.stringify(formData));
-            console.log('Auto-saved form data');
-        }, 1000);
-    });
-    
-    // Clear draft on successful submission
-    const originalSubmit = window.submitPrescription;
-    window.submitPrescription = async function() {
-        await originalSubmit();
-        localStorage.removeItem(autoSaveKey);
-        resetTimer();
-    };
-}
-
-function loadFormDraft(draftData) {
-    if (!draftData) return;
-    
-    // Helper function to safely set values
-    const setValue = (id, value) => {
-        const element = document.getElementById(id);
-        if (element && value !== undefined && value !== null) {
-            element.value = value;
-        }
-    };
-    
-    // Load basic patient data
-    setValue('patientName', draftData.patientName);
-    setValue('age', draftData.age);
-    setValue('gender', draftData.gender);
-    setValue('patientMobile', draftData.mobile);
-    setValue('amount', draftData.amount);
-    setValue('visionType', draftData.visionType);
-    setValue('lensType', draftData.lensType);
-    setValue('frameType', draftData.frameType);
-    setValue('paymentMode', draftData.paymentMode);
-    
-    // Load prescription data
-    if (draftData.prescriptionData) {
-        const pd = draftData.prescriptionData;
-        setValue('rightDistSPH', pd.rightDistSPH);
-        setValue('rightDistCYL', pd.rightDistCYL);
-        setValue('rightDistAXIS', pd.rightDistAXIS);
-        setValue('rightDistVA', pd.rightDistVA);
-        setValue('leftDistSPH', pd.leftDistSPH);
-        setValue('leftDistCYL', pd.leftDistCYL);
-        setValue('leftDistAXIS', pd.leftDistAXIS);
-        setValue('leftDistVA', pd.leftDistVA);
-        setValue('rightAddSPH', pd.rightAddSPH);
-        setValue('rightAddCYL', pd.rightAddCYL);
-        setValue('rightAddAXIS', pd.rightAddAXIS);
-        setValue('rightAddVA', pd.rightAddVA);
-        setValue('leftAddSPH', pd.leftAddSPH);
-        setValue('leftAddCYL', pd.leftAddCYL);
-        setValue('leftAddAXIS', pd.leftAddAXIS);
-        setValue('leftAddVA', pd.leftAddVA);
-    }
-    
-    // Update form filled state
-    checkFormFilled();
-}
-
-// Enhanced form validation with real-time feedback
-function setupEnhancedValidation() {
-    const form = document.getElementById('prescriptionForm');
-    if (!form) return;
-    
-    const inputs = form.querySelectorAll('input[required], select[required]');
-    
-    inputs.forEach(input => {
-        input.addEventListener('blur', function() {
-            validateField(this);
-        });
-        
-        input.addEventListener('input', function() {
-            clearFieldError(this);
-        });
-    });
-}
-
-function validateField(field) {
-    const value = field.value.trim();
-    let isValid = true;
-    let errorMessage = '';
-    
-    switch (field.id) {
-        case 'patientName':
-            isValid = value.length >= 2;
-            errorMessage = 'Name must be at least 2 characters long';
-            break;
-            
-        case 'age':
-            isValid = value && !isNaN(value) && value >= 1 && value <= 120;
-            errorMessage = 'Please enter a valid age (1-120)';
-            break;
-            
-        case 'patientMobile':
-            isValid = /^\d{10}$/.test(value);
-            errorMessage = 'Please enter a valid 10-digit mobile number';
-            break;
-            
-        case 'amount':
-            isValid = value && !isNaN(value) && value >= 0;
-            errorMessage = 'Please enter a valid amount';
-            break;
-            
-        default:
-            if (field.required) {
-                isValid = value !== '';
-                errorMessage = 'This field is required';
-            }
-    }
-    
-    if (!isValid) {
-        showFieldError(field, errorMessage);
-    } else {
-        clearFieldError(field);
-    }
-    
-    return isValid;
-}
-
-function showFieldError(field, message) {
-    clearFieldError(field);
-    
-    field.classList.add('is-invalid');
-    
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'invalid-feedback';
-    errorDiv.textContent = message;
-    
-    field.parentNode.appendChild(errorDiv);
-}
-
-function clearFieldError(field) {
-    field.classList.remove('is-invalid');
-    
-    const existingError = field.parentNode.querySelector('.invalid-feedback');
-    if (existingError) {
-        existingError.remove();
-    }
-}
-
-// Keyboard shortcuts
-function setupKeyboardShortcuts() {
-    document.addEventListener('keydown', function(e) {
-        // Ctrl+S or Cmd+S to save (prevent default and show message)
-        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-            e.preventDefault();
-            showStatusMessage('Use the Submit button to save prescriptions', 'info');
-        }
-        
-        // Escape key to go back
-        if (e.key === 'Escape') {
-            const previewSection = document.getElementById('previewSection');
-            if (previewSection && previewSection.classList.contains('active')) {
-                goBackFromPreview();
-            }
-        }
-    });
-}
-
-// Initialize enhanced features when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-    // Setup enhanced features
-    setupAutoSave();
-    setupEnhancedValidation();
-    setupKeyboardShortcuts();
-    
-    // Start timer when form section becomes active
-    const formSection = document.getElementById('prescriptionFormSection');
-    if (formSection) {
-        const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                if (mutation.attributeName === 'class') {
-                    if (formSection.classList.contains('active')) {
-                        startTimer();
-                    } else {
-                        stopTimer();
-                    }
-                }
-            });
-        });
-        
-        observer.observe(formSection, { attributes: true });
-    }
-});
-
-// Logout function
-function logout() {
-    // Clear any local storage items
-    localStorage.removeItem('prescriptionFormDraft');
-    localStorage.removeItem('userProfile');
-    
-    // Sign out from Firebase
-    auth.signOut().then(() => {
-        console.log('User signed out successfully');
-        // Redirect to auth page
-        window.location.href = 'auth.html';
-    }).catch((error) => {
-        console.error('Error signing out:', error);
-    });
 }
