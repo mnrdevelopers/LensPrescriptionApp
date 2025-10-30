@@ -2348,33 +2348,39 @@ window.addEventListener("beforeunload", (event) => {
     }
 });
 
-// Make functions globally available
+// Make functions globally available - ENSURE THIS SECTION EXISTS
 window.showDashboard = showDashboard;
 window.showPrescriptionForm = showPrescriptionForm;
 window.showPrescriptions = showPrescriptions;
 window.showReports = showReports;
 window.showPreview = showPreview;
-window.showProfileSetup = showProfileSetup; // New dedicated setup function
-window.openEditProfile = openEditProfile; // Will now redirect to showProfileSetup(false)
-window.closeEditProfile = closeEditProfile; // Retained for modal compatibility
-window.saveProfile = saveProfile; // Retained for modal compatibility
-window.saveSetupProfile = saveSetupProfile; // New dedicated save function
+window.showProfileSetup = showProfileSetup;
+window.openEditProfile = openEditProfile;
+window.closeEditProfile = closeEditProfile;
+window.saveProfile = saveProfile;
+window.saveSetupProfile = saveSetupProfile;
 window.submitPrescription = submitPrescription;
 window.filterPrescriptions = filterPrescriptions;
 window.generateImage = generateImage;
 window.printPreview = printPreview;
 window.sendWhatsApp = sendWhatsApp;
-window.fetchReportDataByRange = fetchReportDataByRange; // New consolidated report function
-window.fetchDashboardStats = fetchDashboardStats; // New dashboard stats function
+window.fetchReportDataByRange = fetchReportDataByRange;
+window.fetchDashboardStats = fetchDashboardStats;
 window.logoutUser = logoutUser;
 window.installPWA = installPWA;
 window.resetStats = resetStats;
 window.enableNavigationButtons = enableNavigationButtons;
 window.disableNavigationButtons = disableNavigationButtons;
-window.navigateIfProfileComplete = navigateIfProfileComplete;
-window.showLimitReachedPrompt = showLimitReachedPrompt; // NEW
-window.closeLimitReachedPrompt = closeLimitReachedPrompt; // NEW
+window.navigateIfProfileComplete = navigateIfProfileComplete; // ← THIS IS CRITICAL
+window.showLimitReachedPrompt = showLimitReachedPrompt;
+window.closeLimitReachedPrompt = closeLimitReachedPrompt;
+window.showPaymentModal = showPaymentModal;
+window.closePaymentModal = closePaymentModal;
+window.selectPlan = selectPlan;
+window.proceedToPayment = proceedToPayment;
 
+// Firebase Remote Config functions
+window.initializeRemoteConfig = initializeRemoteConfig;
 
 // Add this function to debug Firestore data
 async function debugFirestoreData() {
