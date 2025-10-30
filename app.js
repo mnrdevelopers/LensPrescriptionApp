@@ -37,6 +37,7 @@ firebase.auth().onAuthStateChanged((user) => {
     }
 });
 
+// Update the initializeApp function in app.js:
 async function initializeApp() {
     console.log('Initializing app...');
     const user = auth.currentUser;
@@ -50,10 +51,15 @@ async function initializeApp() {
     setCurrentDate();
     
     // Load user profile and check for completion
-    loadUserProfile();
+    await loadUserProfile();
     
     // Initialize Remote Config (replaces both payment and ImgBB initialization)
-    await initializeRemoteConfig();
+    const configLoaded = await initializeRemoteConfig();
+    
+    if (!configLoaded) {
+        console.warn('Remote Config failed, using default configuration');
+        showStatusMessage('Using default configuration', 'info');
+    }
     
     // Setup event listeners
     setupEventListeners();
@@ -1975,9 +1981,9 @@ async function sendWhatsApp() {
 }
 
 async function uploadImageToImgBB(base64Image) {
-    // Use the dynamically loaded API key
+    // Use the global IMGBB_API_KEY from firebase-config.js
     if (!IMGBB_API_KEY || IMGBB_API_KEY === 'DISABLED') {
-        throw new Error('Image upload key is unavailable.');
+        throw new Error('Image upload service is currently unavailable.');
     }
     
     // Convert base64 to blob for better compatibility
@@ -2652,12 +2658,15 @@ function selectPlan(planType) {
 }
 
 // Proceed to payment
+// Proceed to payment
 async function proceedToPayment() {
+    // Use the global RAZORPAY_KEY_ID from firebase-config.js
     if (!RAZORPAY_KEY_ID || RAZORPAY_KEY_ID === 'DISABLED') {
-        showStatusMessage('Payment system not ready. Please try again.', 'error');
+        showStatusMessage('Payment system is currently unavailable. Please try again later.', 'error');
         return;
     }
 
+    // Use the global SUBSCRIPTION_PLANS from firebase-config.js
     const plan = SUBSCRIPTION_PLANS[selectedPlan.toUpperCase()];
     if (!plan) {
         showStatusMessage('Invalid plan selected.', 'error');
@@ -2668,7 +2677,7 @@ async function proceedToPayment() {
         // Show processing modal
         document.getElementById('paymentProcessingModal').style.display = 'flex';
 
-        // Create order using client-side Razorpay (no server needed)
+        // Create order using client-side Razorpay
         const options = {
             key: RAZORPAY_KEY_ID,
             amount: plan.amount * 100, // Convert to paise
@@ -2897,70 +2906,5 @@ async function updatePremiumUI() {
         } else {
             premiumTag.innerHTML = ''; // Clear if not premium
         }
-    }
-}
-
-// Remote Config Management
-async function initializeRemoteConfig() {
-    try {
-        console.log('Initializing Firebase Remote Config...');
-        
-        // Fetch and activate Remote Config
-        await remoteConfig.fetchAndActivate();
-        
-        // Get values from Remote Config
-        const razorpayKeyId = remoteConfig.getString('razorpay_key_id');
-        const imgbbApiKey = remoteConfig.getString('imgbb_api_key');
-        const freeLimit = remoteConfig.getValue('free_prescription_limit').asNumber();
-        const monthlyPrice = remoteConfig.getValue('monthly_plan_price').asNumber();
-        const yearlyPrice = remoteConfig.getValue('yearly_plan_price').asNumber();
-        
-        // Update global variables
-        RAZORPAY_KEY_ID = razorpayKeyId;
-        IMGBB_API_KEY = imgbbApiKey;
-        FREE_PRESCRIPTION_LIMIT = freeLimit;
-        
-        // Update subscription plans with dynamic pricing
-        SUBSCRIPTION_PLANS = {
-            MONTHLY: {
-                name: 'monthly',
-                amount: monthlyPrice,
-                duration: 30
-            },
-            YEARLY: {
-                name: 'yearly',
-                amount: yearlyPrice,
-                duration: 365
-            }
-        };
-        
-        console.log('Remote Config initialized successfully');
-        console.log('Razorpay Key:', RAZORPAY_KEY_ID !== 'DISABLED' ? '✓ Configured' : '✗ Disabled');
-        console.log('ImgBB Key:', IMGBB_API_KEY !== 'DISABLED' ? '✓ Configured' : '✗ Disabled');
-        console.log('Free Limit:', FREE_PRESCRIPTION_LIMIT);
-        console.log('Monthly Price:', monthlyPrice);
-        console.log('Yearly Price:', yearlyPrice);
-        
-    } catch (error) {
-        console.error('Error initializing Remote Config:', error);
-        // Use default values if Remote Config fails
-        RAZORPAY_KEY_ID = 'DISABLED';
-        IMGBB_API_KEY = 'DISABLED';
-        showStatusMessage('Configuration load failed, using default settings', 'warning');
-    }
-}
-
-// Replace the old payment system initialization
-async function initializePaymentSystem() {
-    // Now handled by initializeRemoteConfig
-    await initializeRemoteConfig();
-}
-
-// Replace the old ImgBB key loading function
-async function loadImgbbApiKey() {
-    // Now handled by initializeRemoteConfig
-    // This function is kept for compatibility but does nothing
-    if (!IMGBB_API_KEY) {
-        await initializeRemoteConfig();
     }
 }
