@@ -2,7 +2,7 @@
   "name": "Lens Prescription App",
   "short_name": "LensRx",
   "description": "Professional lens prescription management app for optometrists",
-  "start_url": "/app.html",
+  "start_url": "/index.html",
   "scope": "/",
   "display": "standalone",
   "theme_color": "#1e3a8a",
