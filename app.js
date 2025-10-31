@@ -1201,6 +1201,7 @@ async function fetchPrescriptions() {
     }
 
     try {
+        // NOTE: This query requires a composite index on userId (Asc) and createdAt (Desc)
         const querySnapshot = await baseQuery.orderBy('createdAt', 'desc').get();
 
         let prescriptions = [];
@@ -1221,7 +1222,9 @@ async function fetchPrescriptions() {
 
         displayPrescriptions(prescriptions);
     } catch (error) {
-        showStatusMessage('Error fetching prescriptions. Check console for details.', 'error');
+        // 🚨 MODIFIED: Log error and provide specific guidance for Firestore index issue
+        console.error('CRITICAL FIRESTORE ERROR fetching prescriptions:', error);
+        showStatusMessage('Error fetching prescriptions. This is often due to a missing **Firestore index**. Check the browser console for details and follow the link to create the required index if one is present.', 'error');
     }
 }
 
@@ -1713,7 +1716,10 @@ function startWhatsappTimer() {
 function stopWhatsappTimer() {
     clearInterval(timerInterval);
     const modal = document.getElementById('whatsappTimerModal');
-    if (modal) modal.style.display = 'none';
+    if (modal) {
+        modal.style.display = 'none';
+        
+    }
 }
 
 async function sendWhatsApp() {
