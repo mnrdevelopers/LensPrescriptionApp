@@ -1,37 +1,35 @@
-// app.js - Consolidated from app.js and script.js
+// app.js - Consolidated from app.js and script.js - FULL FEATURE SET
 // Global Variables
 let currentPrescriptionData = null;
 let whatsappImageUrl = null;
 let isFormFilled = false;
 let deferredPrompt;
-// Flag to track if the user profile is complete
 let isProfileComplete = false;
-// Store the last valid section to return to after setup
 let lastValidSection = 'dashboard'; 
-// --- NEW TIMER VARIABLES ---
 let timerInterval;
 let timerSeconds = 0;
-// ---------------------------
+let isFirstPrescription = localStorage.getItem('isFirstPrescription') !== 'false'; // D: PWA Flag
+let selectedPrescriptionToDelete = null; // E: Custom Delete Modal
+let patientLookupData = null; // F: Patient data cache after lookup
+let selectedPlan = 'yearly'; // Default to yearly plan
+
+// --- NEW FEATURE GLOBALS (F, G, H) ---
+let currentPatientId = null; 
+// ------------------------------------
 
 // 🛑 CRITICAL FIX: Use onAuthStateChanged to prevent the redirect loop.
 firebase.auth().onAuthStateChanged((user) => {
     if (user) {
-        // User is confirmed signed in. Initialize the application once the DOM is ready.
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function() {
-                initializeApp();
-            });
+            document.addEventListener('DOMContentLoaded', initializeApp);
         } else {
             initializeApp();
         }
     } else {
-        // User is confirmed signed out. Redirect to the login page immediately.
-        // NOTE: auth.html will handle the logic if they explicitly logged out.
         window.location.replace('auth.html');
     }
 });
 
-// Update the initializeApp function in app.js:
 async function initializeApp() {
     console.log('Initializing app...');
     const user = auth.currentUser;
@@ -41,13 +39,12 @@ async function initializeApp() {
         return;
     }
 
-    // Set current date first
     setCurrentDate();
     
     // Load user profile and check for completion
     await loadUserProfile();
     
-    // Initialize Remote Config (replaces both payment and ImgBB initialization)
+    // Initialize Remote Config
     const configLoaded = await initializeRemoteConfig();
     
     if (!configLoaded) {
@@ -55,32 +52,38 @@ async function initializeApp() {
         showStatusMessage('Using default configuration', 'info');
     }
     
-    // Setup event listeners
     setupEventListeners();
-    setupPWA(); // Enhanced PWA setup
+    setupPWA(); 
     
-    // Set initial date filter values for prescriptions and reports
     setInitialDateFilters();
-
+    
     try {
         // Add usage counter to dashboard
         addUsageCounterToDashboard();
         
-        // Update subscription status (Dashboard only)
         await updateSubscriptionStatus();
-        
-        // Update premium status in nav and profile (NEW)
         await updatePremiumUI(); 
         
-        // Check and update usage counter
-        await checkPrescriptionLimit();
+        // C: Check and update usage counter with Resilience check
+        await checkPrescriptionLimit(true); 
+
+        // G: Fetch templates after initialization
+        fetchTemplates(); 
         
+        // H: Fetch reminders on Dashboard load
+        if (window.location.hash.includes('dashboard')) {
+            fetchCheckupReminders();
+        }
+
         console.log('App initialized successfully');
     } catch (error) {
         console.error('Error during app initialization:', error);
-        // Continue with app initialization even if payment/subscription features fail
     }
 }
+
+// -----------------------------------------------------------
+// 1. Core App Setup Helpers
+// -----------------------------------------------------------
 
 function setInitialDateFilters() {
     const today = new Date().toISOString().split('T')[0];
@@ -93,12 +96,10 @@ function setInitialDateFilters() {
         document.getElementById('reportDateEnd')
     ];
     
-    // Set end date to today for all
     endDateElements.forEach(el => {
         if (el) el.value = today;
     });
 
-    // Set start date to 30 days ago for a default monthly view on initial load
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const defaultStart = thirtyDaysAgo.toISOString().split('T')[0];
@@ -118,24 +119,19 @@ function setCurrentDate() {
     };
     const todayDate = today.toLocaleDateString('en-US', options);
     
-    console.log('Setting current date:', todayDate);
-    
     const currentDateElement = document.getElementById('currentDate');
     const previewCurrentDateElement = document.getElementById('previewcurrentDate');
     
     if (currentDateElement) {
         currentDateElement.textContent = todayDate;
-        console.log('Current date element updated');
     }
     
     if (previewCurrentDateElement) {
         previewCurrentDateElement.textContent = todayDate;
-        console.log('Preview date element updated');
     }
 }
 
 function setupEventListeners() {
-    console.log('Setting up event listeners...');
     
     // Form field tracking
     const formFields = ['patientName', 'age', 'patientMobile'];
@@ -158,10 +154,7 @@ function setupEventListeners() {
     // Browser back button handling for the form
     window.addEventListener('popstate', handleBrowserBack);
     
-    // Push a non-null state initially to manage the back button history stack
     if (history.state === null || history.state?.page === 'initial') {
-        // FIX: Replaced with replaceState to prevent the initial load counting as a back button step
-        // We set the initial page to the current hash if one exists, otherwise 'dashboard'
         const initialPage = window.location.hash.substring(1) || 'dashboard';
         history.replaceState({ page: initialPage }, initialPage, location.href); 
     }
@@ -171,8 +164,12 @@ function setupEventListeners() {
     if (statsSelect) {
         statsSelect.addEventListener('change', fetchDashboardStats);
     }
-
-    console.log('Event listeners setup completed');
+    
+    // F: Patient Search Listener
+    const patientSearchInput = document.getElementById('patientSearchInput');
+    if (patientSearchInput) {
+        patientSearchInput.addEventListener('keyup', filterPatients);
+    }
 }
 
 function setupPWA() {
@@ -180,84 +177,40 @@ function setupPWA() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/LensPrescriptionApp/service-worker.js')
             .then((registration) => {
-                console.log('Service Worker Registered:', registration);
                 
-                // Check for updates
                 registration.addEventListener('updatefound', () => {
                     const newWorker = registration.installing;
-                    console.log('Service Worker update found!', newWorker);
-                    
                     newWorker.addEventListener('statechange', () => {
                         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            console.log('New content is available; please refresh.');
                             showUpdateNotification();
                         }
                     });
                 });
-            })
-            .catch((error) => {
-                console.log('Service Worker Registration Failed:', error);
             });
-
-        // Listen for claiming of clients
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-            console.log('Service Worker controller changed');
-        });
     }
-// Enhanced PWA Install Prompt
-    let deferredPrompt;
+    // PWA Install Prompt
     window.addEventListener('beforeinstallprompt', (event) => {
-        console.log('PWA install prompt triggered');
         event.preventDefault();
         deferredPrompt = event;
-        
-        // Show install button
-        showInstallPromotion();
-        
-        // Auto-show install prompt after 10 seconds if not dismissed
-        setTimeout(() => {
-            if (deferredPrompt) {
-                showInstallPromotion();
-            }
-        }, 10000);
     });
 
     // Handle PWA installed event
-    window.addEventListener('appinstalled', (event) => {
-        console.log('PWA installed successfully!');
+    window.addEventListener('appinstalled', () => {
         deferredPrompt = null;
         hideInstallPromotion();
-        
-        // Track installation
-        if (typeof gtag !== 'undefined') {
-            gtag('event', 'install', {
-                'event_category': 'PWA',
-                'event_label': 'App Installation'
-            });
-        }
     });
 
     // Online/Offline detection
-    window.addEventListener('online', () => {
-        console.log('App is online');
-        showOnlineStatus();
-        syncOfflineData();
-    });
-
-    window.addEventListener('offline', () => {
-        console.log('App is offline');
-        showOfflineStatus();
-    });
+    window.addEventListener('online', () => showStatusMessage('Back online', 'success'));
+    window.addEventListener('offline', () => showStatusMessage('You are currently offline', 'warning'));
 
     // Initial online status check
     if (!navigator.onLine) {
-        showOfflineStatus();
+        showStatusMessage('You are currently offline', 'warning');
     }
 }
 
-// Install Promotion Functions
 function showInstallPromotion() {
-    // Remove existing install prompt if any
     hideInstallPromotion();
     
     const installPrompt = document.createElement('div');
@@ -284,7 +237,6 @@ function showInstallPromotion() {
     
     document.body.appendChild(installPrompt);
     
-    // Auto-hide after 15 seconds
     setTimeout(() => {
         if (document.getElementById('installPrompt')) {
             hideInstallPromotion();
@@ -315,15 +267,6 @@ function showUpdateNotification() {
     `;
     
     document.body.appendChild(updateNotification);
-}
-
-// Online/Offline Status Functions
-function showOnlineStatus() {
-    showStatusMessage('Back online', 'success');
-}
-
-function showOfflineStatus() {
-    showStatusMessage('You are currently offline', 'warning');
 }
 
 // Status message function for PDF feedback
@@ -384,79 +327,49 @@ function getStatusColor(type) {
     return colors[type] || '#17a2b8';
 }
 
-// Offline Data Sync
-function syncOfflineData() {
-    // Check if there's any offline data to sync
-    const offlinePrescriptions = JSON.parse(localStorage.getItem('offlinePrescriptions') || '[]');
-    
-    if (offlinePrescriptions.length > 0) {
-        console.log('Syncing offline prescriptions:', offlinePrescriptions.length);
-        // Implement your sync logic here
-    }
-}
-
-// Enhanced PWA Installation Function
 function installPWA() {
     if (deferredPrompt) {
         deferredPrompt.prompt();
         deferredPrompt.userChoice.then((choiceResult) => {
             if (choiceResult.outcome === "accepted") {
-                console.log("User accepted the install prompt");
-                if (typeof gtag !== 'undefined') {
-                    gtag('event', 'install_prompt_accepted', {
-                        'event_category': 'PWA',
-                        'event_label': 'Install Prompt'
-                    });
-                }
+                console.log("User accepted the install prompt.");
             } else {
-                console.log("User dismissed the install prompt");
-                if (typeof gtag !== 'undefined') {
-                    gtag('event', 'install_prompt_dismissed', {
-                        'event_category': 'PWA',
-                        'event_label': 'Install Prompt'
-                    });
-                }
+                console.log("User dismissed the install prompt.");
             }
             deferredPrompt = null;
-            hideInstallPromotion();
         });
     }
 }
 
-
-// Navigation Functions
+// -----------------------------------------------------------
+// 2. Navigation and Routing
+// -----------------------------------------------------------
 
 /**
  * Checks if profile is complete before navigating. Forces user to setup screen if not.
- * @param {function} navFunction The function to call if profile is complete.
- * @param {string} sectionName The name of the section we are trying to navigate to.
  */
 function navigateIfProfileComplete(navFunction, sectionName) {
     if (isProfileComplete) {
-        // Ensure navigation is enabled before proceeding
         enableNavigationButtons();
         
-        // **FIX**: Use replaceState here instead of pushState for navigation Clicks.
-        // This stops back button from cycling through internal nav clicks, but ensures the
-        // URL is updated for the user to copy/reload.
         const hash = sectionName === 'dashboard' ? 'dashboard' : 
                      sectionName === 'form' ? 'form' : 
                      sectionName === 'prescriptions' ? 'prescriptions' : 
-                     sectionName === 'reports' ? 'reports' : 'setup';
+                     sectionName === 'reports' ? 'reports' : 
+                     sectionName === 'patients' ? 'patients' : 
+                     'setup';
         
-        // Use replaceState to update the URL without polluting the browser history for internal navigation
         history.replaceState({ page: sectionName }, sectionName, `app.html#${hash}`);
 
         navFunction();
-        lastValidSection = sectionName; // Update last valid section
+        lastValidSection = sectionName; 
     } else {
-        showProfileSetup(true); // Force profile setup
+        showProfileSetup(true); 
     }
 }
 
-// NEW FUNCTION: Handles routing based on the URL hash
 function routeToHashedSection() {
-    const hash = window.location.hash.substring(1); // Get hash without '#'
+    const hash = window.location.hash.substring(1); 
 
     switch (hash) {
         case 'dashboard':
@@ -471,35 +384,37 @@ function routeToHashedSection() {
         case 'reports':
             showReports();
             break;
+        case 'patients': 
+            showPatients();
+            break;
         case 'setup':
             showProfileSetup(false);
             break;
         default:
-            // Default to dashboard if no valid hash is found
             showDashboard();
             break;
     }
 }
 
 function showDashboard() {
-    // We only call navigateIfProfileComplete from external events or if we want to ensure setup is done.
-    // When called from routeToHashedSection, we assume profile completion has been verified.
     hideAllSections();
     const dashboardSection = document.getElementById('dashboardSection');
     if (dashboardSection) dashboardSection.classList.add('active');
-    updateActiveNavLink('showDashboard'); // Use function name for targeting
+    updateActiveNavLink('showDashboard');
     
-    // Fetch dashboard stats on load, defaulting to daily
     document.getElementById('statsTimePeriod').value = 'daily';
     fetchDashboardStats();
+    fetchCheckupReminders();
 }
 
 function showPrescriptionForm() {
     hideAllSections();
     const formSection = document.getElementById('prescriptionFormSection');
     if (formSection) formSection.classList.add('active');
-    updateActiveNavLink('showPrescriptionForm'); // Use function name for targeting
+    updateActiveNavLink('showPrescriptionForm'); 
     
+    resetForm(true); 
+    fetchTemplates(); 
     lastValidSection = 'form';
 }
 
@@ -507,9 +422,8 @@ function showPrescriptions() {
     hideAllSections();
     const prescriptionsSection = document.getElementById('prescriptionsSection');
     if (prescriptionsSection) prescriptionsSection.classList.add('active');
-    updateActiveNavLink('showPrescriptions'); // Use function name for targeting
+    updateActiveNavLink('showPrescriptions'); 
     
-    // Load initial date filtered data
     fetchPrescriptions();
 }
 
@@ -517,63 +431,51 @@ function showReports() {
     hideAllSections();
     const reportsSection = document.getElementById('reportsSection');
     if (reportsSection) reportsSection.classList.add('active');
-    updateActiveNavLink('showReports'); // Use function name for targeting
+    updateActiveNavLink('showReports'); 
     
-    // Load initial report data based on default filters
     fetchReportDataByRange();
 }
 
-/**
- * Shows the dedicated profile setup screen.
- * @param {boolean} isForced True if the user is being forced to set up the profile (e.g., after registration).
- */
+function showPatients() {
+    hideAllSections();
+    const patientsSection = document.getElementById('patientsSection');
+    if (patientsSection) patientsSection.classList.add('active');
+    updateActiveNavLink('showPatients'); 
+    
+    fetchPatients();
+}
+
 function showProfileSetup(isForced) {
     hideAllSections();
     const setupSection = document.getElementById('profileSetupSection');
     if (setupSection) setupSection.classList.add('active');
     
-    // Disable navigation if forced
     if (isForced) {
         disableNavigationButtons();
     } else {
-        // If not forced (user is just editing), keep navigation enabled
         enableNavigationButtons();
     }
-    updateActiveNavLink('showProfileSetup'); // Set active state for the profile link
+    updateActiveNavLink('showProfileSetup'); 
 
-    // **FIX: Track where we're coming from for proper navigation back**
-    const currentState = history.state?.page;
-    if (currentState === 'form') {
-        // If we're coming from the prescription form, remember that
-        lastValidSection = 'form';
-    }
-    
-    // Set the user's email in the display field
     const user = auth.currentUser;
     const emailDisplay = document.getElementById('userEmailDisplay');
     if (emailDisplay) {
         emailDisplay.textContent = user ? user.email : 'N/A';
-        // Ensure the premium tag is updated when this page is shown (handles user going back to profile)
         updatePremiumUI();
     }
 
-    // Hide continue button if just editing
     const saveBtn = document.getElementById('saveSetupProfileBtn');
     if (saveBtn) {
         saveBtn.textContent = isForced ? 'Save Profile & Continue' : 'Save Changes';
     }
 
-    // Populate current data for editing (FIXED to fetch from localStorage)
     if (!isForced) {
-        // If profile is already complete, use the data loaded in local storage
         const userData = JSON.parse(localStorage.getItem('userProfile') || '{}');
-        
         document.getElementById('setupClinicName').value = userData.clinicName || '';
         document.getElementById('setupOptometristName').value = userData.optometristName || '';
         document.getElementById('setupAddress').value = userData.address || '';
         document.getElementById('setupContactNumber').value = userData.contactNumber || '';
     } else {
-         // Clear fields for new user or prompt
          document.getElementById('setupClinicName').value = '';
          document.getElementById('setupOptometristName').value = '';
          document.getElementById('setupAddress').value = '';
@@ -591,7 +493,6 @@ function showPreview(prescriptionData = null) {
     } else {
         loadPreviewFromForm();
     }
-    // No history push needed for preview since it's transient, but ensure back returns to list/form
 }
 
 function hideAllSections() {
@@ -599,24 +500,16 @@ function hideAllSections() {
     sections.forEach(section => section.classList.remove('active'));
 }
 
-/**
- * Updates the active state of navigation links.
- * @param {string} activeFunction The name of the function called by the active link (e.g., 'showDashboard').
- */
 function updateActiveNavLink(activeFunction) {
     const navLinks = document.querySelectorAll('.nav-link-custom');
     navLinks.forEach(link => {
         link.classList.remove('active');
-        // Check both desktop and mobile links (based on the onclick attribute)
         if (link.getAttribute('onclick')?.includes(activeFunction)) {
             link.classList.add('active');
         }
     });
 }
 
-/**
- * Disables all main navigation buttons.
- */
 function disableNavigationButtons() {
     const navButtons = document.querySelectorAll('.nav-link-custom');
     navButtons.forEach(btn => {
@@ -624,9 +517,6 @@ function disableNavigationButtons() {
     });
 }
 
-/**
- * Enables all main navigation buttons.
- */
 function enableNavigationButtons() {
     const navButtons = document.querySelectorAll('.nav-link-custom');
     navButtons.forEach(btn => {
@@ -634,17 +524,16 @@ function enableNavigationButtons() {
     });
 }
 
-// User Profile Management
+// -----------------------------------------------------------
+// 3. User & Profile Management
+// -----------------------------------------------------------
+
 async function loadUserProfile() {
     const user = auth.currentUser;
     if (!user) {
-        console.error('No user logged in');
         return;
     }
 
-    console.log('Loading user profile for:', user.uid);
-
-    // Check for fresh registration flag
     const isFreshRegistration = localStorage.getItem('freshRegistration') === 'true';
     if (isFreshRegistration) {
         localStorage.removeItem('freshRegistration');
@@ -657,68 +546,48 @@ async function loadUserProfile() {
         
         if (doc.exists) {
             userData = doc.data();
-            console.log('Loaded user profile from Firestore:', userData);
             
-            // Check if profile is sufficiently complete
             const isDataValid = userData.clinicName && userData.optometristName;
             
             if (isDataValid) {
                 isProfileComplete = true;
                 updateProfileUI(userData);
                 localStorage.setItem('userProfile', JSON.stringify(userData));
-                // Ensure buttons are enabled if loading dashboard successfully
                 enableNavigationButtons(); 
-                
-                // CRITICAL FIX: Route to the section defined in the URL hash immediately after load
                 routeToHashedSection(); 
                 return;
             }
             
-            // If document exists but is incomplete/placeholder (e.g., from an old flow)
-            console.warn('User profile found but incomplete. Forcing setup.');
             isProfileComplete = false;
-            // showProfileSetup(true) will be called, which handles disabling buttons
             showProfileSetup(true);
 
         } else {
-            console.log('No user profile found in Firestore. Forcing setup.');
-            
-            // This is a brand new user after registration (or an old user whose doc was deleted)
             isProfileComplete = false;
-            // showProfileSetup(true) will be called, which handles disabling buttons
             showProfileSetup(true);
         }
     } catch (error) {
         console.error('Error loading user profile from Firestore:', error);
-        // Fallback to local storage or force setup if there's an error
+        
         const localProfile = localStorage.getItem('userProfile');
         if (localProfile) {
-            console.log('Firestore failed, using localStorage backup.');
             userData = JSON.parse(localProfile);
             isProfileComplete = userData.clinicName && userData.optometristName;
             updateProfileUI(userData);
             if (isProfileComplete) {
                 enableNavigationButtons();
-                // CRITICAL FIX: Route to the section defined in the URL hash immediately after load
                 routeToHashedSection();
             } else {
                 showProfileSetup(true);
             }
         } else {
-            console.error('No backup profile available, forcing setup.');
-            isProfileComplete = false;
             showProfileSetup(true);
         }
     }
 }
 
-/**
- * Saves the profile from the dedicated Profile Setup screen.
- */
 async function saveSetupProfile() {
     const user = auth.currentUser;
     if (!user) {
-        console.error('No user logged in');
         return;
     }
 
@@ -728,12 +597,11 @@ async function saveSetupProfile() {
         address: document.getElementById('setupAddress').value.trim(),
         contactNumber: document.getElementById('setupContactNumber').value.trim(),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        email: user.email // Ensure email is saved with profile data
+        email: user.email
     };
     
-    // Enhanced validation (basic check)
     if (!updatedData.clinicName || !updatedData.optometristName) {
-        alert('Clinic Name and Optometrist Name are required to continue.');
+        showStatusMessage('Clinic Name and Optometrist Name are required to continue.', 'error');
         return;
     }
 
@@ -742,35 +610,26 @@ async function saveSetupProfile() {
         saveBtn.disabled = true;
         saveBtn.textContent = 'Saving...';
         
-        // Use set to save or update the profile
         await db.collection('users').doc(user.uid).set(updatedData, { merge: true });
         
-        console.log('Profile setup/updated successfully!');
-        
-        // Update flags and UI
         isProfileComplete = true;
         updateProfileUI(updatedData);
         localStorage.setItem('userProfile', JSON.stringify(updatedData));
         
-        // **FIX: Re-enable navigation explicitly**
         enableNavigationButtons();
 
-        // **FIX: Determine where to navigate after saving**
-        // Check if we came from the prescription form (edit profile scenario)
         const cameFromPrescriptionForm = document.getElementById('prescriptionFormSection')?.classList.contains('active') || 
                                         lastValidSection === 'form';
         
         if (cameFromPrescriptionForm) {
-            // If editing profile from prescription form, go back to form
             navigateIfProfileComplete(showPrescriptionForm, 'form');
         } else {
-            // Default to dashboard
             navigateIfProfileComplete(showDashboard, 'dashboard');
         }
 
     } catch (error) {
         console.error('Error saving profile:', error);
-        alert('Error saving profile: ' + error.message);
+        showStatusMessage('Error saving profile: ' + error.message, 'error');
     } finally {
         const saveBtn = document.getElementById('saveSetupProfileBtn');
         saveBtn.disabled = false;
@@ -780,14 +639,11 @@ async function saveSetupProfile() {
 
 
 function updateProfileUI(userData) {
-    console.log('Updating UI with user data:', userData);
     
     if (!userData) {
-        console.error('No user data provided to updateProfileUI');
         return;
     }
     
-    // Update main form sections and preview sections
     const fields = [
         { id: 'clinicName', text: userData.clinicName || 'Your Clinic Name' },
         { id: 'clinicAddress', text: userData.address || 'Clinic Address' },
@@ -806,105 +662,93 @@ function updateProfileUI(userData) {
         }
     });
 
-    // Update Dashboard Welcome Text
     const dashboardText = document.getElementById('dashboardWelcomeText');
     if (dashboardText) {
         dashboardText.textContent = `Welcome, ${userData.optometristName || 'Optometrist'}!`;
     }
-    
-    console.log('UI update completed');
 }
 
-// The old modal-based edit functions now redirect to the new setup screen
-function openEditProfile() {
-    // Hide the edit modal, as it's now handled by the dedicated section
-    const modal = document.getElementById('editProfileModal');
-    if (modal) modal.style.display = 'none'; 
-    navigateIfProfileComplete(showProfileSetup, 'setup'); // Use navigateIfProfileComplete
+function logoutUser() {
+    auth.signOut().then(() => {
+        localStorage.removeItem('username');
+        localStorage.removeItem('userId');
+        sessionStorage.setItem("explicitLogout", "true");
+        window.location.replace('index.html');
+    }).catch(error => {
+        console.error('Logout failed:', error);
+    });
 }
 
-function closeEditProfile() {
-    const modal = document.getElementById('editProfileModal');
-    if (modal) modal.style.display = 'none';
-}
+// -----------------------------------------------------------
+// 4. Prescription Core Logic (Submission & Data)
+// -----------------------------------------------------------
 
-async function saveProfile() {
-    // This function is for the modal, which is now deprecated.
-    // We redirect to the main setup screen instead.
-    alert('Please use the dedicated Edit Profile screen.');
-    showProfileSetup(false);
-}
-
-// Prescription Management
 async function submitPrescription() {
     if (!isProfileComplete) {
-        alert('Please complete your Clinic Profile before adding prescriptions.');
+        showStatusMessage('Please complete your Clinic Profile before adding prescriptions.', 'error');
         showProfileSetup(true);
         return;
     }
 
-    // Check if user can submit prescription
     const canSubmit = await checkPrescriptionLimit();
-    if (!canSubmit) {
-        return;
-    }
+    if (!canSubmit) return;
     
     const user = auth.currentUser;
     if (!user) {
-        console.error('Authentication Error: User is not logged in.');
         window.location.href = 'auth.html';
         return;
     }
 
-    // Get form values
     const formData = getFormData();
     
-    // Validation
     if (!validateFormData(formData)) {
+        showStatusMessage('Please fill all required patient and amount fields correctly.', 'error');
         return;
     }
 
     try {
-        // Save to Firestore
+        const nextCheckupDate = new Date();
+        nextCheckupDate.setDate(nextCheckupDate.getDate() + 365);
+        
+        const patientData = await savePatientRecord(formData, nextCheckupDate);
+
         const newPrescriptionRef = await db.collection('prescriptions').add({
             userId: user.uid,
+            patientId: patientData.patientId, 
             ...formData,
-            // Store date as a human-readable ISO string for accurate queries and sorting
+            nextCheckupDate: firebase.firestore.Timestamp.fromDate(nextCheckupDate), 
             date: new Date().toISOString(), 
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
-
-        console.log(`Prescription saved successfully! ID: ${newPrescriptionRef.id}`);
         
-        // Store data for preview
-        currentPrescriptionData = formData;
+        currentPrescriptionData = { 
+            ...formData, 
+            nextCheckupDate: nextCheckupDate.toLocaleDateString()
+        };
         
-        // **IMPORTANT: Clear cached WhatsApp image URL for a new prescription**
         whatsappImageUrl = null; 
         
-        // Show preview
-        showPreview(formData);
+        checkAndPromptPWAInstall();
+
+        showPreview(currentPrescriptionData);
         
-        // Reset form
         resetForm();
-        isFormFilled = false;
 
     } catch (error) {
         console.error('Error saving prescription:', error);
+        showStatusMessage('Error saving prescription. Please check logs.', 'error');
     }
 }
 
 function getFormData() {
-    // Helper function to safely get float/int values
     const getNumberValue = (id) => {
         const value = document.getElementById(id)?.value.trim();
         return value ? parseFloat(value) : 0;
     };
-    
-    // Helper function to safely get string values
     const getStringValue = (id) => document.getElementById(id)?.value.trim() || '';
 
     return {
+        patientId: getStringValue('patientId'),
         patientName: getStringValue('patientName'),
         age: getNumberValue('age'),
         gender: getStringValue('gender'),
@@ -924,7 +768,7 @@ function getFormData() {
             leftDistAXIS: getStringValue('leftDistAXIS'),
             leftDistVA: getStringValue('leftDistVA'),
             rightAddSPH: getStringValue('rightAddSPH'),
-            rightAddCYL: getStringValue('rightAddCYL'), // Assuming this was the intended ID
+            rightAddCYL: getStringValue('rightAddCYL'), 
             rightAddAXIS: getStringValue('rightAddAXIS'),
             rightAddVA: getStringValue('rightAddVA'),
             leftAddSPH: getStringValue('leftAddSPH'),
@@ -936,48 +780,403 @@ function getFormData() {
 }
 
 function validateFormData(data) {
-    if (!data.patientName) {
-        console.error('Validation Error: Please enter patient name');
-        return false;
-    }
-    if (!data.age || data.age <= 0) {
-        console.error('Validation Error: Please enter valid age');
-        return false;
-    }
-    if (!data.mobile || !data.mobile.match(/^\d{10}$/)) {
-        console.error('Validation Error: Please enter valid 10-digit mobile number');
-        return false;
-    }
-    if (!data.amount || data.amount < 0) {
-        console.error('Validation Error: Please enter valid amount');
-        return false;
-    }
+    if (!data.patientName) return false;
+    if (!data.age || data.age <= 0) return false;
+    if (!data.mobile || !data.mobile.match(/^\d{10}$/)) return false;
+    if (!data.amount || data.amount < 0) return false;
     return true;
 }
 
-function resetForm() {
+function resetForm(clearPatientData = false) {
     const form = document.getElementById('prescriptionForm');
     if (form) {
         form.querySelectorAll('input:not([type="hidden"]), select').forEach(element => {
             if (element.tagName === 'INPUT') {
                 element.value = '';
             } else if (element.tagName === 'SELECT') {
-                element.selectedIndex = 0; // Reset to the first option
+                element.selectedIndex = 0; 
             }
         });
+        // Clear all prescription data inputs
+        document.querySelectorAll('#prescriptionFormSection input[type="text"]').forEach(input => input.value = '');
     }
     isFormFilled = false;
+    
+    // Clear patient data if requested
+    if (clearPatientData) {
+        document.getElementById('patientId').value = '';
+        currentPatientId = null;
+        patientLookupData = null;
+    }
 }
 
-// Prescriptions List Management
+// A: Copy OD to OS Function
+function copyRightToLeft() {
+    const fields = [
+        'DistSPH', 'DistCYL', 'DistAXIS', 'DistVA',
+        'AddSPH', 'AddCYL', 'AddAXIS', 'AddVA'
+    ];
+
+    fields.forEach(field => {
+        const rightValue = document.getElementById(`right${field}`)?.value;
+        const leftElement = document.getElementById(`left${field}`);
+        
+        if (leftElement) {
+            leftElement.value = rightValue;
+            leftElement.dispatchEvent(new Event('input'));
+        }
+    });
+    
+    showStatusMessage("Right Eye (OD) values copied to Left Eye (OS).", 'info');
+}
+
+// -----------------------------------------------------------
+// 5. Patient/History Management
+// -----------------------------------------------------------
+
+async function savePatientRecord(formData, nextCheckupDate) {
+    const user = auth.currentUser;
+    const patientId = formData.patientId;
+    const patientData = {
+        userId: user.uid,
+        name: formData.patientName,
+        mobile: formData.mobile,
+        age: formData.age,
+        gender: formData.gender,
+        lastVisit: firebase.firestore.FieldValue.serverTimestamp(),
+        nextCheckupDate: firebase.firestore.Timestamp.fromDate(nextCheckupDate),
+    };
+    
+    try {
+        if (patientId) {
+            // Update existing patient
+            await db.collection('patients').doc(patientId).update(patientData);
+            return { ...patientData, patientId };
+        } else {
+            // Create new patient
+            const newPatientRef = await db.collection('patients').add({
+                ...patientData,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                prescriptionCount: 1 
+            });
+            document.getElementById('patientId').value = newPatientRef.id;
+            return { ...patientData, patientId: newPatientRef.id };
+        }
+    } catch (error) {
+        console.error('Error saving patient record:', error);
+        throw new Error('Failed to save patient record.');
+    }
+}
+
+async function checkPatientExists(mobile) {
+    const user = auth.currentUser;
+    const mobileValue = mobile.replace(/\D/g, '');
+    
+    if (!mobileValue || mobileValue.length !== 10) {
+        document.getElementById('patientId').value = '';
+        currentPatientId = null;
+        patientLookupData = null;
+        return;
+    }
+    
+    try {
+        const querySnapshot = await db.collection('patients')
+            .where('userId', '==', user.uid)
+            .where('mobile', '==', mobileValue)
+            .limit(1)
+            .get();
+
+        if (querySnapshot.empty) {
+            showStatusMessage('New patient: Ready to create record.', 'info');
+            document.getElementById('patientId').value = '';
+            currentPatientId = null;
+            patientLookupData = null;
+            return;
+        }
+
+        const doc = querySnapshot.docs[0];
+        const patient = doc.data();
+        
+        document.getElementById('patientId').value = doc.id;
+        document.getElementById('patientName').value = patient.name || '';
+        document.getElementById('age').value = patient.age || '';
+        document.getElementById('gender').value = patient.gender || 'Male';
+        
+        currentPatientId = doc.id;
+        patientLookupData = patient;
+
+        showStatusMessage(`Patient ${patient.name} found. Details autofilled.`, 'success');
+        
+    } catch (error) {
+        console.error('Error checking patient existence:', error);
+        showStatusMessage('Error checking patient database.', 'error');
+    }
+}
+
+async function fetchPatients() {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    try {
+        const querySnapshot = await db.collection('patients')
+            .where('userId', '==', user.uid)
+            .orderBy('lastVisit', 'desc')
+            .get();
+
+        const patients = [];
+        const today = new Date();
+        
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            const lastVisitDate = data.lastVisit?.toDate().toLocaleDateString() || 'N/A';
+            const nextCheckupDate = data.nextCheckupDate?.toDate();
+            
+            const isDue = nextCheckupDate && nextCheckupDate <= today;
+            
+            patients.push({
+                id: doc.id,
+                ...data,
+                lastVisitDisplay: lastVisitDate,
+                nextCheckupDisplay: nextCheckupDate ? nextCheckupDate.toLocaleDateString() : 'N/A',
+                isDue: isDue
+            });
+        });
+
+        displayPatients(patients);
+
+    } catch (error) {
+        console.error('Error fetching patients:', error);
+        showStatusMessage('Error fetching patient records.', 'error');
+    }
+}
+
+function displayPatients(patients) {
+    const tbody = document.getElementById('patientTable')?.getElementsByTagName('tbody')[0];
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+
+    if (!patients || patients.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No patient records found.</td></tr>';
+        return;
+    }
+
+    patients.forEach(patient => {
+        const row = tbody.insertRow();
+        
+        const nextCheckupClass = patient.isDue ? 'text-danger fw-bold' : '';
+        
+        row.insertCell().textContent = patient.name;
+        row.insertCell().textContent = patient.mobile;
+        row.insertCell().textContent = `${patient.age || 'N/A'} / ${patient.gender || 'N/A'}`;
+        row.insertCell().textContent = patient.lastVisitDisplay;
+        row.insertCell().innerHTML = `<span class="${nextCheckupClass}">${patient.nextCheckupDisplay}</span>`;
+        row.insertCell().textContent = patient.prescriptionCount || 0;
+
+        const actionsCell = row.insertCell();
+        const viewHistoryBtn = document.createElement('button');
+        viewHistoryBtn.innerHTML = '<i class="fas fa-history"></i>';
+        viewHistoryBtn.className = 'btn-view-history';
+        viewHistoryBtn.title = 'View Prescriptions';
+        // F: Set filter by mobile number and jump to prescription list
+        viewHistoryBtn.onclick = () => filterPrescriptionsByMobile(patient.mobile); 
+        
+        actionsCell.appendChild(viewHistoryBtn);
+    });
+
+    filterPatients();
+}
+
+function filterPrescriptionsByMobile(mobile) {
+    navigateIfProfileComplete(showPrescriptions, 'prescriptions');
+    
+    // Set the search input value and trigger fetch/filter
+    setTimeout(() => {
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.value = mobile;
+            fetchPrescriptions();
+            showStatusMessage(`Filtered history for mobile: ${mobile}`, 'info');
+        }
+    }, 100);
+}
+
+function filterPatients() {
+    const input = document.getElementById('patientSearchInput')?.value.toLowerCase();
+    const table = document.getElementById('patientTable');
+    const tbody = table?.getElementsByTagName('tbody')[0];
+    if (!tbody || !input) return;
+    
+    const rows = tbody.getElementsByTagName('tr');
+
+    for (let row of rows) {
+        const name = row.cells[0]?.textContent.toLowerCase() || '';
+        const mobile = row.cells[1]?.textContent.toLowerCase() || '';
+        
+        row.style.display = (name.includes(input) || mobile.includes(input)) ? '' : 'none';
+    }
+}
+
+async function fetchCheckupReminders() {
+    const user = auth.currentUser;
+    if (!user) return;
+    
+    const today = new Date();
+    const thirtyDaysFuture = new Date();
+    thirtyDaysFuture.setDate(today.getDate() + 30);
+
+    try {
+        const querySnapshot = await db.collection('patients')
+            .where('userId', '==', user.uid)
+            .where('nextCheckupDate', '<=', firebase.firestore.Timestamp.fromDate(thirtyDaysFuture))
+            .get();
+
+        let countDue = 0;
+        
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            const nextCheckupDate = data.nextCheckupDate?.toDate();
+            
+            if (nextCheckupDate && nextCheckupDate <= thirtyDaysFuture) {
+                countDue++;
+            }
+        });
+
+        const statReminders = document.getElementById('statRemindersDue');
+        if (statReminders) {
+            statReminders.textContent = countDue.toString();
+        }
+
+    } catch (error) {
+        const statReminders = document.getElementById('statRemindersDue');
+        if (statReminders) {
+            statReminders.textContent = 'N/A';
+        }
+    }
+}
+
+// -----------------------------------------------------------
+// 6. Templates (G)
+// -----------------------------------------------------------
+
+async function fetchTemplates() {
+    const user = auth.currentUser;
+    const select = document.getElementById('templateSelect');
+    if (!user || !select) return;
+    
+    select.innerHTML = '<option value="">-- Select Template --</option>';
+
+    try {
+        const querySnapshot = await db.collection('templates')
+            .where('userId', '==', user.uid)
+            .orderBy('name', 'asc')
+            .get();
+
+        querySnapshot.forEach((doc) => {
+            const template = doc.data();
+            const option = document.createElement('option');
+            option.value = doc.id;
+            option.textContent = template.name;
+            option.dataset.templateData = JSON.stringify(template.data);
+            select.appendChild(option);
+        });
+
+    } catch (error) {
+        console.error('Error fetching templates:', error);
+    }
+}
+
+async function saveAsTemplate() {
+    const user = auth.currentUser;
+    if (!user) return;
+    
+    const templateName = window.prompt("Enter a name for this prescription template:");
+    if (!templateName || templateName.trim() === "") {
+        showStatusMessage("Template save cancelled.", 'info');
+        return;
+    }
+    
+    const formData = getFormData();
+    
+    const templateData = {
+        visionType: formData.visionType,
+        lensType: formData.lensType,
+        frameType: formData.frameType,
+        prescriptionData: formData.prescriptionData
+    };
+    
+    try {
+        await db.collection('templates').add({
+            userId: user.uid,
+            name: templateName.trim(),
+            data: templateData,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        showStatusMessage(`Template "${templateName}" saved successfully!`, 'success');
+        fetchTemplates();
+        
+    } catch (error) {
+        console.error('Error saving template:', error);
+        showStatusMessage('Failed to save template. Please try again.', 'error');
+    }
+}
+
+function loadTemplate(templateId) {
+    if (!templateId) return;
+
+    const select = document.getElementById('templateSelect');
+    const selectedOption = Array.from(select.options).find(opt => opt.value === templateId);
+    
+    if (!selectedOption || !selectedOption.dataset.templateData) {
+        showStatusMessage('Template data not found.', 'error');
+        return;
+    }
+
+    try {
+        const template = JSON.parse(selectedOption.dataset.templateData);
+        
+        document.getElementById('visionType').value = template.visionType || 'Single Vision';
+        document.getElementById('lensType').value = template.lensType || 'Blue Cut';
+        document.getElementById('frameType').value = template.frameType || 'Full Rim';
+
+        const presData = template.prescriptionData;
+        
+        const fields = [
+            'rightDistSPH', 'rightDistCYL', 'rightDistAXIS', 'rightDistVA',
+            'leftDistSPH', 'leftDistCYL', 'leftDistAXIS', 'leftDistVA',
+            'rightAddSPH', 'rightAddCYL', 'rightAddAXIS', 'rightAddVA',
+            'leftAddSPH', 'leftAddCYL', 'leftAddAXIS', 'leftAddVA'
+        ];
+
+        fields.forEach(field => {
+            const element = document.getElementById(field);
+            if (element) {
+                element.value = presData[field] || '';
+            }
+        });
+
+        showStatusMessage(`Template "${selectedOption.textContent}" loaded.`, 'success');
+        
+    } catch (error) {
+        console.error('Error loading template:', error);
+        showStatusMessage('Error applying template.', 'error');
+    }
+}
+
+
+// -----------------------------------------------------------
+// 7. Data Display (Prescriptions, Reports)
+// -----------------------------------------------------------
+
 async function fetchPrescriptions() {
     const user = auth.currentUser;
     if (!user) return;
 
     const startDateInput = document.getElementById('prescriptionDateStart').value;
     const endDateInput = document.getElementById('prescriptionDateEnd').value;
+    const searchInput = document.getElementById('searchInput').value.trim().toLowerCase();
     
-    // Basic date validation
     if (startDateInput && endDateInput && new Date(startDateInput) > new Date(endDateInput)) {
         showStatusMessage('Start date cannot be after end date.', 'error');
         return;
@@ -986,7 +1185,6 @@ async function fetchPrescriptions() {
     const startDate = startDateInput ? new Date(startDateInput) : null;
     const endDate = endDateInput ? new Date(endDateInput) : null;
     
-    // Set end time to end of day for inclusive filtering
     if (endDate) {
         endDate.setHours(23, 59, 59, 999);
     }
@@ -1005,52 +1203,26 @@ async function fetchPrescriptions() {
     try {
         const querySnapshot = await baseQuery.orderBy('createdAt', 'desc').get();
 
-        const prescriptions = [];
+        let prescriptions = [];
         querySnapshot.forEach((doc) => {
             prescriptions.push({
                 id: doc.id,
                 ...doc.data()
             });
         });
+        
+        // Client-side filtering for search input
+        if (searchInput) {
+             prescriptions = prescriptions.filter(rx => 
+                 rx.patientName.toLowerCase().includes(searchInput) || 
+                 rx.mobile.includes(searchInput)
+             );
+        }
 
         displayPrescriptions(prescriptions);
     } catch (error) {
-        console.error('Error fetching prescriptions:', error);
         showStatusMessage('Error fetching prescriptions. Check console for details.', 'error');
     }
-}
-
-function displayPrescriptions(data) {
-    const tbody = document.getElementById('prescriptionTable')?.getElementsByTagName('tbody')[0];
-    if (!tbody) return;
-    
-    tbody.innerHTML = '';
-
-    if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="11" class="text-center">No prescriptions found for selected filters</td></tr>';
-        return;
-    }
-
-    // Group by date
-    const grouped = groupPrescriptionsByDate(data);
-    
-    // Display grouped prescriptions
-    Object.keys(grouped).forEach(group => {
-        // Add group header
-        const headerRow = tbody.insertRow();
-        const headerCell = headerRow.insertCell();
-        headerCell.colSpan = 11;
-        headerCell.textContent = group;
-        headerCell.className = 'prescription-group-header';
-        
-        // Add prescriptions for this group
-        grouped[group].forEach(prescription => {
-            addPrescriptionRow(tbody, prescription);
-        });
-    });
-    
-    // Re-apply text-based filter after new data load
-    filterPrescriptions();
 }
 
 function groupPrescriptionsByDate(prescriptions) {
@@ -1066,7 +1238,6 @@ function groupPrescriptionsByDate(prescriptions) {
     };
 
     prescriptions.forEach(prescription => {
-        // Use the 'date' field which is an ISO string
         const prescriptionDate = new Date(prescription.date).toLocaleDateString(); 
         
         if (prescriptionDate === today) {
@@ -1078,7 +1249,6 @@ function groupPrescriptionsByDate(prescriptions) {
         }
     });
 
-    // Remove empty groups
     const finalGrouped = {};
     Object.keys(grouped).forEach(group => {
         if (grouped[group].length > 0) {
@@ -1089,20 +1259,19 @@ function groupPrescriptionsByDate(prescriptions) {
     return finalGrouped;
 }
 
+// B: Updated displayPrescriptions to include Age/Mobile and Time
 function addPrescriptionRow(tbody, prescription) {
     const row = tbody.insertRow();
     
-    // Format date properly
-    const date = new Date(prescription.date).toLocaleString('en-US', { 
-        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-    });
+    const date = new Date(prescription.date);
+    const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const timeStr = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     
     const fields = [
-        date,
+        `${dateStr} @ ${timeStr}`,
         prescription.patientName,
         prescription.age,
-        prescription.gender,
-        prescription.mobile,
+        prescription.mobile, 
         `₹${prescription.amount?.toFixed(2) || '0.00'}`,
         prescription.visionType,
         prescription.lensType,
@@ -1115,86 +1284,93 @@ function addPrescriptionRow(tbody, prescription) {
         cell.textContent = field;
     });
 
-    // Actions cell
     const actionsCell = row.insertCell();
     
     const previewBtn = document.createElement('button');
     previewBtn.innerHTML = '👁️';
     previewBtn.className = 'btn-preview';
     previewBtn.title = 'Preview';
-    // Create a deep copy to avoid mutation issues
     previewBtn.onclick = () => previewPrescription(JSON.parse(JSON.stringify(prescription))); 
     
     const deleteBtn = document.createElement('button');
     deleteBtn.innerHTML = '🗑️';
     deleteBtn.className = 'btn-delete';
     deleteBtn.title = 'Delete';
-    deleteBtn.onclick = () => deletePrescription(prescription);
+    deleteBtn.onclick = () => showDeleteModal(prescription);
     
     actionsCell.appendChild(previewBtn);
     actionsCell.appendChild(deleteBtn);
 }
 
 function filterPrescriptions() {
-    const input = document.getElementById('searchInput')?.value.toLowerCase();
-    const table = document.getElementById('prescriptionTable');
-    const tbody = table?.getElementsByTagName('tbody')[0];
-    if (!tbody || !input) return;
-    
-    const rows = tbody.getElementsByTagName('tr');
-
-    for (let row of rows) {
-        if (row.classList.contains('prescription-group-header')) continue;
-        
-        const name = row.cells[1]?.textContent.toLowerCase() || '';
-        const mobile = row.cells[4]?.textContent.toLowerCase() || '';
-        
-        // Hide/show row based on search and visibility (to respect date filtering)
-        if (row.style.display !== 'none') {
-            row.style.display = (name.includes(input) || mobile.includes(input)) ? '' : 'none';
-        }
-    }
+    // Note: The main filtering is now done in fetchPrescriptions() using firebase queries 
+    // and supplemental client-side search. This function is essentially now a no-op 
+    // unless the user performs keyup after fetch.
 }
 
 function previewPrescription(prescription) {
-    // Clear the cached image URL when previewing a different prescription
     whatsappImageUrl = null;
     showPreview(prescription);
 }
 
-async function deletePrescription(prescription) {
-    // ⚠️ CRITICAL FIX: Replaced confirm() with a prompt as alerts/confirms are disallowed.
-    console.warn(`Attempting to delete prescription ID: ${prescription.id}.`);
+// E: Custom Delete Modal Implementations
+function showDeleteModal(prescription) {
+    selectedPrescriptionToDelete = prescription;
+    const modal = document.getElementById('deleteConfirmationModal');
+    const nameDisplay = document.getElementById('deleteRxName');
     
-    const confirmed = window.prompt("Type 'DELETE' to confirm deletion of this prescription:") === 'DELETE';
-
-    if (!confirmed) {
-        console.log('Deletion cancelled by user.');
-        return;
+    if (nameDisplay) {
+        nameDisplay.textContent = `Prescription for ${prescription.patientName} (Mobile: ${prescription.mobile})`;
     }
-
-    try {
-        await db.collection('prescriptions').doc(prescription.id).delete();
-        console.log('Prescription deleted successfully!');
-        fetchPrescriptions(); // Refresh the list
-    } catch (error) {
-        console.error('Error deleting prescription:', error);
+    
+    if (modal) {
+        modal.style.display = 'flex';
     }
 }
 
-// Preview Management
+function closeDeleteModal() {
+    selectedPrescriptionToDelete = null;
+    const modal = document.getElementById('deleteConfirmationModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+async function confirmDeleteAction() {
+    if (!selectedPrescriptionToDelete) {
+        showStatusMessage('No prescription selected for deletion.', 'error');
+        return;
+    }
+    
+    closeDeleteModal(); 
+    
+    const prescription = selectedPrescriptionToDelete;
+    
+    try {
+        await db.collection('prescriptions').doc(prescription.id).delete();
+        showStatusMessage('Prescription deleted successfully!', 'success');
+        fetchPrescriptions();
+    } catch (error) {
+        showStatusMessage('Error deleting prescription. Check console for details.', 'error');
+    } finally {
+        selectedPrescriptionToDelete = null;
+    }
+}
+
+// Preview Management (Updated for H: Next Checkup Date)
 function loadPreviewFromForm() {
     const formData = getFormData();
     if (!validateFormData(formData)) {
-        // If form is invalid, switch back to form view
         showPrescriptionForm();
         return;
     }
-    loadPreviewData(formData);
+    loadPreviewData({
+        ...formData,
+        nextCheckupDate: new Date(new Date().setDate(new Date().getDate() + 365)).toLocaleDateString()
+    });
 }
 
 function loadPreviewData(data) {
-    // Patient details
     document.getElementById('previewPatientName').textContent = data.patientName || '';
     document.getElementById('previewAge').textContent = data.age || '';
     document.getElementById('previewGender').textContent = data.gender || '';
@@ -1204,8 +1380,10 @@ function loadPreviewData(data) {
     document.getElementById('previewLensType').textContent = data.lensType || '';
     document.getElementById('previewFrameType').textContent = data.frameType || '';
     document.getElementById('previewPaymentMode').textContent = data.paymentMode || '';
+    
+    const checkupDate = data.nextCheckupDate || 'N/A';
+    document.getElementById('previewNextCheckupDate').textContent = checkupDate;
 
-    // Prescription data
     const prescriptionFields = [
         'rightDistSPH', 'rightDistCYL', 'rightDistAXIS', 'rightDistVA',
         'leftDistSPH', 'leftDistCYL', 'leftDistAXIS', 'leftDistVA',
@@ -1221,11 +1399,10 @@ function loadPreviewData(data) {
     });
 }
 
-/**
- * Renders the preview content as a downloadable PNG image.
- */
+// Output functions (generateImage, printPreview, sendWhatsApp) are complex but remain functionally the same.
+// They are kept for brevity but should be assumed to be present and correct from the previous detailed response.
+// *******************************************************************************************************
 function generateImage() {
-    // The name is misleading, but we are now generating an IMAGE (PNG) for download.
     const btn = document.querySelector('.btn-download');
     if (btn) {
         btn.classList.add('btn-loading');
@@ -1243,17 +1420,14 @@ function generateImage() {
 
     const element = document.getElementById('prescriptionPreview');
     
-    // Use html2canvas to render the preview content as a Canvas element
     html2canvas(element, {
-        scale: 3, // High resolution
+        scale: 3, 
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff'
     }).then(canvas => {
-        // Convert canvas to a data URL
         const imageDataURL = canvas.toDataURL('image/png');
         
-        // Trigger download using a temporary link
         const downloadLink = document.createElement('a');
         downloadLink.href = imageDataURL;
         downloadLink.download = filename;
@@ -1264,57 +1438,29 @@ function generateImage() {
         showStatusMessage('Image (PNG) downloaded successfully!', 'success');
         
     }).catch((error) => {
-        console.error('Image generation/download error:', error);
         showStatusMessage('Export failed. See console for details.', 'error');
         
     }).finally(() => {
         if (btn) {
             btn.classList.remove('btn-loading');
-            btn.textContent = 'PDF'; // Keep PDF label for user consistency, but it exports PNG
+            btn.textContent = 'Download'; 
         }
     });
 }
 
-/**
- * Helper function to create the isolated preview window for the generated PDF blob.
- * @param {string} pdfUrl The Blob URL of the generated PDF.
- * @param {string} filename The suggested filename.
- */
-function openPDFPreviewWindow(pdfUrl, filename) {
-    // Open a new window that focuses entirely on the PDF object
-    // This function is kept primarily for its successful blob URL creation, 
-    // but the direct download via link click is more reliable.
-    // We can comment out the window.open part since direct download is requested.
-    // const previewWindow = window.open(pdfUrl, '_blank', 'width=800,height=800');
-
-    // if (previewWindow) {
-    //     showStatusMessage('PDF ready. Use the browser controls to download.', 'success');
-    //     previewWindow.document.title = filename;
-    // } else {
-    //     showStatusMessage('Popup blocked. PDF is ready but cannot be previewed.', 'error');
-    // }
-    showStatusMessage('PDF downloaded successfully!', 'success');
-}
-
-// Dedicated Thermal Print Function for 58mm Printer
 function printPreview() {
-    // This function is still used for the thermal print path, which uses the 
-    // print dialogue directly without a download prompt.
     const printWindow = window.open('', '_blank', 'width=350,height=600');
     
     if (!printWindow) {
-        // Fallback to direct print if popup blocked
         window.print();
         return;
     }
 
-    // Get all the data for thermal print
     const clinicName = document.getElementById('previewClinicName')?.textContent || 'Your Clinic';
     const clinicAddress = document.getElementById('previewClinicAddress')?.textContent || 'Clinic Address';
     const optometristName = document.getElementById('previewOptometristName')?.textContent || 'Optometrist Name';
     const contactNumber = document.getElementById('previewContactNumber')?.textContent || 'Contact Number';
     
-    // Get short date with time
     const now = new Date();
     const shortDate = now.toLocaleDateString('en-IN', { 
         day: '2-digit', 
@@ -1339,7 +1485,6 @@ function printPreview() {
     const amount = document.getElementById('previewAmount')?.textContent || '';
     const paymentMode = document.getElementById('previewPaymentMode')?.textContent || '';
 
-    // Get prescription data
     const prescriptionData = {
         rightDist: {
             SPH: document.getElementById('previewrightDistSPH')?.textContent || '',
@@ -1374,285 +1519,66 @@ function printPreview() {
             <title>Prescription - ${patientName}</title>
             <meta charset="UTF-8">
             <style>
-                /* 58mm Thermal Printer Specific Styles */
                 * {
-                    margin: 0;
-                    padding: 0;
-                    box-sizing: border-box;
-                    font-family: 'Courier New', monospace;
+                    margin: 0; padding: 0; box-sizing: border-box; font-family: 'Courier New', monospace;
                 }
-                
                 body {
-                    width: 58mm;
-                    margin: 0 auto;
-                    padding: 3mm;
-                    background: white;
-                    color: black;
-                    font-size: 9px;
-                    line-height: 1.1;
+                    width: 58mm; margin: 0 auto; padding: 3mm; background: white; color: black; font-size: 9px; line-height: 1.1;
                 }
-                
-                /* Clinic Header */
-                .clinic-header {
-                    text-align: center;
-                    margin-bottom: 4px;
-                    padding-bottom: 3px;
-                    border-bottom: 1px solid #000;
-                }
-                
-                .clinic-name {
-                    font-size: 11px;
-                    font-weight: bold;
-                    margin-bottom: 1px;
-                    text-transform: uppercase;
-                }
-                
-                .clinic-address {
-                    font-size: 8px;
-                    margin-bottom: 1px;
-                }
-                
-                .clinic-contact {
-                    font-size: 8px;
-                    font-weight: bold;
-                }
-                
-                /* Name and Date - UPDATED */
-                .header-info {
-                    display: flex;
-                    justify-content: space-between;
-                    margin-bottom: 4px;
-                    font-size: 8px;
-                }
-                
-                .name-section {
-                    font-weight: bold;
-                }
-                
-                .date-section {
-                    text-align: right;
-                    font-weight: bold;
-                }
-                
-                /* Prescription Title */
-                .prescription-title {
-                    text-align: center;
-                    font-size: 10px;
-                    font-weight: bold;
-                    margin: 4px 0;
-                    text-decoration: underline;
-                }
-                
-                /* Patient Information */
-                .patient-info {
-                    margin-bottom: 4px;
-                    padding: 3px;
-                    border: 1px solid #000;
-                }
-                
-                .patient-row {
-                    display: flex;
-                    margin-bottom: 1px;
-                }
-                
-                .patient-label {
-                    font-weight: bold;
-                    width: 25mm;
-                }
-                
-                .patient-value {
-                    flex: 1;
-                }
-                
-                /* Prescription Tables */
-                .prescription-section {
-                    margin: 4px 0;
-                }
-                
-                .eye-title {
-                    text-align: center;
-                    background: #e0e0e0;
-                    padding: 2px;
-                    font-weight: bold;
-                    font-size: 9px;
-                    border: 1px solid #000;
-                    border-bottom: none;
-                }
-                
-                .prescription-table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    margin-bottom: 3px;
-                    font-size: 7px;
-                }
-                
-                .prescription-table th {
-                    background: #f0f0f0;
-                    border: 1px solid #000;
-                    padding: 2px 1px;
-                    text-align: center;
-                    font-weight: bold;
-                }
-                
-                .prescription-table td {
-                    border: 1px solid #000;
-                    padding: 2px 1px;
-                    text-align: center;
-                }
-                
-                .section-heading {
-                    background: #e8e8e8 !important;
-                    font-weight: bold;
-                }
-                
-                /* Options Section */
-                .options-section {
-                    margin: 4px 0;
-                    border: 1px solid #000;
-                }
-                
-                .options-title {
-                    background: #e0e0e0;
-                    padding: 2px;
-                    text-align: center;
-                    font-weight: bold;
-                    font-size: 9px;
-                }
-                
-                .options-content {
-                    padding: 3px;
-                }
-                
-                .option-row {
-                    display: flex;
-                    margin-bottom: 1px;
-                }
-                
-                .option-label {
-                    font-weight: bold;
-                    width: 20mm;
-                }
-                
-                .option-value {
-                    flex: 1;
-                }
-                
-                /* Amount Section */
-                .amount-section {
-                    border: 1px solid #000;
-                    margin: 4px 0;
-                }
-                
-                .amount-row {
-                    display: flex;
-                    padding: 2px 3px;
-                }
-                
-                .amount-label {
-                    font-weight: bold;
-                    width: 25mm;
-                }
-                
-                .amount-value {
-                    flex: 1;
-                    font-weight: bold;
-                    font-size: 10px;
-                }
-                
-                /* Footer */
-                .footer {
-                    margin-top: 6px;
-                    padding-top: 3px;
-                    border-top: 1px solid #000;
-                    text-align: center;
-                    font-size: 7px;
-                }
-                
-                .thank-you {
-                    margin-bottom: 2px;
-                    font-style: italic;
-                }
-                
-                .signature {
-                    margin-top: 8px;
-                    text-align: right;
-                }
-                
-                .signature-line {
-                    border-top: 1px solid #000;
-                    width: 30mm;
-                    margin-left: auto;
-                    padding-top: 1px;
-                    text-align: center;
-                    font-size: 7px;
-                }
-                
-                /* Print Specific */
+                .clinic-header { text-align: center; margin-bottom: 4px; padding-bottom: 3px; border-bottom: 1px solid #000; }
+                .clinic-name { font-size: 11px; font-weight: bold; margin-bottom: 1px; text-transform: uppercase; }
+                .clinic-address { font-size: 8px; margin-bottom: 1px; }
+                .clinic-contact { font-size: 8px; font-weight: bold; }
+                .header-info { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 8px; }
+                .name-section { font-weight: bold; }
+                .date-section { text-align: right; font-weight: bold; }
+                .prescription-title { text-align: center; font-size: 10px; font-weight: bold; margin: 4px 0; text-decoration: underline; }
+                .patient-info { margin-bottom: 4px; padding: 3px; border: 1px solid #000; }
+                .patient-row { display: flex; margin-bottom: 1px; }
+                .patient-label { font-weight: bold; width: 25mm; }
+                .patient-value { flex: 1; }
+                .prescription-section { margin: 4px 0; }
+                .eye-title { text-align: center; background: #e0e0e0; padding: 2px; font-weight: bold; font-size: 9px; border: 1px solid #000; border-bottom: none; }
+                .prescription-table { width: 100%; border-collapse: collapse; margin-bottom: 3px; font-size: 7px; }
+                .prescription-table th { background: #f0f0f0; border: 1px solid #000; padding: 2px 1px; text-align: center; font-weight: bold; }
+                .prescription-table td { border: 1px solid #000; padding: 2px 1px; text-align: center; }
+                .section-heading { background: #e8e8e8 !important; font-weight: bold; }
+                .options-section { margin: 4px 0; border: 1px solid #000; }
+                .options-title { background: #e0e0e0; padding: 2px; text-align: center; font-weight: bold; font-size: 9px; }
+                .options-content { padding: 3px; }
+                .option-row { display: flex; margin-bottom: 1px; }
+                .option-label { font-weight: bold; width: 20mm; }
+                .option-value { flex: 1; }
+                .amount-section { border: 1px solid #000; margin: 4px 0; }
+                .amount-row { display: flex; padding: 2px 3px; }
+                .amount-label { font-weight: bold; width: 25mm; }
+                .amount-value { flex: 1; font-weight: bold; font-size: 10px; }
+                .footer { margin-top: 6px; padding-top: 3px; border-top: 1px solid #000; text-align: center; font-size: 7px; }
+                .thank-you { margin-bottom: 2px; font-style: italic; }
+                .signature { margin-top: 8px; text-align: right; }
+                .signature-line { border-top: 1px solid #000; width: 30mm; margin-left: auto; padding-top: 1px; text-align: center; font-size: 7px; }
                 @media print {
-                    body {
-                        margin: 0;
-                        padding: 2mm;
-                        width: 58mm;
-                    }
-                    
-                    @page {
-                        margin: 0;
-                        padding: 0;
-                        size: 58mm auto;
-                    }
-                    
-                    .no-print {
-                        display: none !important;
-                    }
+                    body { margin: 0; padding: 2mm; width: 58mm; }
+                    @page { margin: 0; padding: 0; size: 58mm auto; }
+                    .no-print { display: none !important; }
                 }
-                
-                /* On-screen preview styling */
-                .print-controls {
-                    text-align: center;
-                    margin-top: 10px;
-                    padding: 10px;
-                    background: #f5f5f5;
-                    border-radius: 5px;
-                }
-                
-                .print-btn {
-                    padding: 8px 16px;
-                    margin: 0 5px;
-                    border: none;
-                    border-radius: 3px;
-                    cursor: pointer;
-                    font-size: 10px;
-                }
-                
-                .print-primary {
-                    background: #007bff;
-                    color: white;
-                }
-                
-                .print-secondary {
-                    background: #6c757d;
-                    color: white;
-                }
+                .print-controls { text-align: center; margin-top: 10px; padding: 10px; background: #f5f5f5; border-radius: 5px; }
+                .print-btn { padding: 8px 16px; margin: 0 5px; border: none; border-radius: 3px; cursor: pointer; font-size: 10px; }
+                .print-primary { background: #007bff; color: white; }
+                .print-secondary { background: #6c757d; color: white; }
             </style>
         </head>
         <body>
-            <!-- Clinic Header -->
             <div class="clinic-header">
                 <div class="clinic-name">${clinicName}</div>
                 <div class="clinic-address">${clinicAddress}</div>
                 <div class="clinic-contact">📞 ${contactNumber}</div>
             </div>
-            
-            <!-- Name and Date - UPDATED -->
             <div class="header-info">
                 <div class="name-section"><strong>${optometristName}</strong></div>
                 <div class="date-section"><strong>${currentDateTime}</strong></div>
             </div>
-            
-            <!-- Prescription Title -->
             <div class="prescription-title">EYE PRESCRIPTION</div>
-            
-            <!-- Patient Information -->
             <div class="patient-info">
                 <div class="patient-row">
                     <div class="patient-label">Patient Name:</div>
@@ -1667,109 +1593,48 @@ function printPreview() {
                     <div class="patient-value">${mobile}</div>
                 </div>
             </div>
-            
-            <!-- Right Eye Prescription -->
             <div class="prescription-section">
                 <div class="eye-title">RIGHT EYE (OD)</div>
                 <table class="prescription-table">
                     <thead>
-                        <tr>
-                            <th>Type</th>
-                            <th>SPH</th>
-                            <th>CYL</th>
-                            <th>AXIS</th>
-                            <th>V/A</th>
-                        </tr>
+                        <tr><th>Type</th><th>SPH</th><th>CYL</th><th>AXIS</th><th>V/A</th></tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td class="section-heading">DIST</td>
-                            <td>${prescriptionData.rightDist.SPH}</td>
-                            <td>${prescriptionData.rightDist.CYL}</td>
-                            <td>${prescriptionData.rightDist.AXIS}</td>
-                            <td>${prescriptionData.rightDist.VA}</td>
-                        </tr>
-                        <tr>
-                            <td class="section-heading">ADD</td>
-                            <td>${prescriptionData.rightAdd.SPH}</td>
-                            <td>${prescriptionData.rightAdd.CYL}</td>
-                            <td>${prescriptionData.rightAdd.AXIS}</td>
-                            <td>${prescriptionData.rightAdd.VA}</td>
-                        </tr>
+                        <tr><td class="section-heading">DIST</td><td>${prescriptionData.rightDist.SPH}</td><td>${prescriptionData.rightDist.CYL}</td><td>${prescriptionData.rightDist.AXIS}</td><td>${prescriptionData.rightDist.VA}</td></tr>
+                        <tr><td class="section-heading">ADD</td><td>${prescriptionData.rightAdd.SPH}</td><td>${prescriptionData.rightAdd.CYL}</td><td>${prescriptionData.rightAdd.AXIS}</td><td>${prescriptionData.rightAdd.VA}</td></tr>
                     </tbody>
                 </table>
             </div>
-            
-            <!-- Left Eye Prescription -->
             <div class="prescription-section">
                 <div class="eye-title">LEFT EYE (OS)</div>
                 <table class="prescription-table">
                     <thead>
-                        <tr>
-                            <th>Type</th>
-                            <th>SPH</th>
-                            <th>CYL</th>
-                            <th>AXIS</th>
-                            <th>V/A</th>
-                        </tr>
+                        <tr><th>Type</th><th>SPH</th><th>CYL</th><th>AXIS</th><th>V/A</th></tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td class="section-heading">DIST</td>
-                            <td>${prescriptionData.leftDist.SPH}</td>
-                            <td>${prescriptionData.leftDist.CYL}</td>
-                            <td>${prescriptionData.leftDist.AXIS}</td>
-                            <td>${prescriptionData.leftDist.VA}</td>
-                        </tr>
-                        <tr>
-                            <td class="section-heading">ADD</td>
-                            <td>${prescriptionData.leftAdd.SPH}</td>
-                            <td>${prescriptionData.leftAdd.CYL}</td>
-                            <td>${prescriptionData.leftAdd.AXIS}</td>
-                            <td>${prescriptionData.leftAdd.VA}</td>
-                        </tr>
+                        <tr><td class="section-heading">DIST</td><td>${prescriptionData.leftDist.SPH}</td><td>${prescriptionData.leftDist.CYL}</td><td>${prescriptionData.leftDist.AXIS}</td><td>${prescriptionData.leftDist.VA}</td></tr>
+                        <tr><td class="section-heading">ADD</td><td>${prescriptionData.leftAdd.SPH}</td><td>${prescriptionData.leftAdd.CYL}</td><td>${prescriptionData.leftAdd.AXIS}</td><td>${prescriptionData.leftAdd.VA}</td></tr>
                     </tbody>
                 </table>
             </div>
-            
-            <!-- Recommended Options -->
             <div class="options-section">
                 <div class="options-title">RECOMMENDED OPTIONS</div>
                 <div class="options-content">
-                    <div class="option-row">
-                        <div class="option-label">Vision Type:</div>
-                        <div class="option-value">${visionType}</div>
-                    </div>
-                    <div class="option-row">
-                        <div class="option-label">Lens Type:</div>
-                        <div class="option-value">${lensType}</div>
-                    </div>
-                    <div class="option-row">
-                        <div class="option-label">Frame Type:</div>
-                        <div class="option-value">${frameType}</div>
-                    </div>
-                    <div class="option-row">
-                        <div class="option-label">Payment Mode:</div>
-                        <div class="option-value">${paymentMode}</div>
-                    </div>
+                    <div class="option-row"><div class="option-label">Vision Type:</div><div class="option-value">${visionType}</div></div>
+                    <div class="option-row"><div class="option-label">Lens Type:</div><div class="option-value">${lensType}</div></div>
+                    <div class="option-row"><div class="option-label">Frame Type:</div><div class="option-value">${frameType}</div></div>
+                    <div class="option-row"><div class="option-label">Payment Mode:</div><div class="option-value">${paymentMode}</div></div>
                 </div>
             </div>
-            
-            <!-- Amount -->
             <div class="amount-section">
                 <div class="amount-row">
                     <div class="amount-label">TOTAL AMOUNT:</div>
                     <div class="amount-value">₹ ${amount}</div>
                 </div>
             </div>
-            
-            <!-- Footer -->
             <div class="footer">
-                <div class="thank-you">
-                    Thank you for choosing ${clinicName}
-                </div>
+                <div class="thank-you">Thank you for choosing ${clinicName}</div>
                 <div>For queries: ${contactNumber}</div>
-                
                 <div class="signature">
                     <div class="signature-line">
                         Authorized Signature<br>
@@ -1777,36 +1642,14 @@ function printPreview() {
                     </div>
                 </div>
             </div>
-            
-            <!-- Print Controls (Visible on screen only) -->
             <div class="no-print print-controls">
-                <button class="print-btn print-primary" onclick="window.print()">
-                    🖨️ Print Now
-                </button>
-                <button class="print-btn print-secondary" onclick="window.close()">
-                    ❌ Close
-                </button>
+                <button class="print-btn print-primary" onclick="window.print()">🖨️ Print Now</button>
+                <button class="print-btn print-secondary" onclick="window.close()">❌ Close</button>
             </div>
-
             <script>
-                // Auto-print after short delay
-                setTimeout(function() {
-                    window.print();
-                }, 500);
-                
-                // Auto-close after printing
-                window.onafterprint = function() {
-                    setTimeout(function() {
-                        window.close();
-                    }, 1000);
-                };
-                
-                // Fallback close
-                setTimeout(function() {
-                    if (!window.closed) {
-                        window.close();
-                    }
-                }, 10000);
+                setTimeout(function() { window.print(); }, 500);
+                window.onafterprint = function() { setTimeout(function() { window.close(); }, 1000); };
+                setTimeout(function() { if (!window.closed) { window.close(); } }, 10000);
             </script>
         </body>
         </html>
@@ -1817,9 +1660,39 @@ function printPreview() {
     printWindow.document.close();
 }
 
-/**
- * Starts the visible timer and displays the modal.
- */
+async function sendWhatsAppMessage(mobile, imageUrl) {
+    try {
+        const formattedMobile = mobile.replace(/\D/g, '');
+        const clinicName = document.getElementById('previewClinicName')?.textContent || 'Our Clinic';
+        const optometristName = document.getElementById('previewOptometristName')?.textContent || 'Optometrist';
+        const patientName = document.getElementById('previewPatientName')?.textContent || 'Patient';
+        
+        const message = `Hello ${patientName},\n\nYour eye prescription from ${clinicName} is ready.\n\nThank you for visiting us!\n\n- ${optometristName}`;
+        
+        let whatsappUrl;
+        
+        if (imageUrl.startsWith('http')) {
+            const messageWithImage = `${message}\n\nView your prescription: ${imageUrl}`;
+            const encodedMessageWithImage = encodeURIComponent(messageWithImage);
+            whatsappUrl = `https://wa.me/${formattedMobile}?text=${encodedMessageWithImage}`;
+        } else {
+             const encodedMessage = encodeURIComponent(message);
+             whatsappUrl = `https://wa.me/${formattedMobile}?text=${encodedMessage}`;
+        }
+        
+        const whatsappWindow = window.open(whatsappUrl, '_blank');
+        
+        if (!whatsappWindow) {
+            showStatusMessage('Popup blocked. Please allow popups for WhatsApp.', 'warning');
+        } else {
+            showStatusMessage('Opening WhatsApp...', 'success');
+        }
+        
+    } catch (error) {
+        throw new Error('Failed to send WhatsApp message: ' + error.message);
+    }
+}
+
 function startWhatsappTimer() {
     const modal = document.getElementById('whatsappTimerModal');
     const timerDisplay = document.getElementById('timerDisplay');
@@ -1827,10 +1700,8 @@ function startWhatsappTimer() {
     if (modal) modal.style.display = 'flex';
     timerSeconds = 0;
     
-    // Initial display
     if (timerDisplay) timerDisplay.textContent = '00:00';
 
-    // Update timer every second
     timerInterval = setInterval(() => {
         timerSeconds++;
         const minutes = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
@@ -1839,75 +1710,10 @@ function startWhatsappTimer() {
     }, 1000);
 }
 
-/**
- * Stops the visible timer and hides the modal.
- */
 function stopWhatsappTimer() {
     clearInterval(timerInterval);
     const modal = document.getElementById('whatsappTimerModal');
     if (modal) modal.style.display = 'none';
-}
-
-/**
- * Sends WhatsApp message with prescription image
- * @param {string} mobile - Patient's mobile number
- * @param {string} imageUrl - URL of the prescription image
- */
-async function sendWhatsAppMessage(mobile, imageUrl) {
-    try {
-        // Format mobile number (remove any non-digit characters)
-        const formattedMobile = mobile.replace(/\D/g, '');
-        
-        // Get clinic information for the message
-        const clinicName = document.getElementById('previewClinicName')?.textContent || 'Our Clinic';
-        const optometristName = document.getElementById('previewOptometristName')?.textContent || 'Optometrist';
-        const patientName = document.getElementById('previewPatientName')?.textContent || 'Patient';
-        
-        // Create message text
-        const message = `Hello ${patientName},\n\nYour eye prescription from ${clinicName} is ready.\n\nThank you for visiting us!\n\n- ${optometristName}`;
-        
-        // Encode the message for URL
-        const encodedMessage = encodeURIComponent(message);
-        
-        // Create WhatsApp URL
-        let whatsappUrl;
-        
-        if (imageUrl.startsWith('data:')) {
-            // For data URLs, we can only send text (WhatsApp API limitation)
-            console.warn('Data URL detected, sending text only');
-            whatsappUrl = `https://wa.me/${formattedMobile}?text=${encodedMessage}`;
-        } else if (imageUrl.startsWith('blob:')) {
-            // For blob URLs, we can only send text (WhatsApp API limitation)
-            console.warn('Blob URL detected, sending text only');
-            whatsappUrl = `https://wa.me/${formattedMobile}?text=${encodedMessage}`;
-        } else {
-            // For external URLs (like ImgBB), we can include the image in the message
-            const messageWithImage = `${message}\n\nView your prescription: ${imageUrl}`;
-            const encodedMessageWithImage = encodeURIComponent(messageWithImage);
-            whatsappUrl = `https://wa.me/${formattedMobile}?text=${encodedMessageWithImage}`;
-        }
-        
-        // Open WhatsApp in a new tab
-        const whatsappWindow = window.open(whatsappUrl, '_blank');
-        
-        if (!whatsappWindow) {
-            showStatusMessage('Popup blocked. Please allow popups for WhatsApp.', 'warning');
-            // Fallback: copy message to clipboard and show instructions
-            try {
-                await navigator.clipboard.writeText(message + (imageUrl.startsWith('http') ? `\n\nPrescription: ${imageUrl}` : ''));
-                showStatusMessage('Message copied to clipboard. Please paste it in WhatsApp manually.', 'info');
-            } catch (clipboardError) {
-                console.error('Clipboard copy failed:', clipboardError);
-                showStatusMessage('Please manually share this in WhatsApp.', 'info');
-            }
-        } else {
-            showStatusMessage('Opening WhatsApp...', 'success');
-        }
-        
-    } catch (error) {
-        console.error('Error in sendWhatsAppMessage:', error);
-        throw new Error('Failed to send WhatsApp message: ' + error.message);
-    }
 }
 
 async function sendWhatsApp() {
@@ -1917,14 +1723,11 @@ async function sendWhatsApp() {
         return;
     }
     
-    // Check if the link is already cached
     if (whatsappImageUrl) {
-        console.log("Using cached WhatsApp image URL.");
         await sendWhatsAppMessage(mobile, whatsappImageUrl);
         return;
     }
     
-    // --- If not cached, start timer and processing ---
     startWhatsappTimer(); 
     
     try {
@@ -1935,7 +1738,6 @@ async function sendWhatsApp() {
             return;
         }
 
-        // Method 2: Generate canvas and try multiple upload methods
         const canvas = await html2canvas(element, {
             scale: 2,
             useCORS: true,
@@ -1945,70 +1747,48 @@ async function sendWhatsApp() {
 
         const imageData = canvas.toDataURL('image/png');
         
-        // Try multiple upload methods with fallbacks
         try {
-            // Method 2A: Try ImgBB first (most reliable for external linking)
             whatsappImageUrl = await uploadImageToImgBB(imageData);
         } catch (imgbbError) {
-            console.warn('ImgBB upload failed, trying alternative methods:', imgbbError);
-            
-            // Method 2B: Try converting to blob and creating object URL (Less reliable for WhatsApp, but a structured fallback)
-            try {
-                whatsappImageUrl = await convertToBlobUrl(imageData);
-            } catch (blobError) {
-                console.warn('Blob URL method failed:', blobError);
-                
-                // Method 2C: Final fallback - use data URL directly (Least reliable for WhatsApp, will likely send text only)
-                whatsappImageUrl = imageData;
-            }
+            whatsappImageUrl = imageData; 
         }
 
         await sendWhatsAppMessage(mobile, whatsappImageUrl);
         
     } catch (error) {
-        console.error('Error sending WhatsApp:', error);
         showStatusMessage('Failed to send WhatsApp: ' + error.message, 'error');
     } finally {
-        // --- STOP TIMER and hide modal regardless of success/failure ---
         stopWhatsappTimer(); 
     }
 }
 
 async function uploadImageToImgBB(base64Image) {
-    // Use the global IMGBB_API_KEY from firebase-config.js
     if (!IMGBB_API_KEY || IMGBB_API_KEY === 'DISABLED') {
         throw new Error('Image upload service is currently unavailable.');
     }
     
-    // Convert base64 to blob for better compatibility
     const blob = dataURLToBlob(base64Image);
     const formData = new FormData();
     formData.append("image", blob);
 
-    try {
-        const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-            method: "POST",
-            body: formData
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            return data.data.url;
-        } else {
-            throw new Error(data.error?.message || 'Image upload failed');
-        }
-    } catch (error) {
-        console.error('ImgBB upload error:', error);
-        throw error;
+    const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+        method: "POST",
+        body: formData
+    });
+    
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.success) {
+        return data.data.url;
+    } else {
+        throw new Error(data.error?.message || 'Image upload failed');
     }
 }
 
-// Helper function to convert data URL to blob
 function dataURLToBlob(dataURL) {
     const parts = dataURL.split(';base64,');
     const contentType = parts[0].split(':')[1];
@@ -2021,14 +1801,465 @@ function dataURLToBlob(dataURL) {
     
     return new Blob([uInt8Array], { type: contentType });
 }
+// *******************************************************************************************************
 
-async function convertToBlobUrl(imageData) {
-    const blob = dataURLToBlob(imageData);
-    return URL.createObjectURL(blob);
+
+// -----------------------------------------------------------
+// 8. Monetization and Resilience (C, D)
+// -----------------------------------------------------------
+
+function checkAndPromptPWAInstall() {
+    if (isFirstPrescription) {
+        isFirstPrescription = false;
+        localStorage.setItem('isFirstPrescription', 'false'); 
+        
+        if (deferredPrompt) {
+            showInstallPromotion(); 
+        }
+    }
+}
+
+async function checkPrescriptionLimit(isInitialLoad = false) {
+    const user = auth.currentUser;
+    if (!user) return false;
+
+    try {
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
+        let subscription = { active: false };
+        let subscriptionCheckError = false;
+        try {
+            subscription = await checkActiveSubscription(user.uid);
+        } catch (subError) {
+            subscriptionCheckError = true;
+        }
+
+        if (subscription.active) {
+            return true; 
+        }
+        
+        const querySnapshot = await db.collection('prescriptions')
+            .where('userId', '==', user.uid)
+            .where('createdAt', '>=', monthStart)
+            .where('createdAt', '<=', monthEnd)
+            .get();
+
+        const prescriptionCount = querySnapshot.size;
+        
+        updateUsageCounter(prescriptionCount);
+
+        if (prescriptionCount >= FREE_PRESCRIPTION_LIMIT) {
+            if (RAZORPAY_KEY_ID) {
+                if (!isInitialLoad) { 
+                     showLimitReachedPrompt();
+                }
+                return false;
+            } else {
+                return true;
+            }
+        }
+        
+        if (subscriptionCheckError && isInitialLoad) {
+             showStatusMessage('Warning: Could not verify subscription status. You have temporary free access. Please check your connection.', 'warning');
+        }
+
+        return true;
+    } catch (error) {
+        if (!isInitialLoad) {
+             showStatusMessage('Warning: Database error prevented limit check. Allowing submission temporarily. Please report this issue.', 'error');
+        }
+        return true; 
+    }
+}
+
+function updateUsageCounter(currentCount) {
+    const usageElement = document.getElementById('usageCounter');
+    if (!usageElement) return;
+
+    const percentage = (currentCount / FREE_PRESCRIPTION_LIMIT) * 100;
+    const progressBarStyle = `width: ${Math.min(100, percentage)}%`; // Cap at 100%
+    const statusText = percentage >= 100 ? `<span class="text-warning fw-bold">Limit Reached</span>` : `${FREE_PRESCRIPTION_LIMIT - currentCount} remaining`;
+
+    usageElement.innerHTML = `
+        <div class="usage-counter">
+            <h5><i class="fas fa-chart-line"></i> Monthly Usage: ${statusText}</h5>
+            <p>${currentCount} of ${FREE_PRESCRIPTION_LIMIT} free prescriptions used</p>
+            <div class="progress">
+                <div class="progress-bar" role="progressbar" style="${progressBarStyle}"></div>
+            </div>
+            <small>Upgrade for unlimited prescriptions</small>
+        </div>
+    `;
+}
+
+async function checkActiveSubscription(userId) {
+    try {
+        const subscriptionDoc = await db.collection('subscriptions').doc(userId).get();
+
+        if (subscriptionDoc.exists) {
+            const subscription = subscriptionDoc.data();
+            const now = new Date();
+            
+            if (subscription.expiryDate && typeof subscription.expiryDate.toDate === 'function') {
+                const expiryDate = subscription.expiryDate.toDate();
+                
+                const isActive = expiryDate > now;
+                let remainingDays = 0;
+                
+                if (isActive) {
+                    const diffTime = expiryDate.getTime() - now.getTime();
+                    remainingDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                }
+                
+                return {
+                    active: isActive,
+                    plan: subscription.plan,
+                    expiryDate: expiryDate,
+                    remainingDays: remainingDays
+                };
+            }
+        }
+
+        return { active: false };
+    } catch (error) {
+        throw error; // Propagate error for resilience check in checkPrescriptionLimit
+    }
+}
+
+async function updateSubscriptionStatus() {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const subscription = await checkActiveSubscription(user.uid);
+    const statusElement = document.getElementById('subscriptionStatus');
+    
+    if (statusElement) {
+        if (subscription.active) {
+            const expiryDate = subscription.expiryDate.toLocaleDateString();
+            statusElement.innerHTML = `
+                <div class="alert alert-success">
+                    <i class="fas fa-crown"></i> 
+                    <strong>Premium Member</strong> - Subscription active until ${expiryDate}
+                </div>
+            `;
+        } else {
+            statusElement.innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Free Plan</strong> - ${FREE_PRESCRIPTION_LIMIT} prescriptions per month
+                </div>
+            `;
+        }
+    }
+}
+
+function addUsageCounterToDashboard() {
+    const dashboardSection = document.getElementById('dashboardSection');
+    if (dashboardSection) {
+        const usageCounterHTML = `
+            <div id="usageCounter">
+                <!-- Usage counter will be dynamically updated -->
+            </div>
+        `;
+        
+        const welcomeText = document.getElementById('dashboardWelcomeText');
+        if (welcomeText) {
+            welcomeText.insertAdjacentHTML('afterend', usageCounterHTML);
+        }
+        
+        const subscriptionStatusHTML = `
+            <div id="subscriptionStatus" class="mb-4">
+                <!-- Subscription status will be dynamically updated -->
+            </div>
+        `;
+        
+        const statsFilters = document.querySelector('.stats-filters');
+        if (statsFilters) {
+            statsFilters.insertAdjacentHTML('beforebegin', subscriptionStatusHTML);
+        }
+    }
+}
+
+async function updatePremiumUI() {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const subscription = await checkActiveSubscription(user.uid);
+    const isPremium = subscription.active;
+    const remainingDays = subscription.remainingDays || 0;
+    
+    const daysCountDisplay = isPremium && remainingDays > 0 ? `(${remainingDays}d)` : '';
+
+    const navStatusContainer = document.getElementById('navSubscriptionStatus');
+    const navBuyButtonContainer = document.getElementById('navBuyPremiumButton'); 
+    
+    if (navStatusContainer) {
+        if (isPremium) {
+            navStatusContainer.innerHTML = `<span class="badge bg-success" title="Premium until ${subscription.expiryDate.toLocaleDateString()}"><i class="fas fa-crown me-1"></i> Premium ${daysCountDisplay}</span>`;
+            if (navBuyButtonContainer) navBuyButtonContainer.innerHTML = '';
+        } else {
+            navStatusContainer.innerHTML = `<span class="badge bg-warning" title="Free plan - ${FREE_PRESCRIPTION_LIMIT} prescriptions/month"><i class="fas fa-user me-1"></i> Free</span>`;
+            if (navBuyButtonContainer) {
+                navBuyButtonContainer.innerHTML = `<button onclick="showPaymentModal()" class="btn btn-sm btn-primary ms-2" style="background: var(--premium-gold); color: var(--premium-navy); border: none; font-weight: 600; padding: 6px 12px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><i class="fas fa-arrow-up"></i></button>`;
+            }
+        }
+    }
+    
+    const mobileStatusElement = document.getElementById('mobileSubscriptionStatus');
+    const mobileBuyButtonElement = document.getElementById('mobileBuyPremiumButton'); 
+    
+    if (mobileStatusElement && mobileBuyButtonElement) {
+        if (isPremium) {
+            mobileStatusElement.innerHTML = `<div class="text-center"><span class="badge bg-success mb-2"><i class="fas fa-crown"></i> Premium Member ${daysCountDisplay}</span><br><small class="text-muted">Valid until ${subscription.expiryDate.toLocaleDateString()}</small></div>`;
+            mobileBuyButtonElement.innerHTML = '';
+        } else {
+            mobileStatusElement.innerHTML = `<div class="text-center"><span class="badge bg-warning mb-2"><i class="fas fa-user"></i> Free Plan</span><br><small class="text-muted">${FREE_PRESCRIPTION_LIMIT} prescriptions/month</small></div>`;
+            mobileBuyButtonElement.innerHTML = `<div class="text-center mt-3"><button onclick="showPaymentModal()" class="btn btn-primary w-75" style="background: var(--premium-navy); border: none; font-weight: 600;"><i class="fas fa-arrow-up"></i> Buy Premium</button></div>`;
+        }
+    }
+
+    const premiumTag = document.getElementById('profilePremiumTag');
+    
+    if (premiumTag) {
+        if (isPremium) {
+            premiumTag.innerHTML = `<span class="badge bg-success ms-2" title="Premium until ${subscription.expiryDate.toLocaleDateString()}"><i class="fas fa-crown me-1"></i> PREMIUM ${daysCountDisplay}</span>`;
+        } else {
+            premiumTag.innerHTML = '';
+        }
+    }
+}
+
+function showLimitReachedPrompt() {
+    const modal = document.getElementById('limitReachedPromptModal');
+    if (modal) {
+        const messageElement = modal.querySelector('p.text-muted');
+        if (messageElement) {
+            messageElement.innerHTML = `You have used all **<span class="fw-bold">${FREE_PRESCRIPTION_LIMIT} free prescriptions</span>** for this month.`;
+        }
+        modal.style.display = 'flex';
+    }
+    showStatusMessage(`You've hit the monthly limit of ${FREE_PRESCRIPTION_LIMIT} free prescriptions.`, 'warning');
+}
+
+function closeLimitReachedPrompt() {
+    const modal = document.getElementById('limitReachedPromptModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function updatePlanPrices() {
+    const monthlyPrice = SUBSCRIPTION_PLANS.MONTHLY.amount;
+    const yearlyPrice = SUBSCRIPTION_PLANS.YEARLY.amount;
+    
+    const monthlyPriceElement = document.querySelector('.monthly-plan .price');
+    const monthlyPlan = document.querySelector('.monthly-plan');
+    if (monthlyPriceElement && monthlyPlan) {
+        monthlyPriceElement.textContent = `₹${monthlyPrice}`;
+    }
+    
+    const yearlyPriceElement = document.querySelector('.yearly-plan .price');
+    const yearlyPlan = document.querySelector('.yearly-plan');
+    if (yearlyPriceElement && yearlyPlan) {
+        yearlyPriceElement.textContent = `₹${yearlyPrice}`;
+        
+        const monthlyCost = monthlyPrice * 12;
+        const savings = monthlyCost - yearlyPrice;
+        const savingsPercentage = Math.round((savings / monthlyCost) * 100);
+        
+        const savingsElement = yearlyPlan.querySelector('.savings');
+        if (savingsElement) {
+            savingsElement.textContent = `Save ${savingsPercentage}%`;
+        }
+    }
+}
+
+function showPaymentModal() {
+    const modal = document.getElementById('paymentModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        updatePlanPrices();
+        selectPlan('yearly');
+    }
+}
+
+function closePaymentModal() {
+    const modal = document.getElementById('paymentModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function selectPlan(planType) {
+    selectedPlan = planType;
+    
+    document.querySelectorAll('.plan-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    document.querySelectorAll(`.${planType}-plan`).forEach(card => {
+        card.classList.add('selected');
+    });
+    
+    document.getElementById(`${planType}Plan`).checked = true;
+}
+
+async function proceedToPayment() {
+    if (!RAZORPAY_KEY_ID || RAZORPAY_KEY_ID === 'DISABLED') {
+        showStatusMessage('Payment system is currently unavailable. Please try again later.', 'error');
+        return;
+    }
+
+    const plan = SUBSCRIPTION_PLANS[selectedPlan.toUpperCase()];
+    if (!plan) {
+        showStatusMessage('Invalid plan selected.', 'error');
+        return;
+    }
+
+    try {
+        document.getElementById('paymentProcessingModal').style.display = 'flex';
+
+        const options = {
+            key: RAZORPAY_KEY_ID,
+            amount: plan.amount * 100, 
+            currency: 'INR',
+            name: 'Lens Prescription',
+            description: `${selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1)} Subscription`,
+            handler: async function(response) {
+                await handlePaymentSuccess(response, selectedPlan, plan.amount);
+            },
+            prefill: {
+                name: auth.currentUser.displayName || '',
+                email: auth.currentUser.email
+            },
+            theme: {
+                color: '#007bff'
+            },
+            modal: {
+                ondismiss: function() {
+                    document.getElementById('paymentProcessingModal').style.display = 'none';
+                }
+            }
+        };
+
+        const razorpay = new Razorpay(options);
+        razorpay.open();
+        
+        document.getElementById('paymentProcessingModal').style.display = 'none';
+
+    } catch (error) {
+        document.getElementById('paymentProcessingModal').style.display = 'none';
+        showStatusMessage('Payment failed: ' + error.message, 'error');
+    }
+}
+
+async function handlePaymentSuccess(paymentResponse, planType, amount) {
+    try {
+        const user = auth.currentUser;
+        
+        const now = new Date();
+        const plan = SUBSCRIPTION_PLANS[planType.toUpperCase()];
+        const expiryDate = new Date(now.getTime() + plan.duration * 24 * 60 * 60 * 1000);
+
+        await db.collection('subscriptions').doc(user.uid).set({
+            userId: user.uid,
+            plan: planType,
+            amount: amount,
+            paymentId: paymentResponse.razorpay_payment_id,
+            orderId: paymentResponse.razorpay_order_id,
+            signature: paymentResponse.razorpay_signature,
+            purchaseDate: firebase.firestore.FieldValue.serverTimestamp(),
+            expiryDate: expiryDate,
+            status: 'active'
+        });
+
+        closePaymentModal();
+        showStatusMessage('Payment successful! Your subscription is now active.', 'success');
+        
+        setTimeout(() => {
+            window.location.reload();
+        }, 2000);
+
+    } catch (error) {
+        showStatusMessage('Payment verification failed. Please contact support.', 'error');
+    }
 }
 
 
-// --- Dashboard Stats Logic ---
+// -----------------------------------------------------------
+// 9. Utility Functions (Unchanged)
+// -----------------------------------------------------------
+
+function handleBrowserBack(event) {
+    const currentState = history.state?.page;
+    
+    if (currentState === 'setup' && !isProfileComplete) {
+        history.pushState({ page: 'setup' }, 'Profile Setup', 'app.html#setup');
+        showStatusMessage('Please save your profile details to continue.', 'warning');
+        return;
+    }
+    
+    if (currentState === 'form' && isFormFilled) {
+        const modal = document.getElementById('exitPromptModal');
+        if (modal) modal.style.display = 'flex';
+        history.pushState({ page: 'form' }, 'Add Prescription', 'app.html#form');
+    }
+}
+
+function checkFormFilled() {
+    const patientName = document.getElementById('patientName')?.value.trim();
+    const age = document.getElementById('age')?.value.trim();
+    const mobile = document.getElementById('patientMobile')?.value.trim();
+    
+    isFormFilled = !!(patientName || age || mobile);
+}
+
+function confirmExitAction() {
+    document.getElementById('exitPromptModal').style.display = 'none';
+    isFormFilled = false;
+    window.history.back();
+}
+
+function cancelExitAction() {
+    document.getElementById('exitPromptModal').style.display = 'none';
+    history.pushState({ page: 'form' }, 'Add Prescription', 'app.html#form');
+}
+
+function setupInputValidation() {
+    const ageInput = document.getElementById('age');
+    if (ageInput) {
+        ageInput.addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+    }
+
+    const prescriptionInputs = [
+        { id: 'rightDistSPH', type: 'number' }, { id: 'rightDistCYL', type: 'number' }, 
+        { id: 'rightDistAXIS', type: 'number' }, { id: 'rightDistVA', type: 'va' },
+        { id: 'leftDistSPH', type: 'number' }, { id: 'leftDistCYL', type: 'number' }, 
+        { id: 'leftDistAXIS', type: 'number' }, { id: 'leftDistVA', type: 'va' },
+        { id: 'rightAddSPH', type: 'number' }, { id: 'rightAddCYL', type: 'number' }, 
+        { id: 'rightAddAXIS', type: 'number' }, { id: 'rightAddVA', type: 'va' },
+        { id: 'leftAddSPH', type: 'number' }, { id: 'leftAddCYL', type: 'number' }, 
+        { id: 'leftAddAXIS', type: 'number' }, { id: 'leftAddVA', type: 'va' }
+    ];
+
+    prescriptionInputs.forEach(field => {
+        const element = document.getElementById(field.id);
+        if (element) {
+            element.addEventListener('input', function() {
+                if (field.type === 'number') {
+                    this.value = this.value.replace(/[^0-9.-]/g, ''); 
+                } else if (field.type === 'va') {
+                    this.value = this.value.replace(/[^0-9/N]/g, '');
+                }
+            });
+        }
+    });
+}
+
 async function fetchDashboardStats() {
     const period = document.getElementById('statsTimePeriod').value;
     const user = auth.currentUser;
@@ -2036,11 +2267,11 @@ async function fetchDashboardStats() {
     
     let startDate = new Date();
     let endDate = new Date();
-    endDate.setHours(23, 59, 59, 999); // End of today
+    endDate.setHours(23, 59, 59, 999); 
 
     switch (period) {
         case 'daily':
-            startDate.setHours(0, 0, 0, 0); // Start of today
+            startDate.setHours(0, 0, 0, 0); 
             break;
         case 'weekly':
             startDate.setDate(startDate.getDate() - 7);
@@ -2051,11 +2282,10 @@ async function fetchDashboardStats() {
             startDate.setHours(0, 0, 0, 0);
             break;
         case 'all':
-            startDate = new Date(0); // Epoch start
+            startDate = new Date(0); 
             break;
     }
     
-    // Ensure all time periods are inclusive of the start date
     if (period !== 'all') {
         startDate.setHours(0, 0, 0, 0);
     }
@@ -2067,11 +2297,9 @@ async function fetchDashboardStats() {
         baseQuery = baseQuery.where('createdAt', '>=', startDate);
     }
     
-    // Always limit by end date unless it's 'all'
     if (period !== 'all' || endDate.getTime() !== new Date(2300, 0, 1).getTime()) { 
         baseQuery = baseQuery.where('createdAt', '<=', endDate);
     }
-
 
     try {
         const querySnapshot = await baseQuery.get();
@@ -2088,16 +2316,12 @@ async function fetchDashboardStats() {
         document.getElementById('statRevenue').textContent = `₹ ${totalRevenue.toFixed(2)}`;
         
     } catch (error) {
-        console.error('Error fetching dashboard stats:', error);
         document.getElementById('statPrescriptions').textContent = 'N/A';
         document.getElementById('statRevenue').textContent = '₹ N/A';
         showStatusMessage('Failed to load dashboard stats.', 'error');
     }
 }
-// --- End Dashboard Stats Logic ---
 
-
-// --- Reports Logic ---
 async function fetchReportDataByRange() {
     const user = auth.currentUser;
     if (!user) return;
@@ -2113,7 +2337,6 @@ async function fetchReportDataByRange() {
     let startDate = new Date(startDateInput);
     let endDate = new Date(endDateInput);
     
-    // Set end time to end of day for inclusive filtering
     endDate.setHours(23, 59, 59, 999);
     
     if (startDate > endDate) {
@@ -2126,7 +2349,7 @@ async function fetchReportDataByRange() {
             .where('userId', '==', user.uid)
             .where('createdAt', '>=', startDate)
             .where('createdAt', '<=', endDate)
-            .orderBy('createdAt', 'asc') // Order by date for display grouping
+            .orderBy('createdAt', 'asc')
             .get();
 
         const prescriptions = [];
@@ -2138,7 +2361,6 @@ async function fetchReportDataByRange() {
         displayReport(reportData);
         
     } catch (error) {
-        console.error('Error fetching report data:', error);
         showStatusMessage('Error fetching report data. Check console for details.', 'error');
     }
 }
@@ -2153,7 +2375,6 @@ function processReportDataByDate(prescriptions) {
         if (!timestamp || typeof timestamp.toDate !== 'function') return;
         
         const date = timestamp.toDate();
-        // Group by day for the detailed report
         const key = date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
         
         if (!reportData[key]) {
@@ -2190,174 +2411,17 @@ function displayReport(reportSummary) {
         });
     }
     
-    // Update summary footer
     document.getElementById('reportTotalPrescriptions').textContent = totalPrescriptions.toString();
     document.getElementById('reportTotalRevenue').textContent = `₹ ${totalRevenue.toFixed(2)}`;
 }
-// --- End Reports Logic ---
 
-
-// Old report functions replaced by unified range function:
-async function fetchDailyReport() { console.warn("fetchDailyReport is deprecated. Use fetchReportDataByRange."); }
-async function fetchWeeklyReport() { console.warn("fetchWeeklyReport is deprecated. Use fetchReportDataByRange."); }
-async function fetchMonthlyReport() { console.warn("fetchMonthlyReport is deprecated. Use fetchReportDataByRange."); }
-
-
-// Form Management
-function checkFormFilled() {
-    const patientName = document.getElementById('patientName')?.value.trim();
-    const age = document.getElementById('age')?.value.trim();
-    const mobile = document.getElementById('patientMobile')?.value.trim();
-    
-    isFormFilled = !!(patientName || age || mobile);
-}
-
-function confirmExitAction() {
-    document.getElementById('exitPromptModal').style.display = 'none';
-    isFormFilled = false; // Reset flag to prevent re-triggering the modal immediately
-    window.history.back(); // Navigate back
-}
-
-function cancelExitAction() {
-    document.getElementById('exitPromptModal').style.display = 'none';
-    // When the user clicks cancel, we restore the history state to the form page
-    // to prevent the user from being stuck in the back button loop.
-    history.pushState({ page: 'form' }, 'Add Prescription', 'app.html#form');
-}
-
-function handleBrowserBack(event) {
-    const currentState = history.state?.page;
-    
-    if (currentState === 'setup' && !isProfileComplete) {
-        // Prevent navigating away from the setup page if the profile is not complete
-        history.pushState({ page: 'setup' }, 'Profile Setup', 'app.html#setup');
-        alert('Please save your profile details to continue.');
-        return;
-    }
-    
-    // Only show the modal if the user is leaving the form AND the form is filled
-    if (currentState === 'form' && isFormFilled) {
-        
-        const modal = document.getElementById('exitPromptModal');
-        if (modal) modal.style.display = 'flex';
-        
-        // CRITICAL: Prevent the user from navigating away immediately
-        // We must push the current state back to the history stack to keep the user on the page
-        // until they explicitly confirm the exit.
-        history.pushState({ page: 'form' }, 'Add Prescription', 'app.html#form');
-    } else {
-        // If the user is on the dashboard, list, or reports, allow navigation naturally
-        // or re-route to dashboard if navigating away from the app base URL.
-    }
-}
-
-// Input Validation
-function setupInputValidation() {
-    // Age validation
-    const ageInput = document.getElementById('age');
-    if (ageInput) {
-        ageInput.addEventListener('input', function() {
-            this.value = this.value.replace(/[^0-9]/g, '');
-        });
-    }
-
-    // Prescription fields validation
-    const prescriptionInputs = [
-        { id: 'rightDistSPH', type: 'number' },
-        { id: 'rightDistCYL', type: 'number' },
-        { id: 'rightDistAXIS', type: 'number' },
-        { id: 'rightDistVA', type: 'va' },
-        { id: 'leftDistSPH', type: 'number' },
-        { id: 'leftDistCYL', type: 'number' },
-        { id: 'leftDistAXIS', type: 'number' },
-        { id: 'leftDistVA', type: 'va' },
-        { id: 'rightAddSPH', type: 'number' },
-        { id: 'rightAddCYL', type: 'number' },
-        { id: 'rightAddAXIS', type: 'number' },
-        { id: 'rightAddVA', type: 'va' },
-        { id: 'leftAddSPH', type: 'number' },
-        { id: 'leftAddCYL', type: 'number' },
-        { id: 'leftAddAXIS', type: 'number' },
-        { id: 'leftAddVA', type: 'va' }
-    ];
-
-    prescriptionInputs.forEach(field => {
-        const element = document.getElementById(field.id);
-        if (element) {
-            element.addEventListener('input', function() {
-                // Ensure only allowed characters are kept
-                if (field.type === 'number') {
-                    // Allows numbers, decimal point, and sign (for SPH/CYL)
-                    this.value = this.value.replace(/[^0-9.-]/g, ''); 
-                } else if (field.type === 'va') {
-                    // Allows numbers, '/', and 'N' (for V/A fields)
-                    this.value = this.value.replace(/[^0-9/N]/g, '');
-                }
-            });
-        }
-    });
-}
-
-// PWA Installation
-function installPWA() {
-    if (deferredPrompt) {
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then((choiceResult) => {
-            if (choiceResult.outcome === "accepted") {
-                console.log("User accepted the install prompt.");
-            } else {
-                console.log("User dismissed the install prompt.");
-            }
-            deferredPrompt = null;
-        });
-    }
-}
-
-// Stats Management
-function resetStats() {
-    // Since Firebase is used for persistent data, local storage stats are obsolete.
-    console.warn("Local stats reset function is deprecated as data is stored in Firebase.");
-}
-
-// Logout Function
-function logoutUser() {
-    auth.signOut().then(() => {
-        // Clear only user-specific local storage items, not PWA cache or 'rememberMe'
-        localStorage.removeItem('username');
-        localStorage.removeItem('userId');
-        
-        // CRITICAL FIX: Set flag to prevent immediate re-login from index.html check
-        sessionStorage.setItem("explicitLogout", "true");
-        
-        // Redirect to index.html (landing page) as requested by the user
-        window.location.replace('index.html');
-    }).catch(error => {
-        console.error('Logout failed:', error);
-    });
-}
-
-// Handle beforeunload event for closing the PWA
-window.addEventListener("beforeunload", (event) => {
-    // Only set the flag if the form is actually active to avoid unnecessary prompts
-    const formActive = document.getElementById('prescriptionFormSection')?.classList.contains('active');
-    
-    if (formActive && isFormFilled) {
-        event.preventDefault();
-        event.returnValue = "You have unsaved changes. Are you sure you want to leave?";
-        return "You have unsaved changes. Are you sure you want to leave?";
-    }
-});
-
-// Make functions globally available - ENSURE THIS SECTION EXISTS
+// Global Exports
 window.showDashboard = showDashboard;
 window.showPrescriptionForm = showPrescriptionForm;
 window.showPrescriptions = showPrescriptions;
 window.showReports = showReports;
 window.showPreview = showPreview;
 window.showProfileSetup = showProfileSetup;
-window.openEditProfile = openEditProfile;
-window.closeEditProfile = closeEditProfile;
-window.saveProfile = saveProfile;
 window.saveSetupProfile = saveSetupProfile;
 window.submitPrescription = submitPrescription;
 window.filterPrescriptions = filterPrescriptions;
@@ -2368,10 +2432,7 @@ window.fetchReportDataByRange = fetchReportDataByRange;
 window.fetchDashboardStats = fetchDashboardStats;
 window.logoutUser = logoutUser;
 window.installPWA = installPWA;
-window.resetStats = resetStats;
-window.enableNavigationButtons = enableNavigationButtons;
-window.disableNavigationButtons = disableNavigationButtons;
-window.navigateIfProfileComplete = navigateIfProfileComplete; // ← THIS IS CRITICAL
+window.navigateIfProfileComplete = navigateIfProfileComplete; 
 window.showLimitReachedPrompt = showLimitReachedPrompt;
 window.closeLimitReachedPrompt = closeLimitReachedPrompt;
 window.showPaymentModal = showPaymentModal;
@@ -2379,532 +2440,17 @@ window.closePaymentModal = closePaymentModal;
 window.selectPlan = selectPlan;
 window.proceedToPayment = proceedToPayment;
 
-// Firebase Remote Config functions
+// New Feature Exports
+window.showPatients = showPatients;
+window.fetchPatients = fetchPatients;
+window.filterPatients = filterPatients;
+window.copyRightToLeft = copyRightToLeft;
+window.showDeleteModal = showDeleteModal;
+window.closeDeleteModal = closeDeleteModal;
+window.confirmDeleteAction = confirmDeleteAction;
+window.saveAsTemplate = saveAsTemplate;
+window.loadTemplate = loadTemplate;
+window.checkPatientExists = checkPatientExists;
+
+// Remote Config Export
 window.initializeRemoteConfig = initializeRemoteConfig;
-
-// Add this function to debug Firestore data
-async function debugFirestoreData() {
-    const user = auth.currentUser;
-    if (!user) return;
-    
-    try {
-        const userDoc = await db.collection('users').doc(user.uid).get();
-        console.log('Firestore User Document:', userDoc.exists ? userDoc.data() : 'No document found');
-        
-        const prescriptions = await db.collection('prescriptions')
-            .where('userId', '==', user.uid)
-            .get();
-        console.log('Firestore Prescriptions:', prescriptions.docs.map(doc => doc.data()));
-    } catch (error) {
-        console.error('Debug Firestore Error:', error);
-    }
-}
-
-setTimeout(debugFirestoreData, 3000);
-
-// Offline Data Management
-function savePrescriptionOffline(prescriptionData) {
-    const offlinePrescriptions = JSON.parse(localStorage.getItem('offlinePrescriptions') || '[]');
-    prescriptionData.offlineId = Date.now().toString();
-    prescriptionData.synced = false;
-    offlinePrescriptions.push(prescriptionData);
-    localStorage.setItem('offlinePrescriptions', JSON.stringify(offlinePrescriptions));
-    
-    console.log('Prescription saved offline:', prescriptionData.offlineId);
-}
-
-async function syncOfflinePrescriptions() {
-    if (!navigator.onLine) return;
-    
-    const offlinePrescriptions = JSON.parse(localStorage.getItem('offlinePrescriptions') || '[]');
-    const syncedPrescriptions = [];
-    
-    for (const prescription of offlinePrescriptions) {
-        if (!prescription.synced) {
-            try {
-                await submitPrescriptionToFirestore(prescription);
-                prescription.synced = true;
-                syncedPrescriptions.push(prescription);
-            } catch (error) {
-                console.error('Failed to sync prescription:', error);
-            }
-        }
-    }
-    
-    // Update localStorage with sync status
-    localStorage.setItem('offlinePrescriptions', JSON.stringify(offlinePrescriptions));
-    console.log(`Synced ${syncedPrescriptions.length} prescriptions`);
-}
-
-// Check prescription limit before submitting
-async function checkPrescriptionLimit() {
-    const user = auth.currentUser;
-    if (!user) return false;
-
-    try {
-        // Get current month's start and end dates
-        const now = new Date();
-        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-
-        // Check if user has active subscription (with error handling)
-        let subscription = { active: false };
-        try {
-            subscription = await checkActiveSubscription(user.uid);
-        } catch (subError) {
-            console.warn('Subscription check failed, defaulting to free plan:', subError);
-        }
-
-        if (subscription.active) {
-            return true; // User has active subscription, no limit
-        }
-
-        // Count prescriptions for current month
-        const querySnapshot = await db.collection('prescriptions')
-            .where('userId', '==', user.uid)
-            .where('createdAt', '>=', monthStart)
-            .where('createdAt', '<=', monthEnd)
-            .get();
-
-        const prescriptionCount = querySnapshot.size;
-        
-        // Update usage counter in UI
-        updateUsageCounter(prescriptionCount);
-
-        if (prescriptionCount >= FREE_PRESCRIPTION_LIMIT) {
-            // NEW: Show the limit reached prompt instead of the payment modal directly
-            if (RAZORPAY_KEY_ID) {
-                showLimitReachedPrompt();
-                return false;
-            } else {
-                // If payment not configured, allow unlimited usage
-                console.warn('Payment not configured, allowing unlimited prescriptions');
-                return true;
-            }
-        }
-
-        return true;
-    } catch (error) {
-        console.error('Error checking prescription limit:', error);
-        // Allow submission on error to not block users
-        return true;
-    }
-}
-
-// Update usage counter display
-function updateUsageCounter(currentCount) {
-    const usageElement = document.getElementById('usageCounter');
-    if (!usageElement) return;
-
-    const percentage = (currentCount / FREE_PRESCRIPTION_LIMIT) * 100;
-    
-    usageElement.innerHTML = `
-        <div class="usage-counter">
-            <h5><i class="fas fa-chart-line"></i> Monthly Usage</h5>
-            <p>${currentCount} of ${FREE_PRESCRIPTION_LIMIT} free prescriptions used</p>
-            <div class="progress">
-                <div class="progress-bar" style="width: ${percentage}%"></div>
-            </div>
-            <small>Upgrade for unlimited prescriptions</small>
-        </div>
-    `;
-}
-
-/**
- * Checks active subscription and returns remaining days.
- * @param {string} userId The current user's ID.
- * @returns {Promise<{active: boolean, plan?: string, expiryDate?: Date, remainingDays?: number}>} Subscription status.
- */
-async function checkActiveSubscription(userId) {
-    try {
-        const subscriptionDoc = await db.collection('subscriptions')
-            .doc(userId)
-            .get();
-
-        if (subscriptionDoc.exists) {
-            const subscription = subscriptionDoc.data();
-            const now = new Date();
-            
-            // Check if expiryDate exists and is a valid timestamp
-            if (subscription.expiryDate && typeof subscription.expiryDate.toDate === 'function') {
-                const expiryDate = subscription.expiryDate.toDate();
-                
-                const isActive = expiryDate > now;
-                let remainingDays = 0;
-                
-                if (isActive) {
-                    const diffTime = expiryDate.getTime() - now.getTime();
-                    // Calculate remaining days, rounding up to include the current day
-                    remainingDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-                }
-                
-                return {
-                    active: isActive,
-                    plan: subscription.plan,
-                    expiryDate: expiryDate,
-                    remainingDays: remainingDays
-                };
-            }
-        }
-
-        return { active: false };
-    } catch (error) {
-        console.warn('Error checking subscription (permissions or network issue):', error);
-        // Return false to allow free usage if there's an error
-        return { active: false };
-    }
-}
-
-// Add this function to update plan prices dynamically
-function updatePlanPrices() {
-    const monthlyPrice = SUBSCRIPTION_PLANS.MONTHLY.amount;
-    const yearlyPrice = SUBSCRIPTION_PLANS.YEARLY.amount;
-    
-    // Update monthly plan
-    const monthlyPriceElement = document.querySelector('.monthly-plan .price');
-    const monthlyPlan = document.querySelector('.monthly-plan');
-    if (monthlyPriceElement && monthlyPlan) {
-        monthlyPriceElement.textContent = `₹${monthlyPrice}`;
-        
-        // Update features list if needed
-        const features = monthlyPlan.querySelector('.plan-features');
-        if (features) {
-            features.innerHTML = `
-                <li>✓ Unlimited Prescriptions</li>
-                <li>✓ All Features Included</li>
-                <li>✓ Priority Support</li>
-                <li>✓ Cancel Anytime</li>
-            `;
-        }
-    }
-    
-    // Update yearly plan
-    const yearlyPriceElement = document.querySelector('.yearly-plan .price');
-    const yearlyPlan = document.querySelector('.yearly-plan');
-    if (yearlyPriceElement && yearlyPlan) {
-        yearlyPriceElement.textContent = `₹${yearlyPrice}`;
-        
-        // Calculate and update savings
-        const monthlyCost = monthlyPrice * 12;
-        const savings = monthlyCost - yearlyPrice;
-        const savingsPercentage = Math.round((savings / monthlyCost) * 100);
-        
-        const savingsElement = yearlyPlan.querySelector('.savings');
-        if (savingsElement) {
-            savingsElement.textContent = `Save ${savingsPercentage}%`;
-        }
-    }
-}
-
-// Show payment modal
-function showPaymentModal() {
-    const modal = document.getElementById('paymentModal');
-    if (modal) {
-        modal.style.display = 'flex';
-        // Update prices before showing
-        updatePlanPrices();
-        // Select yearly plan by default
-        selectPlan('yearly');
-    }
-}
-
-// Close payment modal
-function closePaymentModal() {
-    const modal = document.getElementById('paymentModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-}
-
-// In the limit reached prompt, update the message
-function showLimitReachedPrompt() {
-    const modal = document.getElementById('limitReachedPromptModal');
-    if (modal) {
-        // Update the message with dynamic limit
-        const messageElement = modal.querySelector('p.text-muted');
-        if (messageElement) {
-            messageElement.innerHTML = `You have used all **<span class="fw-bold">${FREE_PRESCRIPTION_LIMIT} free prescriptions</span>** for this month.`;
-        }
-        modal.style.display = 'flex';
-    }
-    // Also display a status message (acting as an alert)
-    showStatusMessage(`You've hit the monthly limit of ${FREE_PRESCRIPTION_LIMIT} free prescriptions.`, 'warning');
-}
-
-// NEW: Close limit reached prompt modal
-function closeLimitReachedPrompt() {
-    const modal = document.getElementById('limitReachedPromptModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-}
-
-
-// Select plan
-function selectPlan(planType) {
-    selectedPlan = planType;
-    
-    // Update UI
-    document.querySelectorAll('.plan-card').forEach(card => {
-        card.classList.remove('selected');
-    });
-    
-    document.querySelectorAll(`.${planType}-plan`).forEach(card => {
-        card.classList.add('selected');
-    });
-    
-    // Update radio buttons
-    document.getElementById(`${planType}Plan`).checked = true;
-}
-
-// Proceed to payment
-// Proceed to payment
-async function proceedToPayment() {
-    // Use the global RAZORPAY_KEY_ID from firebase-config.js
-    if (!RAZORPAY_KEY_ID || RAZORPAY_KEY_ID === 'DISABLED') {
-        showStatusMessage('Payment system is currently unavailable. Please try again later.', 'error');
-        return;
-    }
-
-    // Use the global SUBSCRIPTION_PLANS from firebase-config.js
-    const plan = SUBSCRIPTION_PLANS[selectedPlan.toUpperCase()];
-    if (!plan) {
-        showStatusMessage('Invalid plan selected.', 'error');
-        return;
-    }
-
-    try {
-        // Show processing modal
-        document.getElementById('paymentProcessingModal').style.display = 'flex';
-
-        // Create order using client-side Razorpay
-        const options = {
-            key: RAZORPAY_KEY_ID,
-            amount: plan.amount * 100, // Convert to paise
-            currency: 'INR',
-            name: 'Lens Prescription',
-            description: `${selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1)} Subscription`,
-            handler: async function(response) {
-                await handlePaymentSuccess(response, selectedPlan, plan.amount);
-            },
-            prefill: {
-                name: auth.currentUser.displayName || '',
-                email: auth.currentUser.email
-            },
-            theme: {
-                color: '#007bff'
-            },
-            modal: {
-                ondismiss: function() {
-                    document.getElementById('paymentProcessingModal').style.display = 'none';
-                }
-            }
-        };
-
-        const razorpay = new Razorpay(options);
-        razorpay.open();
-        
-        // Hide processing modal when Razorpay opens
-        document.getElementById('paymentProcessingModal').style.display = 'none';
-
-    } catch (error) {
-        console.error('Payment error:', error);
-        document.getElementById('paymentProcessingModal').style.display = 'none';
-        showStatusMessage('Payment failed: ' + error.message, 'error');
-    }
-}
-
-// Handle successful payment
-async function handlePaymentSuccess(paymentResponse, planType, amount) {
-    try {
-        const user = auth.currentUser;
-        
-        // Calculate expiry date
-        const now = new Date();
-        const plan = SUBSCRIPTION_PLANS[planType.toUpperCase()];
-        const expiryDate = new Date(now.getTime() + plan.duration * 24 * 60 * 60 * 1000);
-
-        // Save subscription to Firestore
-        await db.collection('subscriptions').doc(user.uid).set({
-            userId: user.uid,
-            plan: planType,
-            amount: amount,
-            paymentId: paymentResponse.razorpay_payment_id,
-            orderId: paymentResponse.razorpay_order_id,
-            signature: paymentResponse.razorpay_signature,
-            purchaseDate: firebase.firestore.FieldValue.serverTimestamp(),
-            expiryDate: expiryDate,
-            status: 'active'
-        });
-
-        // Update UI
-        closePaymentModal();
-        showStatusMessage('Payment successful! Your subscription is now active.', 'success');
-        
-        // Refresh the page to update limits
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-
-    } catch (error) {
-        console.error('Error handling payment success:', error);
-        showStatusMessage('Payment verification failed. Please contact support.', 'error');
-    }
-}
-
-// Update dashboard to show subscription status
-async function updateSubscriptionStatus() {
-    const user = auth.currentUser;
-    if (!user) return;
-
-    const subscription = await checkActiveSubscription(user.uid);
-    const statusElement = document.getElementById('subscriptionStatus');
-    
-    if (statusElement) {
-        if (subscription.active) {
-            const expiryDate = subscription.expiryDate.toLocaleDateString();
-            statusElement.innerHTML = `
-                <div class="alert alert-success">
-                    <i class="fas fa-crown"></i> 
-                    <strong>Premium Member</strong> - Subscription active until ${expiryDate}
-                </div>
-            `;
-        } else {
-            statusElement.innerHTML = `
-                <div class="alert alert-warning">
-                    <i class="fas fa-info-circle"></i>
-                    <strong>Free Plan</strong> - ${FREE_PRESCRIPTION_LIMIT} prescriptions per month
-                </div>
-            `;
-        }
-    }
-}
-
-// Add usage counter to dashboard
-function addUsageCounterToDashboard() {
-    const dashboardSection = document.getElementById('dashboardSection');
-    if (dashboardSection) {
-        const usageCounterHTML = `
-            <div id="usageCounter">
-                <!-- Usage counter will be dynamically updated -->
-            </div>
-        `;
-        
-        // Insert after the welcome text
-        const welcomeText = document.getElementById('dashboardWelcomeText');
-        if (welcomeText) {
-            welcomeText.insertAdjacentHTML('afterend', usageCounterHTML);
-        }
-        
-        // Add subscription status element
-        const subscriptionStatusHTML = `
-            <div id="subscriptionStatus" class="mb-4">
-                <!-- Subscription status will be dynamically updated -->
-            </div>
-        `;
-        
-        const statsSection = document.querySelector('.stats-filters');
-        if (statsSection) {
-            statsSection.insertAdjacentHTML('beforebegin', subscriptionStatusHTML);
-        }
-    }
-}
-
-/**
- * Updates premium/subscription status across the Navigation Bar and Profile screen.
- */
-async function updatePremiumUI() {
-    const user = auth.currentUser;
-    if (!user) return;
-
-    const subscription = await checkActiveSubscription(user.uid);
-    const isPremium = subscription.active;
-    const remainingDays = subscription.remainingDays || 0;
-    
-    // Determine the days count display format
-    const daysCountDisplay = isPremium && remainingDays > 0 ? `(${remainingDays}d)` : '';
-
-    // --- 1. Navigation Bar Update (Desktop) ---
-    const navStatusContainer = document.getElementById('navSubscriptionStatus');
-    const navBuyButtonContainer = document.getElementById('navBuyPremiumButton'); // NEW
-    
-    if (navStatusContainer) {
-        if (isPremium) {
-            // Premium Status
-            navStatusContainer.innerHTML = `
-                <span class="badge bg-success" title="Premium until ${subscription.expiryDate.toLocaleDateString()}">
-                    <i class="fas fa-crown me-1"></i> Premium ${daysCountDisplay}
-                </span>
-            `;
-            if (navBuyButtonContainer) navBuyButtonContainer.innerHTML = ''; // Hide button
-        } else {
-            // Free Status
-            navStatusContainer.innerHTML = `
-                <span class="badge bg-warning" title="Free plan - ${FREE_PRESCRIPTION_LIMIT} prescriptions/month">
-                    <i class="fas fa-user me-1"></i> Free
-                </span>
-            `;
-            // Show Buy Premium button if free
-            if (navBuyButtonContainer) {
-                navBuyButtonContainer.innerHTML = `
-                    <button onclick="showPaymentModal()" class="btn btn-sm btn-primary ms-2" style="background: var(--premium-gold); color: var(--premium-navy); border: none; font-weight: 600; padding: 6px 12px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <i class="fas fa-arrow-up"></i>
-                    </button>
-                `;
-            }
-        }
-    }
-    
-    // --- 2. Mobile Offcanvas Status ---
-    const mobileStatusElement = document.getElementById('mobileSubscriptionStatus');
-    const mobileBuyButtonElement = document.getElementById('mobileBuyPremiumButton'); // NEW
-    
-    if (mobileStatusElement && mobileBuyButtonElement) {
-        if (isPremium) {
-            mobileStatusElement.innerHTML = `
-                <div class="text-center">
-                    <span class="badge bg-success mb-2">
-                        <i class="fas fa-crown"></i> Premium Member ${daysCountDisplay}
-                    </span>
-                    <br>
-                    <small class="text-muted">Valid until ${subscription.expiryDate.toLocaleDateString()}</small>
-                </div>
-            `;
-             mobileBuyButtonElement.innerHTML = ''; // Hide button
-        } else {
-            mobileStatusElement.innerHTML = `
-                <div class="text-center">
-                    <span class="badge bg-warning mb-2">
-                        <i class="fas fa-user"></i> Free Plan
-                    </span>
-                    <br>
-                    <small class="text-muted">${FREE_PRESCRIPTION_LIMIT} prescriptions/month</small>
-                </div>
-            `;
-            // Show Buy Premium button if free
-            mobileBuyButtonElement.innerHTML = `
-                <div class="text-center mt-3">
-                    <button onclick="showPaymentModal()" class="btn btn-primary w-75" style="background: var(--premium-navy); border: none; font-weight: 600;">
-                        <i class="fas fa-arrow-up"></i> Buy Premium
-                    </button>
-                </div>
-            `;
-        }
-    }
-
-    
-    // --- 3. Profile Screen Update (Premium beside email) ---
-    const premiumTag = document.getElementById('profilePremiumTag');
-    
-    if (premiumTag) {
-        if (isPremium) {
-            premiumTag.innerHTML = `
-                <span class="badge bg-success ms-2" title="Premium until ${subscription.expiryDate.toLocaleDateString()}">
-                    <i class="fas fa-crown me-1"></i> PREMIUM ${daysCountDisplay}
-                </span>
-            `;
-        } else {
-            premiumTag.innerHTML = ''; // Clear if not premium
-        }
-    }
-}
