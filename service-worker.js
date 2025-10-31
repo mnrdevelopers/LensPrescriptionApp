@@ -1,21 +1,24 @@
 // service-worker.js - OPTIMIZED VERSION WITH BETTER CACHING
 
 const CACHE_NAME = 'lens-prescription-v7'; // Incremented version
+// --- CRITICAL FIX: Prepended /LensPrescriptionApp to all root-relative paths ---
+const APP_BASE_PATH = '/LensPrescriptionApp';
 const ASSETS = [
-  '/', // Root of the app
-  '/index.html', // Offline Fallback
-  '/auth.html', // Authentication page
-  '/app.html', // Main application page (Start URL)
-  '/app.css',
-  '/auth.css',
-  '/app.js',
-  '/auth.js',
-  '/firebase-config.js',
-  '/reset-password.html',
-  '/reset-password.js',
-  '/manifest.json',
-  '/lenslogo.png' // Icon/Logo
+  APP_BASE_PATH + '/', // Root of the app, becomes /LensPrescriptionApp/
+  APP_BASE_PATH + '/index.html', // Offline Fallback
+  APP_BASE_PATH + '/auth.html', // Authentication page
+  APP_BASE_PATH + '/app.html', // Main application page (Start URL)
+  APP_BASE_PATH + '/app.css',
+  APP_BASE_PATH + '/auth.css',
+  APP_BASE_PATH + '/app.js',
+  APP_BASE_PATH + '/auth.js',
+  APP_BASE_PATH + '/firebase-config.js',
+  APP_BASE_PATH + '/reset-password.html',
+  APP_BASE_PATH + '/reset-password.js',
+  APP_BASE_PATH + '/manifest.json',
+  APP_BASE_PATH + '/lenslogo.png' // Icon/Logo
 ];
+// --------------------------------------------------------------------------------
 
 // Install event
 self.addEventListener('install', (event) => {
@@ -27,6 +30,7 @@ self.addEventListener('install', (event) => {
         // Cache critical assets, but don't block installation if some fail
         return Promise.allSettled(
           ASSETS.map(asset => 
+            // NOTE: The cache.add() call is modified here to directly use the prefixed asset path
             cache.add(asset).catch(err => 
               console.warn(`Failed to cache ${asset}:`, err)
             )
@@ -144,7 +148,8 @@ self.addEventListener('fetch', (event) => {
           .catch(() => {
             // If both cache and network fail, serve appropriate offline page
             if (event.request.destination === 'document') {
-              return caches.match('/index.html');
+              // --- CRITICAL FIX: Ensure offline fallback URL is correctly prefixed ---
+              return caches.match(APP_BASE_PATH + '/index.html');
             }
             // For other resources, return a generic offline response
             return new Response('Offline', {
