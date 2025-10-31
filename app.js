@@ -433,30 +433,26 @@ function installPWA() {
  */
 function navigateIfProfileComplete(navFunction, sectionName) {
     if (isProfileComplete) {
-        // Ensure navigation is enabled before proceeding
         enableNavigationButtons();
         
-        // **FIX**: Use replaceState here instead of pushState for navigation Clicks.
-        // This stops back button from cycling through internal nav clicks, but ensures the
-        // URL is updated for the user to copy/reload.
         const hash = sectionName === 'dashboard' ? 'dashboard' : 
                      sectionName === 'form' ? 'form' : 
                      sectionName === 'prescriptions' ? 'prescriptions' : 
-                     sectionName === 'reports' ? 'reports' : 'setup';
+                     sectionName === 'reports' ? 'reports' : 
+                     sectionName === 'templates' ? 'templates' : // NEW
+                     'setup';
         
-        // Use replaceState to update the URL without polluting the browser history for internal navigation
         history.replaceState({ page: sectionName }, sectionName, `app.html#${hash}`);
-
         navFunction();
-        lastValidSection = sectionName; // Update last valid section
+        lastValidSection = sectionName;
     } else {
-        showProfileSetup(true); // Force profile setup
+        showProfileSetup(true);
     }
 }
 
 // NEW FUNCTION: Handles routing based on the URL hash
 function routeToHashedSection() {
-    const hash = window.location.hash.substring(1); // Get hash without '#'
+    const hash = window.location.hash.substring(1);
 
     switch (hash) {
         case 'dashboard':
@@ -471,11 +467,13 @@ function routeToHashedSection() {
         case 'reports':
             showReports();
             break;
+        case 'templates': // NEW
+            showTemplates();
+            break;
         case 'setup':
             showProfileSetup(false);
             break;
         default:
-            // Default to dashboard if no valid hash is found
             showDashboard();
             break;
     }
