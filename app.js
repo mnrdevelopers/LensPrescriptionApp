@@ -2848,7 +2848,7 @@ async function updatePremiumUI() {
             if (navBuyButtonContainer) {
                 navBuyButtonContainer.innerHTML = `
                     <button onclick="showPaymentModal()" class="btn btn-sm btn-primary ms-2" style="background: var(--premium-gold); color: var(--premium-navy); border: none; font-weight: 600; padding: 6px 12px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <i class="fas fa-arrow-up"></i> Upgrade
+                        <i class="fas fa-arrow-up"></i>
                     </button>
                 `;
             }
