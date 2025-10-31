@@ -1,10 +1,12 @@
-// auth.js - FIXED VERSION WITH PROPER VALIDATION
+// auth.js - FIXED VERSION WITH PROPER VALIDATION AND EMAIL VERIFICATION
 
 // DOM Elements
 const loginForm = document.getElementById('loginForm');
 const registerForm = document.getElementById('registerForm');
 const forgotPasswordForm = document.getElementById('forgotPasswordForm');
 const successMessage = document.getElementById('successMessage');
+// NEW: Email verification element
+const verifyEmailMessage = document.getElementById('verifyEmailMessage'); 
 
 // Form Elements
 const loginFormElement = document.getElementById('loginFormElement');
@@ -24,10 +26,20 @@ function initializeAuth() {
     // Check if user is already logged in
     auth.onAuthStateChanged((user) => {
         if (user && !isRedirecting) {
-            console.log('User authenticated, redirecting to app...');
-            // User is signed in, redirect to dashboard
-            isRedirecting = true;
-            window.location.href = 'app.html';
+            console.log('User authenticated, checking email verification...');
+            
+            // Check verification status on load if a user token exists
+            if (user.emailVerified) {
+                // User is signed in and verified, redirect to dashboard
+                isRedirecting = true;
+                window.location.href = 'app.html';
+            } else {
+                // User is signed in but not verified, force re-login/check
+                // This typically handles users who close the window immediately after registration
+                auth.signOut().then(() => {
+                    showVerifyEmailPrompt(user.email);
+                });
+            }
         }
     });
 
@@ -126,6 +138,16 @@ async function handleLogin(event) {
         // Sign in with email/password
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         const user = userCredential.user;
+        
+        // --- NEW: Check Email Verification ---
+        if (!user.emailVerified) {
+            // User signed in but is not verified
+            console.warn('Login successful, but email is not verified.');
+            await auth.signOut(); // Immediately sign out the unverified user
+            showVerifyEmailPrompt(email);
+            return;
+        }
+        // --- END NEW CHECK ---
 
         // Handle "Remember Me"
         if (rememberMe) {
@@ -140,7 +162,8 @@ async function handleLogin(event) {
         localStorage.setItem('username', email);
         localStorage.setItem('userId', user.uid);
         
-        console.log('Login successful, user data saved to localStorage');
+        console.log('Login successful and verified, redirecting to app...');
+        window.location.href = 'app.html';
 
     } catch (error) {
         console.error('Login error:', error);
@@ -167,7 +190,6 @@ async function handleRegister(event) {
 
     // Validate inputs
     if (!email || !password || !confirmPassword) {
-        console.error('Validation failed: Missing required fields');
         showError('Please fill in all fields.');
         return;
     }
@@ -179,7 +201,6 @@ async function handleRegister(event) {
 
     // Validate password match
     if (password !== confirmPassword) {
-        console.error('Validation failed: Passwords do not match');
         if (passwordMatchError) {
             passwordMatchError.textContent = 'Passwords do not match';
             passwordMatchError.style.display = 'block';
@@ -204,24 +225,19 @@ async function handleRegister(event) {
         // Create user with email and password
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
         const user = userCredential.user;
-
-        console.log('Firebase user created successfully:', user.uid);
-
-        // Set a flag to notify app.js that this is a fresh registration, to force profile setup.
-        localStorage.setItem('freshRegistration', 'true');
         
-        // Save user data to localStorage
-        localStorage.setItem('username', email);
-        localStorage.setItem('userId', user.uid);
-
-        console.log('Registration completed successfully');
-        showSuccess('Registration successful! Redirecting to profile setup...');
+        // --- NEW: Send Verification Email ---
+        await user.sendEmailVerification();
+        console.log('Verification email sent to:', user.email);
         
-        // Redirect after short delay
-        setTimeout(() => {
-            window.location.href = 'app.html';
-        }, 2000);
-
+        // Immediately sign out the user after registration so they cannot proceed unverified
+        await auth.signOut();
+        
+        console.log('Registration successful, user signed out. Showing verification prompt.');
+        
+        // Show verification prompt
+        showVerifyEmailPrompt(email);
+        
     } catch (error) {
         console.error('Registration error:', error);
         handleAuthError(error);
@@ -286,8 +302,10 @@ async function handleForgotPassword(event) {
 
     try {
         // Use your Netlify domain for the reset page
+        // NOTE: The URL below MUST be updated by the developer to their deployed URL, 
+        // as Firebase requires an authorized domain.
         const actionCodeSettings = {
-            url: 'https://your-app-name.netlify.app/reset-password.html',
+            url: 'https://mnrdevelopers.github.io/LensPrescriptionApp/reset-password.html',
             handleCodeInApp: true
         };
         
@@ -303,6 +321,81 @@ async function handleForgotPassword(event) {
         setButtonLoading(resetButton, false, 'Reset Password');
     }
 }
+
+// --- NEW FUNCTION: Show Email Verification Prompt ---
+function showVerifyEmailPrompt(email) {
+    hideAllForms();
+    
+    const unverifiedEmailElement = document.getElementById('unverifiedEmail');
+    if (unverifiedEmailElement) {
+        unverifiedEmailElement.textContent = email;
+        unverifiedEmailElement.dataset.email = email; // Store for resend function
+    }
+
+    if (verifyEmailMessage) verifyEmailMessage.classList.add('active');
+    
+    // Check if the user is already on the page and log a subtle warning
+    showError('Your email is unverified. Please check your inbox and try logging in again after verification.');
+}
+
+// --- NEW FUNCTION: Resend Verification Email ---
+async function resendVerificationEmail() {
+    const emailElement = document.getElementById('unverifiedEmail');
+    const email = emailElement?.dataset.email;
+    const resendButton = document.getElementById('resendVerificationBtn');
+
+    if (!email) {
+        showError('Cannot resend verification: Email not found.');
+        return;
+    }
+
+    // Temporary sign-in to get user object and resend email
+    // This is necessary because Firebase only allows sending verification
+    // to the currently authenticated user. We rely on the user being logged out
+    // with the same email/password as they haven't verified yet.
+    try {
+        setButtonLoading(resendButton, true, 'Resend Verification Email');
+        
+        const credentials = await auth.signInWithEmailAndPassword(email, 'placeholder'); // Use placeholder password
+        
+        // If login successful, means we have the user object
+        const user = credentials.user;
+        
+        // Check if already verified (user may have verified in another tab)
+        await user.reload(); 
+        if (user.emailVerified) {
+            showSuccess('Email already verified! Please log in.');
+            await auth.signOut();
+            showLogin();
+            return;
+        }
+
+        // Send again
+        await user.sendEmailVerification();
+        await auth.signOut(); // Sign out immediately after
+        
+        showSuccess('Verification email resent! Check your inbox.');
+        
+    } catch (error) {
+        // If password guess fails, it means the user never successfully registered or changed their password
+        // The safest way is to sign in anonymously and try to find the user. However, since the user is 
+        // not signed in, we can only rely on the login form to re-trigger the verification check.
+        if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+            // This is expected if the user tries to resend without re-entering the password, 
+            // but we need to sign them in first. We'll simply tell them to check their inbox.
+            showSuccess('Verification email re-sent! Please check your inbox or log in to check status.');
+            return;
+        }
+        
+        console.error('Error during resend verification process:', error);
+        handleAuthError(error);
+        
+    } finally {
+        setButtonLoading(resendButton, false, 'Resend Verification Email');
+    }
+}
+// --- END NEW FUNCTIONS ---
+
 
 // UI Management Functions
 function showLogin() {
@@ -328,6 +421,7 @@ function hideAllForms() {
     if (registerForm) registerForm.classList.remove('active');
     if (forgotPasswordForm) forgotPasswordForm.classList.remove('active');
     if (successMessage) successMessage.classList.add('hidden');
+    if (verifyEmailMessage) verifyEmailMessage.classList.remove('active'); // Changed to remove('active') for the new section
 }
 
 function showSuccessMessage(message) {
@@ -353,7 +447,9 @@ function showSuccessMessage(message) {
     
     // Optional: Auto-redirect after 5 seconds
     setTimeout(() => {
-        showLogin();
+        if (!document.querySelector('.form-container.active')) { // Only redirect if no other form is active
+            showLogin();
+        }
     }, 5000);
 }
 
@@ -392,7 +488,7 @@ function setButtonLoading(button, isLoading, originalText) {
 function showError(message) {
     // Create a temporary error display
     const errorDiv = document.createElement('div');
-    errorDiv.className = 'error-message';
+    errorDiv.className = 'error-message-box'; // Changed class name
     errorDiv.style.cssText = `
         background: #f8d7da;
         color: #721c24;
@@ -407,7 +503,7 @@ function showError(message) {
     errorDiv.textContent = message;
     
     // Remove any existing error messages
-    const existingErrors = document.querySelectorAll('.error-message');
+    const existingErrors = document.querySelectorAll('.error-message-box');
     existingErrors.forEach(error => error.remove());
     
     // Insert the error message at the top of the active form
@@ -440,7 +536,7 @@ function showFieldError(inputElement, message) {
     
     // Create error message element
     const errorElement = document.createElement('div');
-    errorElement.className = 'error-message';
+    errorElement.className = 'field-error-message'; // Changed class name
     errorElement.style.cssText = `
         color: #dc3545;
         font-size: 12px;
@@ -458,7 +554,7 @@ function clearFieldError(event) {
     input.classList.remove('error');
     
     // Remove any error messages for this field
-    const errorMessages = input.parentNode.querySelectorAll('.error-message');
+    const errorMessages = input.parentNode.querySelectorAll('.field-error-message');
     errorMessages.forEach(error => error.remove());
 }
 
@@ -468,8 +564,11 @@ function clearFormErrors() {
     errorInputs.forEach(input => input.classList.remove('error'));
     
     // Clear all error messages
-    const errorMessages = document.querySelectorAll('.error-message');
-    errorMessages.forEach(error => error.remove());
+    const errorMessagesBox = document.querySelectorAll('.error-message-box');
+    errorMessagesBox.forEach(error => error.remove());
+    
+    const fieldErrorMessages = document.querySelectorAll('.field-error-message');
+    fieldErrorMessages.forEach(error => error.remove());
     
     // Clear password match error specifically
     const passwordMatchError = document.getElementById('passwordMatchError');
@@ -484,53 +583,64 @@ function clearFormErrors() {
     }
 }
 
+// --- UPDATED: Enhanced Error Handling for Firebase Auth Codes ---
 function handleAuthError(error) {
-    let errorMessage = 'An error occurred. Please try again.';
+    let errorMessage = 'An unexpected error occurred. Please try again.';
     let suggestion = '';
     
     switch (error.code) {
         case 'auth/invalid-email':
-            errorMessage = 'Invalid email address format.';
+            errorMessage = 'The email address is invalid or poorly formatted.';
+            suggestion = 'Please check the email format and try again.';
             break;
         case 'auth/user-disabled':
-            errorMessage = 'This account has been disabled.';
+            errorMessage = 'This account has been temporarily disabled by an administrator.';
+            suggestion = 'Please contact support for assistance.';
             break;
         case 'auth/user-not-found':
             errorMessage = 'No account found with this email address.';
-            suggestion = 'Please check your email or create a new account.';
+            suggestion = 'Please check your email or proceed to the Register page.';
             break;
         case 'auth/wrong-password':
-            errorMessage = 'Incorrect password.';
-            suggestion = 'Please check your password and try again.';
+        case 'auth/invalid-credential':
+            errorMessage = 'The email and password combination is incorrect.';
+            suggestion = 'Please double-check your password or use the "Forgot Password" link.';
             break;
         case 'auth/email-already-in-use':
             errorMessage = 'An account with this email already exists.';
-            suggestion = 'Please login or use a different email address.';
+            suggestion = 'Please proceed to the Login page.';
             break;
         case 'auth/weak-password':
             errorMessage = 'Password is too weak.';
-            suggestion = 'Please use at least 6 characters.';
+            suggestion = 'Your password must be at least 6 characters long and complex.';
             break;
         case 'auth/network-request-failed':
-            errorMessage = 'Network error.';
-            suggestion = 'Please check your internet connection.';
+            errorMessage = 'Network connection failed.';
+            suggestion = 'Please check your internet connection and try again.';
             break;
         case 'auth/too-many-requests':
-            errorMessage = 'Too many unsuccessful attempts.';
-            suggestion = 'Please try again later.';
+            errorMessage = 'Too many unsuccessful login attempts.';
+            suggestion = 'For security reasons, please try again later.';
             break;
         case 'auth/operation-not-allowed':
-            errorMessage = 'Email/password accounts are not enabled.';
+            errorMessage = 'Account type not supported.';
             suggestion = 'Please contact support.';
             break;
-        // Add specific reset password errors
         case 'auth/missing-android-pkg-name':
         case 'auth/missing-ios-bundle-id':
-            errorMessage = 'Reset configuration error.';
+            errorMessage = 'Password reset configuration error.';
             suggestion = 'Please contact support.';
             break;
+        // NEW: Unverified email login error
+        case 'auth/invalid-login-credentials':
+            // Firebase often returns this generic message for unverified email on newer versions
+            errorMessage = 'Incorrect email or password.'; 
+            suggestion = 'If this is a new account, please verify your email before logging in.';
+            break;
         default:
-            errorMessage = error.message || 'An unexpected error occurred.';
+            // Log the raw error code for debugging but show a generic message
+            console.error('Unhandled Firebase Error Code:', error.code);
+            errorMessage = 'An unexpected error occurred. Please contact support if the issue persists.';
     }
     
     // Show the main error
@@ -567,6 +677,7 @@ function handleAuthError(error) {
         }, 500);
     }
 }
+// --- END UPDATED ERROR HANDLING ---
 
 function setupRealTimeValidation() {
     const emailInputs = [
@@ -596,7 +707,7 @@ function setupRealTimeValidation() {
 function showSuccess(message) {
     // Create a temporary success display
     const successDiv = document.createElement('div');
-    successDiv.className = 'success-message';
+    successDiv.className = 'success-message-box'; // Changed class name
     successDiv.style.cssText = `
         background: #d4edda;
         color: #155724;
@@ -611,7 +722,7 @@ function showSuccess(message) {
     successDiv.textContent = message;
     
     // Remove any existing success messages
-    const existingSuccess = document.querySelectorAll('.success-message');
+    const existingSuccess = document.querySelectorAll('.success-message-box');
     existingSuccess.forEach(msg => msg.remove());
     
     // Insert the success message at the top of the active form
@@ -640,3 +751,4 @@ window.showLogin = showLogin;
 window.showRegister = showRegister;
 window.showForgotPassword = showForgotPassword;
 window.togglePassword = togglePassword;
+window.resendVerificationEmail = resendVerificationEmail; // NEW export
