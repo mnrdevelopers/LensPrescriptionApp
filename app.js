@@ -17,6 +17,9 @@ let selectedPlan = 'yearly'; // Default to yearly plan
 let currentPatientId = null; 
 // ------------------------------------
 
+// NEW GLOBAL: Tracks premium status
+let isPremium = false; 
+
 // 🛑 CRITICAL FIX: Use onAuthStateChanged to prevent the redirect loop.
 firebase.auth().onAuthStateChanged((user) => {
     if (user) {
@@ -58,6 +61,11 @@ async function initializeApp() {
     setInitialDateFilters();
     
     try {
+        // --- MODIFIED: Determine premium status early ---
+        const subscription = await checkActiveSubscription(user.uid);
+        isPremium = subscription.active;
+        // ------------------------------------------------
+
         // Add usage counter to dashboard
         addUsageCounterToDashboard();
         
@@ -74,6 +82,10 @@ async function initializeApp() {
         if (window.location.hash.includes('dashboard')) {
             fetchCheckupReminders();
         }
+        
+        // --- NEW: Apply feature locks/unlocks based on premium status ---
+        lockFeatures();
+        // -----------------------------------------------------------------
 
         console.log('App initialized successfully');
     } catch (error) {
@@ -690,8 +702,13 @@ async function submitPrescription() {
         return;
     }
 
+    // --- MODIFIED: Direct check on submission ---
     const canSubmit = await checkPrescriptionLimit();
-    if (!canSubmit) return;
+    if (!canSubmit) {
+        // Limit check will show the prompt modal, no need to show a separate error
+        return; 
+    }
+    // ------------------------------------------
     
     const user = auth.currentUser;
     if (!user) {
@@ -812,6 +829,12 @@ function resetForm(clearPatientData = false) {
 
 // A: Copy OD to OS Function
 function copyRightToLeft() {
+    // Check if premium status allows the action
+    if (!isPremium) {
+        showLimitReachedPrompt();
+        return;
+    }
+    
     const fields = [
         'DistSPH', 'DistCYL', 'DistAXIS', 'DistVA',
         'AddSPH', 'AddCYL', 'AddAXIS', 'AddVA'
@@ -1067,6 +1090,7 @@ async function fetchTemplates() {
     select.innerHTML = '<option value="">-- Select Template --</option>';
 
     try {
+        // We fetch templates even for free users, but lock the save function.
         const querySnapshot = await db.collection('templates')
             .where('userId', '==', user.uid)
             .orderBy('name', 'asc')
@@ -1087,6 +1111,13 @@ async function fetchTemplates() {
 }
 
 async function saveAsTemplate() {
+    // --- NEW: Lock template saving for free users ---
+    if (!isPremium) {
+        showLimitReachedPrompt();
+        return;
+    }
+    // ------------------------------------------------
+    
     const user = auth.currentUser;
     if (!user) return;
     
@@ -1354,7 +1385,15 @@ function addPrescriptionRow(tbody, prescription) {
     deleteBtn.innerHTML = '🗑️';
     deleteBtn.className = 'btn-delete';
     deleteBtn.title = 'Delete';
-    deleteBtn.onclick = () => showDeleteModal(prescription);
+    // --- MODIFIED: Lock delete action for non-premium users ---
+    deleteBtn.onclick = () => {
+        if (!isPremium) {
+            showLimitReachedPrompt();
+        } else {
+            showDeleteModal(prescription);
+        }
+    };
+    // ---------------------------------------------------------
     
     actionsCell.appendChild(previewBtn);
     actionsCell.appendChild(deleteBtn);
@@ -1461,6 +1500,13 @@ function loadPreviewData(data) {
 // They are kept for brevity but should be assumed to be present and correct from the previous detailed response.
 // *******************************************************************************************************
 function generateImage() {
+    // --- MODIFIED: Lock download for non-premium users ---
+    if (!isPremium) {
+        showLimitReachedPrompt();
+        return;
+    }
+    // ----------------------------------------------------
+    
     const btn = document.querySelector('.btn-download');
     if (btn) {
         btn.classList.add('btn-loading');
@@ -1507,6 +1553,13 @@ function generateImage() {
 }
 
 function printPreview() {
+    // --- MODIFIED: Lock printing for non-premium users ---
+    if (!isPremium) {
+        showLimitReachedPrompt();
+        return;
+    }
+    // ----------------------------------------------------
+    
     const printWindow = window.open('', '_blank', 'width=350,height=600');
     
     if (!printWindow) {
@@ -1701,7 +1754,7 @@ function printPreview() {
                 </div>
             </div>
             <div class="no-print print-controls">
-                <button class="print-btn print-primary" onclick="window.print()">🖨️ Print Now</button>
+                <button class="print-btn print-primary" onclick="printPreview()">🖨️ Print Now</button>
                 <button class="print-btn print-secondary" onclick="window.close()">❌ Close</button>
             </div>
             <script>
@@ -1718,66 +1771,14 @@ function printPreview() {
     printWindow.document.close();
 }
 
-async function sendWhatsAppMessage(mobile, imageUrl) {
-    try {
-        const formattedMobile = mobile.replace(/\D/g, '');
-        const clinicName = document.getElementById('previewClinicName')?.textContent || 'Our Clinic';
-        const optometristName = document.getElementById('previewOptometristName')?.textContent || 'Optometrist';
-        const patientName = document.getElementById('previewPatientName')?.textContent || 'Patient';
-        
-        const message = `Hello ${patientName},\n\nYour eye prescription from ${clinicName} is ready.\n\nThank you for visiting us!\n\n- ${optometristName}`;
-        
-        let whatsappUrl;
-        
-        if (imageUrl.startsWith('http')) {
-            const messageWithImage = `${message}\n\nView your prescription: ${imageUrl}`;
-            const encodedMessageWithImage = encodeURIComponent(messageWithImage);
-            whatsappUrl = `https://wa.me/${formattedMobile}?text=${encodedMessageWithImage}`;
-        } else {
-             const encodedMessage = encodeURIComponent(message);
-             whatsappUrl = `https://wa.me/${formattedMobile}?text=${encodedMessage}`;
-        }
-        
-        const whatsappWindow = window.open(whatsappUrl, '_blank');
-        
-        if (!whatsappWindow) {
-            showStatusMessage('Popup blocked. Please allow popups for WhatsApp.', 'warning');
-        } else {
-            showStatusMessage('Opening WhatsApp...', 'success');
-        }
-        
-    } catch (error) {
-        throw new Error('Failed to send WhatsApp message: ' + error.message);
-    }
-}
-
-function startWhatsappTimer() {
-    const modal = document.getElementById('whatsappTimerModal');
-    const timerDisplay = document.getElementById('timerDisplay');
-    
-    if (modal) modal.style.display = 'flex';
-    timerSeconds = 0;
-    
-    if (timerDisplay) timerDisplay.textContent = '00:00';
-
-    timerInterval = setInterval(() => {
-        timerSeconds++;
-        const minutes = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
-        const seconds = String(timerSeconds % 60).padStart(2, '0');
-        if (timerDisplay) timerDisplay.textContent = `${minutes}:${seconds}`;
-    }, 1000);
-}
-
-function stopWhatsappTimer() {
-    clearInterval(timerInterval);
-    const modal = document.getElementById('whatsappTimerModal');
-    if (modal) {
-        modal.style.display = 'none';
-        
-    }
-}
-
 async function sendWhatsApp() {
+    // --- MODIFIED: Lock sharing for non-premium users ---
+    if (!isPremium) {
+        showLimitReachedPrompt();
+        return;
+    }
+    // ----------------------------------------------------
+    
     const mobile = document.getElementById('previewMobile')?.textContent;
     if (!mobile) {
         showStatusMessage('No mobile number available for WhatsApp', 'error');
@@ -1884,22 +1885,17 @@ async function checkPrescriptionLimit(isInitialLoad = false) {
     const user = auth.currentUser;
     if (!user) return false;
 
+    // Premium users bypass the limit immediately
+    if (isPremium) {
+        return true;
+    }
+
     try {
         const now = new Date();
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
         const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
-        let subscription = { active: false };
-        let subscriptionCheckError = false;
-        try {
-            subscription = await checkActiveSubscription(user.uid);
-        } catch (subError) {
-            subscriptionCheckError = true;
-        }
-
-        if (subscription.active) {
-            return true; 
-        }
+        // subscription check already done in initializeApp, just proceed with limit check
         
         const querySnapshot = await db.collection('prescriptions')
             .where('userId', '==', user.uid)
@@ -1918,14 +1914,11 @@ async function checkPrescriptionLimit(isInitialLoad = false) {
                 }
                 return false;
             } else {
+                // If payment is disabled, treat as unlimited free
                 return true;
             }
         }
         
-        if (subscriptionCheckError && isInitialLoad) {
-             showStatusMessage('Warning: Could not verify subscription status. You have temporary free access. Please check your connection.', 'warning');
-        }
-
         return true;
     } catch (error) {
         if (!isInitialLoad) {
@@ -1996,6 +1989,9 @@ async function updateSubscriptionStatus() {
     const subscription = await checkActiveSubscription(user.uid);
     const statusElement = document.getElementById('subscriptionStatus');
     
+    // Update global status
+    isPremium = subscription.active; 
+    
     if (statusElement) {
         if (subscription.active) {
             const expiryDate = subscription.expiryDate.toLocaleDateString();
@@ -2048,7 +2044,7 @@ async function updatePremiumUI() {
     if (!user) return;
 
     const subscription = await checkActiveSubscription(user.uid);
-    const isPremium = subscription.active;
+    isPremium = subscription.active; // Re-set global status
     const remainingDays = subscription.remainingDays || 0;
     
     const daysCountDisplay = isPremium && remainingDays > 0 ? `(${remainingDays}d)` : '';
@@ -2240,7 +2236,9 @@ async function handlePaymentSuccess(paymentResponse, planType, amount) {
         showStatusMessage('Payment successful! Your subscription is now active.', 'success');
         
         setTimeout(() => {
-            window.location.reload();
+            // After successful payment, setting isPremium to true and reloading ensures all locks are removed
+            isPremium = true; 
+            window.location.reload(); 
         }, 2000);
 
     } catch (error) {
@@ -2475,6 +2473,56 @@ function displayReport(reportSummary) {
     document.getElementById('reportTotalPrescriptions').textContent = totalPrescriptions.toString();
     document.getElementById('reportTotalRevenue').textContent = `₹ ${totalRevenue.toFixed(2)}`;
 }
+
+// -----------------------------------------------------------
+// 10. Feature Locking (New Function)
+// -----------------------------------------------------------
+function lockFeatures() {
+    const templateSaveBtn = document.querySelector('#prescriptionFormSection .template-management-bar .btn-tertiary');
+    const previewDownloadBtn = document.querySelector('#previewSection .btn-download');
+    const previewPrintBtn = document.querySelector('#previewSection .btn-print');
+    const previewWhatsAppBtn = document.querySelector('#previewSection .btn-whatsapp');
+    const prescriptionDeleteBtns = document.querySelectorAll('#prescriptionTable .btn-delete');
+    
+    // Lock functions are handled by individual function wrappers (submitPrescription, etc.)
+    // Here we handle the UI visual locks/unlocks
+    
+    const elementsToLock = [templateSaveBtn, previewDownloadBtn, previewPrintBtn, previewWhatsAppBtn];
+    
+    if (!isPremium) {
+        // Apply lock styling and override clicks if necessary
+        elementsToLock.forEach(el => {
+            if (el) {
+                el.classList.add('btn-disabled');
+                el.title = 'Premium feature - Upgrade to unlock';
+            }
+        });
+
+        prescriptionDeleteBtns.forEach(el => {
+             if (el) {
+                el.classList.add('btn-disabled');
+                el.title = 'Premium feature - Delete requires subscription';
+            }
+        });
+        
+    } else {
+        // Remove lock styling and restore functionality where needed
+         elementsToLock.forEach(el => {
+            if (el) {
+                el.classList.remove('btn-disabled');
+                el.title = '';
+            }
+        });
+
+        prescriptionDeleteBtns.forEach(el => {
+            if (el) {
+                el.classList.remove('btn-disabled');
+                el.title = 'Delete';
+            }
+        });
+    }
+}
+
 
 // Global Exports
 window.showDashboard = showDashboard;
