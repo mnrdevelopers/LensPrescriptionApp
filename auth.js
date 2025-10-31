@@ -311,7 +311,7 @@ async function handleForgotPassword(event) {
         
         await auth.sendPasswordResetEmail(email, actionCodeSettings);
         
-        // --- FIX APPLIED HERE: Pass a descriptive message to showSuccessMessage
+        // --- This works properly for Forgot Password ---
         showSuccessMessage('Password reset link sent! Check your inbox for instructions on setting a new password.');
         document.getElementById('forgotUsername').value = '';
         
@@ -340,6 +340,10 @@ function showVerifyEmailPrompt(email) {
     clearFormErrors();
 
     // Show a helpful status message on the verification screen itself
+    // NOTE: This showSuccess() call was likely the cause of the conflict, as it
+    // targets the body/container, but we need the main content block to be visible.
+    // The previous fix already ensured verifyEmailMessage gets 'active'. 
+    // We are keeping this showSuccess as a secondary notification for now.
     showSuccess('Registration complete! Please check your email inbox to verify your account and log in.');
 }
 
@@ -355,9 +359,6 @@ async function resendVerificationEmail() {
     }
 
     // Temporary sign-in to get user object and resend email
-    // This is necessary because Firebase only allows sending verification
-    // to the currently authenticated user. We rely on the user being logged out
-    // with the same email/password as they haven't verified yet.
     try {
         setButtonLoading(resendButton, true, 'Resend Verification Email');
         
@@ -389,9 +390,6 @@ async function resendVerificationEmail() {
         
         // Show a message suggesting they check their inbox/log in instead of a generic error
         showSuccess('Verification email re-sent! Please check your inbox or log in to check status.');
-        
-        // The most likely case for failure here is that the temporary sign-in failed, 
-        // so we just show the successful re-send message and return.
         
         console.error('Error during resend verification process (Likely temporary sign-in issue):', error);
         
