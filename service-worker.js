@@ -1,6 +1,6 @@
-// service-worker.js - OPTIMIZED VERSION WITH BETTER CACHING
+// service-worker.js - UPDATED WITH PAYMENT PAGE
 
-const CACHE_NAME = 'lens-prescription-v7'; // Incremented version
+const CACHE_NAME = 'lens-prescription-v8'; // Incremented version
 // --- CRITICAL FIX: Prepended /LensPrescriptionApp to all root-relative paths ---
 const APP_BASE_PATH = '/LensPrescriptionApp';
 const ASSETS = [
@@ -8,10 +8,13 @@ const ASSETS = [
   APP_BASE_PATH + '/index.html', // Offline Fallback
   APP_BASE_PATH + '/auth.html', // Authentication page
   APP_BASE_PATH + '/app.html', // Main application page (Start URL)
+  APP_BASE_PATH + '/payment.html', // NEW: Payment page
   APP_BASE_PATH + '/app.css',
   APP_BASE_PATH + '/auth.css',
+  APP_BASE_PATH + '/payment.css', // NEW: Payment page styles
   APP_BASE_PATH + '/app.js',
   APP_BASE_PATH + '/auth.js',
+  APP_BASE_PATH + '/payment.js', // NEW: Payment page logic
   APP_BASE_PATH + '/firebase-config.js',
   APP_BASE_PATH + '/reset-password.html',
   APP_BASE_PATH + '/reset-password.js',
