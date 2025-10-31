@@ -47,11 +47,13 @@
     <div class="container-fluid d-flex justify-content-between align-items-center">
         
         <!-- 1. Mobile Menu Toggle (Far Left) -->
+        <!-- NOTE: The 'order-first' class ensures it comes before the brand on mobile/small screens -->
         <button class="navbar-toggler d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
             <span class="navbar-toggler-icon"></span>
         </button>
 
-        <!-- 2. Brand Logo and Title -->
+        <!-- 2. Brand Logo and Title (Centered on Mobile, Left on Desktop) -->
+        <!-- On mobile, flex-grow-1 is added dynamically below to balance spacing -->
         <a class="navbar-brand text-center" style="flex-grow: 1; margin: 0; padding: 0 10px;" href="#" onclick="navigateIfProfileComplete(showDashboard, 'dashboard')">
             <img src="lenslogo.png" alt="Lens Prescription Logo" class="nav-logo">
             <span>Lens Prescription</span>
@@ -75,15 +77,9 @@
                         <i class="fas fa-plus-circle"></i> Add Prescription
                     </a>
                 </li>
-                 <!-- NEW: Patients Link (F) -->
-                 <li class="nav-item">
-                    <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showPatients, 'patients')">
-                        <i class="fas fa-users"></i> Patients
-                    </a>
-                </li>
                 <li class="nav-item">
                     <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showPrescriptions, 'prescriptions')">
-                        <i class="fas fa-list"></i> Prescriptions
+                        <i class="fas fa-list"></i> View Prescriptions
                     </a>
                 </li>
                 <li class="nav-item">
@@ -146,12 +142,6 @@
                         <i class="fas fa-plus-circle"></i> Add Prescription
                     </a>
                 </li>
-                 <!-- NEW: Patients Link (F) -->
-                 <li class="nav-item">
-                    <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showPatients, 'patients')" data-bs-dismiss="offcanvas">
-                        <i class="fas fa-users"></i> Patients
-                    </a>
-                </li>
                 <li class="nav-item">
                     <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showPrescriptions, 'prescriptions')" data-bs-dismiss="offcanvas">
                         <i class="fas fa-list"></i> View Prescriptions
@@ -180,12 +170,13 @@
 
     <!-- Main Content Container -->
     <div class="main-content">
-        <!-- Profile Setup Section -->
+        <!-- Profile Setup Section (New: First screen for new users) -->
         <section id="profileSetupSection" class="page-section">
             <div class="prescription-container">
                 <h2><i class="fas fa-clinic-medical"></i> Clinic Profile Setup</h2>
                 <p class="text-center mb-4">Please enter your clinic details to get started. These details will appear on all your prescriptions.</p>
 
+                <!-- START: UPDATED EMAIL FIELD WITH PREMIUM TAG -->
                 <div class="form-group text-center">
                     <label>Logged-in Email Address:</label>
                     <div class="d-flex justify-content-center align-items-center">
@@ -194,6 +185,7 @@
                     </div>
                 </div>
                 <hr>
+                <!-- END: UPDATED EMAIL FIELD WITH PREMIUM TAG -->
 
                 <div class="form-group">
                     <label for="setupClinicName">Clinic Name</label>
@@ -222,8 +214,7 @@
             <div class="dashboard-container">
                 <h2 id="dashboardWelcomeText">Welcome to Lens Prescription</h2>
                 
-                <!-- Subscription Status & Usage Counter will be injected here by app.js -->
-                
+                <!-- Stats Section -->
                 <div class="section-title mt-4">Practice Overview</div>
                 <div class="stats-filters">
                     <label for="statsTimePeriod">View Stats:</label>
@@ -246,25 +237,18 @@
                         <p class="stat-value" id="statRevenue">₹ 0.00</p>
                         <p class="stat-label">Total Revenue</p>
                     </div>
-                     <!-- NEW: Checkup Reminder Card (H) -->
-                     <div class="stat-card stat-reminders" onclick="navigateIfProfileComplete(showPatients, 'patients')">
-                        <i class="fas fa-calendar-check"></i>
-                        <p class="stat-value" id="statRemindersDue">0</p>
-                        <p class="stat-label">Checkup Reminders Due</p>
-                    </div>
                 </div>
 
                 <div class="button-group mt-5">
                     <button onclick="navigateIfProfileComplete(showPrescriptionForm, 'form')" class="btn btn-primary">
                         <i class="fas fa-plus-circle"></i> Add New Prescription
                     </button>
-                    <button onclick="navigateIfProfileComplete(showPatients, 'patients')" class="btn btn-tertiary">
-                        <i class="fas fa-users"></i> Manage Patients
-                    </button>
                     <button onclick="navigateIfProfileComplete(showPrescriptions, 'prescriptions')" class="btn btn-secondary">
                         <i class="fas fa-list"></i> View Prescriptions
                     </button>
-                    
+                    <button onclick="navigateIfProfileComplete(showReports, 'reports')" class="btn btn-tertiary">
+                        <i class="fas fa-chart-bar"></i> View Reports
+                    </button>
                 </div>
             </div>
         </section>
@@ -272,22 +256,17 @@
         <!-- Add Prescription Section -->
         <section id="prescriptionFormSection" class="page-section">
             <div class="prescription-container">
-                
-                <!-- Template Management Bar (G) -->
-                <div class="template-management-bar mb-3">
-                    <div class="template-selector">
-                        <label for="templateSelect"><i class="fas fa-folder-open"></i> Load Template:</label>
-                        <select id="templateSelect" onchange="loadTemplate(this.value)">
-                            <option value="">-- Select or Create New --</option>
-                            <!-- Options populated by app.js -->
-                        </select>
+                <!-- Custom Exit Prompt Modal -->
+                <div id="exitPromptModal" class="modal-overlay">
+                    <div class="modal-content">
+                        <p>Are you sure you want to leave? Your changes may not be saved.</p>
+                        <div class="modal-buttons">
+                            <button id="confirmExit" class="btn btn-danger">Yes, Leave</button>
+                            <button id="cancelExit" class="btn btn-secondary">No, Stay</button>
+                        </div>
                     </div>
-                    <button onclick="saveAsTemplate()" class="btn btn-sm btn-tertiary">
-                        <i class="fas fa-save"></i> Save as Template
-                    </button>
                 </div>
-                <hr>
-
+                
                 <div id="prescriptionForm">
                     <!-- Optical Shop Details -->
                     <div class="header">
@@ -307,15 +286,41 @@
                         </div>
                     </div>
                     <button onclick="navigateIfProfileComplete(showProfileSetup, 'setup')" class="btn btn-edit">Edit Profile</button>
-                    
+
+                    <!-- Edit Profile Modal -->
+                    <div id="editProfileModal" class="modal-overlay">
+                        <div class="modal-content large">
+                            <h2>Edit Profile</h2>
+                            <div class="form-group">
+                                <label for="editClinicName">Clinic Name</label>
+                                <input type="text" id="editClinicName" placeholder="Enter Clinic Name">
+                            </div>
+                            <div class="form-group">
+                                <label for="editOptometristName">Optometrist Name</label>
+                                <input type="text" id="editOptometristName" placeholder="Enter Optometrist Name">
+                            </div>
+                            <div class="form-group">
+                                <label for="editAddress">Clinic Address</label>
+                                <input type="text" id="editAddress" placeholder="Enter Clinic Address">
+                            </div>
+                            <div class="form-group">
+                                <label for="editContactNumber">Contact Number</label>
+                                <input type="tel" id="editContactNumber" placeholder="Enter Contact Number">
+                            </div>
+                            <div class="modal-buttons">
+                                <button onclick="closeEditProfile()" class="btn btn-secondary">Cancel</button>
+                                <button onclick="saveProfile()" class="btn btn-primary">Save Changes</button>
+                            </div>
+                        </div>
+                    </div>
                     <hr>
-                    <!-- Patient Details (F: Enhanced for Patient ID check/autofill) -->
-                    <div class="section-title">Patient Details (Enter Mobile to Autofill)</div>
+
+                    <!-- Patient Details -->
+                    <div class="section-title">Patient Details</div>
                     <div class="patient-details">
                         <div>
                             <label for="patientName">Patient Name</label>
                             <input type="text" id="patientName" placeholder="Enter name" required>
-                            <input type="hidden" id="patientId"> <!-- Hidden field for patient ID -->
                         </div>
                         <div>
                             <label for="age">Age</label>
@@ -331,21 +336,13 @@
                         </div>
                         <div>
                             <label for="patientMobile">Mobile</label>
-                            <!-- On change, check if patient exists -->
-                            <input type="tel" id="patientMobile" placeholder="Enter mobile number" required pattern="[0-9]{10}" onchange="checkPatientExists(this.value)">
+                            <input type="tel" id="patientMobile" placeholder="Enter mobile number" required pattern="[0-9]{10}">
                         </div>
                     </div>
                     <hr>
 
                     <!-- Prescription Details -->
-                    <div class="section-title d-flex justify-content-between align-items-center">
-                        <span>Prescription Details</span>
-                         <!-- NEW: Copy OD to OS Button (A) -->
-                        <button onclick="copyRightToLeft()" class="btn btn-sm btn-secondary copy-btn">
-                            <i class="fas fa-copy"></i> Copy OD to OS
-                        </button>
-                    </div>
-                    
+                    <div class="section-title">Prescription Details</div>
                     <div class="prescription-table">
                         <!-- Right Eye Table -->
                         <table>
@@ -473,37 +470,7 @@
             </div>
         </section>
 
-        <!-- NEW: Patients Section (F) -->
-        <section id="patientsSection" class="page-section">
-            <div class="container">
-                <h2><i class="fas fa-users"></i> Patient Records</h2>
-                <div class="filter-controls">
-                    <div class="search-bar">
-                        <input type="text" id="patientSearchInput" placeholder="Search by Name or Mobile" onkeyup="filterPatients()">
-                        <button class="btn-search" onclick="fetchPatients()">Search</button>
-                    </div>
-                </div>
-
-                <table id="patientTable">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Mobile</th>
-                            <th>Age/Gender</th>
-                            <th>Last Visit</th>
-                            <th>Next Checkup</th>
-                            <th>Total Rx</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Patient data loaded by app.js -->
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <!-- View Prescriptions Section -->
+        <!-- View Prescriptions Section (Updated with Date Filters) -->
         <section id="prescriptionsSection" class="page-section">
             <div class="container">
                 <h2>Prescription History</h2>
@@ -518,18 +485,17 @@
                         <input type="date" id="prescriptionDateStart" onchange="fetchPrescriptions()">
                         <label for="prescriptionDateEnd">End Date:</label>
                         <input type="date" id="prescriptionDateEnd" onchange="fetchPrescriptions()">
-                        <button class="btn btn-primary btn-sm" onclick="fetchPrescriptions()"><i class="fas fa-filter"></i> Apply</button>
                     </div>
                 </div>
 
                 <table id="prescriptionTable">
                     <thead>
                         <tr>
-                            <!-- B: Added Mobile and Age for better list clarity -->
-                            <th>Date & Time</th>
+                            <th>Date</th>
                             <th>Patient Name</th>
                             <th>Age</th>
-                            <th>Mobile</th> 
+                            <th>Gender</th>
+                            <th>Mobile</th>
                             <th>Amount</th>
                             <th>Vision Type</th>
                             <th>Lens Type</th>
@@ -543,7 +509,7 @@
             </div>
         </section>
 
-        <!-- Reports Section -->
+        <!-- Reports Section (Updated with Date Filters) -->
         <section id="reportsSection" class="page-section">
             <div class="reports-container">
                 <h2>Reports</h2>
@@ -608,8 +574,6 @@
                         <p><strong>Age:</strong> <span id="previewAge"></span></p>
                         <p><strong>Gender:</strong> <span id="previewGender"></span></p>
                         <p><strong>Mobile:</strong> <span id="previewMobile"></span></p>
-                        <!-- H: Checkup date in preview -->
-                        <p><strong>Next Checkup:</strong> <span id="previewNextCheckupDate"></span></p>
                     </div>
                     <hr>
 
@@ -719,38 +683,7 @@
                 </div>
             </div>
         </section>
-        
-        <!-- Custom Delete Confirmation Modal (E) -->
-        <div id="deleteConfirmationModal" class="modal-overlay">
-            <div class="modal-content">
-                <div class="text-center">
-                    <i class="fas fa-trash-alt fa-3x text-danger mb-3"></i>
-                    <h2>Confirm Deletion</h2>
-                    <p class="text-muted mb-4">Are you sure you want to delete this prescription? This action cannot be undone.</p>
-                    <p class="fw-bold" id="deleteRxName">Prescription for [Patient Name]</p>
-                </div>
-
-                <div class="modal-buttons d-flex justify-content-center gap-3">
-                    <button onclick="confirmDeleteAction()" class="btn btn-danger">
-                        <i class="fas fa-check"></i> Yes, Delete
-                    </button>
-                    <button onclick="closeDeleteModal()" class="btn btn-secondary">
-                        <i class="fas fa-times"></i> Cancel
-                    </button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Custom Exit Prompt Modal -->
-        <div id="exitPromptModal" class="modal-overlay">
-            <div class="modal-content">
-                <p>Are you sure you want to leave? Your changes may not be saved.</p>
-                <div class="modal-buttons">
-                    <button id="confirmExit" class="btn btn-danger">Yes, Leave</button>
-                    <button id="cancelExit" class="btn btn-secondary">No, Stay</button>
-                </div>
-            </div>
-        </div>
+    </div>
 
     <!-- Payment Modal -->
 <div id="paymentModal" class="modal-overlay">
@@ -838,7 +771,7 @@
   </div>
 </div>
 
-<!-- Limit Reached Prompt Modal -->
+<!-- NEW: Limit Reached Prompt Modal -->
 <div id="limitReachedPromptModal" class="modal-overlay">
   <div class="modal-content">
     <div class="text-center">
