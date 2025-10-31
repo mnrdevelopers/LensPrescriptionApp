@@ -1,11 +1,11 @@
-// auth.js - FIXED VERSION WITH PROPER VALIDATION AND EMAIL VERIFICATION
+// auth.js - SIMPLE VERSION (EMAIL VERIFICATION DISABLED)
 
 // DOM Elements
 const loginForm = document.getElementById('loginForm');
 const registerForm = document.getElementById('registerForm');
 const forgotPasswordForm = document.getElementById('forgotPasswordForm');
 const successMessage = document.getElementById('successMessage');
-// NEW: Email verification element
+// NOTE: verifyEmailMessage element is no longer used but kept defined for compatibility
 const verifyEmailMessage = document.getElementById('verifyEmailMessage'); 
 
 // Form Elements
@@ -26,20 +26,12 @@ function initializeAuth() {
     // Check if user is already logged in
     auth.onAuthStateChanged((user) => {
         if (user && !isRedirecting) {
-            console.log('User authenticated, checking email verification...');
+            console.log('User authenticated, redirecting to app...');
             
-            // Check verification status on load if a user token exists
-            if (user.emailVerified) {
-                // User is signed in and verified, redirect to dashboard
-                isRedirecting = true;
-                window.location.href = 'app.html';
-            } else {
-                // User is signed in but not verified, force re-login/check
-                // This typically handles users who close the window immediately after registration
-                auth.signOut().then(() => {
-                    showVerifyEmailPrompt(user.email);
-                });
-            }
+            // --- SIMPLIFICATION: NO EMAIL VERIFICATION CHECK ON LOAD ---
+            isRedirecting = true;
+            window.location.href = 'app.html';
+            // --- END SIMPLIFICATION ---
         }
     });
 
@@ -139,15 +131,7 @@ async function handleLogin(event) {
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         const user = userCredential.user;
         
-        // --- NEW: Check Email Verification ---
-        if (!user.emailVerified) {
-            // User signed in but is not verified
-            console.warn('Login successful, but email is not verified.');
-            await auth.signOut(); // Immediately sign out the unverified user
-            showVerifyEmailPrompt(email);
-            return;
-        }
-        // --- END NEW CHECK ---
+        // --- SIMPLIFICATION: REMOVED EMAIL VERIFICATION CHECK ---
 
         // Handle "Remember Me"
         if (rememberMe) {
@@ -162,7 +146,7 @@ async function handleLogin(event) {
         localStorage.setItem('username', email);
         localStorage.setItem('userId', user.uid);
         
-        console.log('Login successful and verified, redirecting to app...');
+        console.log('Login successful, redirecting to app...');
         window.location.href = 'app.html';
 
     } catch (error) {
@@ -226,17 +210,22 @@ async function handleRegister(event) {
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
         const user = userCredential.user;
         
-        // --- NEW: Send Verification Email ---
-        await user.sendEmailVerification();
-        console.log('Verification email sent to:', user.email);
+        // --- SIMPLIFICATION: REMOVED sendEmailVerification() ---
         
-        // Immediately sign out the user after registration so they cannot proceed unverified
-        await auth.signOut();
+        // Save user data to localStorage
+        localStorage.setItem('username', email);
+        localStorage.setItem('userId', user.uid);
+        localStorage.setItem('freshRegistration', 'true'); // Flag for app.js setup check
         
-        console.log('Registration successful, user signed out. Showing verification prompt.');
+        console.log('Registration successful, redirecting to app...');
         
-        // Show verification prompt
-        showVerifyEmailPrompt(email);
+        // Show success message briefly before redirection (optional, but good feedback)
+        showSuccess('Registration successful! Redirecting to the app...');
+        
+        // Redirect after a short delay
+        setTimeout(() => {
+            window.location.href = 'app.html';
+        }, 1000);
         
     } catch (error) {
         console.error('Registration error:', error);
@@ -311,7 +300,7 @@ async function handleForgotPassword(event) {
         
         await auth.sendPasswordResetEmail(email, actionCodeSettings);
         
-        // --- This works properly for Forgot Password ---
+        // This works properly for Forgot Password
         showSuccessMessage('Password reset link sent! Check your inbox for instructions on setting a new password.');
         document.getElementById('forgotUsername').value = '';
         
@@ -323,81 +312,10 @@ async function handleForgotPassword(event) {
     }
 }
 
-// --- UPDATED: Show Email Verification Prompt ---
-function showVerifyEmailPrompt(email) {
-    hideAllForms();
-    
-    const unverifiedEmailElement = document.getElementById('unverifiedEmail');
-    if (unverifiedEmailElement) {
-        unverifiedEmailElement.textContent = email;
-        unverifiedEmailElement.dataset.email = email; // Store for resend function
-    }
+// --- REMOVED showVerifyEmailPrompt() function to simplify flow ---
 
-    // Ensure the verification message section is made active and visible
-    if (verifyEmailMessage) verifyEmailMessage.classList.add('active'); 
-    
-    // Clear any residual global errors
-    clearFormErrors();
 
-    // Show a helpful status message on the verification screen itself
-    // NOTE: This showSuccess() call was likely the cause of the conflict, as it
-    // targets the body/container, but we need the main content block to be visible.
-    // The previous fix already ensured verifyEmailMessage gets 'active'. 
-    // We are keeping this showSuccess as a secondary notification for now.
-    showSuccess('Registration complete! Please check your email inbox to verify your account and log in.');
-}
-
-// --- NEW FUNCTION: Resend Verification Email ---
-async function resendVerificationEmail() {
-    const emailElement = document.getElementById('unverifiedEmail');
-    const email = emailElement?.dataset.email;
-    const resendButton = document.getElementById('resendVerificationBtn');
-
-    if (!email) {
-        showError('Cannot resend verification: Email not found.');
-        return;
-    }
-
-    // Temporary sign-in to get user object and resend email
-    try {
-        setButtonLoading(resendButton, true, 'Resend Verification Email');
-        
-        // Use a dummy password to attempt temporary sign-in. This relies on the
-        // user's password still being the one they used for registration.
-        const credentials = await auth.signInWithEmailAndPassword(email, 'placeholder'); 
-        
-        // If login successful, means we have the user object
-        const user = credentials.user;
-        
-        // Check if already verified (user may have verified in another tab)
-        await user.reload(); 
-        if (user.emailVerified) {
-            showSuccess('Email already verified! Please log in.');
-            await auth.signOut();
-            showLogin();
-            return;
-        }
-
-        // Send again
-        await user.sendEmailVerification();
-        await auth.signOut(); // Sign out immediately after
-        
-        showSuccess('Verification email resent! Check your inbox.');
-        
-    } catch (error) {
-        // If password guess fails, or any other sign-in error occurs during resend attempt,
-        // we assume the user needs to re-enter their credentials on the login form.
-        
-        // Show a message suggesting they check their inbox/log in instead of a generic error
-        showSuccess('Verification email re-sent! Please check your inbox or log in to check status.');
-        
-        console.error('Error during resend verification process (Likely temporary sign-in issue):', error);
-        
-    } finally {
-        setButtonLoading(resendButton, false, 'Resend Verification Email');
-    }
-}
-// --- END NEW FUNCTIONS ---
+// --- REMOVED resendVerificationEmail() function as email verification is disabled ---
 
 
 // UI Management Functions
@@ -429,6 +347,7 @@ function hideAllForms() {
         successMessage.classList.add('hidden'); // Keep the original 'hidden' for safety
         successMessage.classList.remove('active');
     }
+    // Hiding the verification message container
     if (verifyEmailMessage) verifyEmailMessage.classList.remove('active'); 
 }
 
@@ -761,4 +680,4 @@ window.showLogin = showLogin;
 window.showRegister = showRegister;
 window.showForgotPassword = showForgotPassword;
 window.togglePassword = togglePassword;
-window.resendVerificationEmail = resendVerificationEmail; // NEW export
+// window.resendVerificationEmail is removed as verification is disabled
