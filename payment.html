@@ -144,24 +144,21 @@
             <p>Please wait while we set up your premium account...</p>
         </div>
     </div>
+    
+    <!-- Custom Dialog Modal (Replaces alert/confirm) -->
+    <div id="customDialogModal" class="loading-overlay" style="display: none;">
+        <div class="loading-content" style="max-width: 450px;">
+            <i id="dialogIcon" class="fas fa-info-circle fa-2x mb-3" style="color: var(--premium-navy);"></i>
+            <h4 id="dialogTitle">Dialog Title</h4>
+            <p id="dialogMessage" class="text-muted"></p>
+            <div id="dialogButtons" class="mt-4 d-flex justify-content-center gap-3">
+                <button id="dialogConfirmBtn" class="btn btn-primary" style="background: var(--premium-navy); border: none;">OK</button>
+                <button id="dialogCancelBtn" class="btn btn-secondary" style="display:none;">Cancel</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Scripts -->
     <script src="payment.js"></script>
-
-    <!-- Service Worker Registration -->
-<script>
-    // Register Service Worker
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-            navigator.serviceWorker.register('/LensPrescriptionApp/service-worker.js')
-                .then(function(registration) {
-                    console.log('Service Worker registered with scope:', registration.scope);
-                })
-                .catch(function(error) {
-                    console.log('Service Worker registration failed:', error);
-                });
-        });
-    }
-</script>
 </body>
 </html>
