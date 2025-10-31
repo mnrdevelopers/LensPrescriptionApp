@@ -2721,6 +2721,9 @@ function addUsageCounterToDashboard() {
 /**
  * Updates premium/subscription status across the Navigation Bar and Profile screen.
  */
+/**
+ * Updates premium/subscription status across the Navigation Bar and Profile screen.
+ */
 async function updatePremiumUI() {
     const user = auth.currentUser;
     if (!user) return;
@@ -2734,7 +2737,7 @@ async function updatePremiumUI() {
 
     // --- 1. Navigation Bar Update (Desktop) ---
     const navStatusContainer = document.getElementById('navSubscriptionStatus');
-    const navBuyButtonContainer = document.getElementById('navBuyPremiumButton'); // NEW
+    const navBuyButtonContainer = document.getElementById('navBuyPremiumButton');
     
     if (navStatusContainer) {
         if (isPremium) {
@@ -2752,20 +2755,20 @@ async function updatePremiumUI() {
                     <i class="fas fa-user me-1"></i> Free
                 </span>
             `;
-            // Show Buy Premium button if free
-if (navBuyButtonContainer) {
-    navBuyButtonContainer.innerHTML = `
-        <a href="payment.html" class="btn btn-sm btn-primary ms-2" style="background: var(--premium-gold); color: var(--premium-navy); border: none; font-weight: 600; padding: 6px 12px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-decoration: none;">
-            <i class="fas fa-arrow-up"></i> Upgrade
-        </a>
-    `;
-}
+            // Show Buy Premium button if free (UPDATED)
+            if (navBuyButtonContainer) {
+                navBuyButtonContainer.innerHTML = `
+                    <a href="payment.html" class="btn btn-sm btn-primary ms-2" style="background: var(--premium-gold); color: var(--premium-navy); border: none; font-weight: 600; padding: 6px 12px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-decoration: none;">
+                        <i class="fas fa-arrow-up"></i> Upgrade
+                    </a>
+                `;
+            }
         }
     }
     
     // --- 2. Mobile Offcanvas Status ---
     const mobileStatusElement = document.getElementById('mobileSubscriptionStatus');
-    const mobileBuyButtonElement = document.getElementById('mobileBuyPremiumButton'); // NEW
+    const mobileBuyButtonElement = document.getElementById('mobileBuyPremiumButton');
     
     if (mobileStatusElement && mobileBuyButtonElement) {
         if (isPremium) {
@@ -2789,18 +2792,17 @@ if (navBuyButtonContainer) {
                     <small class="text-muted">${FREE_PRESCRIPTION_LIMIT} prescriptions/month</small>
                 </div>
             `;
-            // Show Buy Premium button if free
+            // Show Buy Premium button if free (UPDATED)
             mobileBuyButtonElement.innerHTML = `
                 <div class="text-center mt-3">
-                    <button onclick="showPaymentModal()" class="btn btn-primary w-75" style="background: var(--premium-navy); border: none; font-weight: 600;">
+                    <a href="payment.html" class="btn btn-primary w-75" style="background: var(--premium-navy); border: none; font-weight: 600; text-decoration: none;">
                         <i class="fas fa-arrow-up"></i> Buy Premium
-                    </button>
+                    </a>
                 </div>
             `;
         }
     }
 
-    
     // --- 3. Profile Screen Update (Premium beside email) ---
     const premiumTag = document.getElementById('profilePremiumTag');
     
