@@ -35,7 +35,7 @@ async function initializePaymentPage() {
         
     } catch (error) {
         console.error('Error initializing payment page:', error);
-        alert('Error loading payment page. Please refresh.');
+        showCustomDialog('Error', 'Error loading payment page. Please refresh.', 'error');
     }
 }
 
@@ -149,7 +149,10 @@ async function proceedToPayment(planType = selectedPlan) {
     const razorpayKey = window.RAZORPAY_KEY_ID;
     
     if (!razorpayKey || razorpayKey === 'DISABLED') {
-        alert('Payment system is currently unavailable. Please try again later.');
+        console.error('Payment blocked: RAZORPAY_KEY_ID is DISABLED. Check firebase-config.js or Remote Config.');
+        showCustomDialog('Payment System Unavailable', 
+                         'The payment system is currently unavailable. This is likely because the Razorpay API key is disabled in the app configuration.', 
+                         'warning');
         return;
     }
 
@@ -157,7 +160,7 @@ async function proceedToPayment(planType = selectedPlan) {
     const plan = plans?.[planType.toUpperCase()];
     
     if (!plan) {
-        alert('Invalid plan selected.');
+        showCustomDialog('Error', 'Invalid plan selected. Please try again.', 'error');
         return;
     }
 
@@ -171,6 +174,8 @@ async function proceedToPayment(planType = selectedPlan) {
             name: 'Lens Prescription',
             description: `${planType.charAt(0).toUpperCase() + planType.slice(1)} Subscription`,
             handler: async function(response) {
+                // Ensure loading is handled inside the handler, as it's an asynchronous callback
+                showLoading(true); 
                 await handlePaymentSuccess(response, planType, plan.amount);
             },
             prefill: {
@@ -183,7 +188,8 @@ async function proceedToPayment(planType = selectedPlan) {
             },
             modal: {
                 ondismiss: function() {
-                    showLoading(false);
+                    // This handles closing the Razorpay modal
+                    showLoading(false); 
                 }
             }
         };
@@ -191,9 +197,12 @@ async function proceedToPayment(planType = selectedPlan) {
         const razorpay = new Razorpay(options);
         razorpay.open();
         
+        // Hide our custom loading overlay immediately since Razorpay's overlay should take over
+        showLoading(false); 
+        
     } catch (error) {
         console.error('Payment error:', error);
-        alert('Payment failed: ' + error.message);
+        showCustomDialog('Payment Failed', 'Payment failed: ' + (error.message || 'An unknown error occurred.'), 'error');
         showLoading(false);
     }
 }
@@ -208,6 +217,7 @@ async function handlePaymentSuccess(paymentResponse, planType, amount) {
         const expiryDate = new Date(now.getTime() + plan.duration * 24 * 60 * 60 * 1000);
 
         // Save subscription to Firestore
+        // 🛑 IMPORTANT: Ensure 'db' is available from firebase-config.js (it is global)
         await db.collection('subscriptions').doc(currentUser.uid).set({
             userId: currentUser.uid,
             plan: planType,
@@ -215,22 +225,21 @@ async function handlePaymentSuccess(paymentResponse, planType, amount) {
             paymentId: paymentResponse.razorpay_payment_id,
             orderId: paymentResponse.razorpay_order_id,
             signature: paymentResponse.razorpay_signature,
-            purchaseDate: firebase.firestore.FieldValue.serverTimestamp(),
+            // Use compatible firebase field value from the global object
+            purchaseDate: firebase.firestore.FieldValue.serverTimestamp(), 
             expiryDate: expiryDate,
             status: 'active'
         }, { merge: true });
 
         // Show success message
-        alert('🎉 Payment successful! Your subscription is now active. Redirecting to app...');
-        
-        // Redirect back to app
-        setTimeout(() => {
+        showCustomDialog('Success!', 'Payment successful! Your subscription is now active. Redirecting to app...', 'success', () => {
+            // Redirect back to app
             window.location.href = 'app.html';
-        }, 2000);
-
+        });
+        
     } catch (error) {
         console.error('Error handling payment success:', error);
-        alert('❌ Payment verification failed. Please contact support with your payment ID.');
+        showCustomDialog('Verification Failed', 'Payment verification failed. Please contact support with your payment ID.', 'error');
         showLoading(false);
     }
 }
@@ -241,11 +250,18 @@ async function checkCurrentSubscription() {
         if (subscription.active) {
             // User already has active subscription
             const expiryDate = subscription.expiryDate.toLocaleDateString();
-            const result = confirm(`You already have an active ${subscription.plan} subscription until ${expiryDate}. Would you like to go back to the app?`);
             
-            if (result) {
-                window.location.href = 'app.html';
-            }
+            // Show confirmation dialog (replaces confirm())
+            showCustomDialog(
+                'Active Subscription Found',
+                `You already have an active ${subscription.plan} subscription until ${expiryDate}. Would you like to go back to the app?`,
+                'info', 
+                () => {
+                    // Confirmed action (Go back to app)
+                    window.location.href = 'app.html';
+                },
+                true // Show cancel button
+            );
         }
     } catch (error) {
         console.warn('Error checking subscription:', error);
@@ -268,9 +284,78 @@ function setupEventListeners() {
     }
 }
 
+/**
+ * Custom dialog function to replace alert/confirm.
+ * @param {string} title - Title of the dialog.
+ * @param {string} message - Message body.
+ * @param {('success'|'error'|'warning'|'info')} type - Type of message for styling.
+ * @param {function} [onConfirm=()=>{}] - Callback for the confirm button.
+ * @param {boolean} [showCancel=false] - Whether to show the cancel button.
+ */
+function showCustomDialog(title, message, type = 'info', onConfirm = () => {}, showCancel = false) {
+    const modal = document.getElementById('customDialogModal');
+    const icon = document.getElementById('dialogIcon');
+    const titleEl = document.getElementById('dialogTitle');
+    const messageEl = document.getElementById('dialogMessage');
+    const confirmBtn = document.getElementById('dialogConfirmBtn');
+    const cancelBtn = document.getElementById('dialogCancelBtn');
+
+    if (!modal || !icon || !titleEl || !messageEl || !confirmBtn || !cancelBtn) {
+        // Fallback logging if modal elements are missing
+        console.error(`[Dialog Fallback] ${title}: ${message}`);
+        return;
+    }
+
+    // Set content
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+
+    // Determine icon and color
+    let iconClass = 'fas fa-info-circle';
+    let iconColor = '#1e3a8a';
+    switch (type) {
+        case 'success':
+            iconClass = 'fas fa-check-circle';
+            iconColor = '#10b981'; // success-color
+            break;
+        case 'error':
+            iconClass = 'fas fa-exclamation-circle';
+            iconColor = '#ef4444'; // error-color
+            break;
+        case 'warning':
+            iconClass = 'fas fa-exclamation-triangle';
+            iconColor = '#f59e0b'; // warning-color
+            break;
+    }
+    icon.className = iconClass + ' fa-2x mb-3';
+    icon.style.color = iconColor;
+
+    // Setup buttons
+    confirmBtn.onclick = () => {
+        modal.style.display = 'none';
+        onConfirm(); // Execute the callback
+    };
+
+    if (showCancel) {
+        cancelBtn.style.display = 'inline-block';
+        cancelBtn.onclick = () => {
+            modal.style.display = 'none';
+        };
+        confirmBtn.textContent = 'Yes';
+    } else {
+        cancelBtn.style.display = 'none';
+        confirmBtn.textContent = 'OK';
+    }
+
+    // Show modal
+    modal.style.display = 'flex';
+}
+
+
 // Firebase subscription check function (required by payment.js)
 async function checkActiveSubscription(userId) {
     try {
+        // 🛑 IMPORTANT: Ensure 'db' is available from firebase-config.js (it is global)
         const subscriptionDoc = await db.collection('subscriptions')
             .doc(userId)
             .get();
@@ -301,7 +386,8 @@ async function checkActiveSubscription(userId) {
 
         return { active: false };
     } catch (error) {
-        console.warn('Error checking subscription:', error);
+        console.warn('Error checking subscription (Database/Network Issue):', error);
+        // Fallback return: Assume not active on error
         return { active: false };
     }
 }
@@ -310,3 +396,4 @@ async function checkActiveSubscription(userId) {
 window.selectPlan = selectPlan;
 window.proceedToPayment = proceedToPayment;
 window.checkActiveSubscription = checkActiveSubscription;
+window.showCustomDialog = showCustomDialog; // Export dialog function
