@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upgrade to Premium - Lens Prescription</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="lenslogo.png">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="payment.css">
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    
+    <!-- Razorpay -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="payment-nav">
+        <div class="container">
+            <div class="nav-content">
+                <a href="app.html" class="back-btn">
+                    <i class="fas fa-arrow-left"></i> Back to App
+                </a>
+                <div class="nav-brand">
+                    <img src="lenslogo.png" alt="Lens Prescription" class="nav-logo">
+                    <span>Lens Prescription</span>
+                </div>
+                <div class="nav-status" id="userStatus">
+                    <!-- User email will be populated here -->
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="payment-hero">
+        <div class="container">
+            <div class="hero-content">
+                <i class="fas fa-crown hero-icon"></i>
+                <h1>Upgrade to Premium</h1>
+                <p class="hero-subtitle">Unlock unlimited prescriptions and premium features</p>
+                
+                <div class="limit-alert" id="limitAlert">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span>You've used all <strong id="freeLimitCount">10</strong> free prescriptions this month</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Plans -->
+    <section class="pricing-section">
+        <div class="container">
+            <div class="pricing-grid" id="pricingGrid">
+                <!-- Plans will be populated dynamically -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section">
+        <div class="container">
+            <h2 class="section-title">Everything Included in Premium</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <i class="fas fa-infinity"></i>
+                    <h4>Unlimited Prescriptions</h4>
+                    <p>No monthly limits. Create as many prescriptions as you need.</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-rocket"></i>
+                    <h4>Premium Features</h4>
+                    <p>Access all advanced features and templates.</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-headset"></i>
+                    <h4>Priority Support</h4>
+                    <p>Get fast responses from our support team.</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-mobile-alt"></i>
+                    <h4>Mobile Optimized</h4>
+                    <p>Perfect experience on all devices.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="faq-section">
+        <div class="container">
+            <h2 class="section-title">Frequently Asked Questions</h2>
+            <div class="faq-grid">
+                <div class="faq-item">
+                    <h5>Can I cancel anytime?</h5>
+                    <p>Yes, you can cancel your subscription anytime. No long-term commitment required.</p>
+                </div>
+                <div class="faq-item">
+                    <h5>What payment methods do you accept?</h5>
+                    <p>We accept all major credit/debit cards, UPI, net banking through Razorpay.</p>
+                </div>
+                <div class="faq-item">
+                    <h5>Will I lose data if I cancel?</h5>
+                    <p>No, all your prescriptions and data remain safe even after cancellation.</p>
+                </div>
+                <div class="faq-item">
+                    <h5>Is there a free trial?</h5>
+                    <p>You're already on the free plan with 10 monthly prescriptions. Upgrade for unlimited access.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Security Footer -->
+    <footer class="payment-footer">
+        <div class="container">
+            <div class="security-badge">
+                <i class="fas fa-shield-alt"></i>
+                <span>Secure payment powered by Razorpay • 256-bit SSL encryption</span>
+            </div>
+            <div class="footer-links">
+                <a href="#">Terms of Service</a>
+                <a href="#">Privacy Policy</a>
+                <a href="#">Refund Policy</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <h4>Processing Your Request</h4>
+            <p>Please wait while we set up your premium account...</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="payment.js"></script>
+</body>
+</html>
