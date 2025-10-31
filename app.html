@@ -483,23 +483,25 @@
                         <button class="btn-search" onclick="fetchPatients()">Search</button>
                     </div>
                 </div>
-
-                <table id="patientTable">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Mobile</th>
-                            <th>Age/Gender</th>
-                            <th>Last Visit</th>
-                            <th>Next Checkup</th>
-                            <th>Total Rx</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Patient data loaded by app.js -->
-                    </tbody>
-                </table>
+                 <!-- WRAPPER FOR HORIZONTAL SCROLLING -->
+                <div class="table-responsive-mobile">
+                    <table id="patientTable">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Mobile</th>
+                                <th>Age/Gender</th>
+                                <th>Last Visit</th>
+                                <th>Next Checkup</th>
+                                <th>Total Rx</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Patient data loaded by app.js -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </section>
 
@@ -521,25 +523,28 @@
                         <button class="btn btn-primary btn-sm" onclick="fetchPrescriptions()"><i class="fas fa-filter"></i> Apply</button>
                     </div>
                 </div>
-
-                <table id="prescriptionTable">
-                    <thead>
-                        <tr>
-                            <!-- B: Added Mobile and Age for better list clarity -->
-                            <th>Date & Time</th>
-                            <th>Patient Name</th>
-                            <th>Age</th>
-                            <th>Mobile</th> 
-                            <th>Amount</th>
-                            <th>Vision Type</th>
-                            <th>Lens Type</th>
-                            <th>Frame Type</th>
-                            <th>Payment Mode</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+                
+                 <!-- WRAPPER FOR HORIZONTAL SCROLLING -->
+                <div class="table-responsive-mobile">
+                    <table id="prescriptionTable">
+                        <thead>
+                            <tr>
+                                <!-- B: Added Mobile and Age for better list clarity -->
+                                <th>Date & Time</th>
+                                <th>Patient Name</th>
+                                <th>Age</th>
+                                <th>Mobile</th> 
+                                <th>Amount</th>
+                                <th>Vision Type</th>
+                                <th>Lens Type</th>
+                                <th>Frame Type</th>
+                                <th>Payment Mode</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
             </div>
         </section>
 
