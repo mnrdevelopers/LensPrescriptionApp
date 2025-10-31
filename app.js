@@ -1186,22 +1186,17 @@ async function fetchPrescriptions() {
     const endDate = endDateInput ? new Date(endDateInput) : null;
     
     if (endDate) {
+        // Set end date to end of day for inclusive filtering
         endDate.setHours(23, 59, 59, 999);
     }
     
+    // 1. Initial Firestore Query (Simplified for maximum index compatibility)
+    // We only filter by the user ID and order by the creation time (descending).
+    // The query relies on a simple composite index on (userId, createdAt, desc).
     let baseQuery = db.collection('prescriptions')
         .where('userId', '==', user.uid);
 
-    if (startDate) {
-        baseQuery = baseQuery.where('createdAt', '>=', startDate);
-    }
-    
-    if (endDate) {
-        baseQuery = baseQuery.where('createdAt', '<=', endDate);
-    }
-
     try {
-        // NOTE: This query requires a composite index on userId (Asc) and createdAt (Desc)
         const querySnapshot = await baseQuery.orderBy('createdAt', 'desc').get();
 
         let prescriptions = [];
@@ -1212,19 +1207,39 @@ async function fetchPrescriptions() {
             });
         });
         
-        // Client-side filtering for search input
-        if (searchInput) {
-             prescriptions = prescriptions.filter(rx => 
-                 rx.patientName.toLowerCase().includes(searchInput) || 
-                 rx.mobile.includes(searchInput)
-             );
-        }
+        // 2. Client-side Filtering for Date Range and Search (Resilient approach)
+        prescriptions = prescriptions.filter(rx => {
+            // Firestore timestamps need .toDate() if fetched via data(). We assume
+            // rx.date is already a valid date string from the `submitPrescription` function.
+            const rxDate = new Date(rx.date);
+            
+            // Apply Date Range Filter
+            const isAfterStart = !startDate || (rxDate.getTime() >= startDate.getTime());
+            const isBeforeEnd = !endDate || (rxDate.getTime() <= endDate.getTime());
+            
+            if (!isAfterStart || !isBeforeEnd) {
+                return false;
+            }
+            
+            // Apply Search Filter
+            if (searchInput) {
+                const name = rx.patientName.toLowerCase();
+                const mobile = rx.mobile;
+                // Match search input against name or mobile number
+                return name.includes(searchInput) || mobile.includes(searchInput);
+            }
+            
+            return true;
+        });
 
+        // 3. Client-side Sorting (No sorting needed as Firestore already provided descending order)
+        
         displayPrescriptions(prescriptions);
+        
     } catch (error) {
-        // 🚨 MODIFIED: Log error and provide specific guidance for Firestore index issue
+        // 🚨 CRITICAL ERROR LOGGING: This remains the most important part of debugging index issues.
         console.error('CRITICAL FIRESTORE ERROR fetching prescriptions:', error);
-        showStatusMessage('Error fetching prescriptions. This is often due to a missing **Firestore index**. Check the browser console for details and follow the link to create the required index if one is present.', 'error');
+        showStatusMessage('Error fetching prescriptions. You need a composite index on `userId` (Ascending) and `createdAt` (Descending). Check the browser console for details and follow the link to create the required index if one is present.', 'error');
     }
 }
 
