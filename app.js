@@ -1234,7 +1234,7 @@ async function fetchPrescriptions() {
 
         // 3. Client-side Sorting (No sorting needed as Firestore already provided descending order)
         
-        displayPrescriptions(prescriptions);
+        displayPrescriptions(prescriptions); // This line was causing the error
         
     } catch (error) {
         // 🚨 CRITICAL ERROR LOGGING: This remains the most important part of debugging index issues.
@@ -1275,6 +1275,46 @@ function groupPrescriptionsByDate(prescriptions) {
     });
 
     return finalGrouped;
+}
+
+// -----------------------------------------------------------
+// 7.1. New displayPrescriptions Function (Fix)
+// -----------------------------------------------------------
+function displayNoPrescriptionsFound(tbody) {
+    tbody.innerHTML = '<tr><td colspan="10" class="text-center">No prescriptions found for the selected filter.</td></tr>';
+}
+
+function displayPrescriptions(prescriptions) {
+    const tbody = document.getElementById('prescriptionTable')?.getElementsByTagName('tbody')[0];
+    if (!tbody) return;
+    
+    tbody.innerHTML = ''; // Clear existing rows
+
+    if (!prescriptions || prescriptions.length === 0) {
+        displayNoPrescriptionsFound(tbody);
+        return;
+    }
+    
+    // Group and display prescriptions
+    const grouped = groupPrescriptionsByDate(prescriptions);
+    const groupOrder = ['Today', 'Yesterday', 'Older'];
+
+    groupOrder.forEach(groupName => {
+        const group = grouped[groupName];
+        if (group && group.length > 0) {
+            // Add group header row
+            const headerRow = tbody.insertRow();
+            headerRow.classList.add('prescription-group-header');
+            const headerCell = headerRow.insertCell();
+            headerCell.colSpan = 10;
+            headerCell.textContent = `${groupName} (${group.length} prescriptions)`;
+
+            // Add prescription rows for the group
+            group.forEach(prescription => {
+                addPrescriptionRow(tbody, prescription);
+            });
+        }
+    });
 }
 
 // B: Updated displayPrescriptions to include Age/Mobile and Time
