@@ -2374,6 +2374,7 @@ window.disableNavigationButtons = disableNavigationButtons;
 window.navigateIfProfileComplete = navigateIfProfileComplete; // ← THIS IS CRITICAL
 window.showLimitReachedPrompt = showLimitReachedPrompt;
 window.closeLimitReachedPrompt = closeLimitReachedPrompt;
+window.showpaymentmodal = showpaymentmodal;
 
 // Firebase Remote Config functions
 window.initializeRemoteConfig = initializeRemoteConfig;
@@ -2679,6 +2680,12 @@ async function updateSubscriptionStatus() {
             `;
         }
     }
+}
+
+// In app.js, find where you show payment modal and replace with:
+function showPaymentModal() {
+    // Redirect to dedicated payment page
+    window.location.href = 'payment.html';
 }
 
 // Add usage counter to dashboard
