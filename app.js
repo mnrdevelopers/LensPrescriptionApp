@@ -2908,3 +2908,209 @@ async function updatePremiumUI() {
         }
     }
 }
+
+// Templates Management
+async function showTemplates() {
+    hideAllSections();
+    const templatesSection = document.getElementById('templatesSection');
+    if (templatesSection) templatesSection.classList.add('active');
+    updateActiveNavLink('showTemplates');
+    
+    // Check if user has premium access
+    const subscription = await checkActiveSubscription(auth.currentUser.uid);
+    const hasPremiumAccess = subscription.active;
+    
+    const accessMessage = document.getElementById('templatesAccessMessage');
+    const templatesGrid = document.getElementById('templatesGrid');
+    const premiumBadge = document.getElementById('templatesPremiumBadge');
+    
+    if (hasPremiumAccess) {
+        // Premium user - show templates
+        if (accessMessage) accessMessage.classList.add('d-none');
+        if (templatesGrid) templatesGrid.classList.remove('d-none');
+        if (premiumBadge) premiumBadge.classList.remove('d-none');
+    } else {
+        // Free user - show upgrade message
+        if (accessMessage) accessMessage.classList.remove('d-none');
+        if (templatesGrid) templatesGrid.classList.add('d-none');
+        if (premiumBadge) premiumBadge.classList.add('d-none');
+    }
+}
+
+// Template definitions
+const TEMPLATES = {
+    standard: {
+        name: "Standard Prescription",
+        fields: {
+            patientName: "",
+            age: "",
+            gender: "Male",
+            patientMobile: "",
+            visionType: "Single Vision",
+            lensType: "Blue Cut",
+            frameType: "Full Rim",
+            amount: "",
+            paymentMode: "Cash"
+        },
+        prescriptionData: {
+            rightDistSPH: "", rightDistCYL: "", rightDistAXIS: "", rightDistVA: "",
+            leftDistSPH: "", leftDistCYL: "", leftDistAXIS: "", leftDistVA: "",
+            rightAddSPH: "", rightAddCYL: "", rightAddAXIS: "", rightAddVA: "",
+            leftAddSPH: "", leftAddCYL: "", leftAddAXIS: "", leftAddVA: ""
+        }
+    },
+    quick: {
+        name: "Quick Prescription",
+        fields: {
+            patientName: "",
+            age: "",
+            gender: "Male",
+            patientMobile: "",
+            visionType: "Single Vision",
+            lensType: "Blue Cut",
+            frameType: "Full Rim",
+            amount: "",
+            paymentMode: "Cash"
+        },
+        prescriptionData: {
+            rightDistSPH: "", rightDistCYL: "", rightDistAXIS: "", rightDistVA: "6/6",
+            leftDistSPH: "", leftDistCYL: "", leftDistAXIS: "", leftDistVA: "6/6",
+            rightAddSPH: "", rightAddCYL: "", rightAddAXIS: "", rightAddVA: "",
+            leftAddSPH: "", leftAddCYL: "", leftAddAXIS: "", leftAddVA: ""
+        }
+    },
+    detailed: {
+        name: "Detailed Analysis",
+        fields: {
+            patientName: "",
+            age: "",
+            gender: "Male",
+            patientMobile: "",
+            visionType: "Progressive",
+            lensType: "Anti-Glare",
+            frameType: "Full Rim",
+            amount: "",
+            paymentMode: "Card"
+        },
+        prescriptionData: {
+            rightDistSPH: "-2.00", rightDistCYL: "-0.50", rightDistAXIS: "180", rightDistVA: "6/6",
+            leftDistSPH: "-2.25", leftDistCYL: "-0.75", leftDistAXIS: "175", leftDistVA: "6/6",
+            rightAddSPH: "+1.50", rightAddCYL: "", rightAddAXIS: "", rightAddVA: "N6",
+            leftAddSPH: "+1.50", leftAddCYL: "", leftAddAXIS: "", leftAddVA: "N6"
+        }
+    },
+    pediatric: {
+        name: "Pediatric Prescription",
+        fields: {
+            patientName: "",
+            age: "",
+            gender: "Male",
+            patientMobile: "",
+            visionType: "Single Vision",
+            lensType: "Blue Cut",
+            frameType: "Plastic",
+            amount: "",
+            paymentMode: "Cash"
+        },
+        prescriptionData: {
+            rightDistSPH: "+1.50", rightDistCYL: "+0.75", rightDistAXIS: "90", rightDistVA: "6/9",
+            leftDistSPH: "+1.75", leftDistCYL: "+0.50", leftDistAXIS: "85", leftDistVA: "6/9",
+            rightAddSPH: "", rightAddCYL: "", rightAddAXIS: "", rightAddVA: "",
+            leftAddSPH: "", leftAddCYL: "", leftAddAXIS: "", leftAddVA: ""
+        }
+    },
+    contact_lens: {
+        name: "Contact Lens",
+        fields: {
+            patientName: "",
+            age: "",
+            gender: "Male",
+            patientMobile: "",
+            visionType: "Contact Lens",
+            lensType: "Monthly Disposable",
+            frameType: "N/A",
+            amount: "",
+            paymentMode: "Card"
+        },
+        prescriptionData: {
+            rightDistSPH: "-3.00", rightDistCYL: "-0.75", rightDistAXIS: "180", rightDistVA: "6/6",
+            leftDistSPH: "-3.25", leftDistCYL: "-0.50", leftDistAXIS: "175", leftDistVA: "6/6",
+            rightAddSPH: "", rightAddCYL: "", rightAddAXIS: "", rightAddVA: "",
+            leftAddSPH: "", leftAddCYL: "", leftAddAXIS: "", leftAddVA: ""
+        }
+    }
+};
+
+function useTemplate(templateKey) {
+    const template = TEMPLATES[templateKey];
+    if (!template) {
+        showStatusMessage('Template not found', 'error');
+        return;
+    }
+    
+    // Check premium access again (in case user session changed)
+    checkActiveSubscription(auth.currentUser.uid).then(subscription => {
+        if (!subscription.active) {
+            showStatusMessage('Premium access required for templates', 'error');
+            showTemplates(); // Refresh the templates view
+            return;
+        }
+        
+        // Apply template to form
+        applyTemplateToForm(template);
+        
+        // Navigate to prescription form
+        navigateIfProfileComplete(showPrescriptionForm, 'form');
+        
+        // Show success message
+        showStatusMessage(`"${template.name}" template applied successfully!`, 'success');
+    });
+}
+
+function applyTemplateToForm(template) {
+    // Apply main fields
+    Object.keys(template.fields).forEach(fieldId => {
+        const element = document.getElementById(fieldId);
+        if (element) {
+            element.value = template.fields[fieldId];
+        }
+    });
+    
+    // Apply prescription data
+    Object.keys(template.prescriptionData).forEach(fieldId => {
+        const element = document.getElementById(fieldId);
+        if (element) {
+            element.value = template.prescriptionData[fieldId];
+        }
+    });
+    
+    // Add visual feedback
+    const formSection = document.getElementById('prescriptionFormSection');
+    if (formSection) {
+        formSection.classList.add('template-applied');
+        setTimeout(() => {
+            formSection.classList.remove('template-applied');
+        }, 500);
+    }
+}
+
+function createCustomTemplate() {
+    // Check premium access
+    checkActiveSubscription(auth.currentUser.uid).then(subscription => {
+        if (!subscription.active) {
+            showStatusMessage('Premium access required to create custom templates', 'error');
+            return;
+        }
+        
+        // For now, show a message about custom templates
+        showStatusMessage('Custom template creator coming soon!', 'info');
+        
+        // Future implementation: Open modal for custom template creation
+        // showCustomTemplateModal();
+    });
+}
+
+// Make functions globally available
+window.showTemplates = showTemplates;
+window.useTemplate = useTemplate;
+window.createCustomTemplate = createCustomTemplate;
