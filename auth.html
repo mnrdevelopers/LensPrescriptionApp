@@ -129,16 +129,23 @@
             <button class="btn btn-primary" onclick="showLogin()">Back to Login</button>
         </div>
         
-        <!-- NEW: Email Verification Required Message -->
+        <!-- NEW: Email Verification Required Message (Updated) -->
         <div id="verifyEmailMessage" class="form-container hidden">
             <div class="success-icon" style="background: #ffc107;">📧</div>
             <h2>Verification Required</h2>
             <p id="verifyEmailText" style="font-weight: bold;">
                 We've sent a verification link to <strong id="unverifiedEmail"></strong>. 
-                Please click the link in your inbox to activate your account.
+                Please click the link in your inbox to **activate your account**.
             </p>
             <div id="verifyMessageDetail">
-                 <p class="subtitle" style="margin-top: 15px;">You must verify your email before logging in.</p>
+                 <hr>
+                 <h4 class="text-center" style="color: #007bff; margin-bottom: 10px;">Before Logging In:</h4>
+                 <ul style="text-align: left; list-style: disc; padding-left: 20px; font-size: 14px;">
+                    <li>**Check your inbox** for the activation email.</li>
+                    <li>If you don't see it, please **check your spam or junk folder**.</li>
+                    <li>Once verified, return here and **log in** using your new credentials.</li>
+                 </ul>
+                 <hr>
             </div>
             
             <button class="btn btn-secondary" onclick="resendVerificationEmail()" id="resendVerificationBtn" style="margin-bottom: 10px;">
