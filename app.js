@@ -2374,7 +2374,10 @@ window.disableNavigationButtons = disableNavigationButtons;
 window.navigateIfProfileComplete = navigateIfProfileComplete; // ← THIS IS CRITICAL
 window.showLimitReachedPrompt = showLimitReachedPrompt;
 window.closeLimitReachedPrompt = closeLimitReachedPrompt;
-window.showpaymentmodal = showpaymentmodal;
+window.showPaymentModal = showPaymentModal;
+window.closePaymentModal = closePaymentModal;
+window.selectPlan = selectPlan;
+window.proceedToPayment = proceedToPayment;
 
 // Firebase Remote Config functions
 window.initializeRemoteConfig = initializeRemoteConfig;
@@ -2593,6 +2596,26 @@ function updatePlanPrices() {
     }
 }
 
+// Show payment modal
+function showPaymentModal() {
+    const modal = document.getElementById('paymentModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        // Update prices before showing
+        updatePlanPrices();
+        // Select yearly plan by default
+        selectPlan('yearly');
+    }
+}
+
+// Close payment modal
+function closePaymentModal() {
+    const modal = document.getElementById('paymentModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
 // In the limit reached prompt, update the message
 function showLimitReachedPrompt() {
     const modal = document.getElementById('limitReachedPromptModal');
@@ -2613,6 +2636,81 @@ function closeLimitReachedPrompt() {
     const modal = document.getElementById('limitReachedPromptModal');
     if (modal) {
         modal.style.display = 'none';
+    }
+}
+
+
+// Select plan
+function selectPlan(planType) {
+    selectedPlan = planType;
+    
+    // Update UI
+    document.querySelectorAll('.plan-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    document.querySelectorAll(`.${planType}-plan`).forEach(card => {
+        card.classList.add('selected');
+    });
+    
+    // Update radio buttons
+    document.getElementById(`${planType}Plan`).checked = true;
+}
+
+// Proceed to payment
+// Proceed to payment
+async function proceedToPayment() {
+    // Use the global RAZORPAY_KEY_ID from firebase-config.js
+    if (!RAZORPAY_KEY_ID || RAZORPAY_KEY_ID === 'DISABLED') {
+        showStatusMessage('Payment system is currently unavailable. Please try again later.', 'error');
+        return;
+    }
+
+    // Use the global SUBSCRIPTION_PLANS from firebase-config.js
+    const plan = SUBSCRIPTION_PLANS[selectedPlan.toUpperCase()];
+    if (!plan) {
+        showStatusMessage('Invalid plan selected.', 'error');
+        return;
+    }
+
+    try {
+        // Show processing modal
+        document.getElementById('paymentProcessingModal').style.display = 'flex';
+
+        // Create order using client-side Razorpay
+        const options = {
+            key: RAZORPAY_KEY_ID,
+            amount: plan.amount * 100, // Convert to paise
+            currency: 'INR',
+            name: 'Lens Prescription',
+            description: `${selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1)} Subscription`,
+            handler: async function(response) {
+                await handlePaymentSuccess(response, selectedPlan, plan.amount);
+            },
+            prefill: {
+                name: auth.currentUser.displayName || '',
+                email: auth.currentUser.email
+            },
+            theme: {
+                color: '#007bff'
+            },
+            modal: {
+                ondismiss: function() {
+                    document.getElementById('paymentProcessingModal').style.display = 'none';
+                }
+            }
+        };
+
+        const razorpay = new Razorpay(options);
+        razorpay.open();
+        
+        // Hide processing modal when Razorpay opens
+        document.getElementById('paymentProcessingModal').style.display = 'none';
+
+    } catch (error) {
+        console.error('Payment error:', error);
+        document.getElementById('paymentProcessingModal').style.display = 'none';
+        showStatusMessage('Payment failed: ' + error.message, 'error');
     }
 }
 
@@ -2682,12 +2780,6 @@ async function updateSubscriptionStatus() {
     }
 }
 
-// In app.js, find where you show payment modal and replace with:
-function showPaymentModal() {
-    // Redirect to dedicated payment page
-    window.location.href = 'payment.html';
-}
-
 // Add usage counter to dashboard
 function addUsageCounterToDashboard() {
     const dashboardSection = document.getElementById('dashboardSection');
@@ -2721,9 +2813,6 @@ function addUsageCounterToDashboard() {
 /**
  * Updates premium/subscription status across the Navigation Bar and Profile screen.
  */
-/**
- * Updates premium/subscription status across the Navigation Bar and Profile screen.
- */
 async function updatePremiumUI() {
     const user = auth.currentUser;
     if (!user) return;
@@ -2737,7 +2826,7 @@ async function updatePremiumUI() {
 
     // --- 1. Navigation Bar Update (Desktop) ---
     const navStatusContainer = document.getElementById('navSubscriptionStatus');
-    const navBuyButtonContainer = document.getElementById('navBuyPremiumButton');
+    const navBuyButtonContainer = document.getElementById('navBuyPremiumButton'); // NEW
     
     if (navStatusContainer) {
         if (isPremium) {
@@ -2755,12 +2844,12 @@ async function updatePremiumUI() {
                     <i class="fas fa-user me-1"></i> Free
                 </span>
             `;
-            // Show Buy Premium button if free (UPDATED)
+            // Show Buy Premium button if free
             if (navBuyButtonContainer) {
                 navBuyButtonContainer.innerHTML = `
-                    <a href="payment.html" class="btn btn-sm btn-primary ms-2" style="background: var(--premium-gold); color: var(--premium-navy); border: none; font-weight: 600; padding: 6px 12px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-decoration: none;">
+                    <button onclick="showPaymentModal()" class="btn btn-sm btn-primary ms-2" style="background: var(--premium-gold); color: var(--premium-navy); border: none; font-weight: 600; padding: 6px 12px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                         <i class="fas fa-arrow-up"></i> Upgrade
-                    </a>
+                    </button>
                 `;
             }
         }
@@ -2768,7 +2857,7 @@ async function updatePremiumUI() {
     
     // --- 2. Mobile Offcanvas Status ---
     const mobileStatusElement = document.getElementById('mobileSubscriptionStatus');
-    const mobileBuyButtonElement = document.getElementById('mobileBuyPremiumButton');
+    const mobileBuyButtonElement = document.getElementById('mobileBuyPremiumButton'); // NEW
     
     if (mobileStatusElement && mobileBuyButtonElement) {
         if (isPremium) {
@@ -2792,17 +2881,18 @@ async function updatePremiumUI() {
                     <small class="text-muted">${FREE_PRESCRIPTION_LIMIT} prescriptions/month</small>
                 </div>
             `;
-            // Show Buy Premium button if free (UPDATED)
+            // Show Buy Premium button if free
             mobileBuyButtonElement.innerHTML = `
                 <div class="text-center mt-3">
-                    <a href="payment.html" class="btn btn-primary w-75" style="background: var(--premium-navy); border: none; font-weight: 600; text-decoration: none;">
+                    <button onclick="showPaymentModal()" class="btn btn-primary w-75" style="background: var(--premium-navy); border: none; font-weight: 600;">
                         <i class="fas fa-arrow-up"></i> Buy Premium
-                    </a>
+                    </button>
                 </div>
             `;
         }
     }
 
+    
     // --- 3. Profile Screen Update (Premium beside email) ---
     const premiumTag = document.getElementById('profilePremiumTag');
     
