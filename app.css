@@ -2033,3 +2033,53 @@ body.offline .navbar {
 .badge.bg-warning:hover {
     background-color: #e0a800 !important;
 }
+
+/* Template Section Styles */
+.template-card {
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.template-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    border-color: var(--primary-color);
+}
+
+.border-dashed {
+    border-style: dashed !important;
+}
+
+.bg-purple {
+    background-color: #6f42c1 !important;
+}
+
+.btn-purple {
+    background-color: #6f42c1;
+    border-color: #6f42c1;
+    color: white;
+}
+
+.btn-purple:hover {
+    background-color: #5a2d91;
+    border-color: #5a2d91;
+}
+
+.template-preview {
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Template usage animation */
+@keyframes templateApplied {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.template-applied {
+    animation: templateApplied 0.5s ease;
+}
