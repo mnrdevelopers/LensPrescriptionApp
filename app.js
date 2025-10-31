@@ -1107,7 +1107,7 @@ async function saveAsTemplate() {
     
     try {
         await db.collection('templates').add({
-            userId: user.uid,
+            userId: user.uid, // ← Make sure this is included
             name: templateName.trim(),
             data: templateData,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
