@@ -685,17 +685,17 @@
         </section>
     </div>
 
-    <!-- Payment Modal -->
+ <!-- Payment Modal -->
 <div id="paymentModal" class="modal-overlay">
   <div class="modal-content large">
-    <div class="text-center">
-      <i class="fas fa-crown fa-3x text-warning mb-3"></i>
+    <div class="modal-header">
+      <i class="fas fa-crown"></i>
       <h2>Upgrade Required</h2>
       <p class="text-muted">You've reached the free limit of 10 prescriptions this month.</p>
       <p>Choose a plan to continue using Lens Prescription:</p>
     </div>
 
-    <div class="subscription-plans mt-4">
+    <div class="subscription-plans">
       <!-- Monthly Plan -->
       <div class="plan-card monthly-plan" onclick="selectPlan('monthly')">
         <div class="plan-header">
@@ -706,10 +706,10 @@
           </div>
         </div>
         <ul class="plan-features">
-          <li>✓ Unlimited Prescriptions</li>
-          <li>✓ All Features Included</li>
-          <li>✓ Priority Support</li>
-          <li>✓ Cancel Anytime</li>
+          <li>Unlimited Prescriptions</li>
+          <li>All Features Included</li>
+          <li>Priority Support</li>
+          <li>Cancel Anytime</li>
         </ul>
         <div class="plan-selector">
           <input type="radio" name="plan" id="monthlyPlan" value="monthly">
@@ -729,10 +729,10 @@
           <div class="savings">Save 58%</div>
         </div>
         <ul class="plan-features">
-          <li>✓ Unlimited Prescriptions</li>
-          <li>✓ All Features Included</li>
-          <li>✓ Priority Support</li>
-          <li>✓ Best Value</li>
+          <li>Unlimited Prescriptions</li>
+          <li>All Features Included</li>
+          <li>Priority Support</li>
+          <li>Best Value</li>
         </ul>
         <div class="plan-selector">
           <input type="radio" name="plan" id="yearlyPlan" value="yearly" checked>
@@ -741,8 +741,8 @@
       </div>
     </div>
 
-    <div class="modal-buttons mt-4">
-      <button onclick="proceedToPayment()" class="btn btn-primary btn-lg">
+    <div class="modal-buttons">
+      <button onclick="proceedToPayment()" class="btn btn-primary">
         <i class="fas fa-lock"></i> Proceed to Payment
       </button>
       <button onclick="closePaymentModal()" class="btn btn-secondary">
@@ -750,8 +750,9 @@
       </button>
     </div>
 
-    <div class="text-center mt-3">
-      <small class="text-muted">
+    <div class="security-badge">
+      <small>
+        <i class="fas fa-shield-alt"></i>
         Secure payment powered by Razorpay
       </small>
     </div>
@@ -831,4 +832,5 @@
     </script>
 </body>
 </html>
+
 
