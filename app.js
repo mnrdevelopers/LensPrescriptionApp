@@ -39,7 +39,9 @@ firebase.auth().onAuthStateChanged((user) => {
             window.location.replace('auth.html');
         } else {
             // Unexpected logout (session expiry, token revocation): show warning modal
+            // FIX: Show the modal immediately instead of redirecting
             showUnexpectedLogoutWarning();
+            // Note: The redirection to 'auth.html' now happens via the button inside the modal.
         }
     }
 });
@@ -113,12 +115,16 @@ async function initializeApp() {
 function showUnexpectedLogoutWarning() {
     const modal = document.getElementById('unexpectedLogoutModal');
     if (modal) {
+        // Ensure the modal is always visible and covers the screen
         modal.style.display = 'flex';
+        modal.style.opacity = 1;
+        modal.style.visibility = 'visible';
+        
+        // Prevent subsequent actions, clear local storage and force the user to re-authenticate
+        localStorage.clear();
+        sessionStorage.clear();
+        auth.signOut().catch(() => {}); // Ensure Firebase state is clean
     }
-    // Prevent subsequent actions, clear local storage and force the user to re-authenticate
-    localStorage.clear();
-    sessionStorage.clear();
-    auth.signOut().catch(() => {}); // Ensure Firebase state is clean
 }
 // -----------------------------------------------------------
 
@@ -847,7 +853,7 @@ function getFormData() {
             rightDistCYL: getStringValue('rightDistCYL'),
             rightDistAXIS: getStringValue('rightDistAXIS'),
             rightDistVA: getStringValue('rightDistVA'),
-            leftDistSPH: getStringValue('leftDistSPH'),
+            leftDistSPH: getString('leftDistSPH'),
             leftDistCYL: getStringValue('leftDistCYL'),
             leftDistAXIS: getStringValue('leftDistAXIS'),
             leftDistVA: getStringValue('leftDistVA'),
