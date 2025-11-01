@@ -80,7 +80,7 @@ async function initializeApp() {
         
         // H: Fetch reminders on Dashboard load
         if (window.location.hash.includes('dashboard')) {
-            fetchCheckupReminders();
+            fetchCheckupReminders(false); // Do not display on dashboard load, just count
         }
         
         // --- NEW: Apply feature locks/unlocks based on premium status ---
@@ -366,6 +366,7 @@ function navigateIfProfileComplete(navFunction, sectionName) {
         
         const hash = sectionName === 'dashboard' ? 'dashboard' : 
                      sectionName === 'form' ? 'form' : 
+                     sectionName === 'notifications' ? 'notifications' : // NEW SECTION
                      sectionName === 'prescriptions' ? 'prescriptions' : 
                      sectionName === 'reports' ? 'reports' : 
                      sectionName === 'patients' ? 'patients' : 
@@ -389,6 +390,9 @@ function routeToHashedSection() {
             break;
         case 'form':
             showPrescriptionForm();
+            break;
+        case 'notifications':
+            showNotifications(); // NEW FUNCTION CALL
             break;
         case 'prescriptions':
             showPrescriptions();
@@ -416,7 +420,16 @@ function showDashboard() {
     
     document.getElementById('statsTimePeriod').value = 'daily';
     fetchDashboardStats();
-    fetchCheckupReminders();
+    fetchCheckupReminders(false); // Only update count on dashboard
+}
+
+function showNotifications() {
+    hideAllSections();
+    const notificationsSection = document.getElementById('notificationsSection');
+    if (notificationsSection) notificationsSection.classList.add('active');
+    updateActiveNavLink('showNotifications');
+    
+    fetchCheckupReminders(true); // Fetch and display reminders on this page
 }
 
 function showPrescriptionForm() {
@@ -703,9 +716,10 @@ async function submitPrescription() {
     }
 
     // --- MODIFIED: Direct check on submission ---
+    // This check handles both premium status and limit checking
     const canSubmit = await checkPrescriptionLimit();
     if (!canSubmit) {
-        // Limit check will show the prompt modal, no need to show a separate error
+        // Limit check will show the appropriate prompt modal (Limit Reached), no need for a separate error
         return; 
     }
     // ------------------------------------------
@@ -829,11 +843,12 @@ function resetForm(clearPatientData = false) {
 
 // A: Copy OD to OS Function
 function copyRightToLeft() {
-    // Check if premium status allows the action
+    // --- MODIFIED: Use new feature lock prompt ---
     if (!isPremium) {
-        showLimitReachedPrompt();
+        showPremiumFeaturePrompt();
         return;
     }
+    // ------------------------------------------
     
     const fields = [
         'DistSPH', 'DistCYL', 'DistAXIS', 'DistVA',
@@ -1040,21 +1055,26 @@ function filterPatients() {
     }
 }
 
-async function fetchCheckupReminders() {
+async function fetchCheckupReminders(displayOnPage = false) {
     const user = auth.currentUser;
     if (!user) return;
     
     const today = new Date();
     const thirtyDaysFuture = new Date();
     thirtyDaysFuture.setDate(today.getDate() + 30);
+    const notificationsContent = document.getElementById('notificationsContent');
+    
+    let htmlContent = '';
 
     try {
         const querySnapshot = await db.collection('patients')
             .where('userId', '==', user.uid)
             .where('nextCheckupDate', '<=', firebase.firestore.Timestamp.fromDate(thirtyDaysFuture))
+            .orderBy('nextCheckupDate', 'asc') // Order by date ascending
             .get();
 
         let countDue = 0;
+        let reminders = [];
         
         querySnapshot.forEach((doc) => {
             const data = doc.data();
@@ -1062,18 +1082,69 @@ async function fetchCheckupReminders() {
             
             if (nextCheckupDate && nextCheckupDate <= thirtyDaysFuture) {
                 countDue++;
+                reminders.push({
+                    name: data.name,
+                    mobile: data.mobile,
+                    date: nextCheckupDate.toLocaleDateString(),
+                    isDue: nextCheckupDate <= today
+                });
             }
         });
 
+        // 1. Update Dashboard Card
         const statReminders = document.getElementById('statRemindersDue');
         if (statReminders) {
             statReminders.textContent = countDue.toString();
         }
+        
+        // 2. Display on Notifications Page if requested
+        if (displayOnPage && notificationsContent) {
+            if (reminders.length === 0) {
+                 htmlContent = `<div class="alert alert-success text-center">
+                                    <i class="fas fa-check-circle me-2"></i>No patient checkup reminders due in the next 30 days!
+                                </div>`;
+            } else {
+                htmlContent += `<div class="alert alert-warning">
+                                    <i class="fas fa-calendar-check me-2"></i>You have **${reminders.length} patients** due for a checkup soon (within 30 days).
+                                </div>
+                                <ul class="list-group list-group-flush">`;
+
+                reminders.forEach(r => {
+                    const statusText = r.isDue ? 'OVERDUE' : 'DUE SOON';
+                    const statusClass = r.isDue ? 'list-group-item-danger' : 'list-group-item-warning';
+                    
+                    htmlContent += `
+                        <li class="list-group-item ${statusClass} d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${r.name}</strong> 
+                                <span class="badge bg-secondary ms-2">${r.mobile}</span>
+                                <br>
+                                <small class="text-muted">Next Checkup: ${r.date}</small>
+                            </div>
+                            <span class="badge bg-dark">${statusText}</span>
+                            <button onclick="filterPrescriptionsByMobile('${r.mobile}')" class="btn btn-sm btn-info ms-3">
+                                <i class="fas fa-history"></i> History
+                            </button>
+                        </li>
+                    `;
+                });
+                htmlContent += `</ul>`;
+            }
+            notificationsContent.innerHTML = htmlContent;
+        }
 
     } catch (error) {
+        console.error('Error fetching checkup reminders:', error);
+        
         const statReminders = document.getElementById('statRemindersDue');
         if (statReminders) {
             statReminders.textContent = 'N/A';
+        }
+        
+        if (displayOnPage && notificationsContent) {
+            notificationsContent.innerHTML = `<div class="alert alert-danger text-center">
+                                                <i class="fas fa-exclamation-circle me-2"></i>Error loading reminders. Check your network or permissions.
+                                            </div>`;
         }
     }
 }
@@ -1111,12 +1182,12 @@ async function fetchTemplates() {
 }
 
 async function saveAsTemplate() {
-    // --- NEW: Lock template saving for free users ---
+    // --- MODIFIED: Use new feature lock prompt ---
     if (!isPremium) {
-        showLimitReachedPrompt();
+        showPremiumFeaturePrompt();
         return;
     }
-    // ------------------------------------------------
+    // ------------------------------------------
     
     const user = auth.currentUser;
     if (!user) return;
@@ -1388,7 +1459,7 @@ function addPrescriptionRow(tbody, prescription) {
     // --- MODIFIED: Lock delete action for non-premium users ---
     deleteBtn.onclick = () => {
         if (!isPremium) {
-            showLimitReachedPrompt();
+            showPremiumFeaturePrompt(); // Show premium feature lock message
         } else {
             showDeleteModal(prescription);
         }
@@ -1502,7 +1573,7 @@ function loadPreviewData(data) {
 function generateImage() {
     // --- MODIFIED: Lock download for non-premium users ---
     if (!isPremium) {
-        showLimitReachedPrompt();
+        showPremiumFeaturePrompt();
         return;
     }
     // ----------------------------------------------------
@@ -1555,7 +1626,7 @@ function generateImage() {
 function printPreview() {
     // --- MODIFIED: Lock printing for non-premium users ---
     if (!isPremium) {
-        showLimitReachedPrompt();
+        showPremiumFeaturePrompt();
         return;
     }
     // ----------------------------------------------------
@@ -1771,10 +1842,69 @@ function printPreview() {
     printWindow.document.close();
 }
 
+async function sendWhatsAppMessage(mobile, imageUrl) {
+    try {
+        const formattedMobile = mobile.replace(/\D/g, '');
+        const clinicName = document.getElementById('previewClinicName')?.textContent || 'Our Clinic';
+        const optometristName = document.getElementById('previewOptometristName')?.textContent || 'Optometrist';
+        const patientName = document.getElementById('previewPatientName')?.textContent || 'Patient';
+        
+        const message = `Hello ${patientName},\n\nYour eye prescription from ${clinicName} is ready.\n\nThank you for visiting us!\n\n- ${optometristName}`;
+        
+        let whatsappUrl;
+        
+        if (imageUrl.startsWith('http')) {
+            const messageWithImage = `${message}\n\nView your prescription: ${imageUrl}`;
+            const encodedMessageWithImage = encodeURIComponent(messageWithImage);
+            whatsappUrl = `https://wa.me/${formattedMobile}?text=${encodedMessageWithImage}`;
+        } else {
+             const encodedMessage = encodeURIComponent(message);
+             whatsappUrl = `https://wa.me/${formattedMobile}?text=${encodedMessage}`;
+        }
+        
+        const whatsappWindow = window.open(whatsappUrl, '_blank');
+        
+        if (!whatsappWindow) {
+            showStatusMessage('Popup blocked. Please allow popups for WhatsApp.', 'warning');
+        } else {
+            showStatusMessage('Opening WhatsApp...', 'success');
+        }
+        
+    } catch (error) {
+        throw new Error('Failed to send WhatsApp message: ' + error.message);
+    }
+}
+
+function startWhatsappTimer() {
+    const modal = document.getElementById('whatsappTimerModal');
+    const timerDisplay = document.getElementById('timerDisplay');
+    
+    if (modal) modal.style.display = 'flex';
+    timerSeconds = 0;
+    
+    if (timerDisplay) timerDisplay.textContent = '00:00';
+
+    timerInterval = setInterval(() => {
+        timerSeconds++;
+        const minutes = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
+        const seconds = String(timerSeconds % 60).padStart(2, '0');
+        if (timerDisplay) timerDisplay.textContent = `${minutes}:${seconds}`;
+    }, 1000);
+}
+
+function stopWhatsappTimer() {
+    clearInterval(timerInterval);
+    const modal = document.getElementById('whatsappTimerModal');
+    if (modal) {
+        modal.style.display = 'none';
+        
+    }
+}
+
 async function sendWhatsApp() {
     // --- MODIFIED: Lock sharing for non-premium users ---
     if (!isPremium) {
-        showLimitReachedPrompt();
+        showPremiumFeaturePrompt();
         return;
     }
     // ----------------------------------------------------
@@ -1910,7 +2040,7 @@ async function checkPrescriptionLimit(isInitialLoad = false) {
         if (prescriptionCount >= FREE_PRESCRIPTION_LIMIT) {
             if (RAZORPAY_KEY_ID) {
                 if (!isInitialLoad) { 
-                     showLimitReachedPrompt();
+                     showLimitReachedPrompt(); // Show specific limit message
                 }
                 return false;
             } else {
@@ -2087,6 +2217,27 @@ async function updatePremiumUI() {
         }
     }
 }
+
+// --- NEW FUNCTION: Show prompt for premium features ---
+function showPremiumFeaturePrompt() {
+    const modal = document.getElementById('premiumFeaturePromptModal');
+    if (modal) {
+        const messageElement = modal.querySelector('p.text-muted');
+        if (messageElement) {
+            messageElement.innerHTML = `This feature (e.g., **Export, Delete, Templates**) requires a **Premium Subscription**.`;
+        }
+        modal.style.display = 'flex';
+    }
+    showStatusMessage(`This feature is premium-only. Please upgrade.`, 'warning');
+}
+
+function closePremiumFeaturePrompt() {
+    const modal = document.getElementById('premiumFeaturePromptModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+// --------------------------------------------------------
 
 function showLimitReachedPrompt() {
     const modal = document.getElementById('limitReachedPromptModal');
@@ -2526,6 +2677,7 @@ function lockFeatures() {
 
 // Global Exports
 window.showDashboard = showDashboard;
+window.showNotifications = showNotifications; // Export new function
 window.showPrescriptionForm = showPrescriptionForm;
 window.showPrescriptions = showPrescriptions;
 window.showReports = showReports;
@@ -2560,6 +2712,8 @@ window.confirmDeleteAction = confirmDeleteAction;
 window.saveAsTemplate = saveAsTemplate;
 window.loadTemplate = loadTemplate;
 window.checkPatientExists = checkPatientExists;
+// --- EXPORT NEW PREMIUM FEATURE PROMPT FUNCTION ---
+window.showPremiumFeaturePrompt = showPremiumFeaturePrompt;
 
 // Remote Config Export
 window.initializeRemoteConfig = initializeRemoteConfig;
