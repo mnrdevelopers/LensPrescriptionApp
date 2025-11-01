@@ -1713,3 +1713,226 @@ body.dark-mode {
 #prescriptionPreview .preview-footer {
     font-size: 9px;
 }
+
+/* Fix for navigation active states and disabled states */
+.nav-link-custom.nav-disabled {
+    opacity: 0.6;
+    pointer-events: none;
+    cursor: not-allowed;
+}
+
+/* Premium navigation styling */
+.premium-nav {
+    background: rgba(255, 255, 255, 0.98) !important;
+    backdrop-filter: blur(10px);
+}
+
+.premium-offcanvas-header {
+    background: var(--premium-navy);
+    color: white;
+}
+
+.premium-offcanvas-header .btn-close {
+    filter: invert(1);
+}
+
+/* Button disabled states */
+.btn-disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.btn-disabled:hover {
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Form validation styles */
+input:invalid, select:invalid {
+    border-color: var(--danger-color) !important;
+}
+
+input:valid, select:valid {
+    border-color: var(--success-color) !important;
+}
+
+/* Loading states */
+.btn-loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.btn-loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Badge styles */
+.badge {
+    font-size: 0.75em;
+    padding: 0.35em 0.65em;
+}
+
+/* Modal backdrop fix */
+.modal-overlay {
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+}
+
+/* Table responsive fixes */
+.table-responsive-mobile {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Ensure tables are scrollable on mobile */
+@media (max-width: 768px) {
+    .table-responsive-mobile {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+    }
+}
+
+/* Print styles enhancement */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    .table-responsive-mobile {
+        overflow-x: visible !important;
+    }
+}
+
+/* Dark mode enhancements */
+body.dark-mode .app-navbar {
+    background: rgba(30, 30, 30, 0.95) !important;
+    color: #f4f4f4;
+}
+
+body.dark-mode .nav-link-custom {
+    color: #f4f4f4 !important;
+}
+
+body.dark-mode .nav-link-custom.active {
+    background: #2d2d2d !important;
+    color: var(--premium-gold) !important;
+}
+
+/* Fix for offcanvas in dark mode */
+body.dark-mode .offcanvas {
+    background: #1a1a1a;
+    color: #f4f4f4;
+}
+
+body.dark-mode .offcanvas .nav-link-custom {
+    color: #f4f4f4 !important;
+}
+
+/* Status message animations */
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Form focus states */
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #0056b3;
+}
+
+/* Dark mode scrollbar */
+body.dark-mode ::-webkit-scrollbar-track {
+    background: #2d2d2d;
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb {
+    background: var(--premium-gold);
+}
+
+/* Fix for mobile header alignment */
+@media (max-width: 991.98px) {
+    .app-header .header-brand {
+        margin-left: 0;
+        justify-content: center;
+    }
+}
+
+/* Ensure proper z-index stacking */
+.app-header {
+    z-index: 1050;
+}
+
+.app-navbar {
+    z-index: 1040;
+}
+
+.modal-overlay {
+    z-index: 1060;
+}
+
+/* Button group spacing */
+.button-group {
+    gap: 15px;
+}
+
+.button-group .btn {
+    margin: 5px 0;
+}
+
+/* Template management bar responsive fix */
+@media (max-width: 576px) {
+    .template-management-bar {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .template-management-bar .template-selector {
+        width: 100%;
+    }
+    
+    .template-management-bar select {
+        width: 100%;
+        max-width: none;
+    }
+}
