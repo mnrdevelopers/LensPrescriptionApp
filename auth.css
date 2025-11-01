@@ -90,6 +90,7 @@ body {
 .form-group {
     margin-bottom: 20px;
     text-align: left;
+    position: relative; /* Needed for positioning field errors */
 }
 
 .form-group label {
@@ -117,6 +118,45 @@ body {
     background: white;
     box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
 }
+
+/* --- ADDED CUSTOM VALIDATION STYLES --- */
+
+/* Success state (e.g., matching password, valid email format) */
+.form-group input.password-match-success,
+.form-group input:valid:focus:not([type="checkbox"]) { /* Only apply green border if valid and focused/typing */
+    border-color: #28a745 !important;
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.2);
+}
+
+/* Error state */
+.form-group input.error,
+.form-group input:invalid:not(:placeholder-shown):not([type="checkbox"]) { /* Apply red border if invalid and not empty */
+    border-color: #dc3545 !important;
+    background-color: #fff5f5 !important;
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.2);
+}
+
+.field-error-message {
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: 5px;
+    display: block;
+    font-weight: 500;
+}
+
+.error-message-box { /* Global error message styling */
+    background: #f8d7da;
+    color: #721c24;
+    padding: 12px;
+    border-radius: 8px;
+    margin: 15px 0;
+    text-align: center;
+    border: 1px solid #f5c6cb;
+    font-size: 14px;
+    font-weight: bold;
+}
+/* -------------------------------------- */
+
 
 /* Password Container */
 .password-container {
@@ -192,6 +232,11 @@ body {
 
 .btn-primary:active {
     transform: translateY(0);
+}
+
+.btn-secondary { /* Style for secondary button (e.g., in Success message) */
+    background: #6c757d;
+    color: white;
 }
 
 .btn:disabled {
@@ -294,7 +339,7 @@ body {
     to { transform: rotate(360deg); }
 }
 
-/* Error States */
+/* Error States (Old generic error classes, updated to use :invalid) */
 .error {
     border-color: #dc3545 !important;
 }
@@ -340,49 +385,13 @@ body {
     }
 }
 
-/* Add to auth.css */
-.password-match .error-message {
-    display: block;
-    font-size: 12px;
-    margin-top: 5px;
-}
-
-/* Style for valid password match */
-input:valid + .toggle-password {
-    color: #28a745;
-}
-
-/* Style for invalid password match */
-input:invalid + .toggle-password {
-    color: #dc3545;
-}
-
-/* Success state for matching passwords */
+/* Enhanced Error/Success Styles (from original code) */
 .password-match-success {
     border-color: #28a745 !important;
 }
 
-/* Error state for non-matching passwords */
 .password-match-error {
     border-color: #dc3545 !important;
-}
-
-/* Add to auth.css - Enhanced Error Styles */
-.error {
-    border-color: #dc3545 !important;
-    background-color: #fff5f5 !important;
-}
-
-.error-message {
-    color: #dc3545;
-    font-size: 12px;
-    margin-top: 5px;
-    display: block;
-}
-
-.password-match-success {
-    border-color: #28a745 !important;
-    background-color: #f8fff9 !important;
 }
 
 .suggestion-message {
@@ -436,12 +445,6 @@ input:invalid + .toggle-password {
     animation: spin 0.8s linear infinite;
 }
 
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-/* Enhanced loading states */
 .btn-loading {
     position: relative;
     pointer-events: none;
