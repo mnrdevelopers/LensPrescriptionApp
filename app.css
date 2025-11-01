@@ -915,7 +915,7 @@ body.dark-mode .offcanvas-body .navbar-nav .nav-link-custom.active {
 }
 
 #prescriptionTable td, #patientTable td {
-    padding: 12px;
+    padding: 10px;
     border-bottom: 1px solid #dee2e6;
 }
 
