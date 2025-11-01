@@ -13,6 +13,13 @@
     --premium-gold: #fbbf24; /* Rich Gold */
     --header-height: 55px; /* Height of the logo/icon bar */
     --navbar-height: 50px; /* Height of the navigation link bar */
+    
+    /* DARK MODE VARIABLES */
+    --dark-bg: #1e1e2d;
+    --dark-surface: #27293d;
+    --dark-text: #f0f0f0;
+    --dark-secondary-text: #a0a0a0;
+    --dark-border: #444;
 }
 
 * {
@@ -36,9 +43,150 @@ body {
 }
 
 body.dark-mode {
-    background-color: #1a1a1a;
-    color: #f4f4f4;
+    /* Main Background */
+    background: var(--dark-bg);
+    color: var(--dark-text);
 }
+
+/* --- DARK MODE STYLES --- */
+
+body.dark-mode .main-content,
+body.dark-mode .dashboard-container,
+body.dark-mode .prescription-container,
+body.dark-mode .container,
+body.dark-mode .reports-container,
+body.dark-mode .preview-container {
+    background: var(--dark-surface) !important;
+    color: var(--dark-text) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+body.dark-mode .text-muted {
+    color: var(--dark-secondary-text) !important;
+}
+
+/* Navbar/Header Fixes */
+body.dark-mode .app-navbar {
+    background: var(--dark-surface);
+    border-bottom: 1px solid var(--dark-border);
+}
+
+body.dark-mode .app-navbar .nav-link-custom {
+    color: var(--dark-text) !important;
+}
+
+body.dark-mode .app-navbar .nav-link-custom.active {
+    background: #33364b; /* Darker active tab background */
+    color: var(--premium-gold) !important;
+    border-bottom-color: var(--premium-gold);
+}
+
+body.dark-mode .app-navbar .nav-link-custom:hover {
+    background: #33364b;
+}
+
+/* Inputs and Selects */
+body.dark-mode input,
+body.dark-mode select,
+body.dark-mode .search-bar input,
+body.dark-mode .date-filter-group input,
+body.dark-mode .date-filter-group select {
+    background-color: #33364b;
+    color: var(--dark-text);
+    border-color: var(--dark-border) !important;
+}
+
+body.dark-mode input:focus,
+body.dark-mode select:focus {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.3);
+}
+
+/* Form Groups and Titles */
+body.dark-mode .form-group label,
+body.dark-mode .section-title {
+    color: var(--dark-text);
+}
+body.dark-mode .section-title {
+    color: var(--info-color) !important;
+}
+
+/* Tables (Prescriptions/Reports/Patients) */
+body.dark-mode #prescriptionTable,
+body.dark-mode #patientTable,
+body.dark-mode #reportTable {
+    background: var(--dark-surface);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode #prescriptionTable th,
+body.dark-mode #patientTable th,
+body.dark-mode #reportTable th {
+    background: linear-gradient(135deg, #3c415e, #1e3a8a);
+    color: white;
+}
+
+body.dark-mode #prescriptionTable td,
+body.dark-mode #patientTable td,
+body.dark-mode #reportTable td {
+    border-bottom: 1px solid var(--dark-border);
+}
+
+body.dark-mode #prescriptionTable tbody tr:nth-child(odd) {
+    background-color: #33364b;
+}
+
+body.dark-mode #prescriptionTable tbody tr:hover,
+body.dark-mode #patientTable tbody tr:hover,
+body.dark-mode #reportTable tbody tr:hover {
+    background-color: #3c415e;
+}
+
+body.dark-mode .prescription-group-header {
+    background: #3c415e !important;
+    color: var(--dark-text) !important;
+    border-bottom: 2px solid var(--dark-border) !important;
+}
+
+/* Dashboard Cards and Filters */
+body.dark-mode .stat-card {
+    background: #33364b;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .stats-filters select {
+    background-color: #33364b;
+    color: var(--dark-text);
+    border-color: var(--dark-border);
+}
+
+body.dark-mode .date-filter-group {
+    background: #33364b;
+    border: 1px solid var(--dark-border);
+}
+
+/* Template Management Bar */
+body.dark-mode .template-management-bar {
+    background: #33364b;
+    border: 1px solid var(--dark-border);
+}
+
+/* Alerts and Status Boxes */
+body.dark-mode .alert-warning {
+    background-color: #5d4037;
+    color: #ffcc80;
+    border-color: #795548;
+}
+
+/* Modal Content */
+body.dark-mode .modal-content {
+    background: var(--dark-surface);
+    color: var(--dark-text);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
+}
+
+/* --- END DARK MODE STYLES --- */
+
 
 /* --- NEW HEADER AND NAVIGATION BAR STYLES --- */
 
