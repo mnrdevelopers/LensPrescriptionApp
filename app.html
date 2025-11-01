@@ -989,7 +989,7 @@
 
         <!-- Add this after the existing modals in app.html -->
 
-<!-- View Prescription Modal -->
+<!-- Update the view modal footer to include preview button -->
 <div id="viewPrescriptionModal" class="modal-overlay">
     <div class="modal-content large">
         <div class="modal-header">
@@ -1002,6 +1002,9 @@
         <div class="modal-footer">
             <button type="button" class="btn btn-secondary" onclick="closeViewModal()">
                 <i class="fas fa-times"></i> Close
+            </button>
+            <button type="button" class="btn btn-info" onclick="openPreviewFromView()">
+                <i class="fas fa-external-link-alt"></i> Preview & Print
             </button>
             <button type="button" class="btn btn-primary" onclick="openEditModal()">
                 <i class="fas fa-edit"></i> Edit
@@ -1099,4 +1102,5 @@ if ('serviceWorker' in navigator) {
     </script>
 </body>
 </html>
+
 
