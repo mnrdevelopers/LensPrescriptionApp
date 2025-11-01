@@ -46,7 +46,12 @@
 <!-- 1. HEADER BAR (Logo, Name, Icons - Fixed to Top) -->
 <header class="app-header fixed-top">
     <div class="container-fluid d-flex justify-content-between align-items-center">
-        <!-- Logo and Title -->
+        <!-- Mobile Menu Toggle (Only on Small Screens) -->
+        <button class="navbar-toggler d-lg-none btn btn-icon text-white" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <!-- Logo and Title (Always Visible) -->
         <a class="navbar-brand header-brand text-white" href="#" onclick="navigateIfProfileComplete(showDashboard, 'dashboard')">
             <img src="lenslogo.png" alt="Lens Prescription Logo" class="nav-logo">
             <span>Lens Prescription</span>
@@ -65,8 +70,8 @@
                 <i class="fas fa-moon"></i>
             </button>
 
-            <!-- Logout Icon (Hidden on large screens, shown on small screens) -->
-            <button onclick="logoutUser()" class="btn btn-icon text-white d-lg-none" title="Logout">
+            <!-- Logout Icon (Always Visible) -->
+            <button onclick="logoutUser()" class="btn btn-icon text-white" title="Logout">
                 <i class="fas fa-sign-out-alt"></i>
             </button>
         </div>
@@ -107,16 +112,12 @@
                     <i class="fas fa-user-circle"></i> Profile
                 </a>
             </li>
-             <!-- NEW: Notifications Link - Moved into header bar for mobile, kept here for desktop visibility -->
         </ul>
         
-        <!-- Premium Status and Logout (Desktop Only) -->
+        <!-- Premium Status (Desktop Only) -->
         <div class="d-flex align-items-center ms-auto">
             <div id="navSubscriptionStatus" class="navbar-text me-2"></div>
             <div id="navBuyPremiumButton" class="me-2"></div>
-            <button onclick="logoutUser()" class="btn btn-logout premium-logout">
-                <i class="fas fa-sign-out-alt"></i> Logout
-            </button>
         </div>
     </div>
 </nav>
