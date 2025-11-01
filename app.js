@@ -1604,7 +1604,6 @@ function addPrescriptionRow(tbody, prescription) {
     });
 
     const actionsCell = row.insertCell();
-    actionsCell.className = 'table-actions';
     
     const previewBtn = document.createElement('button');
     previewBtn.innerHTML = '👁️';
@@ -1616,16 +1615,15 @@ function addPrescriptionRow(tbody, prescription) {
     deleteBtn.innerHTML = '🗑️';
     deleteBtn.className = 'btn-delete';
     deleteBtn.title = 'Delete';
-    
-    // FIXED: Proper delete button handler
-    deleteBtn.onclick = (e) => {
-        e.stopPropagation(); // Prevent event bubbling
+    // --- MODIFIED: Lock delete action for non-premium users ---
+    deleteBtn.onclick = () => {
         if (!isPremium) {
-            showPremiumFeaturePrompt();
+            showPremiumFeaturePrompt(); // Show premium feature lock message
         } else {
             showDeleteModal(prescription);
         }
     };
+    // ---------------------------------------------------------
     
     actionsCell.appendChild(previewBtn);
     actionsCell.appendChild(deleteBtn);
@@ -1642,68 +1640,50 @@ function previewPrescription(prescription) {
     showPreview(prescription);
 }
 
-// E: Enhanced Custom Delete Modal Implementations
+// E: Custom Delete Modal Implementations
 function showDeleteModal(prescription) {
-    console.log('Show delete modal called for:', prescription);
-    
     selectedPrescriptionToDelete = prescription;
     const modal = document.getElementById('deleteConfirmationModal');
     const nameDisplay = document.getElementById('deleteRxName');
-    
-    if (!modal) {
-        console.error('Delete modal not found!');
-        showStatusMessage('Error: Delete modal not found', 'error');
-        return;
-    }
     
     if (nameDisplay) {
         nameDisplay.textContent = `Prescription for ${prescription.patientName} (Mobile: ${prescription.mobile})`;
     }
     
-    // Show modal with proper styling
-    modal.style.display = 'flex';
-    modal.style.opacity = '1';
-    modal.style.visibility = 'visible';
-    
-    console.log('Delete modal should be visible now');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
 }
 
 function closeDeleteModal() {
+    selectedPrescriptionToDelete = null;
     const modal = document.getElementById('deleteConfirmationModal');
     if (modal) {
         modal.style.display = 'none';
-        modal.style.opacity = '0';
-        modal.style.visibility = 'hidden';
     }
-    selectedPrescriptionToDelete = null;
 }
 
 async function confirmDeleteAction() {
-    console.log('Confirm delete called');
-    
     if (!selectedPrescriptionToDelete) {
         showStatusMessage('No prescription selected for deletion.', 'error');
         return;
     }
     
-    const prescription = selectedPrescriptionToDelete;
-    console.log('Deleting prescription:', prescription.id);
+    closeDeleteModal(); 
     
-    closeDeleteModal();
+    const prescription = selectedPrescriptionToDelete;
     
     try {
-        // Show loading state
-        showStatusMessage('Deleting prescription...', 'info');
-        
         await db.collection('prescriptions').doc(prescription.id).delete();
         showStatusMessage('Prescription deleted successfully!', 'success');
-        
-        // Refresh the prescriptions list
-        await fetchPrescriptions();
-        
+        fetchPrescriptions();
     } catch (error) {
+        // --- START FIX: Log the specific error for debugging ---
         console.error('Error deleting prescription:', error);
-        showStatusMessage('Error deleting prescription: ' + error.message, 'error');
+        showStatusMessage('Error deleting prescription. Check the browser console for specific details (e.g., Firestore Security Rules issue).', 'error');
+        // --- END FIX ---
+    } finally {
+        selectedPrescriptionToDelete = null;
     }
 }
 
@@ -1877,9 +1857,12 @@ function printPreview() {
     const pdFar = document.getElementById('previewPdFar')?.textContent || '';
     const pdNear = document.getElementById('previewPdNear')?.textContent || '';
     
+    // START FIX: Fetching options directly from preview elements
     const visionType = document.getElementById('previewVisionType')?.textContent || '';
     const lensType = document.getElementById('previewLensType')?.textContent || '';
     const frameType = document.getElementById('previewFrameType')?.textContent || '';
+    // END FIX: Fetching options directly from preview elements
+    
     const amount = document.getElementById('previewAmount')?.textContent || '';
     const paymentMode = document.getElementById('previewPaymentMode')?.textContent || '';
 
@@ -2438,7 +2421,6 @@ function previewQrCode(event) {
         } else {
             qrImage.style.display = 'none';
             previewContainer.style.display = 'none';
-            qrUrlDisplay.textContent = 'No QR uploaded.';
             qrUrlInput.value = '';
         }
     }
@@ -3010,7 +2992,7 @@ async function fetchDashboardStats() {
     }
 
     try {
-        const querySnapshot = await baseQuery.get();
+        const querySnapshot = await baseQuery.orderBy('createdAt', 'desc').get();
         let totalPrescriptions = 0;
         let totalRevenue = 0;
         
