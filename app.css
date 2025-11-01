@@ -2243,3 +2243,296 @@ body.dark-mode .premium-offcanvas-header {
 .badge.bg-warning {
     background: linear-gradient(135deg, #ffc107, #fd7e14) !important;
 }
+
+/* Modal Styles for View/Edit Prescription */
+.modal-overlay .modal-content.large {
+    max-width: 800px;
+    width: 95%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid #dee2e6;
+    background: var(--premium-navy);
+    color: white;
+    border-radius: 10px 10px 0 0;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.3rem;
+}
+
+.modal-header .btn-close {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    color: white;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.modal-body {
+    flex: 1;
+    padding: 1.5rem;
+    overflow-y: auto;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #dee2e6;
+    background: #f8f9fa;
+    border-radius: 0 0 10px 10px;
+}
+
+/* View Modal Specific Styles */
+.prescription-view-section {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid var(--primary-color);
+}
+
+.prescription-view-section h4 {
+    color: var(--primary-color);
+    margin-bottom: 0.8rem;
+    font-size: 1.1rem;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 0.5rem;
+}
+
+.patient-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.info-label {
+    font-weight: bold;
+    color: var(--secondary-color);
+    font-size: 0.9rem;
+    margin-bottom: 0.3rem;
+}
+
+.info-value {
+    font-size: 1rem;
+    color: var(--dark-color);
+}
+
+/* Prescription Tables in View Modal */
+.prescription-table-view {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.prescription-table-view th {
+    background: linear-gradient(135deg, var(--primary-color), #0056b3);
+    color: white;
+    padding: 12px 8px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.prescription-table-view td {
+    padding: 10px 8px;
+    text-align: center;
+    border: 1px solid #dee2e6;
+    font-size: 0.9rem;
+}
+
+.prescription-table-view tbody tr:nth-child(odd) {
+    background-color: #f9f9f9;
+}
+
+/* Edit Form Styles */
+.edit-form-group {
+    margin-bottom: 1rem;
+}
+
+.edit-form-group label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    color: var(--dark-color);
+}
+
+.edit-form-group input,
+.edit-form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #e9ecef;
+    border-radius: 5px;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+}
+
+.edit-form-group input:focus,
+.edit-form-group select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.edit-prescription-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.edit-prescription-section {
+    grid-column: 1 / -1;
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.edit-prescription-section h4 {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+/* Dark Mode Support */
+body.dark-mode .prescription-view-section,
+body.dark-mode .edit-prescription-section {
+    background: #33364b;
+    border-left-color: var(--premium-gold);
+}
+
+body.dark-mode .prescription-table-view {
+    background: var(--dark-surface);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .prescription-table-view th {
+    background: linear-gradient(135deg, #3c415e, #1e3a8a);
+}
+
+body.dark-mode .prescription-table-view td {
+    border-bottom: 1px solid var(--dark-border);
+}
+
+body.dark-mode .prescription-table-view tbody tr:nth-child(odd) {
+    background-color: #33364b;
+}
+
+body.dark-mode .info-label {
+    color: var(--dark-secondary-text);
+}
+
+body.dark-mode .info-value {
+    color: var(--dark-text);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .modal-overlay .modal-content.large {
+        width: 98%;
+        margin: 10px;
+        max-height: 95vh;
+    }
+    
+    .modal-header {
+        padding: 1rem;
+    }
+    
+    .modal-header h3 {
+        font-size: 1.1rem;
+    }
+    
+    .modal-body {
+        padding: 1rem;
+    }
+    
+    .modal-footer {
+        padding: 0.8rem 1rem;
+        flex-direction: column;
+    }
+    
+    .modal-footer .btn {
+        width: 100%;
+        margin: 2px 0;
+    }
+    
+    .patient-info-grid {
+        grid-template-columns: 1fr;
+        gap: 0.8rem;
+    }
+    
+    .edit-prescription-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .prescription-table-view {
+        font-size: 0.8rem;
+    }
+    
+    .prescription-table-view th,
+    .prescription-table-view td {
+        padding: 8px 4px;
+    }
+}
+
+@media (max-width: 480px) {
+    .prescription-view-section {
+        padding: 0.8rem;
+    }
+    
+    .prescription-table-view {
+        display: block;
+        overflow-x: auto;
+    }
+    
+    .edit-form-group input,
+    .edit-form-group select {
+        padding: 8px;
+        font-size: 13px;
+    }
+}
+
+/* Add to your existing button styles */
+.btn-edit {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    margin: 0 5px;
+    transition: transform 0.2s ease;
+    color: var(--warning-color);
+}
+
+.btn-edit:hover {
+    transform: scale(1.2);
+    color: #e0a800;
+}
+
+/* Dark mode support for edit button */
+body.dark-mode .btn-edit {
+    color: var(--warning-color);
+}
+
+body.dark-mode .btn-edit:hover {
+    color: #ffd351;
+}
