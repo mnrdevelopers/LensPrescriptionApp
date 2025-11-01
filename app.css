@@ -61,6 +61,20 @@ body.dark-mode .preview-container {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
 }
 
+/* FIX 1: Ensure text color is consistently light on dark backgrounds */
+body.dark-mode,
+body.dark-mode p,
+body.dark-mode strong,
+body.dark-mode h1,
+body.dark-mode h2,
+body.dark-mode h3,
+body.dark-mode h4,
+body.dark-mode .stat-label,
+body.dark-mode .stat-value,
+body.dark-mode .report-summary p strong {
+    color: var(--dark-text) !important;
+}
+
 body.dark-mode .text-muted {
     color: var(--dark-secondary-text) !important;
 }
@@ -109,6 +123,12 @@ body.dark-mode .section-title {
 }
 body.dark-mode .section-title {
     color: var(--info-color) !important;
+}
+body.dark-mode .header h2 {
+    color: var(--primary-color) !important;
+}
+body.dark-mode .header p {
+    color: var(--dark-secondary-text) !important;
 }
 
 /* Tables (Prescriptions/Reports/Patients) */
@@ -171,6 +191,22 @@ body.dark-mode .template-management-bar {
     border: 1px solid var(--dark-border);
 }
 
+/* Report Summary and Dashboard Status Boxes */
+body.dark-mode .report-summary {
+    background: #33364b;
+    border-color: var(--dark-border);
+}
+
+body.dark-mode .report-summary h3 {
+    border-bottom-color: var(--dark-border) !important;
+}
+
+body.dark-mode .alert-success {
+    background-color: #1f4728 !important;
+    color: #69b47e !important;
+    border-color: #28a745 !important;
+}
+
 /* Alerts and Status Boxes */
 body.dark-mode .alert-warning {
     background-color: #5d4037;
@@ -183,6 +219,11 @@ body.dark-mode .modal-content {
     background: var(--dark-surface);
     color: var(--dark-text);
     box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
+}
+
+body.dark-mode #deleteConfirmationModal p,
+body.dark-mode #exitPromptModal p {
+    color: var(--dark-text) !important;
 }
 
 /* --- END DARK MODE STYLES --- */
