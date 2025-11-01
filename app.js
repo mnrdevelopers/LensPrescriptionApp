@@ -1775,6 +1775,11 @@ function closeEditModal() {
 }
 
 function generateEditForm(prescription) {
+    // FIX: Add defensive check for null prescription object passed to the function
+    if (!prescription) {
+        console.error("Attempted to generate edit form with null prescription data.");
+        return '<p class="text-danger">Error: Prescription data could not be loaded for editing.</p>';
+    }
     const presData = prescription.prescriptionData || {};
     
     return `
