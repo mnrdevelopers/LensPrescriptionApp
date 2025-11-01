@@ -13,6 +13,10 @@ let selectedPrescriptionToDelete = null; // E: Custom Delete Modal
 let patientLookupData = null; // F: Patient data cache after lookup
 let selectedPlan = 'yearly'; // Default to yearly plan
 
+// Global variables for modal management
+let currentViewPrescription = null;
+let currentEditPrescription = null;
+
 // --- NEW FEATURE GLOBALS (F, G, H) ---
 let currentPatientId = null; 
 // ------------------------------------
@@ -1593,6 +1597,398 @@ function displayPrescriptions(prescriptions) {
     });
 }
 
+// View Modal Functions
+function openViewModal(prescription) {
+    currentViewPrescription = prescription;
+    const modal = document.getElementById('viewPrescriptionModal');
+    const content = document.getElementById('viewPrescriptionContent');
+    
+    if (!modal || !content) return;
+    
+    content.innerHTML = generateViewContent(prescription);
+    modal.style.display = 'flex';
+    modal.style.opacity = '1';
+    modal.style.visibility = 'visible';
+}
+
+function closeViewModal() {
+    const modal = document.getElementById('viewPrescriptionModal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.style.opacity = '0';
+        modal.style.visibility = 'hidden';
+    }
+    currentViewPrescription = null;
+}
+
+function generateViewContent(prescription) {
+    const presData = prescription.prescriptionData || {};
+    
+    return `
+        <div class="patient-info-grid">
+            <div class="info-item">
+                <span class="info-label">Patient Name</span>
+                <span class="info-value">${prescription.patientName || 'N/A'}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Age / Gender</span>
+                <span class="info-value">${prescription.age || 'N/A'} / ${prescription.gender || 'N/A'}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Mobile</span>
+                <span class="info-value">${prescription.mobile || 'N/A'}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Date</span>
+                <span class="info-value">${new Date(prescription.date).toLocaleDateString()}</span>
+            </div>
+        </div>
+
+        <div class="prescription-view-section">
+            <h4>Refractive Correction</h4>
+            <table class="prescription-table-view">
+                <thead>
+                    <tr>
+                        <th>Eye</th>
+                        <th>Type</th>
+                        <th>SPH</th>
+                        <th>CYL</th>
+                        <th>AXIS</th>
+                        <th>V/A</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td rowspan="3"><strong>OD</strong></td>
+                        <td><strong>DIST</strong></td>
+                        <td>${presData.rightDistSPH || ''}</td>
+                        <td>${presData.rightDistCYL || ''}</td>
+                        <td>${presData.rightDistAXIS || ''}</td>
+                        <td>${presData.rightDistVA || ''}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>PRISM</strong></td>
+                        <td colspan="2">${presData.rightPrismDiopter || ''}</td>
+                        <td colspan="2">${presData.rightPrismBase || ''}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ADD</strong></td>
+                        <td>${presData.rightAddSPH || ''}</td>
+                        <td colspan="3"></td>
+                    </tr>
+                    <tr>
+                        <td rowspan="3"><strong>OS</strong></td>
+                        <td><strong>DIST</strong></td>
+                        <td>${presData.leftDistSPH || ''}</td>
+                        <td>${presData.leftDistCYL || ''}</td>
+                        <td>${presData.leftDistAXIS || ''}</td>
+                        <td>${presData.leftDistVA || ''}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>PRISM</strong></td>
+                        <td colspan="2">${presData.leftPrismDiopter || ''}</td>
+                        <td colspan="2">${presData.leftPrismBase || ''}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ADD</strong></td>
+                        <td>${presData.leftAddSPH || ''}</td>
+                        <td colspan="3"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="prescription-view-section">
+            <h4>Dispensing Parameters</h4>
+            <div class="patient-info-grid">
+                <div class="info-item">
+                    <span class="info-label">PD Far</span>
+                    <span class="info-value">${prescription.pdFar || 'N/A'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">PD Near</span>
+                    <span class="info-value">${prescription.pdNear || 'N/A'}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="prescription-view-section">
+            <h4>Lens & Frame Specifications</h4>
+            <div class="patient-info-grid">
+                <div class="info-item">
+                    <span class="info-label">Vision Type</span>
+                    <span class="info-value">${prescription.visionType || 'N/A'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Lens Type</span>
+                    <span class="info-value">${prescription.lensType || 'N/A'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Frame Type</span>
+                    <span class="info-value">${prescription.frameType || 'N/A'}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="prescription-view-section">
+            <h4>Payment Details</h4>
+            <div class="patient-info-grid">
+                <div class="info-item">
+                    <span class="info-label">Amount</span>
+                    <span class="info-value">₹${prescription.amount?.toFixed(2) || '0.00'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Payment Mode</span>
+                    <span class="info-value">${prescription.paymentMode || 'N/A'}</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Edit Modal Functions
+function openEditModal() {
+    if (!currentViewPrescription) return;
+    
+    closeViewModal();
+    currentEditPrescription = currentViewPrescription;
+    
+    const modal = document.getElementById('editPrescriptionModal');
+    const form = document.getElementById('editPrescriptionForm');
+    
+    if (!modal || !form) return;
+    
+    form.innerHTML = generateEditForm(currentEditPrescription);
+    modal.style.display = 'flex';
+    modal.style.opacity = '1';
+    modal.style.visibility = 'visible';
+}
+
+function closeEditModal() {
+    const modal = document.getElementById('editPrescriptionModal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.style.opacity = '0';
+        modal.style.visibility = 'hidden';
+    }
+    currentEditPrescription = null;
+}
+
+function generateEditForm(prescription) {
+    const presData = prescription.prescriptionData || {};
+    
+    return `
+        <div class="edit-prescription-grid">
+            <div class="edit-form-group">
+                <label for="editPatientName">Patient Name</label>
+                <input type="text" id="editPatientName" value="${prescription.patientName || ''}" required>
+            </div>
+            <div class="edit-form-group">
+                <label for="editAge">Age</label>
+                <input type="number" id="editAge" value="${prescription.age || ''}" required>
+            </div>
+            <div class="edit-form-group">
+                <label for="editGender">Gender</label>
+                <select id="editGender">
+                    <option value="Male" ${prescription.gender === 'Male' ? 'selected' : ''}>Male</option>
+                    <option value="Female" ${prescription.gender === 'Female' ? 'selected' : ''}>Female</option>
+                    <option value="Other" ${prescription.gender === 'Other' ? 'selected' : ''}>Other</option>
+                </select>
+            </div>
+            <div class="edit-form-group">
+                <label for="editMobile">Mobile</label>
+                <input type="tel" id="editMobile" value="${prescription.mobile || ''}" required>
+            </div>
+        </div>
+
+        <div class="edit-prescription-section">
+            <h4>Right Eye (OD) Prescription</h4>
+            <div class="edit-prescription-grid">
+                <div class="edit-form-group">
+                    <label for="editRightDistSPH">DIST SPH</label>
+                    <input type="text" id="editRightDistSPH" value="${presData.rightDistSPH || ''}">
+                </div>
+                <div class="edit-form-group">
+                    <label for="editRightDistCYL">DIST CYL</label>
+                    <input type="text" id="editRightDistCYL" value="${presData.rightDistCYL || ''}">
+                </div>
+                <div class="edit-form-group">
+                    <label for="editRightDistAXIS">DIST AXIS</label>
+                    <input type="text" id="editRightDistAXIS" value="${presData.rightDistAXIS || ''}">
+                </div>
+                <div class="edit-form-group">
+                    <label for="editRightDistVA">DIST V/A</label>
+                    <input type="text" id="editRightDistVA" value="${presData.rightDistVA || ''}">
+                </div>
+                <div class="edit-form-group">
+                    <label for="editRightPrismDiopter">PRISM Diopter</label>
+                    <input type="text" id="editRightPrismDiopter" value="${presData.rightPrismDiopter || ''}">
+                </div>
+                <div class="edit-form-group">
+                    <label for="editRightPrismBase">PRISM Base</label>
+                    <input type="text" id="editRightPrismBase" value="${presData.rightPrismBase || ''}">
+                </div>
+                <div class="edit-form-group">
+                    <label for="editRightAddSPH">ADD SPH</label>
+                    <input type="text" id="editRightAddSPH" value="${presData.rightAddSPH || ''}">
+                </div>
+            </div>
+        </div>
+
+        <div class="edit-prescription-section">
+            <h4>Left Eye (OS) Prescription</h4>
+            <div class="edit-prescription-grid">
+                <div class="edit-form-group">
+                    <label for="editLeftDistSPH">DIST SPH</label>
+                    <input type="text" id="editLeftDistSPH" value="${presData.leftDistSPH || ''}">
+                </div>
+                <div class="edit-form-group">
+                    <label for="editLeftDistCYL">DIST CYL</label>
+                    <input type="text" id="editLeftDistCYL" value="${presData.leftDistCYL || ''}">
+                </div>
+                <div class="edit-form-group">
+                    <label for="editLeftDistAXIS">DIST AXIS</label>
+                    <input type="text" id="editLeftDistAXIS" value="${presData.leftDistAXIS || ''}">
+                </div>
+                <div class="edit-form-group">
+                    <label for="editLeftDistVA">DIST V/A</label>
+                    <input type="text" id="editLeftDistVA" value="${presData.leftDistVA || ''}">
+                </div>
+                <div class="edit-form-group">
+                    <label for="editLeftPrismDiopter">PRISM Diopter</label>
+                    <input type="text" id="editLeftPrismDiopter" value="${presData.leftPrismDiopter || ''}">
+                </div>
+                <div class="edit-form-group">
+                    <label for="editLeftPrismBase">PRISM Base</label>
+                    <input type="text" id="editLeftPrismBase" value="${presData.leftPrismBase || ''}">
+                </div>
+                <div class="edit-form-group">
+                    <label for="editLeftAddSPH">ADD SPH</label>
+                    <input type="text" id="editLeftAddSPH" value="${presData.leftAddSPH || ''}">
+                </div>
+            </div>
+        </div>
+
+        <div class="edit-prescription-section">
+            <h4>Additional Details</h4>
+            <div class="edit-prescription-grid">
+                <div class="edit-form-group">
+                    <label for="editPdFar">PD Far</label>
+                    <input type="text" id="editPdFar" value="${prescription.pdFar || ''}">
+                </div>
+                <div class="edit-form-group">
+                    <label for="editPdNear">PD Near</label>
+                    <input type="text" id="editPdNear" value="${prescription.pdNear || ''}">
+                </div>
+                <div class="edit-form-group">
+                    <label for="editVisionType">Vision Type</label>
+                    <select id="editVisionType">
+                        <option value="Single Vision" ${prescription.visionType === 'Single Vision' ? 'selected' : ''}>Single Vision</option>
+                        <option value="Bifocal" ${prescription.visionType === 'Bifocal' ? 'selected' : ''}>Bifocal</option>
+                        <option value="Progressive" ${prescription.visionType === 'Progressive' ? 'selected' : ''}>Progressive</option>
+                        <option value="Reading" ${prescription.visionType === 'Reading' ? 'selected' : ''}>Reading</option>
+                    </select>
+                </div>
+                <div class="edit-form-group">
+                    <label for="editLensType">Lens Type</label>
+                    <select id="editLensType">
+                        <option value="Polycarbonate (PC)" ${prescription.lensType === 'Polycarbonate (PC)' ? 'selected' : ''}>Polycarbonate (PC)</option>
+                        <option value="High Index 1.67" ${prescription.lensType === 'High Index 1.67' ? 'selected' : ''}>High Index 1.67</option>
+                        <option value="Blue Cut" ${prescription.lensType === 'Blue Cut' ? 'selected' : ''}>Blue Cut</option>
+                    </select>
+                </div>
+                <div class="edit-form-group">
+                    <label for="editFrameType">Frame Type</label>
+                    <select id="editFrameType">
+                        <option value="Full Rim" ${prescription.frameType === 'Full Rim' ? 'selected' : ''}>Full Rim</option>
+                        <option value="Half Rim" ${prescription.frameType === 'Half Rim' ? 'selected' : ''}>Half Rim</option>
+                        <option value="Rimless" ${prescription.frameType === 'Rimless' ? 'selected' : ''}>Rimless</option>
+                    </select>
+                </div>
+                <div class="edit-form-group">
+                    <label for="editAmount">Amount (₹)</label>
+                    <input type="number" id="editAmount" value="${prescription.amount || ''}" step="0.01" required>
+                </div>
+                <div class="edit-form-group">
+                    <label for="editPaymentMode">Payment Mode</label>
+                    <select id="editPaymentMode">
+                        <option value="Cash" ${prescription.paymentMode === 'Cash' ? 'selected' : ''}>Cash</option>
+                        <option value="Card" ${prescription.paymentMode === 'Card' ? 'selected' : ''}>Card</option>
+                        <option value="UPI" ${prescription.paymentMode === 'UPI' ? 'selected' : ''}>UPI</option>
+                        <option value="Online" ${prescription.paymentMode === 'Online' ? 'selected' : ''}>Online</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+async function updatePrescription() {
+    if (!currentEditPrescription) return;
+
+    const formData = getEditFormData();
+    
+    if (!validateEditForm(formData)) {
+        showStatusMessage('Please fill all required fields correctly.', 'error');
+        return;
+    }
+
+    try {
+        await db.collection('prescriptions').doc(currentEditPrescription.id).update({
+            ...formData,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        showStatusMessage('Prescription updated successfully!', 'success');
+        closeEditModal();
+        fetchPrescriptions(); // Refresh the list
+        
+    } catch (error) {
+        console.error('Error updating prescription:', error);
+        showStatusMessage('Error updating prescription: ' + error.message, 'error');
+    }
+}
+
+function getEditFormData() {
+    return {
+        patientName: document.getElementById('editPatientName').value.trim(),
+        age: parseInt(document.getElementById('editAge').value) || 0,
+        gender: document.getElementById('editGender').value,
+        mobile: document.getElementById('editMobile').value.trim(),
+        pdFar: document.getElementById('editPdFar').value.trim(),
+        pdNear: document.getElementById('editPdNear').value.trim(),
+        visionType: document.getElementById('editVisionType').value,
+        lensType: document.getElementById('editLensType').value,
+        frameType: document.getElementById('editFrameType').value,
+        amount: parseFloat(document.getElementById('editAmount').value) || 0,
+        paymentMode: document.getElementById('editPaymentMode').value,
+        prescriptionData: {
+            rightDistSPH: document.getElementById('editRightDistSPH').value.trim(),
+            rightDistCYL: document.getElementById('editRightDistCYL').value.trim(),
+            rightDistAXIS: document.getElementById('editRightDistAXIS').value.trim(),
+            rightDistVA: document.getElementById('editRightDistVA').value.trim(),
+            rightPrismDiopter: document.getElementById('editRightPrismDiopter').value.trim(),
+            rightPrismBase: document.getElementById('editRightPrismBase').value.trim(),
+            rightAddSPH: document.getElementById('editRightAddSPH').value.trim(),
+            leftDistSPH: document.getElementById('editLeftDistSPH').value.trim(),
+            leftDistCYL: document.getElementById('editLeftDistCYL').value.trim(),
+            leftDistAXIS: document.getElementById('editLeftDistAXIS').value.trim(),
+            leftDistVA: document.getElementById('editLeftDistVA').value.trim(),
+            leftPrismDiopter: document.getElementById('editLeftPrismDiopter').value.trim(),
+            leftPrismBase: document.getElementById('editLeftPrismBase').value.trim(),
+            leftAddSPH: document.getElementById('editLeftAddSPH').value.trim()
+        }
+    };
+}
+
+function validateEditForm(data) {
+    if (!data.patientName) return false;
+    if (!data.age || data.age <= 0) return false;
+    if (!data.mobile || !data.mobile.match(/^\d{10}$/)) return false;
+    if (!data.amount || data.amount < 0) return false;
+    return true;
+}
+
 // FIX APPLIED HERE: Re-formatting the date using the original stored value
 function addPrescriptionRow(tbody, prescription) {
     const row = tbody.insertRow();
@@ -1604,7 +2000,7 @@ function addPrescriptionRow(tbody, prescription) {
     const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     const timeStr = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     
-    const fields = [
+ const fields = [
         `${dateStr} @ ${timeStr}`,
         prescription.patientName,
         prescription.age,
@@ -1624,20 +2020,29 @@ function addPrescriptionRow(tbody, prescription) {
     const actionsCell = row.insertCell();
     actionsCell.className = 'table-actions';
     
-    const previewBtn = document.createElement('button');
-    previewBtn.innerHTML = '👁️';
-    previewBtn.className = 'btn-preview';
-    previewBtn.title = 'Preview';
-    previewBtn.onclick = () => previewPrescription(JSON.parse(JSON.stringify(prescription))); 
+    // View Button (replaces preview)
+    const viewBtn = document.createElement('button');
+    viewBtn.innerHTML = '👁️';
+    viewBtn.className = 'btn-preview';
+    viewBtn.title = 'View Details';
+    viewBtn.onclick = () => openViewModal(prescription);
     
+    // Edit Button
+    const editBtn = document.createElement('button');
+    editBtn.innerHTML = '✏️';
+    editBtn.className = 'btn-edit';
+    editBtn.title = 'Edit';
+    editBtn.onclick = () => {
+        openViewModal(prescription); // Open view first, then user can click edit
+    };
+    
+    // Delete Button
     const deleteBtn = document.createElement('button');
     deleteBtn.innerHTML = '🗑️';
     deleteBtn.className = 'btn-delete';
     deleteBtn.title = 'Delete';
-    
-    // FIXED: Proper delete button handler
     deleteBtn.onclick = (e) => {
-        e.stopPropagation(); // Prevent event bubbling
+        e.stopPropagation();
         if (!isPremium) {
             showPremiumFeaturePrompt();
         } else {
@@ -1645,7 +2050,8 @@ function addPrescriptionRow(tbody, prescription) {
         }
     };
     
-    actionsCell.appendChild(previewBtn);
+    actionsCell.appendChild(viewBtn);
+    actionsCell.appendChild(editBtn);
     actionsCell.appendChild(deleteBtn);
 }
 
@@ -3368,6 +3774,12 @@ window.showPremiumFeaturePrompt = showPremiumFeaturePrompt;
 // NEW UPI FUNCTIONS
 window.previewQrCode = previewQrCode;
 window.removeQrCode = removeQrCode;
+
+window.openViewModal = openViewModal;
+window.closeViewModal = closeViewModal;
+window.openEditModal = openEditModal;
+window.closeEditModal = closeEditModal;
+window.updatePrescription = updatePrescription;
 
 // Remote Config Export
 window.initializeRemoteConfig = initializeRemoteConfig;
