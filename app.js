@@ -20,7 +20,7 @@ let currentPatientId = null;
 // NEW GLOBAL: Tracks premium status
 let isPremium = false; 
 
-// 🛑 CRITICAL FIX: Proper authentication state handling
+// ✅ KEEP THIS SIMPLE VERSION - PUT IT BACK!
 firebase.auth().onAuthStateChanged((user) => {
     if (user) {
         // If user is logged in, proceed with initialization
@@ -30,17 +30,8 @@ firebase.auth().onAuthStateChanged((user) => {
             initializeApp();
         }
     } else {
-        // If user is NOT logged in, check if it was an explicit logout
-        const explicitLogout = localStorage.getItem("explicitLogout");
-        
-        if (explicitLogout === "true") {
-            // Manual logout: clear flag and redirect silently
-            localStorage.removeItem("explicitLogout");
-            window.location.replace('auth.html');
-        } else {
-            // Unexpected logout (session expiry, token revocation): show warning modal
-            showUnexpectedLogoutWarning();
-        }
+        // If user is NOT logged in, redirect to auth page
+        window.location.replace('auth.html');
     }
 });
 
@@ -107,46 +98,6 @@ async function initializeApp() {
     } catch (error) {
         console.error('Error during app initialization:', error);
     }
-}
-
-// --- NEW FUNCTION: Show Unexpected Logout Modal ---
-function showUnexpectedLogoutWarning() {
-    // Clear all local data first
-    localStorage.clear();
-    sessionStorage.clear();
-    
-    const modal = document.getElementById('unexpectedLogoutModal');
-    if (modal) {
-        // Ensure the modal is always visible and covers the screen
-        modal.style.display = 'flex';
-        modal.style.opacity = '1';
-        modal.style.visibility = 'visible';
-        modal.style.position = 'fixed';
-        modal.style.top = '0';
-        modal.style.left = '0';
-        modal.style.width = '100%';
-        modal.style.height = '100%';
-        modal.style.zIndex = '10000';
-        modal.style.background = 'rgba(0, 0, 0, 0.8)';
-        
-        // Prevent body scrolling
-        document.body.style.overflow = 'hidden';
-        
-        // Ensure Firebase state is clean
-        auth.signOut().catch(() => {});
-    } else {
-        // If modal doesn't exist, redirect directly
-        window.location.replace('auth.html');
-    }
-}
-
-function closeUnexpectedLogoutModal() {
-    const modal = document.getElementById('unexpectedLogoutModal');
-    if (modal) {
-        modal.style.display = 'none';
-        document.body.style.overflow = 'auto';
-    }
-    window.location.replace('auth.html');
 }
 // -----------------------------------------------------------
 
