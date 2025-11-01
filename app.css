@@ -927,7 +927,7 @@ body.dark-mode {
 @media (min-width: 992px) {
     /* Adjusted padding for desktop to account for BOTH fixed bars */
     .main-content {
-        padding-top: calc(var(--header-height) + var(--navbar-height) + -30px); /* Changed 20px to 5px */
+        padding-top: calc(var(--header-height) + var(--navbar-height) + 5px); /* FIX APPLIED: Changed 20px to 5px */
     }
 }
 
@@ -1970,10 +1970,6 @@ body.dark-mode .premium-offcanvas-header {
     background: linear-gradient(135deg, #28a745, #20c997) !important;
 }
 
-.badge.bg-warning {
-    background: linear-gradient(135deg, #ffc107, #fd7e14) !important;
-}
-
 /* 22. Mobile Subscription Status */
 #mobileSubscriptionStatus {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -2007,4 +2003,9 @@ body.dark-mode .premium-offcanvas-header {
     .page-section:not(.active) {
         display: none !important;
     }
+}
+
+/* 26. Custom Fix for Warning Badge Gradient */
+.badge.bg-warning {
+    background: linear-gradient(135deg, #ffc107, #fd7e14) !important;
 }
