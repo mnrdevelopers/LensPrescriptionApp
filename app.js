@@ -1622,8 +1622,8 @@ function closeViewModal() {
 }
 
 function generateViewContent(prescription) {
-    // Ensure prescriptionData exists
     const presData = prescription.prescriptionData || {};
+    const hasPatientLink = !!prescription.patientId;
     
     return `
         <div class="patient-info-grid">
@@ -1643,8 +1643,17 @@ function generateViewContent(prescription) {
                 <span class="info-label">Date</span>
                 <span class="info-value">${new Date(prescription.date).toLocaleDateString()}</span>
             </div>
+            <div class="info-item">
+                <span class="info-label">Patient Record</span>
+                <span class="info-value">
+                    ${hasPatientLink ? 
+                        '<span style="color: var(--success-color);"><i class="fas fa-link"></i> Linked</span>' : 
+                        '<span style="color: var(--warning-color);"><i class="fas fa-unlink"></i> Not Linked</span>'
+                    }
+                </span>
+            </div>
         </div>
-
+        
         <div class="prescription-view-section">
             <h4>Refractive Correction</h4>
             <table class="prescription-table-view">
@@ -1953,20 +1962,171 @@ async function updatePrescription() {
 
     try {
         // Show loading state
-        showStatusMessage('Updating prescription...', 'info');
+        showStatusMessage('Updating prescription and patient details...', 'info');
 
+        // Update prescription first
         await db.collection('prescriptions').doc(currentEditPrescription.id).update({
             ...formData,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        showStatusMessage('Prescription updated successfully!', 'success');
+        // Update patient record if patientId exists
+        if (currentEditPrescription.patientId) {
+            await updatePatientRecord(currentEditPrescription.patientId, formData);
+        } else {
+            // If no patientId, try to find patient by mobile and update
+            await findAndUpdatePatientByMobile(formData);
+        }
+
+        showStatusMessage('Prescription and patient details updated successfully!', 'success');
         closeEditModal();
-        await fetchPrescriptions(); // Refresh the list
+        await fetchPrescriptions(); // Refresh the prescriptions list
+        await fetchPatients(); // Refresh the patients list if we're on that page
         
     } catch (error) {
-        console.error('Error updating prescription:', error);
-        showStatusMessage('Error updating prescription: ' + error.message, 'error');
+        console.error('Error updating prescription and patient:', error);
+        showStatusMessage('Error updating: ' + error.message, 'error');
+    }
+}
+
+// Function to update patient record
+async function updatePatientRecord(patientId, prescriptionData) {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const patientUpdateData = {
+        name: prescriptionData.patientName,
+        mobile: prescriptionData.mobile,
+        age: prescriptionData.age,
+        gender: prescriptionData.gender,
+        lastVisit: firebase.firestore.FieldValue.serverTimestamp(),
+        // Don't update nextCheckupDate when editing prescription
+    };
+
+    await db.collection('patients').doc(patientId).update(patientUpdateData);
+    console.log('Patient record updated:', patientId);
+}
+
+// Function to find and update patient by mobile number
+async function findAndUpdatePatientByMobile(prescriptionData) {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    try {
+        const querySnapshot = await db.collection('patients')
+            .where('userId', '==', user.uid)
+            .where('mobile', '==', prescriptionData.mobile)
+            .limit(1)
+            .get();
+
+        if (!querySnapshot.empty) {
+            const patientDoc = querySnapshot.docs[0];
+            await updatePatientRecord(patientDoc.id, prescriptionData);
+            
+            // Also update the prescription with the patientId for future reference
+            await db.collection('prescriptions').doc(currentEditPrescription.id).update({
+                patientId: patientDoc.id
+            });
+            
+            console.log('Patient found and updated by mobile:', patientDoc.id);
+        } else {
+            console.log('No patient found with mobile:', prescriptionData.mobile);
+            // Optionally create a new patient record here if needed
+            // await createNewPatientFromPrescription(prescriptionData);
+        }
+    } catch (error) {
+        console.error('Error finding patient by mobile:', error);
+    }
+}
+
+// Add this option to the edit modal footer for creating patient records
+function addCreatePatientOption() {
+    const modalFooter = document.querySelector('#editPrescriptionModal .modal-footer');
+    if (modalFooter && !currentEditPrescription?.patientId) {
+        const createPatientBtn = document.createElement('button');
+        createPatientBtn.type = 'button';
+        createPatientBtn.className = 'btn btn-info';
+        createPatientBtn.innerHTML = '<i class="fas fa-user-plus"></i> Create Patient Record';
+        createPatientBtn.onclick = createPatientFromPrescription;
+        
+        modalFooter.insertBefore(createPatientBtn, modalFooter.firstChild);
+    }
+}
+
+async function createPatientFromPrescription() {
+    const formData = getEditFormData();
+    
+    if (!formData.patientName || !formData.mobile) {
+        showStatusMessage('Patient name and mobile are required to create patient record.', 'error');
+        return;
+    }
+
+    try {
+        const user = auth.currentUser;
+        const nextCheckupDate = new Date();
+        nextCheckupDate.setDate(nextCheckupDate.getDate() + 365);
+
+        const newPatientRef = await db.collection('patients').add({
+            userId: user.uid,
+            name: formData.patientName,
+            mobile: formData.mobile,
+            age: formData.age,
+            gender: formData.gender,
+            lastVisit: firebase.firestore.FieldValue.serverTimestamp(),
+            nextCheckupDate: firebase.firestore.Timestamp.fromDate(nextCheckupDate),
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            prescriptionCount: 1
+        });
+
+        // Update the current prescription with the new patientId
+        await db.collection('prescriptions').doc(currentEditPrescription.id).update({
+            patientId: newPatientRef.id
+        });
+
+        // Update local reference
+        currentEditPrescription.patientId = newPatientRef.id;
+
+        showStatusMessage('Patient record created and linked successfully!', 'success');
+        
+        // Remove the create button and refresh
+        const createBtn = document.querySelector('#editPrescriptionModal .btn-info');
+        if (createBtn) createBtn.remove();
+        
+    } catch (error) {
+        console.error('Error creating patient record:', error);
+        showStatusMessage('Error creating patient record: ' + error.message, 'error');
+    }
+}
+
+// Optional: Create new patient if not found
+async function createNewPatientFromPrescription(prescriptionData) {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    try {
+        const nextCheckupDate = new Date();
+        nextCheckupDate.setDate(nextCheckupDate.getDate() + 365);
+
+        const newPatientRef = await db.collection('patients').add({
+            userId: user.uid,
+            name: prescriptionData.patientName,
+            mobile: prescriptionData.mobile,
+            age: prescriptionData.age,
+            gender: prescriptionData.gender,
+            lastVisit: firebase.firestore.FieldValue.serverTimestamp(),
+            nextCheckupDate: firebase.firestore.Timestamp.fromDate(nextCheckupDate),
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            prescriptionCount: 1
+        });
+
+        // Update prescription with new patientId
+        await db.collection('prescriptions').doc(currentEditPrescription.id).update({
+            patientId: newPatientRef.id
+        });
+
+        console.log('New patient created from prescription:', newPatientRef.id);
+    } catch (error) {
+        console.error('Error creating new patient:', error);
     }
 }
 
@@ -1989,6 +2149,7 @@ function getEditFormData() {
         frameType: getValue('editFrameType'),
         amount: getNumberValue('editAmount'),
         paymentMode: getValue('editPaymentMode'),
+        patientId: currentEditPrescription?.patientId || '', // Include patientId
         prescriptionData: {
             rightDistSPH: getValue('editRightDistSPH'),
             rightDistCYL: getValue('editRightDistCYL'),
@@ -2112,7 +2273,13 @@ function openEditModalDirect(prescription) {
     modal.style.display = 'flex';
     modal.style.opacity = '1';
     modal.style.visibility = 'visible';
+    
+    // Add create patient button if no patientId exists
+    setTimeout(() => {
+        addCreatePatientOption();
+    }, 100);
 }
+
 function filterPrescriptions() {
     // Note: The main filtering is now done in fetchPrescriptions() using firebase queries 
     // and supplemental client-side search. This function is essentially now a no-op 
