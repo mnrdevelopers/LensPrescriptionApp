@@ -42,6 +42,10 @@ async function initializeApp() {
         return;
     }
 
+    // --- NEW: Load dark mode state ---
+    loadDarkModeState();
+    // --------------------------------
+
     setCurrentDate();
     
     // Load user profile and check for completion
@@ -96,6 +100,27 @@ async function initializeApp() {
 // -----------------------------------------------------------
 // 1. Core App Setup Helpers
 // -----------------------------------------------------------
+
+function loadDarkModeState() {
+    const isDark = localStorage.getItem('darkMode') === 'true';
+    if (isDark) {
+        document.body.classList.add('dark-mode');
+        // Update toggle icon immediately
+        const toggle = document.getElementById('darkModeToggle');
+        if (toggle) toggle.innerHTML = '<i class="fas fa-sun"></i>';
+    }
+}
+
+function toggleDarkMode() {
+    document.body.classList.toggle('dark-mode');
+    const isDark = document.body.classList.contains('dark-mode');
+    localStorage.setItem('darkMode', isDark);
+    
+    const toggle = document.getElementById('darkModeToggle');
+    if (toggle) {
+        toggle.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    }
+}
 
 function setInitialDateFilters() {
     const today = new Date().toISOString().split('T')[0];
@@ -1091,10 +1116,20 @@ async function fetchCheckupReminders(displayOnPage = false) {
             }
         });
 
-        // 1. Update Dashboard Card
+        // 1. Update Dashboard Card and Header Badge
         const statReminders = document.getElementById('statRemindersDue');
         if (statReminders) {
             statReminders.textContent = countDue.toString();
+        }
+        
+        const badge = document.getElementById('headerNotificationBadge');
+        if (badge) {
+            if (countDue > 0) {
+                badge.textContent = countDue.toString();
+                badge.style.display = 'block';
+            } else {
+                badge.style.display = 'none';
+            }
         }
         
         // 2. Display on Notifications Page if requested
@@ -2216,6 +2251,9 @@ async function updatePremiumUI() {
             premiumTag.innerHTML = '';
         }
     }
+    
+    // Ensure lock state is applied/removed after UI updates
+    lockFeatures(); 
 }
 
 // --- NEW FUNCTION: Show prompt for premium features ---
@@ -2700,6 +2738,7 @@ window.showPaymentModal = showPaymentModal;
 window.closePaymentModal = closePaymentModal;
 window.selectPlan = selectPlan;
 window.proceedToPayment = proceedToPayment;
+window.toggleDarkMode = toggleDarkMode; // Export new function
 
 // New Feature Exports
 window.showPatients = showPatients;
