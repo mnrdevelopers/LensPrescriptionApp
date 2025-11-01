@@ -1144,6 +1144,10 @@ body.dark-mode .offcanvas-body .navbar-nav .nav-link-custom.active {
     .main-content {
         padding: 10px;
     }
+
+    .page-section.active {
+    display: block;
+    }
     
     .dashboard-container,
     .prescription-container,
