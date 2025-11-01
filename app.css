@@ -833,12 +833,6 @@ body.dark-mode .offcanvas-body .navbar-nav .nav-link-custom.active {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 
-/* --- NEW: Responsive Table Wrapper for Horizontal Scroll on Mobile --- */
-.table-responsive-mobile {
-    /* Apply horizontal scrolling on small screens only */
-    /* NOTE: We now only enable scrolling if the screen is small (<= 768px) */
-}
-
 /* Filter Controls Styles */
 .filter-controls {
     margin-bottom: 25px;
@@ -1923,6 +1917,27 @@ body.dark-mode .offcanvas-body .navbar-nav .nav-link-custom.active {
         margin: 0;
         padding: 0;
         size: 58mm auto;
+    }
+
+     /* NEW: Thermal QR Code Style */
+    #prescriptionPreview .upi-qr-thermal {
+        width: 40mm !important; /* Fixed width suitable for 58mm printer */
+        height: auto !important;
+        display: block !important;
+        margin: 5px auto !important;
+        /* Ensure it prints properly in black and white */
+        filter: grayscale(100%) contrast(150%) !important; 
+        -webkit-filter: grayscale(100%) contrast(150%) !important;
+    }
+    
+    /* NEW: Print the UPI ID text cleanly */
+    #prescriptionPreview .upi-id-thermal {
+        font-size: 10px !important;
+        font-weight: bold !important;
+        text-align: center !important;
+        margin: 2px 0 !important;
+        color: black !important;
+        line-height: 1; /* Added to keep lines tight */
     }
 }
 
