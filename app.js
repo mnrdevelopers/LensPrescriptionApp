@@ -23,13 +23,24 @@ let isPremium = false;
 // 🛑 CRITICAL FIX: Use onAuthStateChanged to prevent the redirect loop.
 firebase.auth().onAuthStateChanged((user) => {
     if (user) {
+        // If user is logged in, proceed with initialization
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', initializeApp);
         } else {
             initializeApp();
         }
     } else {
-        window.location.replace('auth.html');
+        // If user is NOT logged in, check if it was an explicit logout
+        const explicitLogout = sessionStorage.getItem("explicitLogout");
+        
+        if (explicitLogout === "true") {
+            // Manual logout: clear flag and redirect silently
+            sessionStorage.removeItem("explicitLogout");
+            window.location.replace('auth.html');
+        } else {
+            // Unexpected logout (session expiry, token revocation): show warning modal
+            showUnexpectedLogoutWarning();
+        }
     }
 });
 
@@ -97,6 +108,20 @@ async function initializeApp() {
         console.error('Error during app initialization:', error);
     }
 }
+
+// --- NEW FUNCTION: Show Unexpected Logout Modal ---
+function showUnexpectedLogoutWarning() {
+    const modal = document.getElementById('unexpectedLogoutModal');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+    // Prevent subsequent actions, clear local storage and force the user to re-authenticate
+    localStorage.clear();
+    sessionStorage.clear();
+    auth.signOut().catch(() => {}); // Ensure Firebase state is clean
+}
+// -----------------------------------------------------------
+
 
 // -----------------------------------------------------------
 // 1. Core App Setup Helpers
@@ -720,10 +745,12 @@ function updateProfileUI(userData) {
 }
 
 function logoutUser() {
+    // Set flag before signing out
+    sessionStorage.setItem("explicitLogout", "true");
+    
     auth.signOut().then(() => {
         localStorage.removeItem('username');
         localStorage.removeItem('userId');
-        sessionStorage.setItem("explicitLogout", "true");
         window.location.replace('index.html');
     }).catch(error => {
         console.error('Logout failed:', error);
@@ -2830,7 +2857,8 @@ window.loadTemplate = loadTemplate;
 window.checkPatientExists = checkPatientExists;
 // --- EXPORT NEW PREMIUM FEATURE PROMPT FUNCTION ---
 window.showPremiumFeaturePrompt = showPremiumFeaturePrompt;
+// --- EXPORT NEW UNEXPECTED LOGOUT FUNCTION ---
+window.showUnexpectedLogoutWarning = showUnexpectedLogoutWarning;
 
 // Remote Config Export
 window.initializeRemoteConfig = initializeRemoteConfig;
-
