@@ -42,85 +42,87 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
- <!-- Enhanced Navigation - Updated with 'premium-nav' class and Logo -->
-<nav class="navbar navbar-expand-lg fixed-top premium-nav">
+    
+<!-- 1. HEADER BAR (Logo, Name, Icons - Fixed to Top) -->
+<header class="app-header fixed-top">
     <div class="container-fluid d-flex justify-content-between align-items-center">
-        
-        <!-- 1. Mobile Menu Toggle (Far Left) -->
-        <button class="navbar-toggler d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-
-        <!-- 2. Brand Logo and Title -->
-        <a class="navbar-brand text-center" style="flex-grow: 1; margin: 0; padding: 0 10px;" href="#" onclick="navigateIfProfileComplete(showDashboard, 'dashboard')">
+        <!-- Logo and Title -->
+        <a class="navbar-brand header-brand text-white" href="#" onclick="navigateIfProfileComplete(showDashboard, 'dashboard')">
             <img src="lenslogo.png" alt="Lens Prescription Logo" class="nav-logo">
             <span>Lens Prescription</span>
         </a>
+
+        <!-- Right Side Icons -->
+        <div class="d-flex align-items-center gap-2 header-icons">
+            <!-- Notifications Icon -->
+            <button onclick="navigateIfProfileComplete(showNotifications, 'notifications')" class="btn btn-icon text-white position-relative" title="Notifications">
+                <i class="fas fa-bell"></i>
+                <span id="headerNotificationBadge" class="badge bg-danger rounded-pill position-absolute top-0 start-100 translate-middle" style="font-size: 0.6em; padding: 0.35em 0.6em; display: none;"></span>
+            </button>
+            
+            <!-- Dark Mode Toggle -->
+            <button onclick="toggleDarkMode()" id="darkModeToggle" class="btn btn-icon text-white" title="Toggle Dark Mode">
+                <i class="fas fa-moon"></i>
+            </button>
+
+            <!-- Logout Icon (Hidden on large screens, shown on small screens) -->
+            <button onclick="logoutUser()" class="btn btn-icon text-white d-lg-none" title="Logout">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- 2. NAVIGATION BAR (Links - Fixed to Top, below Header) -->
+<nav class="app-navbar fixed-top d-none d-lg-flex premium-nav">
+    <div class="container-fluid">
+        <ul class="navbar-nav me-auto d-flex flex-row justify-content-start">
+            <li class="nav-item">
+                <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showDashboard, 'dashboard')">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showPrescriptionForm, 'form')">
+                    <i class="fas fa-plus-circle"></i> Add Rx
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showPatients, 'patients')">
+                    <i class="fas fa-users"></i> Patients
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showPrescriptions, 'prescriptions')">
+                    <i class="fas fa-list"></i> History
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showReports, 'reports')">
+                    <i class="fas fa-chart-bar"></i> Reports
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showProfileSetup, 'setup')">
+                    <i class="fas fa-user-circle"></i> Profile
+                </a>
+            </li>
+             <!-- NEW: Notifications Link - Moved into header bar for mobile, kept here for desktop visibility -->
+        </ul>
         
-        <!-- 3. Mobile Logout Icon (Far Right) -->
-        <button onclick="logoutUser()" class="btn btn-logout premium-logout d-lg-none" id="mobileLogoutIcon">
-            <i class="fas fa-sign-out-alt"></i>
-        </button>
-
-        <!-- Desktop Menu (hidden on mobile) -->
-        <div class="collapse navbar-collapse d-none d-lg-flex">
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item">
-                    <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showDashboard, 'dashboard')">
-                        <i class="fas fa-tachometer-alt"></i> Dashboard
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showPrescriptionForm, 'form')">
-                        <i class="fas fa-plus-circle"></i> Add Prescription
-                    </a>
-                </li>
-                 <!-- NEW: Notifications Link -->
-                 <li class="nav-item">
-                    <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showNotifications, 'notifications')">
-                        <i class="fas fa-bell"></i> Notifications
-                    </a>
-                </li>
-                 <!-- NEW: Patients Link (F) -->
-                 <li class="nav-item">
-                    <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showPatients, 'patients')">
-                        <i class="fas fa-users"></i> Patients
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showPrescriptions, 'prescriptions')">
-                        <i class="fas fa-list"></i> Prescriptions
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showReports, 'reports')">
-                        <i class="fas fa-chart-bar"></i> Reports
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showProfileSetup, 'setup')">
-                        <i class="fas fa-user-circle"></i> Profile
-                    </a>
-                </li>
-            </ul>
-
-              <!-- SUBSCRIPTION STATUS HERE (Desktop) -->
-            <div id="navSubscriptionStatus" class="navbar-text me-0 d-flex align-items-center">
-                <!-- Subscription status (Premium/Free + Days Count) will be dynamically updated by app.js -->
-            </div>
-            
-            <!-- NEW: Buy Premium Button Container (Desktop) -->
-            <div id="navBuyPremiumButton" class="me-3">
-                <!-- Buy Premium Button will be dynamically updated by app.js -->
-            </div>
-            
-            <!-- Desktop Logout Button (Visible >= lg) -->
+        <!-- Premium Status and Logout (Desktop Only) -->
+        <div class="d-flex align-items-center ms-auto">
+            <div id="navSubscriptionStatus" class="navbar-text me-2"></div>
+            <div id="navBuyPremiumButton" class="me-2"></div>
             <button onclick="logoutUser()" class="btn btn-logout premium-logout">
                 <i class="fas fa-sign-out-alt"></i> Logout
             </button>
         </div>
+    </div>
+</nav>
 
-<!-- Offcanvas Mobile Menu -->
+
+<!-- Offcanvas Mobile Menu (Retained for full mobile navigation) -->
 <div class="offcanvas offcanvas-start d-lg-none" tabindex="-1" id="offcanvasNavbar">
     <div class="offcanvas-header premium-offcanvas-header">
         <h5 class="offcanvas-title">
@@ -188,7 +190,6 @@
         </div>
     </div>
 </div>
-</nav>
 
     <!-- Main Content Container -->
     <div class="main-content">
@@ -470,7 +471,7 @@
                         </div>
                     </div>
                     <hr>
-                    
+
                     <!-- Amount & Payment -->
                     <div class="section-title">Amount & Payment Mode</div>
                     <div class="amount-payment-row">
