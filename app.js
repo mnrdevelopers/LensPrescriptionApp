@@ -597,6 +597,20 @@ function openPreviewFromView() {
     }, 300);
 }
 
+// Update the back button in preview section to go back to prescriptions
+function updatePreviewBackButton() {
+    const backButton = document.querySelector('.btn-back');
+    if (backButton) {
+        backButton.onclick = () => {
+            if (lastValidSection === 'prescriptions') {
+                navigateIfProfileComplete(showPrescriptions, 'prescriptions');
+            } else {
+                navigateIfProfileComplete(showDashboard, 'dashboard');
+            }
+        };
+    }
+}
+
 // Call this function when showing preview
 function showPreview(prescriptionData = null) {
     hideAllSections();
