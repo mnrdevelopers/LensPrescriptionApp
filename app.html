@@ -936,18 +936,24 @@
 
     <!-- Service Worker Registration -->
     <script>
-        // Register Service Worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                navigator.serviceWorker.register('service-worker.js')
-                    .then(function(registration) {
-                        console.log('Service Worker registered with scope:', registration.scope);
-                    })
-                    .catch(function(error) {
-                        console.log('Service Worker registration failed:', error);
-                    });
+       // In your main app.js or HTML
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/LensPrescriptionApp/service-worker.js')
+        .then(registration => {
+            console.log('SW registered:', registration);
+            
+            registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                console.log('New service worker found!');
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        showUpdateNotification('New version available!');
+                    }
+                });
             });
-        }
+        });
+}
     </script>
 </body>
 </html>
+
