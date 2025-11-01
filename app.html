@@ -226,6 +226,32 @@
                     <label for="setupContactNumber">Contact Number</label>
                     <input type="tel" id="setupContactNumber" placeholder="Enter Contact Number" required>
                 </div>
+                
+                <!-- NEW UPI PAYMENT SECTION -->
+                <div class="section-title mt-5"><i class="fas fa-qrcode"></i> UPI Payment Details</div>
+                <p class="text-muted text-center mb-3">These details are shown on the thermal receipt for UPI payments. You can upload your QR code image via imgbb.</p>
+                
+                <div class="form-group">
+                    <label for="setupUpiId">Your UPI ID (VPA)</label>
+                    <input type="text" id="setupUpiId" placeholder="e.g., yourname@bankname">
+                </div>
+                
+                <div class="form-group">
+                    <label for="qrCodeFile">Upload UPI QR Code (via ImgBB)</label>
+                    <input type="file" id="qrCodeFile" accept="image/*" class="form-control-file" onchange="previewQrCode(event)">
+                </div>
+                
+                <div class="text-center mt-3 mb-4">
+                    <div id="qrCodePreviewContainer" style="display: none; border: 1px dashed #ccc; padding: 10px; border-radius: 8px; max-width: 200px; margin: 0 auto;">
+                        <img id="currentQrCodeImage" alt="Current QR Code" style="width: 150px; height: 150px; display: none;">
+                        <p id="qrCodeUrlDisplay" class="text-break mt-2" style="font-size: 10px;"></p>
+                        <button onclick="removeQrCode()" class="btn btn-sm btn-danger mt-2"><i class="fas fa-trash"></i> Remove QR</button>
+                    </div>
+                    <div id="qrUploadStatus" class="mt-2 text-primary" style="font-size: 12px; font-weight: bold;"></div>
+                    <input type="hidden" id="setupUpiQrUrl"> <!-- Hidden field to store the imgbb URL -->
+                </div>
+                <!-- END NEW UPI PAYMENT SECTION -->
+
                 <button onclick="saveSetupProfile()" class="btn btn-primary btn-submit" id="saveSetupProfileBtn">
                     Save Profile & Continue <i class="fas fa-arrow-right"></i>
                 </button>
@@ -728,6 +754,17 @@
                         <p><strong>Amount:</strong> ₹<span id="previewAmount"></span></p>
                         <p><strong>Payment Mode:</strong> <span id="previewPaymentMode"></span></p>
                     </div>
+                    
+                    <!-- NEW: UPI QR/ID in Preview -->
+                    <div id="previewUpiContainer" style="display: none;">
+                        <div class="text-center mb-2">
+                             <img id="previewQrCodeImage" alt="UPI QR Code" style="width: 100px; height: 100px; margin: 0 auto; display: block;">
+                             <p style="font-size: 10px; margin-top: 5px;">Scan to Pay (UPI)</p>
+                             <p style="font-weight: bold; font-size: 11px;">UPI ID: <span id="previewUpiId"></span></p>
+                        </div>
+                        <hr>
+                    </div>
+                    <!-- END NEW: UPI QR/ID in Preview -->
                     <hr>
 
                     <!-- Thank You Note -->
@@ -957,4 +994,3 @@ if ('serviceWorker' in navigator) {
     </script>
 </body>
 </html>
-
