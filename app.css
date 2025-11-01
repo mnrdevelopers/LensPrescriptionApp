@@ -229,7 +229,6 @@ body.dark-mode {
 
 .page-section.active {
     display: block;
-    margin: 30px;
 }
 
 @keyframes fadeIn {
