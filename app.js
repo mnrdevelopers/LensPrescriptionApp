@@ -774,27 +774,27 @@ function updateProfileUI(userData) {
 
 function logoutUser() {
     // Show confirmation dialog before logging out
-    if (confirm('Are you sure you want to log out?')) {
-        // Set flag before signing out - use localStorage for persistence
-        localStorage.setItem("explicitLogout", "true");
+    const confirmLogout = confirm('Are you sure you want to log out?');
+    
+    if (confirmLogout) {
+        // Set flag before signing out
+        sessionStorage.setItem("explicitLogout", "true");
         
         auth.signOut().then(() => {
-            // Clear all local storage except the explicit logout flag
-            const explicitLogoutFlag = localStorage.getItem("explicitLogout");
-            localStorage.clear();
-            if (explicitLogoutFlag) {
-                localStorage.setItem("explicitLogout", "true");
-            }
+            localStorage.removeItem('username');
+            localStorage.removeItem('userId');
+            localStorage.removeItem('userProfile');
+            localStorage.removeItem('freshRegistration');
+            localStorage.removeItem('isFirstPrescription');
             
-            // Use replace to prevent going back
             window.location.replace('auth.html');
         }).catch(error => {
             console.error('Logout failed:', error);
-            // If signOut fails, still redirect but clear the flag
-            localStorage.removeItem("explicitLogout");
+            // If signOut fails, still redirect
             window.location.replace('auth.html');
         });
     }
+    // If user clicks "Cancel", do nothing (stay on the page)
 }
 // -----------------------------------------------------------
 // 4. Prescription Core Logic (Submission & Data)
