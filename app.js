@@ -60,7 +60,8 @@ async function initializeApp() {
     }
     
     setupEventListeners();
-    setupPWA(); 
+    setupPWA();
+    setupServiceWorkerUpdates();
     
     setInitialDateFilters();
     
@@ -2712,6 +2713,82 @@ function lockFeatures() {
     }
 }
 
+// Service Worker Update Handler
+function setupServiceWorkerUpdates() {
+    if ('serviceWorker' in navigator) {
+        // Listen for service worker updates
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            console.log('Service Worker updated, reloading page...');
+            showStatusMessage('App updated! Refreshing...', 'info');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        });
+
+        // Listen for custom update messages
+        navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'SW_UPDATED') {
+                console.log('Update detected:', event.data.version);
+                showUpdateNotification(event.data.version);
+            }
+        });
+
+        // Check for updates every hour
+        setInterval(checkForUpdates, 60 * 60 * 1000);
+        
+        // Initial check
+        checkForUpdates();
+    }
+}
+
+// Check for updates
+async function checkForUpdates() {
+    if ('serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.ready;
+        
+        registration.update().then(() => {
+            console.log('Checked for service worker updates');
+        }).catch(error => {
+            console.log('Update check failed:', error);
+        });
+    }
+}
+
+// Update notification with refresh button
+function showUpdateNotification(version) {
+    const existingNotification = document.getElementById('updateNotification');
+    if (existingNotification) existingNotification.remove();
+
+    const updateNotification = document.createElement('div');
+    updateNotification.id = 'updateNotification';
+    updateNotification.innerHTML = `
+        <div class="update-notification">
+            <div class="update-content">
+                <i class="fas fa-sync-alt"></i>
+                <span>New version ${version} available!</span>
+                <button onclick="window.location.reload()" class="btn btn-success btn-sm">
+                    Update Now
+                </button>
+                <button onclick="this.parentElement.parentElement.remove()" class="btn btn-secondary btn-sm">
+                    Later
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(updateNotification);
+}
+
+// Manual update check (call this when you deploy updates)
+function forceUpdateCheck() {
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(registration => {
+            registration.update();
+            showStatusMessage('Checking for updates...', 'info');
+        });
+    }
+}
+
 
 // Global Exports
 window.showDashboard = showDashboard;
@@ -2756,3 +2833,4 @@ window.showPremiumFeaturePrompt = showPremiumFeaturePrompt;
 
 // Remote Config Export
 window.initializeRemoteConfig = initializeRemoteConfig;
+
