@@ -1714,50 +1714,18 @@ body.dark-mode {
     font-size: 9px;
 }
 
-/* Fix for navigation active states and disabled states */
+/* ===== CRITICAL MISSING STYLES ===== */
+
+/* 1. Navigation Disabled State */
 .nav-link-custom.nav-disabled {
     opacity: 0.6;
     pointer-events: none;
     cursor: not-allowed;
+    background: #f8f9fa !important;
+    color: #6c757d !important;
 }
 
-/* Premium navigation styling */
-.premium-nav {
-    background: rgba(255, 255, 255, 0.98) !important;
-    backdrop-filter: blur(10px);
-}
-
-.premium-offcanvas-header {
-    background: var(--premium-navy);
-    color: white;
-}
-
-.premium-offcanvas-header .btn-close {
-    filter: invert(1);
-}
-
-/* Button disabled states */
-.btn-disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    pointer-events: none;
-}
-
-.btn-disabled:hover {
-    transform: none !important;
-    box-shadow: none !important;
-}
-
-/* Form validation styles */
-input:invalid, select:invalid {
-    border-color: var(--danger-color) !important;
-}
-
-input:valid, select:valid {
-    border-color: var(--success-color) !important;
-}
-
-/* Loading states */
+/* 2. Button Loading State */
 .btn-loading {
     position: relative;
     pointer-events: none;
@@ -1775,74 +1743,157 @@ input:valid, select:valid {
     animation: spin 1s linear infinite;
 }
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+/* 3. Form Validation States */
+input:invalid, select:invalid {
+    border-color: var(--danger-color) !important;
 }
 
-/* Badge styles */
-.badge {
-    font-size: 0.75em;
-    padding: 0.35em 0.65em;
+input:valid, select:valid {
+    border-color: #28a745 !important;
 }
 
-/* Modal backdrop fix */
+/* 4. Premium Feature Lock Styles */
+.btn-premium-locked {
+    position: relative;
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.btn-premium-locked::before {
+    content: '🔒';
+    margin-right: 8px;
+}
+
+/* 5. Missing Mobile Navigation Active States */
+@media (max-width: 991.98px) {
+    .offcanvas-body .nav-link-custom.active {
+        background: var(--primary-color) !important;
+        color: white !important;
+        border-left: 4px solid var(--premium-gold);
+    }
+}
+
+/* 6. Table Action Buttons Container */
+.table-actions {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+    align-items: center;
+}
+
+/* 7. Print-specific Improvements */
+@media print {
+    .btn-back,
+    .preview-buttons,
+    .app-header,
+    .app-navbar {
+        display: none !important;
+    }
+    
+    #prescriptionPreview {
+        box-shadow: none !important;
+        border: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+}
+
+/* 8. Dark Mode Fixes for New Elements */
+body.dark-mode .template-management-bar {
+    background: #2d3748 !important;
+    border-color: #4a5568 !important;
+}
+
+body.dark-mode .premium-offcanvas-header {
+    background: var(--premium-navy) !important;
+}
+
+/* 9. Status Message Refinements */
+.status-message {
+    z-index: 10000;
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    min-width: 300px;
+    padding: 15px 20px;
+    border-radius: 8px;
+    color: white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    animation: slideInRight 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* 10. Modal Backdrop Enhancement */
 .modal-overlay {
     background: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(5px);
 }
 
-/* Table responsive fixes */
-.table-responsive-mobile {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+/* 11. Missing Utility Classes */
+.text-muted { color: #6c757d !important; }
+.fw-bold { font-weight: 700 !important; }
+.border-bottom { border-bottom: 1px solid #dee2e6 !important; }
+.bg-light { background-color: #f8f9fa !important; }
+
+/* 12. Patient Record Styles */
+.patient-id-tag {
+    font-size: 0.8rem;
+    background: #e9ecef;
+    padding: 2px 8px;
+    border-radius: 4px;
+    color: #495057;
 }
 
-/* Ensure tables are scrollable on mobile */
-@media (max-width: 768px) {
-    .table-responsive-mobile {
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-    }
-}
-
-/* Print styles enhancement */
-@media print {
-    .no-print {
-        display: none !important;
+/* 13. Template Management Responsive Fix */
+@media (max-width: 576px) {
+    .template-management-bar {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
     }
     
-    .table-responsive-mobile {
-        overflow-x: visible !important;
+    .template-management-bar .template-selector {
+        width: 100%;
+    }
+    
+    .template-management-bar select {
+        width: 100%;
+        max-width: none;
     }
 }
 
-/* Dark mode enhancements */
-body.dark-mode .app-navbar {
-    background: rgba(30, 30, 30, 0.95) !important;
-    color: #f4f4f4;
+/* 14. Checkup Reminder Badge */
+#headerNotificationBadge {
+    font-size: 0.6em;
+    padding: 0.25em 0.5em;
+    min-width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-body.dark-mode .nav-link-custom {
-    color: #f4f4f4 !important;
+/* 15. Dashboard Stats Card Refinements */
+.stat-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
 }
 
-body.dark-mode .nav-link-custom.active {
-    background: #2d2d2d !important;
-    color: var(--premium-gold) !important;
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
 }
 
-/* Fix for offcanvas in dark mode */
-body.dark-mode .offcanvas {
-    background: #1a1a1a;
-    color: #f4f4f4;
+/* 16. Missing Animation Keyframes */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
-body.dark-mode .offcanvas .nav-link-custom {
-    color: #f4f4f4 !important;
-}
-
-/* Status message animations */
 @keyframes slideInRight {
     from {
         opacity: 0;
@@ -1854,85 +1905,88 @@ body.dark-mode .offcanvas .nav-link-custom {
     }
 }
 
-/* Form focus states */
-.form-control:focus,
-.form-select:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+/* 17. Form Group Spacing */
+.form-group {
+    margin-bottom: 1rem;
 }
 
-/* Custom scrollbar for webkit browsers */
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+.form-group label {
+    margin-bottom: 0.5rem;
+    display: block;
 }
 
-::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb {
-    background: var(--primary-color);
-    border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: #0056b3;
-}
-
-/* Dark mode scrollbar */
-body.dark-mode ::-webkit-scrollbar-track {
-    background: #2d2d2d;
-}
-
-body.dark-mode ::-webkit-scrollbar-thumb {
-    background: var(--premium-gold);
-}
-
-/* Fix for mobile header alignment */
-@media (max-width: 991.98px) {
-    .app-header .header-brand {
-        margin-left: 0;
-        justify-content: center;
-    }
-}
-
-/* Ensure proper z-index stacking */
-.app-header {
-    z-index: 1050;
-}
-
-.app-navbar {
-    z-index: 1040;
-}
-
-.modal-overlay {
-    z-index: 1060;
-}
-
-/* Button group spacing */
-.button-group {
-    gap: 15px;
-}
-
-.button-group .btn {
-    margin: 5px 0;
-}
-
-/* Template management bar responsive fix */
-@media (max-width: 576px) {
-    .template-management-bar {
-        flex-direction: column;
+/* 18. Button Group Responsive */
+@media (max-width: 768px) {
+    .button-group {
         gap: 10px;
     }
     
-    .template-management-bar .template-selector {
-        width: 100%;
+    .button-group .btn {
+        font-size: 14px;
+        padding: 12px 15px;
+    }
+}
+
+/* 19. Table Row Hover Effects */
+#prescriptionTable tbody tr,
+#patientTable tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+#prescriptionTable tbody tr:hover,
+#patientTable tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* 20. Offcanvas Body Padding Fix */
+.offcanvas-body {
+    padding: 0 !important;
+}
+
+.offcanvas-body .navbar-nav {
+    padding: 1rem;
+}
+
+/* 21. Premium Badge Styles */
+.badge.bg-success {
+    background: linear-gradient(135deg, #28a745, #20c997) !important;
+}
+
+.badge.bg-warning {
+    background: linear-gradient(135deg, #ffc107, #fd7e14) !important;
+}
+
+/* 22. Mobile Subscription Status */
+#mobileSubscriptionStatus {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+/* 23. Copy Button Enhancement */
+.copy-btn {
+    transition: all 0.2s ease;
+}
+
+.copy-btn:hover {
+    transform: scale(1.05);
+}
+
+/* 24. Missing Focus States */
+.btn:focus,
+.form-control:focus,
+.form-select:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+}
+
+/* 25. Print Preview Refinements */
+@media print {
+    body {
+        background: white !important;
+        color: black !important;
     }
     
-    .template-management-bar select {
-        width: 100%;
-        max-width: none;
+    .page-section:not(.active) {
+        display: none !important;
     }
 }
