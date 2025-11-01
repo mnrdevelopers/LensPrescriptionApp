@@ -226,6 +226,31 @@ body.dark-mode #exitPromptModal p {
     color: var(--dark-text) !important;
 }
 
+/* FIX 2: Mobile Offcanvas Menu Dark Mode */
+body.dark-mode .offcanvas {
+    background-color: var(--dark-surface) !important;
+    color: var(--dark-text) !important;
+}
+
+body.dark-mode .offcanvas-header {
+    background: #33364b !important;
+    border-bottom: 1px solid var(--dark-border);
+}
+
+body.dark-mode #mobileSubscriptionStatus,
+body.dark-mode #mobileBuyPremiumButton {
+    background: #3c415e !important;
+    border-bottom-color: var(--dark-border) !important;
+}
+
+body.dark-mode .offcanvas-body .navbar-nav .nav-link-custom {
+    color: var(--dark-text) !important;
+}
+
+body.dark-mode .offcanvas-body .navbar-nav .nav-link-custom.active {
+    background: #33364b !important;
+    color: var(--premium-gold) !important;
+}
 /* --- END DARK MODE STYLES --- */
 
 
