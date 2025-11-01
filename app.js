@@ -1599,13 +1599,13 @@ function displayPrescriptions(prescriptions) {
 
 // View Modal Functions
 function openViewModal(prescription) {
-    currentViewPrescription = prescription;
+    currentViewPrescription = JSON.parse(JSON.stringify(prescription)); // Deep copy
     const modal = document.getElementById('viewPrescriptionModal');
     const content = document.getElementById('viewPrescriptionContent');
     
     if (!modal || !content) return;
     
-    content.innerHTML = generateViewContent(prescription);
+    content.innerHTML = generateViewContent(currentViewPrescription);
     modal.style.display = 'flex';
     modal.style.opacity = '1';
     modal.style.visibility = 'visible';
@@ -1622,6 +1622,7 @@ function closeViewModal() {
 }
 
 function generateViewContent(prescription) {
+    // Ensure prescriptionData exists
     const presData = prescription.prescriptionData || {};
     
     return `
@@ -1748,16 +1749,16 @@ function generateViewContent(prescription) {
 
 // Edit Modal Functions
 function openEditModal() {
-    // CRITICAL: Check if currentViewPrescription exists and has a valid ID before proceeding
-    if (!currentViewPrescription || !currentViewPrescription.id) {
-        console.error("Cannot open edit modal: No valid prescription selected.");
-        showStatusMessage("Error: Please select a valid prescription item to edit.", 'error');
+    if (!currentViewPrescription) {
+        showStatusMessage('No prescription data available for editing.', 'error');
         return;
     }
     
+    // Close view modal and store the prescription data
+    const prescriptionToEdit = JSON.parse(JSON.stringify(currentViewPrescription));
     closeViewModal();
-    // Use the now-verified currentViewPrescription
-    currentEditPrescription = currentViewPrescription;
+    
+    currentEditPrescription = prescriptionToEdit;
     
     const modal = document.getElementById('editPrescriptionModal');
     const form = document.getElementById('editPrescriptionForm');
@@ -1781,33 +1782,29 @@ function closeEditModal() {
 }
 
 function generateEditForm(prescription) {
-    // FIX: Add defensive check for null prescription object passed to the function
-    if (!prescription) {
-        console.error("Attempted to generate edit form with null prescription data.");
-        return '<p class="text-danger">Error: Prescription data could not be loaded for editing.</p>';
-    }
+    // Ensure prescriptionData exists with safe defaults
     const presData = prescription.prescriptionData || {};
     
     return `
         <div class="edit-prescription-grid">
             <div class="edit-form-group">
-                <label for="editPatientName">Patient Name</label>
+                <label for="editPatientName">Patient Name *</label>
                 <input type="text" id="editPatientName" value="${prescription.patientName || ''}" required>
             </div>
             <div class="edit-form-group">
-                <label for="editAge">Age</label>
+                <label for="editAge">Age *</label>
                 <input type="number" id="editAge" value="${prescription.age || ''}" required>
             </div>
             <div class="edit-form-group">
-                <label for="editGender">Gender</label>
+                <label for="editGender">Gender *</label>
                 <select id="editGender">
-                    <option value="Male" ${prescription.gender === 'Male' ? 'selected' : ''}>Male</option>
-                    <option value="Female" ${prescription.gender === 'Female' ? 'selected' : ''}>Female</option>
-                    <option value="Other" ${prescription.gender === 'Other' ? 'selected' : ''}>Other</option>
+                    <option value="Male" ${(prescription.gender || 'Male') === 'Male' ? 'selected' : ''}>Male</option>
+                    <option value="Female" ${(prescription.gender || 'Male') === 'Female' ? 'selected' : ''}>Female</option>
+                    <option value="Other" ${(prescription.gender || 'Male') === 'Other' ? 'selected' : ''}>Other</option>
                 </select>
             </div>
             <div class="edit-form-group">
-                <label for="editMobile">Mobile</label>
+                <label for="editMobile">Mobile *</label>
                 <input type="tel" id="editMobile" value="${prescription.mobile || ''}" required>
             </div>
         </div>
@@ -1817,31 +1814,31 @@ function generateEditForm(prescription) {
             <div class="edit-prescription-grid">
                 <div class="edit-form-group">
                     <label for="editRightDistSPH">DIST SPH</label>
-                    <input type="text" id="editRightDistSPH" value="${presData.rightDistSPH || ''}">
+                    <input type="text" id="editRightDistSPH" value="${presData.rightDistSPH || ''}" placeholder="±D">
                 </div>
                 <div class="edit-form-group">
                     <label for="editRightDistCYL">DIST CYL</label>
-                    <input type="text" id="editRightDistCYL" value="${presData.rightDistCYL || ''}">
+                    <input type="text" id="editRightDistCYL" value="${presData.rightDistCYL || ''}" placeholder="±D">
                 </div>
                 <div class="edit-form-group">
                     <label for="editRightDistAXIS">DIST AXIS</label>
-                    <input type="text" id="editRightDistAXIS" value="${presData.rightDistAXIS || ''}">
+                    <input type="text" id="editRightDistAXIS" value="${presData.rightDistAXIS || ''}" placeholder="1-180">
                 </div>
                 <div class="edit-form-group">
                     <label for="editRightDistVA">DIST V/A</label>
-                    <input type="text" id="editRightDistVA" value="${presData.rightDistVA || ''}">
+                    <input type="text" id="editRightDistVA" value="${presData.rightDistVA || ''}" placeholder="6/6 or 20/20">
                 </div>
                 <div class="edit-form-group">
                     <label for="editRightPrismDiopter">PRISM Diopter</label>
-                    <input type="text" id="editRightPrismDiopter" value="${presData.rightPrismDiopter || ''}">
+                    <input type="text" id="editRightPrismDiopter" value="${presData.rightPrismDiopter || ''}" placeholder="Prism D">
                 </div>
                 <div class="edit-form-group">
                     <label for="editRightPrismBase">PRISM Base</label>
-                    <input type="text" id="editRightPrismBase" value="${presData.rightPrismBase || ''}">
+                    <input type="text" id="editRightPrismBase" value="${presData.rightPrismBase || ''}" placeholder="IN/OUT/UP/DOWN">
                 </div>
                 <div class="edit-form-group">
                     <label for="editRightAddSPH">ADD SPH</label>
-                    <input type="text" id="editRightAddSPH" value="${presData.rightAddSPH || ''}">
+                    <input type="text" id="editRightAddSPH" value="${presData.rightAddSPH || ''}" placeholder="+D">
                 </div>
             </div>
         </div>
@@ -1851,31 +1848,31 @@ function generateEditForm(prescription) {
             <div class="edit-prescription-grid">
                 <div class="edit-form-group">
                     <label for="editLeftDistSPH">DIST SPH</label>
-                    <input type="text" id="editLeftDistSPH" value="${presData.leftDistSPH || ''}">
+                    <input type="text" id="editLeftDistSPH" value="${presData.leftDistSPH || ''}" placeholder="±D">
                 </div>
                 <div class="edit-form-group">
                     <label for="editLeftDistCYL">DIST CYL</label>
-                    <input type="text" id="editLeftDistCYL" value="${presData.leftDistCYL || ''}">
+                    <input type="text" id="editLeftDistCYL" value="${presData.leftDistCYL || ''}" placeholder="±D">
                 </div>
                 <div class="edit-form-group">
                     <label for="editLeftDistAXIS">DIST AXIS</label>
-                    <input type="text" id="editLeftDistAXIS" value="${presData.leftDistAXIS || ''}">
+                    <input type="text" id="editLeftDistAXIS" value="${presData.leftDistAXIS || ''}" placeholder="1-180">
                 </div>
                 <div class="edit-form-group">
                     <label for="editLeftDistVA">DIST V/A</label>
-                    <input type="text" id="editLeftDistVA" value="${presData.leftDistVA || ''}">
+                    <input type="text" id="editLeftDistVA" value="${presData.leftDistVA || ''}" placeholder="6/6 or 20/20">
                 </div>
                 <div class="edit-form-group">
                     <label for="editLeftPrismDiopter">PRISM Diopter</label>
-                    <input type="text" id="editLeftPrismDiopter" value="${presData.leftPrismDiopter || ''}">
+                    <input type="text" id="editLeftPrismDiopter" value="${presData.leftPrismDiopter || ''}" placeholder="Prism D">
                 </div>
                 <div class="edit-form-group">
                     <label for="editLeftPrismBase">PRISM Base</label>
-                    <input type="text" id="editLeftPrismBase" value="${presData.leftPrismBase || ''}">
+                    <input type="text" id="editLeftPrismBase" value="${presData.leftPrismBase || ''}" placeholder="IN/OUT/UP/DOWN">
                 </div>
                 <div class="edit-form-group">
                     <label for="editLeftAddSPH">ADD SPH</label>
-                    <input type="text" id="editLeftAddSPH" value="${presData.leftAddSPH || ''}">
+                    <input type="text" id="editLeftAddSPH" value="${presData.leftAddSPH || ''}" placeholder="+D">
                 </div>
             </div>
         </div>
@@ -1884,49 +1881,56 @@ function generateEditForm(prescription) {
             <h4>Additional Details</h4>
             <div class="edit-prescription-grid">
                 <div class="edit-form-group">
-                    <label for="editPdFar">PD Far</label>
-                    <input type="text" id="editPdFar" value="${prescription.pdFar || ''}">
+                    <label for="editPdFar">PD Far *</label>
+                    <input type="text" id="editPdFar" value="${prescription.pdFar || ''}" required placeholder="e.g., 60 or 30/30">
                 </div>
                 <div class="edit-form-group">
                     <label for="editPdNear">PD Near</label>
-                    <input type="text" id="editPdNear" value="${prescription.pdNear || ''}">
+                    <input type="text" id="editPdNear" value="${prescription.pdNear || ''}" placeholder="e.g., 57 or 28.5/28.5">
                 </div>
                 <div class="edit-form-group">
                     <label for="editVisionType">Vision Type</label>
                     <select id="editVisionType">
-                        <option value="Single Vision" ${prescription.visionType === 'Single Vision' ? 'selected' : ''}>Single Vision</option>
-                        <option value="Bifocal" ${prescription.visionType === 'Bifocal' ? 'selected' : ''}>Bifocal</option>
-                        <option value="Progressive" ${prescription.visionType === 'Progressive' ? 'selected' : ''}>Progressive</option>
-                        <option value="Reading" ${prescription.visionType === 'Reading' ? 'selected' : ''}>Reading</option>
+                        <option value="Single Vision" ${(prescription.visionType || 'Single Vision') === 'Single Vision' ? 'selected' : ''}>Single Vision</option>
+                        <option value="Bifocal" ${(prescription.visionType || 'Single Vision') === 'Bifocal' ? 'selected' : ''}>Bifocal</option>
+                        <option value="Progressive" ${(prescription.visionType || 'Single Vision') === 'Progressive' ? 'selected' : ''}>Progressive</option>
+                        <option value="Reading" ${(prescription.visionType || 'Single Vision') === 'Reading' ? 'selected' : ''}>Reading</option>
+                        <option value="Computer/Degressive" ${(prescription.visionType || 'Single Vision') === 'Computer/Degressive' ? 'selected' : ''}>Computer/Degressive</option>
                     </select>
                 </div>
                 <div class="edit-form-group">
                     <label for="editLensType">Lens Type</label>
                     <select id="editLensType">
-                        <option value="Polycarbonate (PC)" ${prescription.lensType === 'Polycarbonate (PC)' ? 'selected' : ''}>Polycarbonate (PC)</option>
-                        <option value="High Index 1.67" ${prescription.lensType === 'High Index 1.67' ? 'selected' : ''}>High Index 1.67</option>
-                        <option value="Blue Cut" ${prescription.lensType === 'Blue Cut' ? 'selected' : ''}>Blue Cut</option>
+                        <option value="Polycarbonate (PC)" ${(prescription.lensType || 'Polycarbonate (PC)') === 'Polycarbonate (PC)' ? 'selected' : ''}>Polycarbonate (PC)</option>
+                        <option value="High Index 1.67" ${(prescription.lensType || 'Polycarbonate (PC)') === 'High Index 1.67' ? 'selected' : ''}>High Index 1.67</option>
+                        <option value="Trivex" ${(prescription.lensType || 'Polycarbonate (PC)') === 'Trivex' ? 'selected' : ''}>Trivex</option>
+                        <option value="Standard CR-39" ${(prescription.lensType || 'Polycarbonate (PC)') === 'Standard CR-39' ? 'selected' : ''}>Standard CR-39</option>
+                        <option value="Photochromic (Transitions)" ${(prescription.lensType || 'Polycarbonate (PC)') === 'Photochromic (Transitions)' ? 'selected' : ''}>Photochromic (Transitions)</option>
+                        <option value="Anti-Reflective Coating (ARC)" ${(prescription.lensType || 'Polycarbonate (PC)') === 'Anti-Reflective Coating (ARC)' ? 'selected' : ''}>Anti-Reflective Coating (ARC)</option>
+                        <option value="Blue-Light Filter" ${(prescription.lensType || 'Polycarbonate (PC)') === 'Blue-Light Filter' ? 'selected' : ''}>Blue-Light Filter</option>
                     </select>
                 </div>
                 <div class="edit-form-group">
                     <label for="editFrameType">Frame Type</label>
                     <select id="editFrameType">
-                        <option value="Full Rim" ${prescription.frameType === 'Full Rim' ? 'selected' : ''}>Full Rim</option>
-                        <option value="Half Rim" ${prescription.frameType === 'Half Rim' ? 'selected' : ''}>Half Rim</option>
-                        <option value="Rimless" ${prescription.frameType === 'Rimless' ? 'selected' : ''}>Rimless</option>
+                        <option value="Full Rim (Acetate)" ${(prescription.frameType || 'Full Rim (Acetate)') === 'Full Rim (Acetate)' ? 'selected' : ''}>Full Rim (Acetate)</option>
+                        <option value="Half Rim (Metal)" ${(prescription.frameType || 'Full Rim (Acetate)') === 'Half Rim (Metal)' ? 'selected' : ''}>Half Rim (Metal)</option>
+                        <option value="Rimless (Titanium)" ${(prescription.frameType || 'Full Rim (Acetate)') === 'Rimless (Titanium)' ? 'selected' : ''}>Rimless (Titanium)</option>
+                        <option value="Metal (Monel)" ${(prescription.frameType || 'Full Rim (Acetate)') === 'Metal (Monel)' ? 'selected' : ''}>Metal (Monel)</option>
+                        <option value="Plastic (TR-90/Flexible)" ${(prescription.frameType || 'Full Rim (Acetate)') === 'Plastic (TR-90/Flexible)' ? 'selected' : ''}>Plastic (TR-90/Flexible)</option>
                     </select>
                 </div>
                 <div class="edit-form-group">
-                    <label for="editAmount">Amount (₹)</label>
+                    <label for="editAmount">Amount (₹) *</label>
                     <input type="number" id="editAmount" value="${prescription.amount || ''}" step="0.01" required>
                 </div>
                 <div class="edit-form-group">
                     <label for="editPaymentMode">Payment Mode</label>
                     <select id="editPaymentMode">
-                        <option value="Cash" ${prescription.paymentMode === 'Cash' ? 'selected' : ''}>Cash</option>
-                        <option value="Card" ${prescription.paymentMode === 'Card' ? 'selected' : ''}>Card</option>
-                        <option value="UPI" ${prescription.paymentMode === 'UPI' ? 'selected' : ''}>UPI</option>
-                        <option value="Online" ${prescription.paymentMode === 'Online' ? 'selected' : ''}>Online</option>
+                        <option value="Cash" ${(prescription.paymentMode || 'Cash') === 'Cash' ? 'selected' : ''}>Cash</option>
+                        <option value="Card" ${(prescription.paymentMode || 'Cash') === 'Card' ? 'selected' : ''}>Card</option>
+                        <option value="UPI" ${(prescription.paymentMode || 'Cash') === 'UPI' ? 'selected' : ''}>UPI</option>
+                        <option value="Online" ${(prescription.paymentMode || 'Cash') === 'Online' ? 'selected' : ''}>Online</option>
                     </select>
                 </div>
             </div>
@@ -1935,7 +1939,10 @@ function generateEditForm(prescription) {
 }
 
 async function updatePrescription() {
-    if (!currentEditPrescription) return;
+    if (!currentEditPrescription) {
+        showStatusMessage('No prescription selected for editing.', 'error');
+        return;
+    }
 
     const formData = getEditFormData();
     
@@ -1945,6 +1952,9 @@ async function updatePrescription() {
     }
 
     try {
+        // Show loading state
+        showStatusMessage('Updating prescription...', 'info');
+
         await db.collection('prescriptions').doc(currentEditPrescription.id).update({
             ...formData,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -1952,7 +1962,7 @@ async function updatePrescription() {
 
         showStatusMessage('Prescription updated successfully!', 'success');
         closeEditModal();
-        fetchPrescriptions(); // Refresh the list
+        await fetchPrescriptions(); // Refresh the list
         
     } catch (error) {
         console.error('Error updating prescription:', error);
@@ -1961,57 +1971,76 @@ async function updatePrescription() {
 }
 
 function getEditFormData() {
+    const getValue = (id) => document.getElementById(id)?.value.trim() || '';
+    const getNumberValue = (id) => {
+        const value = getValue(id);
+        return value ? parseFloat(value) : 0;
+    };
+
     return {
-        patientName: document.getElementById('editPatientName').value.trim(),
-        age: parseInt(document.getElementById('editAge').value) || 0,
-        gender: document.getElementById('editGender').value,
-        mobile: document.getElementById('editMobile').value.trim(),
-        pdFar: document.getElementById('editPdFar').value.trim(),
-        pdNear: document.getElementById('editPdNear').value.trim(),
-        visionType: document.getElementById('editVisionType').value,
-        lensType: document.getElementById('editLensType').value,
-        frameType: document.getElementById('editFrameType').value,
-        amount: parseFloat(document.getElementById('editAmount').value) || 0,
-        paymentMode: document.getElementById('editPaymentMode').value,
+        patientName: getValue('editPatientName'),
+        age: getNumberValue('editAge'),
+        gender: getValue('editGender'),
+        mobile: getValue('editMobile'),
+        pdFar: getValue('editPdFar'),
+        pdNear: getValue('editPdNear'),
+        visionType: getValue('editVisionType'),
+        lensType: getValue('editLensType'),
+        frameType: getValue('editFrameType'),
+        amount: getNumberValue('editAmount'),
+        paymentMode: getValue('editPaymentMode'),
         prescriptionData: {
-            rightDistSPH: document.getElementById('editRightDistSPH').value.trim(),
-            rightDistCYL: document.getElementById('editRightDistCYL').value.trim(),
-            rightDistAXIS: document.getElementById('editRightDistAXIS').value.trim(),
-            rightDistVA: document.getElementById('editRightDistVA').value.trim(),
-            rightPrismDiopter: document.getElementById('editRightPrismDiopter').value.trim(),
-            rightPrismBase: document.getElementById('editRightPrismBase').value.trim(),
-            rightAddSPH: document.getElementById('editRightAddSPH').value.trim(),
-            leftDistSPH: document.getElementById('editLeftDistSPH').value.trim(),
-            leftDistCYL: document.getElementById('editLeftDistCYL').value.trim(),
-            leftDistAXIS: document.getElementById('editLeftDistAXIS').value.trim(),
-            leftDistVA: document.getElementById('editLeftDistVA').value.trim(),
-            leftPrismDiopter: document.getElementById('editLeftPrismDiopter').value.trim(),
-            leftPrismBase: document.getElementById('editLeftPrismBase').value.trim(),
-            leftAddSPH: document.getElementById('editLeftAddSPH').value.trim()
+            rightDistSPH: getValue('editRightDistSPH'),
+            rightDistCYL: getValue('editRightDistCYL'),
+            rightDistAXIS: getValue('editRightDistAXIS'),
+            rightDistVA: getValue('editRightDistVA'),
+            rightPrismDiopter: getValue('editRightPrismDiopter'),
+            rightPrismBase: getValue('editRightPrismBase'),
+            rightAddSPH: getValue('editRightAddSPH'),
+            leftDistSPH: getValue('editLeftDistSPH'),
+            leftDistCYL: getValue('editLeftDistCYL'),
+            leftDistAXIS: getValue('editLeftDistAXIS'),
+            leftDistVA: getValue('editLeftDistVA'),
+            leftPrismDiopter: getValue('editLeftPrismDiopter'),
+            leftPrismBase: getValue('editLeftPrismBase'),
+            leftAddSPH: getValue('editLeftAddSPH')
         }
     };
 }
 
 function validateEditForm(data) {
-    if (!data.patientName) return false;
-    if (!data.age || data.age <= 0) return false;
-    if (!data.mobile || !data.mobile.match(/^\d{10}$/)) return false;
-    if (!data.amount || data.amount < 0) return false;
+    if (!data.patientName) {
+        showStatusMessage('Patient name is required.', 'error');
+        return false;
+    }
+    if (!data.age || data.age <= 0) {
+        showStatusMessage('Valid age is required.', 'error');
+        return false;
+    }
+    if (!data.mobile || !data.mobile.match(/^\d{10}$/)) {
+        showStatusMessage('Valid 10-digit mobile number is required.', 'error');
+        return false;
+    }
+    if (!data.pdFar) {
+        showStatusMessage('PD Far is required.', 'error');
+        return false;
+    }
+    if (!data.amount || data.amount < 0) {
+        showStatusMessage('Valid amount is required.', 'error');
+        return false;
+    }
     return true;
 }
 
-// FIX APPLIED HERE: Re-formatting the date using the original stored value
+// Update the action buttons in the prescriptions table
 function addPrescriptionRow(tbody, prescription) {
     const row = tbody.insertRow();
     
-    // Ensure we use the date property which holds the ISO string
     const date = new Date(prescription.date);
-    
-    // Use the original date and time stored in the prescription object
     const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     const timeStr = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     
- const fields = [
+    const fields = [
         `${dateStr} @ ${timeStr}`,
         prescription.patientName,
         prescription.age,
@@ -2031,21 +2060,25 @@ function addPrescriptionRow(tbody, prescription) {
     const actionsCell = row.insertCell();
     actionsCell.className = 'table-actions';
     
-    // View Button (replaces preview)
+    // View Button
     const viewBtn = document.createElement('button');
     viewBtn.innerHTML = '👁️';
     viewBtn.className = 'btn-preview';
     viewBtn.title = 'View Details';
     viewBtn.onclick = () => openViewModal(prescription);
     
-    // Edit Button
-    const editBtn = document.createElement('button');
-    editBtn.innerHTML = '✏️';
-    editBtn.className = 'btn-edit';
-    editBtn.title = 'Edit';
-    editBtn.onclick = () => {
-        openViewModal(prescription); // Open view first, then user can click edit
-    };
+   // Edit Button - Direct edit without going through view modal
+const editBtn = document.createElement('button');
+editBtn.innerHTML = '✏️';
+editBtn.className = 'btn-edit';
+editBtn.title = 'Edit';
+editBtn.onclick = () => {
+    if (!isPremium) {
+        showPremiumFeaturePrompt();
+    } else {
+        openEditModalDirect(prescription);
+    }
+};
     
     // Delete Button
     const deleteBtn = document.createElement('button');
@@ -2066,6 +2099,20 @@ function addPrescriptionRow(tbody, prescription) {
     actionsCell.appendChild(deleteBtn);
 }
 
+// Add direct edit function for the edit button
+function openEditModalDirect(prescription) {
+    currentEditPrescription = JSON.parse(JSON.stringify(prescription));
+    
+    const modal = document.getElementById('editPrescriptionModal');
+    const form = document.getElementById('editPrescriptionForm');
+    
+    if (!modal || !form) return;
+    
+    form.innerHTML = generateEditForm(currentEditPrescription);
+    modal.style.display = 'flex';
+    modal.style.opacity = '1';
+    modal.style.visibility = 'visible';
+}
 function filterPrescriptions() {
     // Note: The main filtering is now done in fetchPrescriptions() using firebase queries 
     // and supplemental client-side search. This function is essentially now a no-op 
@@ -3791,6 +3838,7 @@ window.closeViewModal = closeViewModal;
 window.openEditModal = openEditModal;
 window.closeEditModal = closeEditModal;
 window.updatePrescription = updatePrescription;
+window.openEditModalDirect = openEditModalDirect;
 
 // Remote Config Export
 window.initializeRemoteConfig = initializeRemoteConfig;
