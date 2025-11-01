@@ -47,7 +47,8 @@
 <header class="app-header fixed-top">
     <div class="container-fluid d-flex justify-content-between align-items-center">
         <!-- CRITICAL FIX: Mobile Menu Toggle (Left Side, Only on Small Screens) -->
-        <button class="navbar-toggler d-lg-none btn btn-icon text-white" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+        <!-- FIX: Removed navbar-toggler class as it was conflicting with custom styling/click area -->
+        <button class="d-lg-none btn btn-icon text-white" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
             <i class="fas fa-bars"></i>
         </button>
 
