@@ -1,6 +1,6 @@
 // service-worker.js - OPTIMIZED VERSION WITH BETTER CACHING
 
-const CACHE_NAME = 'lens-prescription-v9'; // Incremented version
+const CACHE_NAME = 'lens-prescription-v10'; // Incremented version
 // --- CRITICAL FIX: Prepended /LensPrescriptionApp to all root-relative paths ---
 const APP_BASE_PATH = '/LensPrescriptionApp';
 const ASSETS = [
@@ -198,3 +198,4 @@ async function doBackgroundSync() {
   // For example, sync offline prescriptions when back online
   console.log('Performing background sync...');
 }
+
