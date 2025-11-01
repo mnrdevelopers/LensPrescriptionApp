@@ -1,202 +1,203 @@
-// service-worker.js - OPTIMIZED VERSION WITH BETTER CACHING
-
-const CACHE_NAME = 'lens-prescription-v11'; // Incremented version
-// --- CRITICAL FIX: Prepended /LensPrescriptionApp to all root-relative paths ---
+// service-worker.js - OPTIMIZED VERSION WITH INSTANT UPDATES
+const CACHE_NAME = 'lens-prescription-v12'; // Increment this with each code change
 const APP_BASE_PATH = '/LensPrescriptionApp';
-const ASSETS = [
-  APP_BASE_PATH + '/', // Root of the app, becomes /LensPrescriptionApp/
-  APP_BASE_PATH + '/index.html', // Offline Fallback
-  APP_BASE_PATH + '/auth.html', // Authentication page
-  APP_BASE_PATH + '/app.html', // Main application page (Start URL)
-  APP_BASE_PATH + '/app.css',
-  APP_BASE_PATH + '/auth.css',
-  APP_BASE_PATH + '/app.js',
-  APP_BASE_PATH + '/auth.js',
-  APP_BASE_PATH + '/firebase-config.js',
-  APP_BASE_PATH + '/reset-password.html',
-  APP_BASE_PATH + '/reset-password.js',
-  APP_BASE_PATH + '/manifest.json',
-  APP_BASE_PATH + '/lenslogo.png' // Icon/Logo
-];
-// --------------------------------------------------------------------------------
 
-// Install event
+// CRITICAL: Add timestamp to force cache busting
+const BUILD_TIMESTAMP = '20241201-1200'; // UPDATE THIS WITH EACH DEPLOYMENT
+
+const ASSETS = [
+  `${APP_BASE_PATH}/`,
+  `${APP_BASE_PATH}/index.html`,
+  `${APP_BASE_PATH}/auth.html`,
+  `${APP_BASE_PATH}/app.html`,
+  `${APP_BASE_PATH}/app.css`,
+  `${APP_BASE_PATH}/auth.css`,
+  `${APP_BASE_PATH}/app.js`,
+  `${APP_BASE_PATH}/auth.js`,
+  `${APP_BASE_PATH}/firebase-config.js`,
+  `${APP_BASE_PATH}/reset-password.html`,
+  `${APP_BASE_PATH}/reset-password.js`,
+  `${APP_BASE_PATH}/manifest.json`,
+  `${APP_BASE_PATH}/lenslogo.png`
+];
+
+// Install event - SKIP WAITING FOR INSTANT UPDATES
 self.addEventListener('install', (event) => {
-  console.log('Service Worker: Installing...');
+  console.log('Service Worker: Installing version', CACHE_NAME);
+  
+  // CRITICAL: Skip waiting to activate immediately
+  self.skipWaiting();
+  
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Service Worker: Caching app shell');
-        // Cache critical assets, but don't block installation if some fail
-        return Promise.allSettled(
-          ASSETS.map(asset => 
-            // NOTE: The cache.add() call is modified here to directly use the prefixed asset path
-            cache.add(asset).catch(err => 
-              console.warn(`Failed to cache ${asset}:`, err)
-            )
-          )
-        );
+        return cache.addAll(ASSETS).catch(error => {
+          console.warn('Failed to cache some assets:', error);
+        });
       })
-      .then(() => self.skipWaiting())
   );
 });
 
-// Activate event
+// Activate event - CLAIM CLIENTS FOR INSTANT UPDATES
 self.addEventListener('activate', (event) => {
-  console.log('Service Worker: Activating...');
+  console.log('Service Worker: Activating version', CACHE_NAME);
+  
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames.map((cache) => {
-          if (cache !== CACHE_NAME) {
-            console.log('Service Worker: Deleting old cache', cache);
-            return caches.delete(cache);
+        cacheNames.map((cacheName) => {
+          // Delete ALL old caches (not just different named ones)
+          if (cacheName !== CACHE_NAME) {
+            console.log('Service Worker: Deleting old cache', cacheName);
+            return caches.delete(cacheName);
           }
         })
       );
-    }).then(() => self.clients.claim())
+    })
+    .then(() => {
+      // CRITICAL: Claim all clients immediately
+      return self.clients.claim();
+    })
+    .then(() => {
+      // Send message to all clients to reload
+      return self.clients.matchAll();
+    })
+    .then((clients) => {
+      clients.forEach((client) => {
+        client.postMessage({
+          type: 'SW_UPDATED',
+          version: CACHE_NAME,
+          timestamp: BUILD_TIMESTAMP
+        });
+      });
+    })
   );
 });
 
-// Fetch event - Enhanced caching strategy
+// Fetch event - NETWORK FIRST FOR HTML, CACHE FIRST FOR STATIC ASSETS
 self.addEventListener('fetch', (event) => {
-  // Skip non-GET requests and browser extensions
-  if (event.request.method !== 'GET' || 
-      event.request.url.startsWith('chrome-extension://') ||
-      event.request.url.includes('extension')) {
-    return;
-  }
+  // Skip non-GET requests
+  if (event.request.method !== 'GET') return;
 
   const url = new URL(event.request.url);
   
-  // Skip Remote Config requests - always fetch fresh
-  if (url.href.includes('firebaseremoteconfig.googleapis.com')) {
-    event.respondWith(fetch(event.request));
+  // Skip external services that shouldn't be cached
+  if (url.href.includes('firebaseremoteconfig.googleapis.com') ||
+      url.href.includes('checkout.razorpay.com') ||
+      url.href.includes('api.razorpay.com') ||
+      url.href.includes('googleapis.com') ||
+      url.href.includes('gstatic.com')) {
     return;
   }
 
-  // Skip Razorpay and payment-related requests
-  if (url.href.includes('checkout.razorpay.com') ||
-      url.href.includes('api.razorpay.com')) {
-    return;
-  }
-
-  // Handle external APIs (ImgBB) with network-first strategy
-  if (url.href.includes('imgbb.com') || 
-      url.href.includes('api.imgbb.com')) {
+  // HTML pages - Network First (always fresh)
+  if (event.request.destination === 'document' || 
+      event.request.headers.get('accept')?.includes('text/html')) {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          // Only cache successful responses
-          if (response.status === 200) {
-            const responseClone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseClone);
-            });
-          }
+          // Cache the fresh version
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME)
+            .then(cache => cache.put(event.request, responseClone));
           return response;
         })
         .catch(() => {
           // Fallback to cache if network fails
-          return caches.match(event.request);
+          return caches.match(event.request)
+            .then(cachedResponse => {
+              if (cachedResponse) {
+                return cachedResponse;
+              }
+              // Ultimate fallback
+              return caches.match(`${APP_BASE_PATH}/index.html`);
+            });
         })
     );
     return;
   }
 
-  // Dynamic resources (Firebase, CDNs) - network first, no aggressive caching
-  if (url.href.includes('firebase') || 
-      url.href.includes('googleapis') ||
-      url.href.includes('gstatic.com') ||
-      url.href.includes('cdn.jsdelivr.net') ||
-      url.href.includes('bootstrap') ||
-      url.href.includes('fontawesome')) {
+  // Static assets (CSS, JS, images) - Cache First
+  if (event.request.destination === 'style' ||
+      event.request.destination === 'script' || 
+      event.request.destination === 'image' ||
+      url.pathname.endsWith('.css') ||
+      url.pathname.endsWith('.js') ||
+      url.pathname.endsWith('.png') ||
+      url.pathname.endsWith('.json')) {
     
     event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          // Cache successful responses for CDN resources
-          if (response.status === 200) {
-            const responseClone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseClone);
-            });
+      caches.match(event.request)
+        .then((cachedResponse) => {
+          if (cachedResponse) {
+            // Return cached version, but update in background
+            fetchAndUpdateCache(event.request);
+            return cachedResponse;
           }
-          return response;
-        })
-        .catch(() => {
-          // Try cache as fallback
-          return caches.match(event.request);
+          
+          // Not in cache, fetch from network
+          return fetchAndCache(event.request);
         })
     );
     return;
   }
 
-  // App shell and internal resources - cache first strategy
+  // Default: Network First for other requests
   event.respondWith(
-    caches.match(event.request)
-      .then((cachedResponse) => {
-        // Return cached version if available
-        if (cachedResponse) {
-          // Update cache in background for next visit
-          fetchAndCache(event.request);
-          return cachedResponse;
+    fetch(event.request)
+      .then((response) => {
+        // Cache successful responses
+        if (response.status === 200) {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME)
+            .then(cache => cache.put(event.request, responseClone));
         }
-        
-        // Otherwise, fetch from network
-        return fetchAndCache(event.request)
-          .catch(() => {
-            // If both cache and network fail, serve appropriate offline page
-            if (event.request.destination === 'document') {
-              // --- CRITICAL FIX: Ensure offline fallback URL is correctly prefixed ---
-              return caches.match(APP_BASE_PATH + '/index.html');
-            }
-            // For other resources, return a generic offline response
-            return new Response('Offline', {
-              status: 503,
-              statusText: 'Service Unavailable',
-              headers: new Headers({
-                'Content-Type': 'text/plain'
-              })
-            });
-          });
+        return response;
       })
+      .catch(() => caches.match(event.request))
   );
 });
 
-// Helper function to fetch and cache requests
+// Helper function to fetch and cache
 function fetchAndCache(request) {
   return fetch(request)
     .then((response) => {
-      // Check if we received a valid response
-      if (!response || response.status !== 200 || response.type !== 'basic') {
-        return response;
+      // Only cache valid responses
+      if (response.status === 200) {
+        const responseClone = response.clone();
+        caches.open(CACHE_NAME)
+          .then(cache => cache.put(request, responseClone));
       }
-
-      // Clone the response
-      const responseToCache = response.clone();
-
-      caches.open(CACHE_NAME)
-        .then((cache) => {
-          cache.put(request, responseToCache);
-        });
-
       return response;
     });
 }
 
-// Background sync for offline data (optional enhancement)
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'background-sync') {
-    console.log('Background sync triggered');
-    event.waitUntil(doBackgroundSync());
-  }
-});
-
-async function doBackgroundSync() {
-  // Implement background sync logic here if needed
-  // For example, sync offline prescriptions when back online
-  console.log('Performing background sync...');
+// Helper function to update cache in background
+function fetchAndUpdateCache(request) {
+  fetch(request)
+    .then((response) => {
+      if (response.status === 200) {
+        const responseClone = response.clone();
+        caches.open(CACHE_NAME)
+          .then(cache => cache.put(request, responseClone));
+      }
+    })
+    .catch(() => {
+      // Silently fail - we already have cached version
+    });
 }
 
-
+// Listen for messages from the main thread
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+  
+  if (event.data && event.data.type === 'CHECK_UPDATE') {
+    event.ports[0].postMessage({
+      version: CACHE_NAME,
+      timestamp: BUILD_TIMESTAMP
+    });
+  }
+});
