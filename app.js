@@ -1748,9 +1748,15 @@ function generateViewContent(prescription) {
 
 // Edit Modal Functions
 function openEditModal() {
-    if (!currentViewPrescription) return;
+    // CRITICAL: Check if currentViewPrescription exists and has a valid ID before proceeding
+    if (!currentViewPrescription || !currentViewPrescription.id) {
+        console.error("Cannot open edit modal: No valid prescription selected.");
+        showStatusMessage("Error: Please select a valid prescription item to edit.", 'error');
+        return;
+    }
     
     closeViewModal();
+    // Use the now-verified currentViewPrescription
     currentEditPrescription = currentViewPrescription;
     
     const modal = document.getElementById('editPrescriptionModal');
