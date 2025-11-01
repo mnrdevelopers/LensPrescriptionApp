@@ -1901,7 +1901,7 @@ function printPreview() {
         `;
     }
 
-    // UPDATED PRESCRIPTION DATA
+    // UPDATED PRESCRIPTION DATA - INCLUDING ALL MISSING FIELDS
     const prescriptionData = {
         rightDist: {
             SPH: document.getElementById('previewrightDistSPH')?.textContent || '',
@@ -1909,7 +1909,7 @@ function printPreview() {
             AXIS: document.getElementById('previewrightDistAXIS')?.textContent || '',
             VA: document.getElementById('previewrightDistVA')?.textContent || ''
         },
-        rightPrism: { // NEW
+        rightPrism: {
             DIOPTER: document.getElementById('previewrightPrismDiopter')?.textContent || '',
             BASE: document.getElementById('previewrightPrismBase')?.textContent || ''
         },
@@ -1922,7 +1922,7 @@ function printPreview() {
             AXIS: document.getElementById('previewleftDistAXIS')?.textContent || '',
             VA: document.getElementById('previewleftDistVA')?.textContent || ''
         },
-        leftPrism: { // NEW
+        leftPrism: {
             DIOPTER: document.getElementById('previewleftPrismDiopter')?.textContent || '',
             BASE: document.getElementById('previewleftPrismBase')?.textContent || ''
         },
@@ -1939,6 +1939,22 @@ function printPreview() {
                     <td class="section-heading">PRISM</td>
                     <td colspan="2">${eyeData.DIOPTER}</td>
                     <td colspan="2">${eyeData.BASE}</td>
+                </tr>
+            `;
+        }
+        return '';
+    };
+
+    // Logic to display ADD if present
+    const getAddRow = (eyeData) => {
+        if (eyeData.SPH) {
+            return `
+                <tr class="add-row">
+                    <td class="section-heading">ADD</td>
+                    <td>${eyeData.SPH}</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
                 </tr>
             `;
         }
@@ -2004,7 +2020,6 @@ function printPreview() {
                 .add-row td:nth-child(2) {
                     text-align: left; /* Keep ADD value on left to align with SPH */
                 }
-
 
                 @media print {
                     body { margin: 0; padding: 2mm; width: 58mm; }
@@ -2077,9 +2092,15 @@ function printPreview() {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr><td class="section-heading">DIST</td><td>${prescriptionData.rightDist.SPH}</td><td>${prescriptionData.rightDist.CYL}</td><td>${prescriptionData.rightDist.AXIS}</td><td>${prescriptionData.rightDist.VA}</td></tr>
+                        <tr>
+                            <td class="section-heading">DIST</td>
+                            <td>${prescriptionData.rightDist.SPH}</td>
+                            <td>${prescriptionData.rightDist.CYL}</td>
+                            <td>${prescriptionData.rightDist.AXIS}</td>
+                            <td>${prescriptionData.rightDist.VA}</td>
+                        </tr>
                         ${getPrismRow(prescriptionData.rightPrism)}
-                        <tr class="add-row"><td class="section-heading">ADD</td><td>${prescriptionData.rightAdd.SPH}</td><td></td><td></td><td></td></tr>
+                        ${getAddRow(prescriptionData.rightAdd)}
                     </tbody>
                 </table>
             </div>
@@ -2097,9 +2118,15 @@ function printPreview() {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr><td class="section-heading">DIST</td><td>${prescriptionData.leftDist.SPH}</td><td>${prescriptionData.leftDist.CYL}</td><td>${prescriptionData.leftDist.AXIS}</td><td>${prescriptionData.leftDist.VA}</td></tr>
+                        <tr>
+                            <td class="section-heading">DIST</td>
+                            <td>${prescriptionData.leftDist.SPH}</td>
+                            <td>${prescriptionData.leftDist.CYL}</td>
+                            <td>${prescriptionData.leftDist.AXIS}</td>
+                            <td>${prescriptionData.leftDist.VA}</td>
+                        </tr>
                         ${getPrismRow(prescriptionData.leftPrism)}
-                        <tr class="add-row"><td class="section-heading">ADD</td><td>${prescriptionData.leftAdd.SPH}</td><td></td><td></td><td></td></tr>
+                        ${getAddRow(prescriptionData.leftAdd)}
                     </tbody>
                 </table>
             </div>
