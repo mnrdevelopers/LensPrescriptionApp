@@ -1630,11 +1630,6 @@ function addPrescriptionRow(tbody, prescription) {
     actionsCell.appendChild(previewBtn);
     actionsCell.appendChild(deleteBtn);
 }
-    // ---------------------------------------------------------
-    
-    actionsCell.appendChild(previewBtn);
-    actionsCell.appendChild(deleteBtn);
-}
 
 function filterPrescriptions() {
     // Note: The main filtering is now done in fetchPrescriptions() using firebase queries 
