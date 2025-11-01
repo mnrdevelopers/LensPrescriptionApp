@@ -2536,3 +2536,28 @@ body.dark-mode .btn-edit {
 body.dark-mode .btn-edit:hover {
     color: #ffd351;
 }
+
+/* Add to your app.css */
+.btn-info {
+    background: linear-gradient(135deg, #17a2b8, #138496);
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-info:hover {
+    background: linear-gradient(135deg, #138496, #117a8b);
+    transform: translateY(-2px);
+}
+
+/* Dark mode support */
+body.dark-mode .btn-info {
+    background: linear-gradient(135deg, #1a7d8c, #14626f);
+}
+
+body.dark-mode .btn-info:hover {
+    background: linear-gradient(135deg, #14626f, #11505a);
+}
