@@ -450,7 +450,7 @@ function showDashboard() {
     
     document.getElementById('statsTimePeriod').value = 'daily';
     fetchDashboardStats();
-    fetchCheckupReminders(false); // Only update count on dashboard
+    fetchCheckupReminders(false); // Do not display on dashboard load, just count
 }
 
 function showNotifications() {
@@ -1388,8 +1388,8 @@ function loadTemplate(templateId) {
         const template = JSON.parse(selectedOption.dataset.templateData);
         
         document.getElementById('visionType').value = template.visionType || 'Single Vision';
-        document.getElementById('lensType').value = template.lensType || 'Blue Cut';
-        document.getElementById('frameType').value = template.frameType || 'Full Rim';
+        document.getElementById('lensType').value = template.lensType || 'Polycarbonate (PC)';
+        document.getElementById('frameType').value = template.frameType || 'Full Rim (Acetate)';
         
         // NEW: Load PD fields
         document.getElementById('pdFar').value = template.pdFar || '';
@@ -1731,11 +1731,15 @@ function loadPreviewData(data) {
         'rightAddSPH',
         'leftAddSPH'
     ];
+    
+    // Ensure prescriptionData exists before attempting to access nested properties
+    const presData = data.prescriptionData || {};
 
     prescriptionFields.forEach(field => {
         const element = document.getElementById(`preview${field}`);
-        if (element && data.prescriptionData) {
-            element.textContent = data.prescriptionData[field] || '';
+        if (element) {
+            // Updated to use the local presData object
+            element.textContent = presData[field] || '';
         }
     });
 
@@ -1884,7 +1888,8 @@ function printPreview() {
         `;
     }
 
-    // UPDATED PRESCRIPTION DATA
+    // UPDATED PRESCRIPTION DATA (Use preview elements which reflect current state)
+    // NOTE: This data extraction should mirror the loadPreviewData function to ensure consistency
     const prescriptionData = {
         rightDist: {
             SPH: document.getElementById('previewrightDistSPH')?.textContent || '',
@@ -1892,7 +1897,7 @@ function printPreview() {
             AXIS: document.getElementById('previewrightDistAXIS')?.textContent || '',
             VA: document.getElementById('previewrightDistVA')?.textContent || ''
         },
-        rightPrism: { // NEW
+        rightPrism: { 
             DIOPTER: document.getElementById('previewrightPrismDiopter')?.textContent || '',
             BASE: document.getElementById('previewrightPrismBase')?.textContent || ''
         },
@@ -1905,7 +1910,7 @@ function printPreview() {
             AXIS: document.getElementById('previewleftDistAXIS')?.textContent || '',
             VA: document.getElementById('previewleftDistVA')?.textContent || ''
         },
-        leftPrism: { // NEW
+        leftPrism: { 
             DIOPTER: document.getElementById('previewleftPrismDiopter')?.textContent || '',
             BASE: document.getElementById('previewleftPrismBase')?.textContent || ''
         },
@@ -1916,7 +1921,10 @@ function printPreview() {
     
     // Logic to display Prism if present
     const getPrismRow = (eyeData) => {
+        // Only render the prism row if EITHER the diopter or base is present
         if (eyeData.DIOPTER || eyeData.BASE) {
+            // Note: Since the table layout has 5 cells (Type, SPH, CYL, AXIS, V/A), 
+            // the Prism row needs to span columns correctly to maintain width.
             return `
                 <tr>
                     <td class="section-heading">PRISM</td>
@@ -2416,7 +2424,7 @@ function previewQrCode(event) {
             qrImage.src = previousUrl;
             qrImage.style.display = 'block';
             previewContainer.style.display = 'block';
-            qrUrlDisplay.textContent = previousUrl.length > 50 ? previousUrl.substring(0, 47) + '...' : previousUrl;
+            qrUrlDisplay.textContent = previousUrl.length > 50 ? previousUrl.upiQrUrl.substring(0, 47) + '...' : previousUrl;
             qrUrlInput.value = previousUrl;
         } else {
             qrImage.style.display = 'none';
