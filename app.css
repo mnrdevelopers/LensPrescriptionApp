@@ -83,12 +83,16 @@ body.dark-mode {
     padding: 8px 10px;
     font-size: 1.1rem;
     color: white;
-    transition: background 0.2s ease;
+    transition: all 0.2s ease; /* Modified to include border transition */
     border-radius: 8px;
+    outline: 2px solid transparent; /* Initial transparent outline */
 }
 
-.header-icons .btn-icon:hover {
+.header-icons .btn-icon:hover,
+.header-icons .btn-icon:focus { /* Added focus state for accessibility and better UX */
     background: rgba(255, 255, 255, 0.1);
+    outline: 2px solid var(--premium-gold); /* Gold outline on hover/focus */
+    outline-offset: 1px;
 }
 
 /* 2. Navigation Bar (Links - Fixed to Top, below Header) */
