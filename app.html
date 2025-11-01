@@ -987,6 +987,52 @@
   </div>
 </div>
 
+        <!-- Add this after the existing modals in app.html -->
+
+<!-- View Prescription Modal -->
+<div id="viewPrescriptionModal" class="modal-overlay">
+    <div class="modal-content large">
+        <div class="modal-header">
+            <h3><i class="fas fa-eye"></i> View Prescription</h3>
+            <button type="button" class="btn-close" onclick="closeViewModal()"></button>
+        </div>
+        <div class="modal-body" id="viewPrescriptionContent">
+            <!-- Content will be populated dynamically -->
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeViewModal()">
+                <i class="fas fa-times"></i> Close
+            </button>
+            <button type="button" class="btn btn-primary" onclick="openEditModal()">
+                <i class="fas fa-edit"></i> Edit
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Prescription Modal -->
+<div id="editPrescriptionModal" class="modal-overlay">
+    <div class="modal-content large">
+        <div class="modal-header">
+            <h3><i class="fas fa-edit"></i> Edit Prescription</h3>
+            <button type="button" class="btn-close" onclick="closeEditModal()"></button>
+        </div>
+        <div class="modal-body">
+            <form id="editPrescriptionForm">
+                <!-- Form content will be populated dynamically -->
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeEditModal()">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+            <button type="button" class="btn btn-primary" onclick="updatePrescription()">
+                <i class="fas fa-save"></i> Save Changes
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- NEW: Premium Feature Prompt Modal -->
 <div id="premiumFeaturePromptModal" class="modal-overlay">
   <div class="modal-content">
@@ -1053,3 +1099,4 @@ if ('serviceWorker' in navigator) {
     </script>
 </body>
 </html>
+
