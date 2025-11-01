@@ -2847,8 +2847,6 @@ window.loadTemplate = loadTemplate;
 window.checkPatientExists = checkPatientExists;
 // --- EXPORT NEW PREMIUM FEATURE PROMPT FUNCTION ---
 window.showPremiumFeaturePrompt = showPremiumFeaturePrompt;
-// --- EXPORT NEW UNEXPECTED LOGOUT FUNCTION ---
-window.showUnexpectedLogoutWarning = showUnexpectedLogoutWarning;
 
 // Remote Config Export
 window.initializeRemoteConfig = initializeRemoteConfig;
