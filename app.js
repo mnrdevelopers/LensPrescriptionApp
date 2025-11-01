@@ -394,16 +394,18 @@ function installPWA() {
 /**
  * Checks if profile is complete before navigating. Forces user to setup screen if not.
  */
+// Update the navigateIfProfileComplete function to include preview
 function navigateIfProfileComplete(navFunction, sectionName) {
     if (isProfileComplete) {
         enableNavigationButtons();
         
         const hash = sectionName === 'dashboard' ? 'dashboard' : 
                      sectionName === 'form' ? 'form' : 
-                     sectionName === 'notifications' ? 'notifications' : // NEW SECTION
+                     sectionName === 'notifications' ? 'notifications' :
                      sectionName === 'prescriptions' ? 'prescriptions' : 
                      sectionName === 'reports' ? 'reports' : 
                      sectionName === 'patients' ? 'patients' : 
+                     sectionName === 'preview' ? 'preview' : // Add preview section
                      'setup';
         
         history.replaceState({ page: sectionName }, sectionName, `app.html#${hash}`);
@@ -415,6 +417,7 @@ function navigateIfProfileComplete(navFunction, sectionName) {
     }
 }
 
+// Update the routeToHashedSection function to handle preview
 function routeToHashedSection() {
     const hash = window.location.hash.substring(1); 
 
@@ -426,7 +429,7 @@ function routeToHashedSection() {
             showPrescriptionForm();
             break;
         case 'notifications':
-            showNotifications(); // NEW FUNCTION CALL
+            showNotifications();
             break;
         case 'prescriptions':
             showPrescriptions();
@@ -436,6 +439,9 @@ function routeToHashedSection() {
             break;
         case 'patients': 
             showPatients();
+            break;
+        case 'preview': // Add preview case
+            showPreview();
             break;
         case 'setup':
             showProfileSetup(false);
@@ -591,7 +597,7 @@ function openPreviewFromView() {
     }, 300);
 }
 
-// Update the showPreview function to handle both new and existing prescriptions
+// Call this function when showing preview
 function showPreview(prescriptionData = null) {
     hideAllSections();
     const previewSection = document.getElementById('previewSection');
@@ -604,6 +610,7 @@ function showPreview(prescriptionData = null) {
     }
     
     updateActiveNavLink('showPreview');
+    updatePreviewBackButton(); // Update back button behavior
 }
 
 function hideAllSections() {
@@ -1648,11 +1655,19 @@ function closeViewModal() {
     currentViewPrescription = null;
 }
 
+// Update the generateViewContent function to show better instructions
 function generateViewContent(prescription) {
     const presData = prescription.prescriptionData || {};
     const hasPatientLink = !!prescription.patientId;
     
     return `
+        <div class="prescription-view-section" style="border-left-color: var(--info-color);">
+            <h4><i class="fas fa-info-circle"></i> Quick Actions</h4>
+            <p style="margin: 0; font-size: 0.9rem; color: var(--secondary-color);">
+                Use the buttons below to edit this prescription or open it in preview mode for printing and sharing.
+            </p>
+        </div>
+
         <div class="patient-info-grid">
             <div class="info-item">
                 <span class="info-label">Patient Name</span>
@@ -1680,7 +1695,8 @@ function generateViewContent(prescription) {
                 </span>
             </div>
         </div>
-        
+
+        <!-- Rest of the prescription details remain the same -->
         <div class="prescription-view-section">
             <h4>Refractive Correction</h4>
             <table class="prescription-table-view">
@@ -4033,6 +4049,7 @@ window.openEditModal = openEditModal;
 window.closeEditModal = closeEditModal;
 window.updatePrescription = updatePrescription;
 window.openEditModalDirect = openEditModalDirect;
+window.openPreviewFromView = openPreviewFromView;
 
 // Remote Config Export
 window.initializeRemoteConfig = initializeRemoteConfig;
