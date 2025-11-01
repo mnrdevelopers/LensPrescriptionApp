@@ -28,8 +28,8 @@ body {
     background-attachment: fixed;
     background-size: cover;
     background-repeat: no-repeat;
-    /* Adjusted padding-top for the fixed header (Header + Nav) */
-    padding-top: calc(var(--header-height) + var(--navbar-height)); 
+    /* Base padding is set for mobile (only app-header) */
+    padding-top: var(--header-height); 
     min-height: 100vh;
     color: #333;
     transition: background 0.3s ease, color 0.3s ease;
@@ -51,7 +51,7 @@ body.dark-mode {
     background: var(--premium-navy) !important;
     border-bottom: 1px solid var(--premium-gold);
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-    z-index: 1050; /* Above nav bar */
+    z-index: 1050; /* Above everything */
     padding: 0 15px;
     display: flex;
 }
@@ -67,11 +67,14 @@ body.dark-mode {
     align-items: center;
     gap: 8px;
     text-decoration: none;
+    color: white !important;
 }
 
 .app-header .nav-logo {
     width: 30px;
     height: 30px;
+    border-radius: 50%;
+    border: 1px solid var(--premium-gold);
 }
 
 .header-icons .btn-icon {
@@ -88,7 +91,7 @@ body.dark-mode {
     background: rgba(255, 255, 255, 0.1);
 }
 
-/* 2. Navigation Bar (Links) */
+/* 2. Navigation Bar (Links - Desktop Only) */
 .app-navbar {
     top: var(--header-height); /* Positioned directly below the header */
     left: 0;
@@ -124,6 +127,9 @@ body.dark-mode {
     border-radius: 0;
     margin: 0;
     white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .app-navbar .nav-link-custom i {
@@ -148,34 +154,34 @@ body.dark-mode {
     display: flex !important;
     align-items: center;
     padding-right: 15px;
+    gap: 10px;
 }
 .app-navbar .premium-logout {
     padding: 8px 12px;
+    font-size: 0.9rem;
 }
 
 /* Mobile adjustments */
 @media (max-width: 991.98px) {
-    /* Main content padding adjustment for MOBILE (only one fixed bar is visible, the other is hidden/in offcanvas) */
+    /* Main content padding adjustment for MOBILE (only one fixed bar is visible, the app-header) */
     body {
-        padding-top: var(--header-height); 
+        padding-top: calc(var(--header-height) + 10px); /* Small extra padding below the header on mobile */
     }
     
     .app-navbar {
         display: none !important; /* Hide the dedicated nav bar on mobile */
     }
     
-    .app-header .d-lg-none {
-        display: inline-flex !important; /* Show mobile logout icon */
+    /* Center the branding when the mobile toggler is visible */
+    .app-header .header-brand {
+        flex-grow: 1;
+        justify-content: center;
+        margin-left: -50px; /* Offset the toggler width */
     }
     
-    /* Hide desktop actions on mobile header */
-    .app-header .header-icons .text-white.d-lg-none ~ button {
-        display: none !important; 
-    }
-    
-    .offcanvas {
-        top: 0 !important; /* Start offcanvas from top */
-        height: 100vh;
+    /* Ensure action icons remain on the right */
+    .app-header .header-icons {
+        margin-left: auto;
     }
 }
 /* --- END NEW HEADER AND NAVIGATION BAR STYLES --- */
@@ -184,7 +190,6 @@ body.dark-mode {
 /* Main Content */
 .main-content {
     /* Adjusted based on new fixed header/nav structure */
-    min-height: calc(100vh - var(--header-height) - var(--navbar-height)); 
     padding: 20px;
 }
 
@@ -684,6 +689,7 @@ body.dark-mode {
     border-radius: 8px;
     overflow: hidden; 
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    font-size: 14px;
 }
 
 #prescriptionTable th, #patientTable th {
