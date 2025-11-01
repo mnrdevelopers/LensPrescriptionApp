@@ -927,7 +927,7 @@ body.dark-mode {
 @media (min-width: 992px) {
     /* Adjusted padding for desktop to account for BOTH fixed bars */
     .main-content {
-        padding-top: calc(var(--header-height) + var(--navbar-height) + 5px); /* Changed 20px to 5px */
+        padding-top: calc(var(--header-height) + var(--navbar-height) + -80px); /* Changed 20px to 5px */
     }
 }
 
