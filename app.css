@@ -11,6 +11,8 @@
     /* Custom Premium Colors */
     --premium-navy: #1e3a8a; /* Deep Navy Blue */
     --premium-gold: #fbbf24; /* Rich Gold */
+    --header-height: 55px; /* Height of the logo/icon bar */
+    --navbar-height: 50px; /* Height of the navigation link bar */
 }
 
 * {
@@ -26,7 +28,8 @@ body {
     background-attachment: fixed;
     background-size: cover;
     background-repeat: no-repeat;
-    padding-top: 70px;
+    /* Adjusted padding-top for the fixed header (Header + Nav) */
+    padding-top: calc(var(--header-height) + var(--navbar-height)); 
     min-height: 100vh;
     color: #333;
     transition: background 0.3s ease, color 0.3s ease;
@@ -37,191 +40,155 @@ body.dark-mode {
     color: #f4f4f4;
 }
 
-/* --- PREMIUM NAVIGATION BAR STYLES --- */
+/* --- NEW HEADER AND NAVIGATION BAR STYLES --- */
 
-.premium-nav {
-    background: var(--premium-navy) !important; 
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-    border-bottom: 2px solid var(--premium-gold);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4); 
-    padding: 12px 0;
-    transition: all 0.4s ease;
+/* 1. Main Header Bar (Logo, Icons, Actions) */
+.app-header {
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--header-height);
+    background: var(--premium-navy) !important;
+    border-bottom: 1px solid var(--premium-gold);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    z-index: 1050; /* Above nav bar */
+    padding: 0 15px;
+    display: flex;
 }
 
-.navbar-brand {
+.app-header .container-fluid {
+    height: 100%;
+}
+
+.header-brand {
+    font-size: 1.3rem;
     font-weight: 700;
-    font-size: 1.6rem;
-    color: white !important;
     display: flex;
     align-items: center;
-    gap: 12px;
-}
-
-.nav-logo {
-    width: 35px;
-    height: 35px;
-    border-radius: 50%;
-    border: 2px solid var(--premium-gold); 
-    box-shadow: 0 0 10px rgba(251, 191, 36, 0.7);
-    transition: transform 0.3s ease;
-}
-
-.navbar-brand:hover .nav-logo {
-    transform: rotate(10deg) scale(1.05);
-}
-
-.navbar-toggler {
-    border: 1px solid white;
-    padding: 8px;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.1);
-    transition: all 0.3s ease;
-}
-
-.navbar-toggler:focus {
-    box-shadow: 0 0 0 3px var(--premium-gold);
-}
-
-.navbar-toggler-icon {
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='white' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
-}
-
-.navbar-nav {
     gap: 8px;
+    text-decoration: none;
 }
 
-.nav-link-custom {
-    color: #cbd5e1 !important; 
-    font-weight: 500;
-    padding: 10px 18px !important;
-    border-radius: 8px;
-    margin: 4px 0;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    position: relative;
-    overflow: hidden;
+.app-header .nav-logo {
+    width: 30px;
+    height: 30px;
 }
 
-.nav-link-custom.nav-disabled {
-    pointer-events: none; 
-    opacity: 0.5; 
-    background: rgba(255, 255, 255, 0.05); 
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-}
-
-.nav-link-custom.nav-disabled i {
-    color: #6c757d; 
-}
-
-.nav-link-custom i {
-    font-size: 1.05rem;
-    width: 20px;
-    text-align: center;
-    color: var(--premium-gold); 
-    transition: transform 0.3s ease;
-}
-
-.nav-link-custom:hover {
-    color: white !important;
-    background: rgba(251, 191, 36, 0.1); 
-    transform: translateY(-1px);
-}
-
-.nav-link-custom.active {
-    color: var(--premium-navy) !important;
-    background: var(--premium-gold); 
-    box-shadow: 0 4px 15px rgba(251, 191, 36, 0.5);
-    font-weight: 700;
-    transform: none;
-}
-
-.nav-link-custom.active i {
-    color: var(--premium-navy); 
-}
-
-.premium-logout {
-    background: #dc3545; 
-    color: white;
-    border: 2px solid #dc3545;
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.premium-logout:hover {
-    background: #c82333;
-    border-color: #c82333;
-    box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
-    transform: translateY(-2px);
-}
-
-.offcanvas {
-    background: white !important;
-}
-
-.premium-offcanvas-header {
-    background: linear-gradient(90deg, var(--premium-navy), var(--primary-color)) !important;
-    color: white;
-    padding: 20px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-    border-bottom: 2px solid var(--premium-gold);
-}
-
-.offcanvas-body {
-    background: var(--light-color) !important;
-    padding: 0 !important;
-    display: flex;
-    flex-direction: column;
-}
-
-.offcanvas-body .nav-link-custom {
-    color: var(--dark-color) !important;
-    padding: 15px 20px !important;
-    margin: 0;
-    border-radius: 0;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 16px;
-    transition: all 0.3s ease;
-}
-
-.offcanvas-body .nav-link-custom:hover {
-    background: rgba(251, 191, 36, 0.1);
-    color: var(--premium-navy) !important;
-}
-
-.offcanvas-body .nav-link-custom i {
-    color: var(--premium-gold);
+.header-icons .btn-icon {
+    background: none;
+    border: none;
+    padding: 8px 10px;
     font-size: 1.1rem;
-    width: 24px;
-    text-align: center;
+    color: white;
+    transition: background 0.2s ease;
+    border-radius: 8px;
 }
 
+.header-icons .btn-icon:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* 2. Navigation Bar (Links) */
+.app-navbar {
+    top: var(--header-height); /* Positioned directly below the header */
+    left: 0;
+    right: 0;
+    height: var(--navbar-height);
+    background: rgba(255, 255, 255, 0.95); /* Light background for nav links */
+    border-bottom: 1px solid #ddd;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    z-index: 1040; /* Below header, above content */
+    display: flex;
+    overflow-x: auto; /* Enable horizontal scrolling for links on desktop */
+    -webkit-overflow-scrolling: touch;
+}
+
+.app-navbar .container-fluid {
+    padding: 0 15px;
+    display: flex;
+    flex-wrap: nowrap;
+}
+
+.app-navbar .navbar-nav {
+    flex-direction: row;
+    align-items: center;
+    gap: 0;
+    flex-wrap: nowrap; /* Prevent wrapping */
+}
+
+/* Adjustments for desktop nav links in the new bar */
+.app-navbar .nav-link-custom {
+    color: var(--dark-color) !important;
+    font-weight: 500;
+    padding: 15px 15px !important;
+    border-radius: 0;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.app-navbar .nav-link-custom i {
+    color: var(--primary-color);
+}
+
+.app-navbar .nav-link-custom.active {
+    color: var(--premium-navy) !important;
+    background: #e9ecef;
+    border-bottom: 3px solid var(--premium-gold);
+    box-shadow: none;
+    font-weight: 600;
+    transform: none;
+}
+
+.app-navbar .nav-link-custom:hover {
+    background: var(--light-color);
+}
+
+/* Desktop right-side elements (Subscription/Logout) adjustment */
+.app-navbar .ms-auto {
+    display: flex !important;
+    align-items: center;
+    padding-right: 15px;
+}
+.app-navbar .premium-logout {
+    padding: 8px 12px;
+}
+
+/* Mobile adjustments */
 @media (max-width: 991.98px) {
-    .offcanvas {
-        width: 280px !important;
+    /* Main content padding adjustment for MOBILE (only one fixed bar is visible, the other is hidden/in offcanvas) */
+    body {
+        padding-top: var(--header-height); 
     }
     
-    .offcanvas-body {
-        min-height: calc(100vh - 80px);
+    .app-navbar {
+        display: none !important; /* Hide the dedicated nav bar on mobile */
+    }
+    
+    .app-header .d-lg-none {
+        display: inline-flex !important; /* Show mobile logout icon */
+    }
+    
+    /* Hide desktop actions on mobile header */
+    .app-header .header-icons .text-white.d-lg-none ~ button {
+        display: none !important; 
+    }
+    
+    .offcanvas {
+        top: 0 !important; /* Start offcanvas from top */
+        height: 100vh;
     }
 }
-/* --- END PREMIUM NAVIGATION BAR STYLES --- */
+/* --- END NEW HEADER AND NAVIGATION BAR STYLES --- */
+
 
 /* Main Content */
 .main-content {
-    min-height: calc(100vh - 70px);
+    /* Adjusted based on new fixed header/nav structure */
+    min-height: calc(100vh - var(--header-height) - var(--navbar-height)); 
     padding: 20px;
 }
 
+/* Existing styles below (mostly unchanged) */
 .page-section {
     display: none;
     animation: fadeIn 0.5s ease-in-out;
@@ -648,9 +615,6 @@ body.dark-mode {
     /* NOTE: We now only enable scrolling if the screen is small (<= 768px) */
 }
 
-/* The overflow is now controlled by the media query below */
-
-
 /* Filter Controls Styles */
 .filter-controls {
     margin-bottom: 25px;
@@ -928,6 +892,21 @@ body.dark-mode {
 }
 
 /* Responsive Design */
+@media (max-width: 991.98px) {
+     /* Adjusted padding for mobile to account for only the app-header */
+    .main-content {
+        padding-top: 20px;
+        min-height: calc(100vh - var(--header-height)); 
+    }
+}
+
+@media (min-width: 992px) {
+    /* Adjusted padding for desktop to account for BOTH fixed bars */
+    .main-content {
+        padding-top: calc(var(--header-height) + var(--navbar-height) + 20px); 
+    }
+}
+
 @media (max-width: 768px) {
     .main-content {
         padding: 10px;
@@ -1212,591 +1191,6 @@ body.dark-mode {
 
 .usage-counter .progress-bar {
   background: #fff;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .main-content {
-        padding: 10px;
-    }
-    
-    .dashboard-container,
-    .prescription-container,
-    .container,
-    .reports-container,
-    .preview-container {
-        margin: 10px;
-        padding: 20px;
-    }
-    
-    .button-group {
-        gap: 15px;
-    }
-    
-    .btn {
-        font-size: 16px;
-        padding: 12px 15px;
-    }
-    
-    .patient-details,
-    .options-row,
-    .amount-payment-row {
-        grid-template-columns: 1fr;
-    }
-    
-    .reports-container .report-date-filters {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .preview-buttons {
-        flex-direction: column;
-    }
-    
-    .preview-buttons .btn {
-        width: 100%;
-    }
-
-    .subscription-plans {
-        grid-template-columns: 1fr;
-    }
-    
-    /* G: Template Bar responsive fix */
-    .template-management-bar {
-        flex-direction: column;
-        gap: 10px;
-        align-items: stretch;
-    }
-    
-    .template-management-bar select {
-        max-width: 100%;
-        margin-top: 5px;
-    }
-    
-    /* --- CRITICAL FIX: Enable horizontal scrolling for tables on small screens --- */
-    .table-responsive-mobile {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-}
-
-/* B: Added style for the new patient-id span */
-.patient-id-tag {
-    font-size: 12px;
-    color: var(--secondary-color);
-    margin-left: 10px;
-    background: #f1f1f1;
-    padding: 3px 8px;
-    border-radius: 5px;
-    font-weight: normal;
-}
-
-.status-message-error-fallback {
-    /* Style for the C: Payment Resilience error */
-    background: var(--danger-color) !important;
-    color: white !important;
-    font-weight: bold;
-    border: 2px solid white;
-}
-/* Payment Modal Styles (Premium Enhancement - Kept existing good styles) */
-.subscription-plans {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  margin: 20px 0;
-}
-
-/* Enhanced Modal Content */
-.modal-content.large {
-    max-width: 600px; /* Slightly wider modal */
-    background: #ffffff;
-    border: 1px solid #e9ecef;
-    border-radius: 15px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-}
-
-.plan-card {
-  border: 2px solid #e9ecef;
-  border-radius: 12px;
-  padding: 20px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  background: var(--light-color); /* Light background for card */
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
-
-.plan-card:hover {
-  border-color: var(--premium-navy); /* Deep Navy hover */
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-}
-
-.plan-card.selected {
-  border-color: var(--premium-gold); /* Gold accent for selected */
-  background: #fdfaf5; /* Very light gold tint */
-  box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.4), 0 5px 20px rgba(0,0,0,0.2);
-}
-
-.plan-header {
-  text-align: center;
-  margin-bottom: 15px;
-}
-
-.plan-header h4 {
-  margin-bottom: 10px;
-  color: var(--premium-navy);
-  font-weight: 700;
-}
-
-.plan-price {
-  margin-bottom: 10px;
-}
-
-.price {
-  font-size: 2rem;
-  font-weight: 900;
-  color: var(--premium-navy); /* Deep Navy price color */
-}
-
-.period {
-  color: #6c757d;
-  font-size: 0.9rem;
-}
-
-.savings {
-  background: var(--success-color); /* Green for savings */
-  color: white;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: bold;
-}
-
-.popular-badge {
-  position: absolute;
-  top: -12px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--premium-gold); /* Rich Gold for badge */
-  color: var(--premium-navy);
-  padding: 6px 15px;
-  border-radius: 15px;
-  font-size: 0.8rem;
-  font-weight: 800;
-  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.5);
-}
-
-.plan-features {
-  list-style: none;
-  padding: 0;
-  margin: 15px 0;
-  text-align: left;
-}
-
-.plan-features li {
-  padding: 5px 0;
-  color: #555;
-  border-bottom: 1px dashed #eee;
-  display: flex;
-  align-items: center;
-}
-
-.plan-features li::before {
-    content: '✓';
-    color: var(--success-color);
-    font-weight: bold;
-    margin-right: 10px;
-}
-
-.plan-selector {
-  text-align: center;
-  margin-top: 15px;
-}
-
-.plan-selector input[type="radio"] {
-  display: none;
-}
-
-.plan-selector label {
-  /* Premium button style for selection label */
-  background: var(--premium-navy);
-  color: white;
-  padding: 10px 20px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: 2px solid var(--premium-navy);
-  font-weight: 600;
-}
-
-.plan-selector label:hover {
-  background: var(--primary-color);
-  border-color: var(--primary-color);
-}
-
-.plan-card.selected .plan-selector label {
-    background: var(--premium-gold);
-    color: var(--premium-navy);
-    border-color: var(--premium-gold);
-}
-
-.plan-card.selected .plan-selector label:hover {
-    background: #f5b000;
-    border-color: #f5b000;
-}
-
-/* Button in modal */
-.modal-buttons .btn-primary {
-    /* Use a gradient of premium navy for primary button */
-    background: linear-gradient(135deg, var(--premium-navy), #004d99) !important;
-    border: 1px solid var(--premium-navy) !important;
-}
-
-.modal-buttons .btn-primary:hover {
-    background: linear-gradient(135deg, #004d99, var(--premium-navy)) !important;
-}
-
-/* Modal Icons */
-#paymentModal .fas.fa-crown {
-    color: var(--premium-gold) !important;
-}
-
-/* Payment Status Styles */
-.payment-status {
-  padding: 20px;
-  text-align: center;
-}
-
-.payment-success {
-  color: #28a745;
-}
-
-.payment-error {
-  color: #dc3545;
-}
-
-/* Usage Counter Styles */
-.usage-counter {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 15px;
-  border-radius: 10px;
-  margin: 15px 0;
-  text-align: center;
-}
-
-.usage-counter .progress {
-  height: 8px;
-  background: rgba(255,255,255,0.3);
-  border-radius: 4px;
-  margin: 10px 0;
-}
-
-.usage-counter .progress-bar {
-  background: #fff;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .main-content {
-        padding: 10px;
-    }
-    
-    .dashboard-container,
-    .prescription-container,
-    .container,
-    .reports-container,
-    .preview-container {
-        margin: 10px;
-        padding: 20px;
-    }
-    
-    .button-group {
-        gap: 15px;
-    }
-    
-    .btn {
-        font-size: 16px;
-        padding: 12px 15px;
-    }
-    
-    .patient-details,
-    .options-row,
-    .amount-payment-row {
-        grid-template-columns: 1fr;
-    }
-    
-    .reports-container .report-date-filters {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .preview-buttons {
-        flex-direction: column;
-    }
-    
-    .preview-buttons .btn {
-        width: 100%;
-    }
-
-    .subscription-plans {
-        grid-template-columns: 1fr;
-    }
-    
-    /* G: Template Bar responsive fix */
-    .template-management-bar {
-        flex-direction: column;
-        gap: 10px;
-        align-items: stretch;
-    }
-    
-    .template-management-bar select {
-        max-width: 100%;
-        margin-top: 5px;
-    }
-    
-    /* --- CRITICAL FIX: Enable horizontal scrolling for tables on small screens --- */
-    .table-responsive-mobile {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-}
-
-/* B: Added style for the new patient-id span */
-.patient-id-tag {
-    font-size: 12px;
-    color: var(--secondary-color);
-    margin-left: 10px;
-    background: #f1f1f1;
-    padding: 3px 8px;
-    border-radius: 5px;
-    font-weight: normal;
-}
-
-.status-message-error-fallback {
-    /* Style for the C: Payment Resilience error */
-    background: var(--danger-color) !important;
-    color: white !important;
-    font-weight: bold;
-    border: 2px solid white;
-}
-/* Payment Modal Styles (Premium Enhancement - Kept existing good styles) */
-.subscription-plans {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  margin: 20px 0;
-}
-
-/* Enhanced Modal Content */
-.modal-content.large {
-    max-width: 600px; /* Slightly wider modal */
-    background: #ffffff;
-    border: 1px solid #e9ecef;
-    border-radius: 15px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-}
-
-.plan-card {
-  border: 2px solid #e9ecef;
-  border-radius: 12px;
-  padding: 20px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  background: var(--light-color); /* Light background for card */
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
-
-.plan-card:hover {
-  border-color: var(--premium-navy); /* Deep Navy hover */
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-}
-
-.plan-card.selected {
-  border-color: var(--premium-gold); /* Gold accent for selected */
-  background: #fdfaf5; /* Very light gold tint */
-  box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.4), 0 5px 20px rgba(0,0,0,0.2);
-}
-
-.plan-header {
-  text-align: center;
-  margin-bottom: 15px;
-}
-
-.plan-header h4 {
-  margin-bottom: 10px;
-  color: var(--premium-navy);
-  font-weight: 700;
-}
-
-.plan-price {
-  margin-bottom: 10px;
-}
-
-.price {
-  font-size: 2rem;
-  font-weight: 900;
-  color: var(--premium-navy); /* Deep Navy price color */
-}
-
-.period {
-  color: #6c757d;
-  font-size: 0.9rem;
-}
-
-.savings {
-  background: var(--success-color); /* Green for savings */
-  color: white;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: bold;
-}
-
-.popular-badge {
-  position: absolute;
-  top: -12px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--premium-gold); /* Rich Gold for badge */
-  color: var(--premium-navy);
-  padding: 6px 15px;
-  border-radius: 15px;
-  font-size: 0.8rem;
-  font-weight: 800;
-  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.5);
-}
-
-.plan-features {
-  list-style: none;
-  padding: 0;
-  margin: 15px 0;
-  text-align: left;
-}
-
-.plan-features li {
-  padding: 5px 0;
-  color: #555;
-  border-bottom: 1px dashed #eee;
-  display: flex;
-  align-items: center;
-}
-
-.plan-features li::before {
-    content: '✓';
-    color: var(--success-color);
-    font-weight: bold;
-    margin-right: 10px;
-}
-
-.plan-selector {
-  text-align: center;
-  margin-top: 15px;
-}
-
-.plan-selector input[type="radio"] {
-  display: none;
-}
-
-.plan-selector label {
-  /* Premium button style for selection label */
-  background: var(--premium-navy);
-  color: white;
-  padding: 10px 20px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: 2px solid var(--premium-navy);
-  font-weight: 600;
-}
-
-.plan-selector label:hover {
-  background: var(--primary-color);
-  border-color: var(--primary-color);
-}
-
-.plan-card.selected .plan-selector label {
-    background: var(--premium-gold);
-    color: var(--premium-navy);
-    border-color: var(--premium-gold);
-}
-
-.plan-card.selected .plan-selector label:hover {
-    background: #f5b000;
-    border-color: #f5b000;
-}
-
-/* Button in modal */
-.modal-buttons .btn-primary {
-    /* Use a gradient of premium navy for primary button */
-    background: linear-gradient(135deg, var(--premium-navy), #004d99) !important;
-    border: 1px solid var(--premium-navy) !important;
-}
-
-.modal-buttons .btn-primary:hover {
-    background: linear-gradient(135deg, #004d99, var(--premium-navy)) !important;
-}
-
-/* Modal Icons */
-#paymentModal .fas.fa-crown {
-    color: var(--premium-gold) !important;
-}
-
-/* Payment Status Styles */
-.payment-status {
-  padding: 20px;
-  text-align: center;
-}
-
-.payment-success {
-  color: #28a745;
-}
-
-.payment-error {
-  color: #dc3545;
-}
-
-/* Usage Counter Styles */
-.usage-counter {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 15px;
-  border-radius: 10px;
-  margin: 15px 0;
-  text-align: center;
-}
-
-.usage-counter .progress {
-  height: 8px;
-  background: rgba(255,255,255,0.3);
-  border-radius: 4px;
-  margin: 10px 0;
-}
-
-.usage-counter .progress-bar {
-  background: #fff;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .subscription-plans {
-    grid-template-columns: 1fr;
-  }
-  
-  .plan-card {
-    padding: 15px;
-  }
 }
 
 /* Subscription Badge Styles */
