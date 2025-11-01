@@ -1,6 +1,6 @@
 // app.js - Consolidated from app.js and script.js - FULL FEATURE SET
 // Global Variables
-let currentPrescriptionData = null;
+let currentRxForView = null; // Renamed from currentPrescriptionData for clarity
 let whatsappImageUrl = null;
 let isFormFilled = false;
 let deferredPrompt;
@@ -211,6 +211,16 @@ function setupEventListeners() {
     const patientSearchInput = document.getElementById('patientSearchInput');
     if (patientSearchInput) {
         patientSearchInput.addEventListener('keyup', filterPatients);
+    }
+    
+    // Add event listeners for new view/edit modals
+    const viewModal = document.getElementById('viewPrescriptionModal');
+    if (viewModal) {
+        viewModal.addEventListener('click', (e) => {
+            if (e.target.id === 'viewPrescriptionModal' || e.target.classList.contains('close-modal-btn')) {
+                closeViewModal();
+            }
+        });
     }
 }
 
@@ -471,6 +481,16 @@ function showPrescriptionForm() {
     resetForm(true); 
     fetchTemplates(); 
     lastValidSection = 'form';
+    
+    // Reset form for submission mode
+    document.getElementById('prescriptionForm').dataset.editMode = 'false';
+    document.getElementById('prescriptionId').value = ''; 
+    document.querySelector('#prescriptionFormSection h2').textContent = 'Add New Prescription';
+    const submitBtn = document.querySelector('#prescriptionFormSection .btn-submit');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit';
+        submitBtn.onclick = submitOrUpdatePrescription;
+    }
 }
 
 function showPrescriptions() {
@@ -563,16 +583,33 @@ function showProfileSetup(isForced) {
     document.getElementById('qrUploadStatus').textContent = '';
 }
 
-function showPreview(prescriptionData = null) {
-    hideAllSections();
-    const previewSection = document.getElementById('previewSection');
-    if (previewSection) previewSection.classList.add('active');
+// MODIFIED: Renamed to showViewModal and updated to show a single modal
+function showViewModal(prescriptionData) {
     
-    if (prescriptionData) {
-        loadPreviewData(prescriptionData);
-    } else {
-        loadPreviewFromForm();
+    // **NOTE: Assumes you have defined a modal with ID #viewPrescriptionModal in app.html
+    // and elements matching the IDs from the original #previewSection**
+    
+    // 1. Store the prescription for button actions (Print, WhatsApp)
+    currentRxForView = prescriptionData;
+    whatsappImageUrl = null; // Clear previous image URL
+    
+    // 2. Populate the modal content (using existing logic)
+    loadPreviewData(prescriptionData);
+    
+    // 3. Display the modal
+    const viewModal = document.getElementById('viewPrescriptionModal');
+    if (viewModal) {
+        viewModal.style.display = 'flex';
     }
+}
+
+// NEW: Function to close the View Modal
+function closeViewModal() {
+    const viewModal = document.getElementById('viewPrescriptionModal');
+    if (viewModal) {
+        viewModal.style.display = 'none';
+    }
+    currentRxForView = null;
 }
 
 function hideAllSections() {
@@ -826,18 +863,19 @@ function logoutUser() {
 // 4. Prescription Core Logic (Submission & Data)
 // -----------------------------------------------------------
 
-async function submitPrescription() {
+// MODIFIED: Renamed to generic function to handle both submit and update
+async function submitOrUpdatePrescription() {
     if (!isProfileComplete) {
         showStatusMessage('Please complete your Clinic Profile before adding prescriptions.', 'error');
         showProfileSetup(true);
         return;
     }
 
+    const isEditing = document.getElementById('prescriptionForm')?.dataset.editMode === 'true';
+
     // --- MODIFIED: Direct check on submission ---
-    // This check handles both premium status and limit checking
     const canSubmit = await checkPrescriptionLimit();
-    if (!canSubmit) {
-        // Limit check will show the appropriate prompt modal (Limit Reached), no need for a separate error
+    if (!canSubmit && !isEditing) { // Only check limit if adding new, not updating
         return; 
     }
     // ------------------------------------------
@@ -855,39 +893,76 @@ async function submitPrescription() {
         return;
     }
 
+    // Set button loading state
+    const submitBtn = document.querySelector('#prescriptionFormSection .btn-submit');
+    submitBtn.classList.add('btn-loading');
+    submitBtn.disabled = true;
+
     try {
         const nextCheckupDate = new Date();
         nextCheckupDate.setDate(nextCheckupDate.getDate() + 365);
         
         const patientData = await savePatientRecord(formData, nextCheckupDate);
 
-        const newPrescriptionRef = await db.collection('prescriptions').add({
+        // Common prescription data structure
+        const rxData = {
             userId: user.uid,
             patientId: patientData.patientId, 
             ...formData,
             nextCheckupDate: firebase.firestore.Timestamp.fromDate(nextCheckupDate), 
-            date: new Date().toISOString(), 
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
+        };
         
-        currentPrescriptionData = { 
-            ...formData, 
-            nextCheckupDate: nextCheckupDate.toLocaleDateString()
+        if (isEditing) {
+            const prescriptionId = document.getElementById('prescriptionId').value;
+            if (!prescriptionId) throw new Error('Missing prescription ID for update.');
+            
+            // Update existing prescription (retains original date/createdAt/etc.)
+            await db.collection('prescriptions').doc(prescriptionId).update(rxData);
+            rxData.date = currentRxForView.date; // Use original date for preview/display
+            showStatusMessage('Prescription updated successfully!', 'success');
+
+        } else {
+            // Create new prescription
+            const newDoc = {
+                ...rxData,
+                date: new Date().toISOString(), // Store submission date as ISO string for reliable retrieval
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            await db.collection('prescriptions').add(newDoc);
+            rxData.date = newDoc.date;
+            
+            checkAndPromptPWAInstall();
+            showStatusMessage('Prescription saved successfully!', 'success');
+        }
+        
+        // Prepare data for preview/re-display
+        currentRxForView = { 
+            ...rxData, 
+            nextCheckupDate: nextCheckupDate.toLocaleDateString(),
+            date: new Date(rxData.date).toLocaleDateString() // Correctly formatted date for display
         };
         
         whatsappImageUrl = null; 
         
-        checkAndPromptPWAInstall();
-
-        showPreview(currentPrescriptionData);
+        showViewModal(currentRxForView); // Show the new View Modal after save/update
         
         resetForm();
+        showPrescriptionForm(); // Reset view to Add New mode
 
     } catch (error) {
-        console.error('Error saving prescription:', error);
-        showStatusMessage('Error saving prescription. Please check logs.', 'error');
+        console.error('Error saving/updating prescription:', error);
+        showStatusMessage('Error saving/updating prescription. Please check logs.', 'error');
+    } finally {
+        submitBtn.classList.remove('btn-loading');
+        submitBtn.disabled = false;
+        // Re-assign default handler after operation
+        submitBtn.onclick = submitOrUpdatePrescription; 
     }
 }
+
+// NOTE: Renaming the default handler
+window.submitPrescription = submitOrUpdatePrescription;
+
 
 function getFormData() {
     const getNumberValue = (id) => {
@@ -897,6 +972,8 @@ function getFormData() {
     const getStringValue = (id) => document.getElementById(id)?.value.trim() || '';
 
     return {
+        // Include prescriptionId here for ease of access during update
+        prescriptionId: getStringValue('prescriptionId'),
         patientId: getStringValue('patientId'),
         patientName: getStringValue('patientName'),
         age: getNumberValue('age'),
@@ -963,6 +1040,8 @@ function resetForm(clearPatientData = false) {
         currentPatientId = null;
         patientLookupData = null;
     }
+    // Clear the prescription ID field
+    document.getElementById('prescriptionId').value = '';
 }
 
 // A: Copy OD to OS Function (MODIFIED)
@@ -1621,11 +1700,19 @@ function addPrescriptionRow(tbody, prescription) {
     const actionsCell = row.insertCell();
     actionsCell.className = 'table-actions';
     
-    const previewBtn = document.createElement('button');
-    previewBtn.innerHTML = '👁️';
-    previewBtn.className = 'btn-preview';
-    previewBtn.title = 'Preview';
-    previewBtn.onclick = () => previewPrescription(JSON.parse(JSON.stringify(prescription))); 
+    // NEW: View Button (opens modal with print preview content)
+    const viewBtn = document.createElement('button');
+    viewBtn.innerHTML = '<i class="fas fa-eye"></i>';
+    viewBtn.className = 'btn-preview'; 
+    viewBtn.title = 'View Details';
+    viewBtn.onclick = () => showViewModal(JSON.parse(JSON.stringify(prescription))); 
+
+    // NEW: Edit Button (switches to form section with data pre-filled)
+    const editBtn = document.createElement('button');
+    editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+    editBtn.className = 'btn-edit-rx'; 
+    editBtn.title = 'Edit Prescription';
+    editBtn.onclick = () => showEditModal(JSON.parse(JSON.stringify(prescription))); 
     
     const deleteBtn = document.createElement('button');
     deleteBtn.innerHTML = '🗑️';
@@ -1642,7 +1729,8 @@ function addPrescriptionRow(tbody, prescription) {
         }
     };
     
-    actionsCell.appendChild(previewBtn);
+    actionsCell.appendChild(viewBtn);
+    actionsCell.appendChild(editBtn); 
     actionsCell.appendChild(deleteBtn);
 }
 
@@ -1654,7 +1742,7 @@ function filterPrescriptions() {
 
 function previewPrescription(prescription) {
     whatsappImageUrl = null;
-    showPreview(prescription);
+    showViewModal(prescription); // Use new modal function
 }
 
 // E: Enhanced Custom Delete Modal Implementations
@@ -1722,20 +1810,77 @@ async function confirmDeleteAction() {
     }
 }
 
-// Preview Management (Updated for H: Next Checkup Date)
-function loadPreviewFromForm() {
-    const formData = getFormData();
-    if (!validateFormData(formData)) {
-        showPrescriptionForm();
-        return;
-    }
-    loadPreviewData({
-        ...formData,
-        nextCheckupDate: new Date(new Date().setDate(new Date().getDate() + 365)).toLocaleDateString()
+// NEW: Function to load data into the main form for editing
+function loadPrescriptionToForm(data) {
+    // Set hidden IDs
+    document.getElementById('patientId').value = data.patientId || '';
+    // **NOTE: Assumes you added `<input type="hidden" id="prescriptionId">` to app.html form**
+    document.getElementById('prescriptionId').value = data.id || ''; 
+
+    // Populate patient fields
+    document.getElementById('patientName').value = data.patientName || '';
+    document.getElementById('age').value = data.age || '';
+    document.getElementById('gender').value = data.gender || 'Male';
+    document.getElementById('patientMobile').value = data.mobile || '';
+    document.getElementById('amount').value = data.amount || '';
+    
+    // Populate options
+    document.getElementById('pdFar').value = data.pdFar || '';
+    document.getElementById('pdNear').value = data.pdNear || '';
+    document.getElementById('visionType').value = data.visionType || 'Single Vision';
+    document.getElementById('lensType').value = data.lensType || 'Standard CR-39';
+    document.getElementById('frameType').value = data.frameType || 'Full Rim (Acetate)';
+    document.getElementById('paymentMode').value = data.paymentMode || 'Cash';
+    
+    // Populate prescription data
+    const presData = data.prescriptionData;
+    const fields = [
+        'rightDistSPH', 'rightDistCYL', 'rightDistAXIS', 'rightDistVA',
+        'leftDistSPH', 'leftDistCYL', 'leftDistAXIS', 'leftDistVA',
+        'rightPrismDiopter', 'rightPrismBase', 
+        'leftPrismDiopter', 'leftPrismBase',
+        'rightAddSPH', 'leftAddSPH'
+    ];
+
+    fields.forEach(field => {
+        const element = document.getElementById(field);
+        if (element) {
+            element.value = presData[field] || '';
+        }
     });
 }
 
+// NEW: Function to switch to form and load data for editing
+function showEditModal(prescription) {
+    // 1. Navigate to the form
+    navigateIfProfileComplete(showPrescriptionForm, 'form'); 
+    
+    // 2. Set current editing state
+    currentRxForView = prescription; // Store original prescription data
+    document.getElementById('prescriptionForm').dataset.editMode = 'true';
+    
+    // 3. Populate Form with data
+    loadPrescriptionToForm(prescription);
+    
+    // 4. Change UI for Editing mode
+    document.querySelector('#prescriptionFormSection h2').textContent = 'Edit Prescription (ID: ' + prescription.id.substring(0, 5) + '...)';
+    const submitBtn = document.querySelector('#prescriptionFormSection .btn-submit');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-save"></i> Update Prescription';
+        submitBtn.onclick = submitOrUpdatePrescription;
+    }
+    
+    showStatusMessage(`Editing Prescription for ${prescription.patientName}.`, 'info');
+}
+
+
+// MODIFIED: loadPreviewData to handle date formatting robustly
 function loadPreviewData(data) {
+    // Format the date fields correctly for the View Modal
+    const rxDate = new Date(data.date);
+    const nextCheckupDate = data.nextCheckupDate?.toDate ? data.nextCheckupDate.toDate() : new Date(data.nextCheckupDate);
+
+    // Update fields in the View Modal using IDs corresponding to the HTML preview structure
     document.getElementById('previewPatientName').textContent = data.patientName || '';
     document.getElementById('previewAge').textContent = data.age || '';
     document.getElementById('previewGender').textContent = data.gender || '';
@@ -1746,8 +1891,9 @@ function loadPreviewData(data) {
     document.getElementById('previewFrameType').textContent = data.frameType || '';
     document.getElementById('previewPaymentMode').textContent = data.paymentMode || '';
     
-    const checkupDate = data.nextCheckupDate || 'N/A';
-    document.getElementById('previewNextCheckupDate').textContent = checkupDate;
+    // FIX: Show exact date and next checkup date correctly
+    document.getElementById('previewRxDate').textContent = rxDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }) || 'N/A';
+    document.getElementById('previewNextCheckupDate').textContent = nextCheckupDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }) || 'N/A';
 
     // NEW PD FIELDS
     document.getElementById('previewPdFar').textContent = data.pdFar || 'N/A';
@@ -1818,7 +1964,16 @@ function generateImage() {
     }).replace(/\//g, '-');
     const filename = `Prescription_${patientName}_${shortDate}.png`;
 
-    const element = document.getElementById('prescriptionPreview');
+    // FIX: Target the preview inside the modal now
+    const element = document.querySelector('#viewPrescriptionModal #prescriptionPreview');
+    if (!element) {
+        showStatusMessage('Preview element not found in modal.', 'error');
+        if (btn) {
+            btn.classList.remove('btn-loading');
+            btn.textContent = 'Download'; 
+        }
+        return;
+    }
     
     html2canvas(element, {
         scale: 3, 
@@ -1857,6 +2012,12 @@ function printPreview() {
     }
     // ----------------------------------------------------
     
+    // We rely on currentRxForView being set by showViewModal
+    if (!currentRxForView) {
+        showStatusMessage('No prescription data found to print.', 'error');
+        return;
+    }
+    
     const printWindow = window.open('', '_blank', 'width=350,height=600');
     
     if (!printWindow) {
@@ -1871,32 +2032,33 @@ function printPreview() {
     const optometristName = document.getElementById('previewOptometristName')?.textContent || 'Optometrist Name';
     const contactNumber = document.getElementById('previewContactNumber')?.textContent || 'Contact Number';
     
-    const now = new Date();
-    const shortDate = now.toLocaleDateString('en-IN', { 
+    // Use the stored prescription date/time
+    const rxDate = new Date(currentRxForView.date);
+    const shortDate = rxDate.toLocaleDateString('en-IN', { 
         day: '2-digit', 
         month: '2-digit', 
         year: 'numeric' 
     });
-    const shortTime = now.toLocaleTimeString('en-IN', { 
+    const shortTime = rxDate.toLocaleTimeString('en-IN', { 
         hour: '2-digit', 
         minute: '2-digit',
         hour12: true 
     });
     const currentDateTime = `${shortDate} ${shortTime}`;
     
-    const patientName = document.getElementById('previewPatientName')?.textContent || '';
-    const age = document.getElementById('previewAge')?.textContent || '';
-    const gender = document.getElementById('previewGender')?.textContent || '';
-    const mobile = document.getElementById('previewMobile')?.textContent || '';
+    const patientName = currentRxForView.patientName || '';
+    const age = currentRxForView.age || '';
+    const gender = currentRxForView.gender || '';
+    const mobile = currentRxForView.mobile || '';
     // NEW PD Fields
-    const pdFar = document.getElementById('previewPdFar')?.textContent || '';
-    const pdNear = document.getElementById('previewPdNear')?.textContent || '';
+    const pdFar = currentRxForView.pdFar || '';
+    const pdNear = currentRxForView.pdNear || '';
     
-    const visionType = document.getElementById('previewVisionType')?.textContent || '';
-    const lensType = document.getElementById('previewLensType')?.textContent || '';
-    const frameType = document.getElementById('previewFrameType')?.textContent || '';
-    const amount = document.getElementById('previewAmount')?.textContent || '';
-    const paymentMode = document.getElementById('previewPaymentMode')?.textContent || '';
+    const visionType = currentRxForView.visionType || '';
+    const lensType = currentRxForView.lensType || '';
+    const frameType = currentRxForView.frameType || '';
+    const amount = currentRxForView.amount || '';
+    const paymentMode = currentRxForView.paymentMode || '';
 
     // NEW: UPI Details
     const upiId = userData.upiId || '';
@@ -1919,30 +2081,30 @@ function printPreview() {
     // UPDATED PRESCRIPTION DATA - INCLUDING ALL MISSING FIELDS
     const prescriptionData = {
         rightDist: {
-            SPH: document.getElementById('previewrightDistSPH')?.textContent || '',
-            CYL: document.getElementById('previewrightDistCYL')?.textContent || '',
-            AXIS: document.getElementById('previewrightDistAXIS')?.textContent || '',
-            VA: document.getElementById('previewrightDistVA')?.textContent || ''
+            SPH: currentRxForView.prescriptionData.rightDistSPH || '',
+            CYL: currentRxForView.prescriptionData.rightDistCYL || '',
+            AXIS: currentRxForView.prescriptionData.rightDistAXIS || '',
+            VA: currentRxForView.prescriptionData.rightDistVA || ''
         },
         rightPrism: {
-            DIOPTER: document.getElementById('previewrightPrismDiopter')?.textContent || '',
-            BASE: document.getElementById('previewrightPrismBase')?.textContent || ''
+            DIOPTER: currentRxForView.prescriptionData.rightPrismDiopter || '',
+            BASE: currentRxForView.prescriptionData.rightPrismBase || ''
         },
         rightAdd: {
-            SPH: document.getElementById('previewrightAddSPH')?.textContent || '',
+            SPH: currentRxForView.prescriptionData.rightAddSPH || '',
         },
         leftDist: {
-            SPH: document.getElementById('previewleftDistSPH')?.textContent || '',
-            CYL: document.getElementById('previewleftDistCYL')?.textContent || '',
-            AXIS: document.getElementById('previewleftDistAXIS')?.textContent || '',
-            VA: document.getElementById('previewleftDistVA')?.textContent || ''
+            SPH: currentRxForView.prescriptionData.leftDistSPH || '',
+            CYL: currentRxForView.prescriptionData.leftDistCYL || '',
+            AXIS: currentRxForView.prescriptionData.leftDistAXIS || '',
+            VA: currentRxForView.prescriptionData.leftDistVA || ''
         },
         leftPrism: {
-            DIOPTER: document.getElementById('previewleftPrismDiopter')?.textContent || '',
-            BASE: document.getElementById('previewleftPrismBase')?.textContent || ''
+            DIOPTER: currentRxForView.prescriptionData.leftPrismDiopter || '',
+            BASE: currentRxForView.prescriptionData.leftPrismBase || ''
         },
         leftAdd: {
-            SPH: document.getElementById('previewleftAddSPH')?.textContent || '',
+            SPH: currentRxForView.prescriptionData.leftAddSPH || '',
         }
     };
     
@@ -2216,7 +2378,16 @@ function generateImage() {
     }).replace(/\//g, '-');
     const filename = `Prescription_${patientName}_${shortDate}.png`;
 
-    const element = document.getElementById('prescriptionPreview');
+    // FIX: Target the preview inside the modal now
+    const element = document.querySelector('#viewPrescriptionModal #prescriptionPreview');
+    if (!element) {
+        showStatusMessage('Preview element not found in modal.', 'error');
+        if (btn) {
+            btn.classList.remove('btn-loading');
+            btn.textContent = 'Download'; 
+        }
+        return;
+    }
     
     html2canvas(element, {
         scale: 3, 
@@ -2319,6 +2490,14 @@ async function sendWhatsApp() {
         return;
     }
     
+    // Use the prescription data stored in the current view modal
+    const data = currentRxForView;
+    
+    if (!data) {
+        showStatusMessage('No prescription data loaded.', 'error');
+        return;
+    }
+    
     if (whatsappImageUrl) {
         await sendWhatsAppMessage(mobile, whatsappImageUrl);
         return;
@@ -2327,7 +2506,8 @@ async function sendWhatsApp() {
     startWhatsappTimer(); 
     
     try {
-        const element = document.getElementById('prescriptionPreview');
+        // Target the preview inside the modal now
+        const element = document.querySelector('#viewPrescriptionModal #prescriptionPreview');
         if (!element) {
             showStatusMessage('Prescription preview not found', 'error');
             stopWhatsappTimer();
@@ -3170,9 +3350,10 @@ function displayReport(reportSummary) {
 // -----------------------------------------------------------
 function lockFeatures() {
     const templateSaveBtn = document.querySelector('#prescriptionFormSection .template-management-bar .btn-tertiary');
-    const previewDownloadBtn = document.querySelector('#previewSection .btn-download');
-    const previewPrintBtn = document.querySelector('#previewSection .btn-print');
-    const previewWhatsAppBtn = document.querySelector('#previewSection .btn-whatsapp');
+    // FIX: Target buttons inside the new View Modal (#viewPrescriptionModal)
+    const previewDownloadBtn = document.querySelector('#viewPrescriptionModal .btn-download');
+    const previewPrintBtn = document.querySelector('#viewPrescriptionModal .btn-print');
+    const previewWhatsAppBtn = document.querySelector('#viewPrescriptionModal .btn-whatsapp');
     const prescriptionDeleteBtns = document.querySelectorAll('#prescriptionTable .btn-delete');
     
     // Lock functions are handled by individual function wrappers (submitPrescription, etc.)
@@ -3296,10 +3477,10 @@ window.showNotifications = showNotifications; // Export new function
 window.showPrescriptionForm = showPrescriptionForm;
 window.showPrescriptions = showPrescriptions;
 window.showReports = showReports;
-window.showPreview = showPreview;
+window.showPreview = showViewModal; // Changed export name
 window.showProfileSetup = showProfileSetup;
 window.saveSetupProfile = saveSetupProfile;
-window.submitPrescription = submitPrescription;
+window.submitPrescription = submitOrUpdatePrescription; // Changed export name
 window.filterPrescriptions = filterPrescriptions;
 window.generateImage = generateImage;
 window.printPreview = printPreview;
@@ -3330,6 +3511,9 @@ window.loadTemplate = loadTemplate;
 window.checkPatientExists = checkPatientExists;
 // --- EXPORT NEW PREMIUM FEATURE PROMPT FUNCTION ---
 window.showPremiumFeaturePrompt = showPremiumFeaturePrompt;
+window.showViewModal = showViewModal; // Export the new view function
+window.showEditModal = showEditModal; // Export the new edit function
+window.closeViewModal = closeViewModal;
 
 // NEW UPI FUNCTIONS
 window.previewQrCode = previewQrCode;
