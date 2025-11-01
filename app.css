@@ -2561,3 +2561,59 @@ body.dark-mode .btn-info {
 body.dark-mode .btn-info:hover {
     background: linear-gradient(135deg, #14626f, #11505a);
 }
+
+/* Add styles for the preview button in view modal */
+.btn-info {
+    background: linear-gradient(135deg, #17a2b8, #138496);
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.btn-info:hover {
+    background: linear-gradient(135deg, #138496, #117a8b);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+/* Button group spacing in modal footer */
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #dee2e6;
+    background: #f8f9fa;
+    border-radius: 0 0 10px 10px;
+    flex-wrap: wrap;
+}
+
+/* Responsive button layout */
+@media (max-width: 768px) {
+    .modal-footer {
+        flex-direction: column;
+    }
+    
+    .modal-footer .btn {
+        width: 100%;
+        margin: 2px 0;
+    }
+}
+
+/* Dark mode support */
+body.dark-mode .btn-info {
+    background: linear-gradient(135deg, #1a7d8c, #14626f);
+}
+
+body.dark-mode .btn-info:hover {
+    background: linear-gradient(135deg, #14626f, #11505a);
+}
+
+body.dark-mode .modal-footer {
+    background: #33364b;
+    border-top: 1px solid var(--dark-border);
+}
