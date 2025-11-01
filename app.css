@@ -1834,7 +1834,7 @@ body.dark-mode .premium-offcanvas-header {
 }
 
 /* 11. Missing Utility Classes */
-.text-muted { color: #ffffff !important; }
+.text-muted { color: #020000 !important; }
 .fw-bold { font-weight: 700 !important; }
 .border-bottom { border-bottom: 1px solid #dee2e6 !important; }
 .bg-light { background-color: #f8f9fa !important; }
