@@ -14,7 +14,7 @@
     
     <!-- PWA Meta Tags (Confirmed present for App Capabilities) -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="LensRx"> <!-- Updated short title -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#1e3a8a"> <!-- Use premium navy for theme color -->
@@ -326,6 +326,9 @@
         <section id="prescriptionFormSection" class="page-section">
             <div class="prescription-container">
                 
+                <!-- Updated Header to support Edit Mode Title -->
+                <h2 style="text-align: center; color: var(--premium-navy);">Add New Prescription</h2>
+                
                 <!-- Template Management Bar (G) -->
                 <div class="template-management-bar mb-3">
                     <div class="template-selector">
@@ -341,7 +344,7 @@
                 </div>
                 <hr>
 
-                <div id="prescriptionForm">
+                <div id="prescriptionForm" data-edit-mode="false">
                     <!-- Optical Shop Details -->
                     <div class="header">
                         <h2 id="clinicName">Loading...</h2>
@@ -369,6 +372,8 @@
                             <label for="patientName">Patient Name</label>
                             <input type="text" id="patientName" placeholder="Enter name" required>
                             <input type="hidden" id="patientId"> <!-- Hidden field for patient ID -->
+                            <!-- ADDED REQUIRED HIDDEN FIELD FOR PRESCRIPTION ID -->
+                            <input type="hidden" id="prescriptionId"> 
                         </div>
                         <div>
                             <label for="age">Age</label>
@@ -555,7 +560,7 @@
                     </div>
                     <hr>
 
-                    <button onclick="submitPrescription()" class="btn btn-submit">
+                    <button onclick="submitOrUpdatePrescription()" class="btn btn-submit">
                         <i class="fas fa-paper-plane"></i> Submit
                     </button>
                 </div>
@@ -628,7 +633,8 @@
                                 <th>Lens Type</th>
                                 <th>Frame Type</th>
                                 <th>Payment Mode</th>
-                                <th>Actions</th>
+                                <!-- ADDED VIEW/EDIT ACTIONS -->
+                                <th>Actions</th> 
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -672,12 +678,18 @@
             </div>
         </section>
 
-        <!-- Preview Section -->
-        <section id="previewSection" class="page-section">
-            <div class="preview-container">
-                <button onclick="navigateIfProfileComplete(showPrescriptions, 'prescriptions')" class="btn btn-back">
-                    <i class="fas fa-arrow-left"></i> Back
-                </button>
+        <!-- REMOVED OLD PREVIEW SECTION -->
+        <!-- The old #previewSection structure is now contained within the modal below -->
+        
+        <!-- NEW: View Prescription Modal (Replaces old preview section) -->
+        <div id="viewPrescriptionModal" class="modal-overlay">
+            <div class="modal-content large">
+                 <button onclick="closeViewModal()" class="btn-close close-modal-btn" aria-label="Close"></button>
+                 <div class="d-flex justify-content-center mb-3">
+                    <button onclick="showEditModal(currentRxForView)" class="btn btn-secondary btn-sm" style="background-color: var(--warning-color); border: none;">
+                        <i class="fas fa-edit"></i> Edit This Rx
+                    </button>
+                 </div>
 
                 <!-- Prescription Preview Container -->
                 <div id="prescriptionPreview">
@@ -692,17 +704,16 @@
                     <div class="preview-details">
                         <p id="previewOptometristName"><strong>Loading...</strong></p>
                         <p id="previewContactNumber"><strong>Please wait...</strong></p>
-                        <p><strong>Date:</strong> <span id="previewcurrentDate"></span></p>
                     </div>
                     <hr>
-
-                    <!-- Patient Details -->
-                    <div class="preview-details">
+                    
+                    <!-- Patient & Date Details -->
+                    <div class="preview-details d-flex justify-content-between flex-wrap">
                         <p><strong>Patient Name:</strong> <span id="previewPatientName"></span></p>
-                        <p><strong>Age:</strong> <span id="previewAge"></span></p>
-                        <p><strong>Gender:</strong> <span id="previewGender"></span></p>
                         <p><strong>Mobile:</strong> <span id="previewMobile"></span></p>
-                        <!-- H: Checkup date in preview -->
+                        <p><strong>Age/Gender:</strong> <span id="previewAge"></span>/<span id="previewGender"></span></p>
+                        <!-- ADDED EXACT DATES -->
+                        <p><strong>Rx Date:</strong> <span id="previewRxDate"></span></p>
                         <p><strong>Next Checkup:</strong> <span id="previewNextCheckupDate"></span></p>
                     </div>
                     <hr>
@@ -794,14 +805,14 @@
                     <hr>
 
                     <!-- Dispensing Parameters Preview (NEW SECTION) -->
-                    <div class="preview-details">
+                    <div class="preview-details d-flex justify-content-between flex-wrap">
                         <p><strong>PD Far:</strong> <span id="previewPdFar"></span></p>
                         <p><strong>PD Near:</strong> <span id="previewPdNear"></span></p>
                     </div>
                     <hr>
                     
                     <!-- Vision Type, Lens Type, Frame Type -->
-                    <div class="preview-details">
+                    <div class="preview-details d-flex justify-content-between flex-wrap">
                         <p><strong>Vision Type:</strong> <span id="previewVisionType"></span></p>
                         <p><strong>Lens Type:</strong> <span id="previewLensType"></span></p>
                         <p><strong>Frame Type:</strong> <span id="previewFrameType"></span></p>
@@ -809,7 +820,7 @@
                     <hr>
 
                     <!-- Amount -->
-                    <div class="preview-details">
+                    <div class="preview-details d-flex justify-content-between flex-wrap">
                         <p><strong>Amount:</strong> ₹<span id="previewAmount"></span></p>
                         <p><strong>Payment Mode:</strong> <span id="previewPaymentMode"></span></p>
                     </div>
@@ -833,8 +844,8 @@
                     </div>
                 </div>
 
-                <!-- Buttons -->
-                <div class="preview-buttons">
+                <!-- Buttons (Moved inside the modal and reused from old preview section) -->
+                <div class="preview-buttons mt-4">
                     <button onclick="generateImage()" class="btn btn-download">
                         <i class="fas fa-image"></i> Download 
                     </button>
@@ -846,7 +857,7 @@
                     </button>
                 </div>
             </div>
-        </section>
+        </div>
         
         <!-- Custom Delete Confirmation Modal (E) -->
         <div id="deleteConfirmationModal" class="modal-overlay">
