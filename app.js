@@ -903,11 +903,16 @@ function getFormData() {
         gender: getStringValue('gender'),
         mobile: getStringValue('patientMobile'),
         amount: getNumberValue('amount'),
+        // NEW PD FIELDS
+        pdFar: getStringValue('pdFar'),
+        pdNear: getStringValue('pdNear'),
+        // END NEW PD FIELDS
         visionType: getStringValue('visionType'),
         lensType: getStringValue('lensType'),
         frameType: getStringValue('frameType'),
         paymentMode: getStringValue('paymentMode'),
         prescriptionData: {
+            // Distance
             rightDistSPH: getStringValue('rightDistSPH'),
             rightDistCYL: getStringValue('rightDistCYL'),
             rightDistAXIS: getStringValue('rightDistAXIS'),
@@ -916,14 +921,14 @@ function getFormData() {
             leftDistCYL: getStringValue('leftDistCYL'),
             leftDistAXIS: getStringValue('leftDistAXIS'),
             leftDistVA: getStringValue('leftDistVA'),
-            rightAddSPH: getStringValue('rightAddSPH'),
-            rightAddCYL: getStringValue('rightAddCYL'), 
-            rightAddAXIS: getStringValue('rightAddAXIS'),
-            rightAddVA: getStringValue('rightAddVA'),
+            // Prism
+            rightPrismDiopter: getStringValue('rightPrismDiopter'),
+            rightPrismBase: getStringValue('rightPrismBase'),
+            leftPrismDiopter: getStringValue('leftPrismDiopter'),
+            leftPrismBase: getStringValue('leftPrismBase'),
+            // Add Power (Simplified)
+            rightAddSPH: getStringValue('rightAddSPH'), // Now only the ADD power value
             leftAddSPH: getStringValue('leftAddSPH'),
-            leftAddCYL: getStringValue('leftAddCYL'),
-            leftAddAXIS: getStringValue('leftAddAXIS'),
-            leftAddVA: getStringValue('leftAddVA')
         }
     };
 }
@@ -933,6 +938,7 @@ function validateFormData(data) {
     if (!data.age || data.age <= 0) return false;
     if (!data.mobile || !data.mobile.match(/^\d{10}$/)) return false;
     if (!data.amount || data.amount < 0) return false;
+    if (!data.pdFar) return false; // PD Far is now required
     return true;
 }
 
@@ -947,7 +953,7 @@ function resetForm(clearPatientData = false) {
             }
         });
         // Clear all prescription data inputs
-        document.querySelectorAll('#prescriptionFormSection input[type="text"]').forEach(input => input.value = '');
+        document.querySelectorAll('#prescriptionFormSection input[type="text"], #prescriptionFormSection input[type="number"]').forEach(input => input.value = '');
     }
     isFormFilled = false;
     
@@ -959,8 +965,8 @@ function resetForm(clearPatientData = false) {
     }
 }
 
-// A: Copy OD to OS Function
-function copyRightToLeft() {
+// A: Copy OD to OS Function (MODIFIED)
+function copyRightToLeft(isDist = true) {
     // --- MODIFIED: Use new feature lock prompt ---
     if (!isPremium) {
         showPremiumFeaturePrompt();
@@ -968,22 +974,33 @@ function copyRightToLeft() {
     }
     // ------------------------------------------
     
-    const fields = [
-        'DistSPH', 'DistCYL', 'DistAXIS', 'DistVA',
-        'AddSPH', 'AddCYL', 'AddAXIS', 'AddVA'
-    ];
-
-    fields.forEach(field => {
-        const rightValue = document.getElementById(`right${field}`)?.value;
-        const leftElement = document.getElementById(`left${field}`);
+    if (isDist) {
+        const distFields = ['DistSPH', 'DistCYL', 'DistAXIS', 'DistVA'];
+        distFields.forEach(field => {
+            const rightValue = document.getElementById(`right${field}`)?.value;
+            const leftElement = document.getElementById(`left${field}`);
+            if (leftElement) {
+                leftElement.value = rightValue;
+                leftElement.dispatchEvent(new Event('input'));
+            }
+        });
         
-        if (leftElement) {
-            leftElement.value = rightValue;
-            leftElement.dispatchEvent(new Event('input'));
-        }
-    });
-    
-    showStatusMessage("Right Eye (OD) values copied to Left Eye (OS).", 'info');
+        // Copy Prism fields
+        const prismDiopter = document.getElementById('rightPrismDiopter')?.value;
+        const prismBase = document.getElementById('rightPrismBase')?.value;
+        
+        document.getElementById('leftPrismDiopter').value = prismDiopter;
+        document.getElementById('leftPrismBase').value = prismBase;
+        
+        showStatusMessage("Right Eye (OD) Distance & Prism copied to Left Eye (OS).", 'info');
+        
+    } else {
+        // Copy Add field only
+        const addValue = document.getElementById('rightAddSPH')?.value;
+        document.getElementById('leftAddSPH').value = addValue;
+        
+        showStatusMessage("Right Eye (OD) Add power copied to Left Eye (OS).", 'info');
+    }
 }
 
 // -----------------------------------------------------------
@@ -1180,6 +1197,8 @@ async function fetchCheckupReminders(displayOnPage = false) {
     const today = new Date();
     const thirtyDaysFuture = new Date();
     thirtyDaysFuture.setDate(today.getDate() + 30);
+    thirtyDaysFuture.setHours(23, 59, 59, 999); // Ensure inclusive check
+
     const notificationsContent = document.getElementById('notificationsContent');
     
     let htmlContent = '';
@@ -1332,7 +1351,9 @@ async function saveAsTemplate() {
         visionType: formData.visionType,
         lensType: formData.lensType,
         frameType: formData.frameType,
-        prescriptionData: formData.prescriptionData
+        prescriptionData: formData.prescriptionData,
+        pdFar: formData.pdFar, // NEW
+        pdNear: formData.pdNear // NEW
     };
     
     try {
@@ -1369,14 +1390,24 @@ function loadTemplate(templateId) {
         document.getElementById('visionType').value = template.visionType || 'Single Vision';
         document.getElementById('lensType').value = template.lensType || 'Blue Cut';
         document.getElementById('frameType').value = template.frameType || 'Full Rim';
+        
+        // NEW: Load PD fields
+        document.getElementById('pdFar').value = template.pdFar || '';
+        document.getElementById('pdNear').value = template.pdNear || '';
 
         const presData = template.prescriptionData;
         
+        // UPDATED: List of fields to populate
         const fields = [
+            // Dist
             'rightDistSPH', 'rightDistCYL', 'rightDistAXIS', 'rightDistVA',
             'leftDistSPH', 'leftDistCYL', 'leftDistAXIS', 'leftDistVA',
-            'rightAddSPH', 'rightAddCYL', 'rightAddAXIS', 'rightAddVA',
-            'leftAddSPH', 'leftAddCYL', 'leftAddAXIS', 'leftAddVA'
+            // Prism
+            'rightPrismDiopter', 'rightPrismBase', 
+            'leftPrismDiopter', 'leftPrismBase',
+            // Add (Simplified)
+            'rightAddSPH',
+            'leftAddSPH'
         ];
 
         fields.forEach(field => {
@@ -1680,11 +1711,22 @@ function loadPreviewData(data) {
     const checkupDate = data.nextCheckupDate || 'N/A';
     document.getElementById('previewNextCheckupDate').textContent = checkupDate;
 
+    // NEW PD FIELDS
+    document.getElementById('previewPdFar').textContent = data.pdFar || 'N/A';
+    document.getElementById('previewPdNear').textContent = data.pdNear || 'N/A';
+    // END NEW PD FIELDS
+
+    // UPDATED prescriptionFields to match new structure
     const prescriptionFields = [
+        // Dist
         'rightDistSPH', 'rightDistCYL', 'rightDistAXIS', 'rightDistVA',
         'leftDistSPH', 'leftDistCYL', 'leftDistAXIS', 'leftDistVA',
-        'rightAddSPH', 'rightAddCYL', 'rightAddAXIS', 'rightAddVA',
-        'leftAddSPH', 'leftAddCYL', 'leftAddAXIS', 'leftAddVA'
+        // Prism
+        'rightPrismDiopter', 'rightPrismBase',
+        'leftPrismDiopter', 'leftPrismBase',
+        // Add (Simplified)
+        'rightAddSPH',
+        'leftAddSPH'
     ];
 
     prescriptionFields.forEach(field => {
@@ -1808,6 +1850,9 @@ function printPreview() {
     const age = document.getElementById('previewAge')?.textContent || '';
     const gender = document.getElementById('previewGender')?.textContent || '';
     const mobile = document.getElementById('previewMobile')?.textContent || '';
+    // NEW PD Fields
+    const pdFar = document.getElementById('previewPdFar')?.textContent || '';
+    const pdNear = document.getElementById('previewPdNear')?.textContent || '';
     
     const visionType = document.getElementById('previewVisionType')?.textContent || '';
     const lensType = document.getElementById('previewLensType')?.textContent || '';
@@ -1833,6 +1878,7 @@ function printPreview() {
         `;
     }
 
+    // UPDATED PRESCRIPTION DATA
     const prescriptionData = {
         rightDist: {
             SPH: document.getElementById('previewrightDistSPH')?.textContent || '',
@@ -1840,11 +1886,12 @@ function printPreview() {
             AXIS: document.getElementById('previewrightDistAXIS')?.textContent || '',
             VA: document.getElementById('previewrightDistVA')?.textContent || ''
         },
+        rightPrism: { // NEW
+            DIOPTER: document.getElementById('previewrightPrismDiopter')?.textContent || '',
+            BASE: document.getElementById('previewrightPrismBase')?.textContent || ''
+        },
         rightAdd: {
             SPH: document.getElementById('previewrightAddSPH')?.textContent || '',
-            CYL: document.getElementById('previewrightAddCYL')?.textContent || '',
-            AXIS: document.getElementById('previewrightAddAXIS')?.textContent || '',
-            VA: document.getElementById('previewrightAddVA')?.textContent || ''
         },
         leftDist: {
             SPH: document.getElementById('previewleftDistSPH')?.textContent || '',
@@ -1852,12 +1899,27 @@ function printPreview() {
             AXIS: document.getElementById('previewleftDistAXIS')?.textContent || '',
             VA: document.getElementById('previewleftDistVA')?.textContent || ''
         },
+        leftPrism: { // NEW
+            DIOPTER: document.getElementById('previewleftPrismDiopter')?.textContent || '',
+            BASE: document.getElementById('previewleftPrismBase')?.textContent || ''
+        },
         leftAdd: {
             SPH: document.getElementById('previewleftAddSPH')?.textContent || '',
-            CYL: document.getElementById('previewleftAddCYL')?.textContent || '',
-            AXIS: document.getElementById('previewleftAddAXIS')?.textContent || '',
-            VA: document.getElementById('previewleftAddVA')?.textContent || ''
         }
+    };
+    
+    // Logic to display Prism if present
+    const getPrismRow = (eyeData) => {
+        if (eyeData.DIOPTER || eyeData.BASE) {
+            return `
+                <tr>
+                    <td class="section-heading">PRISM</td>
+                    <td colspan="2">${eyeData.DIOPTER}</td>
+                    <td colspan="2">${eyeData.BASE}</td>
+                </tr>
+            `;
+        }
+        return '';
     };
 
     const printHTML = `
@@ -1905,6 +1967,22 @@ function printPreview() {
                 .thank-you { margin-bottom: 2px; font-style: italic; }
                 .signature { margin-top: 8px; text-align: right; }
                 .signature-line { border-top: 1px solid #000; width: 30mm; margin-left: auto; padding-top: 1px; text-align: center; font-size: 7px; }
+                
+                /* UPDATED TABLE STYLES FOR PRISM/ADD */
+                .rx-table-header th.prism-base-header {
+                    width: 15mm; /* Allocate more space for Base */
+                }
+                .rx-table-header th.va-header {
+                    width: 10mm; /* Narrower for VA */
+                }
+                .rx-table-header th.sph-cyl-header {
+                    width: 12mm;
+                }
+                .add-row td:nth-child(2) {
+                    text-align: left; /* Keep ADD value on left to align with SPH */
+                }
+
+
                 @media print {
                     body { margin: 0; padding: 2mm; width: 58mm; }
                     @page { margin: 0; padding: 0; size: 58mm auto; }
@@ -1957,31 +2035,52 @@ function printPreview() {
                     <div class="patient-label">Mobile:</div>
                     <div class="patient-value">${mobile}</div>
                 </div>
+                <div class="patient-row">
+                    <div class="patient-label">PD Far / Near:</div>
+                    <div class="patient-value">${pdFar} / ${pdNear || 'N/A'}</div>
+                </div>
             </div>
+            
             <div class="prescription-section">
                 <div class="eye-title">RIGHT EYE (OD)</div>
                 <table class="prescription-table">
                     <thead>
-                        <tr><th>Type</th><th>SPH</th><th>CYL</th><th>AXIS</th><th>V/A</th></tr>
+                        <tr>
+                            <th class="rx-table-header">Type</th>
+                            <th class="sph-cyl-header">SPH</th>
+                            <th class="sph-cyl-header">CYL</th>
+                            <th>AXIS</th>
+                            <th class="va-header">V/A</th>
+                        </tr>
                     </thead>
                     <tbody>
                         <tr><td class="section-heading">DIST</td><td>${prescriptionData.rightDist.SPH}</td><td>${prescriptionData.rightDist.CYL}</td><td>${prescriptionData.rightDist.AXIS}</td><td>${prescriptionData.rightDist.VA}</td></tr>
-                        <tr><td class="section-heading">ADD</td><td>${prescriptionData.rightAdd.SPH}</td><td>${prescriptionData.rightAdd.CYL}</td><td>${prescriptionData.rightAdd.AXIS}</td><td>${prescriptionData.rightAdd.VA}</td></tr>
+                        ${getPrismRow(prescriptionData.rightPrism)}
+                        <tr class="add-row"><td class="section-heading">ADD</td><td>${prescriptionData.rightAdd.SPH}</td><td></td><td></td><td></td></tr>
                     </tbody>
                 </table>
             </div>
+            
             <div class="prescription-section">
                 <div class="eye-title">LEFT EYE (OS)</div>
                 <table class="prescription-table">
                     <thead>
-                        <tr><th>Type</th><th>SPH</th><th>CYL</th><th>AXIS</th><th>V/A</th></tr>
+                        <tr>
+                            <th class="rx-table-header">Type</th>
+                            <th class="sph-cyl-header">SPH</th>
+                            <th class="sph-cyl-header">CYL</th>
+                            <th>AXIS</th>
+                            <th class="va-header">V/A</th>
+                        </tr>
                     </thead>
                     <tbody>
                         <tr><td class="section-heading">DIST</td><td>${prescriptionData.leftDist.SPH}</td><td>${prescriptionData.leftDist.CYL}</td><td>${prescriptionData.leftDist.AXIS}</td><td>${prescriptionData.leftDist.VA}</td></tr>
-                        <tr><td class="section-heading">ADD</td><td>${prescriptionData.leftAdd.SPH}</td><td>${prescriptionData.leftAdd.CYL}</td><td>${prescriptionData.leftAdd.AXIS}</td><td>${prescriptionData.leftAdd.VA}</td></tr>
+                        ${getPrismRow(prescriptionData.leftPrism)}
+                        <tr class="add-row"><td class="section-heading">ADD</td><td>${prescriptionData.leftAdd.SPH}</td><td></td><td></td><td></td></tr>
                     </tbody>
                 </table>
             </div>
+            
             <div class="options-section">
                 <div class="options-title">RECOMMENDED OPTIONS</div>
                 <div class="options-content">
@@ -2786,6 +2885,7 @@ function cancelExitAction() {
     history.pushState({ page: 'form' }, 'Add Prescription', 'app.html#form');
 }
 
+// UPDATED: setupInputValidation to handle new fields
 function setupInputValidation() {
     const ageInput = document.getElementById('age');
     if (ageInput) {
@@ -2795,14 +2895,22 @@ function setupInputValidation() {
     }
 
     const prescriptionInputs = [
+        // Dist
         { id: 'rightDistSPH', type: 'number' }, { id: 'rightDistCYL', type: 'number' }, 
-        { id: 'rightDistAXIS', type: 'number' }, { id: 'rightDistVA', type: 'va' },
+        { id: 'rightDistAXIS', type: 'axis' }, { id: 'rightDistVA', type: 'va' },
         { id: 'leftDistSPH', type: 'number' }, { id: 'leftDistCYL', type: 'number' }, 
-        { id: 'leftDistAXIS', type: 'number' }, { id: 'leftDistVA', type: 'va' },
-        { id: 'rightAddSPH', type: 'number' }, { id: 'rightAddCYL', type: 'number' }, 
-        { id: 'rightAddAXIS', type: 'number' }, { id: 'rightAddVA', type: 'va' },
-        { id: 'leftAddSPH', type: 'number' }, { id: 'leftAddCYL', type: 'number' }, 
-        { id: 'leftAddAXIS', type: 'number' }, { id: 'leftAddVA', type: 'va' }
+        { id: 'leftDistAXIS', type: 'axis' }, { id: 'leftDistVA', type: 'va' },
+        // Add (Simplified)
+        { id: 'rightAddSPH', type: 'add' }, 
+        { id: 'leftAddSPH', type: 'add' }, 
+        // Prism (New)
+        { id: 'rightPrismDiopter', type: 'prism_diopter' },
+        { id: 'rightPrismBase', type: 'prism_base' },
+        { id: 'leftPrismDiopter', type: 'prism_diopter' },
+        { id: 'leftPrismBase', type: 'prism_base' },
+        // PD (New)
+        { id: 'pdFar', type: 'pd_complex' },
+        { id: 'pdNear', type: 'pd_complex' },
     ];
 
     prescriptionInputs.forEach(field => {
@@ -2810,14 +2918,32 @@ function setupInputValidation() {
         if (element) {
             element.addEventListener('input', function() {
                 if (field.type === 'number') {
-                    this.value = this.value.replace(/[^0-9.-]/g, ''); 
+                    // Allow optional sign, digits, and one decimal point
+                    this.value = this.value.replace(/[^0-9.+-]/g, ''); 
                 } else if (field.type === 'va') {
-                    this.value = this.value.replace(/[^0-9/N]/g, '');
+                    // Allow digits, /, and . (for decimal VA, e.g., 0.8, 6/6)
+                    this.value = this.value.replace(/[^0-9/N.]/g, '').toUpperCase();
+                } else if (field.type === 'add') {
+                    // Only +, digits, and one decimal point (ADD is typically positive)
+                    this.value = this.value.replace(/[^0-9.+]/g, '');
+                } else if (field.type === 'axis') {
+                    // Only digits (0-180)
+                    this.value = this.value.replace(/[^0-9]/g, '');
+                } else if (field.type === 'prism_diopter') {
+                    // Prism diopter (e.g., 1.5) - only digits and one decimal point
+                     this.value = this.value.replace(/[^0-9.]/g, ''); 
+                } else if (field.type === 'prism_base') {
+                     // Base direction (IN, OUT, UP, DOWN)
+                     this.value = this.value.toUpperCase().replace(/[^INOUTUPDOWN]/g, '');
+                } else if (field.type === 'pd_complex') {
+                    // Allow monocular or binocular PD (e.g., 60 or 30/30 or 30.5/30.5)
+                     this.value = this.value.replace(/[^0-9./]/g, '');
                 }
             });
         }
     });
 }
+// END UPDATED: setupInputValidation
 
 async function fetchDashboardStats() {
     const period = document.getElementById('statsTimePeriod').value;
