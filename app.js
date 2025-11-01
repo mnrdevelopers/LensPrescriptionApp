@@ -865,14 +865,17 @@ async function submitPrescription() {
             userId: user.uid,
             patientId: patientData.patientId, 
             ...formData,
-            nextCheckupDate: firebase.firestore.Timestamp.fromDate(nextCheckupDate), 
+            // Store date as ISO string for client-side display consistency
             date: new Date().toISOString(), 
+            // Store nextCheckupDate as Firebase Timestamp object
+            nextCheckupDate: firebase.firestore.Timestamp.fromDate(nextCheckupDate), 
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         
         currentPrescriptionData = { 
             ...formData, 
-            nextCheckupDate: nextCheckupDate.toLocaleDateString()
+            // Store the nextCheckupDate as a Timestamp object for consistency, loadPreviewData will handle formatting
+            nextCheckupDate: firebase.firestore.Timestamp.fromDate(nextCheckupDate)
         };
         
         whatsappImageUrl = null; 
@@ -1729,12 +1732,16 @@ function loadPreviewFromForm() {
         showPrescriptionForm();
         return;
     }
+    // Create a mock Timestamp object for the new submission preview
+    const nextCheckupDateTimestamp = firebase.firestore.Timestamp.fromDate(new Date(new Date().setDate(new Date().getDate() + 365)));
+    
     loadPreviewData({
         ...formData,
-        nextCheckupDate: new Date(new Date().setDate(new Date().getDate() + 365)).toLocaleDateString()
+        nextCheckupDate: nextCheckupDateTimestamp
     });
 }
 
+// FIX APPLIED HERE: Corrected date object parsing for Firestore Timestamps (solving [object Object])
 function loadPreviewData(data) {
     document.getElementById('previewPatientName').textContent = data.patientName || '';
     document.getElementById('previewAge').textContent = data.age || '';
@@ -1746,8 +1753,28 @@ function loadPreviewData(data) {
     document.getElementById('previewFrameType').textContent = data.frameType || '';
     document.getElementById('previewPaymentMode').textContent = data.paymentMode || '';
     
-    const checkupDate = data.nextCheckupDate || 'N/A';
+    // FIX START: Handle Timestamp object conversion for Next Checkup Date
+    let checkupDate = 'N/A';
+    if (data.nextCheckupDate) {
+        let dateObj = null;
+        if (typeof data.nextCheckupDate === 'string') {
+            // This case should ideally not happen after submission, but kept as fallback
+            dateObj = new Date(data.nextCheckupDate); 
+        } else if (typeof data.nextCheckupDate.toDate === 'function') {
+            // Case 1: Raw Firestore Timestamp object (when passing raw doc.data())
+            dateObj = data.nextCheckupDate.toDate();
+        } else if (data.nextCheckupDate.seconds) {
+            // Case 2: Plain object {seconds, nanoseconds} (from JSON.parse(JSON.stringify(Timestamp)))
+            dateObj = new Date(data.nextCheckupDate.seconds * 1000);
+        }
+        
+        // Ensure the resulting object is a valid Date before formatting
+        if (dateObj instanceof Date && !isNaN(dateObj)) {
+            checkupDate = dateObj.toLocaleDateString();
+        }
+    }
     document.getElementById('previewNextCheckupDate').textContent = checkupDate;
+    // FIX END
 
     // NEW PD FIELDS
     document.getElementById('previewPdFar').textContent = data.pdFar || 'N/A';
@@ -1888,6 +1915,9 @@ function printPreview() {
     const age = document.getElementById('previewAge')?.textContent || '';
     const gender = document.getElementById('previewGender')?.textContent || '';
     const mobile = document.getElementById('previewMobile')?.textContent || '';
+    // NEW: Get the formatted next checkup date from the preview element
+    const nextCheckupDate = document.getElementById('previewNextCheckupDate')?.textContent || 'N/A'; // <-- Fetch formatted value
+
     // NEW PD Fields
     const pdFar = document.getElementById('previewPdFar')?.textContent || '';
     const pdNear = document.getElementById('previewPdNear')?.textContent || '';
@@ -2091,6 +2121,11 @@ function printPreview() {
                 <div class="patient-row">
                     <div class="patient-label">PD Far / Near:</div>
                     <div class="patient-value">${pdFar} / ${pdNear || 'N/A'}</div>
+                </div>
+                <!-- FIX: Added Next Checkup Date for Thermal Print -->
+                <div class="patient-row">
+                    <div class="patient-label">Next Checkup:</div>
+                    <div class="patient-value">${nextCheckupDate}</div>
                 </div>
             </div>
             
@@ -2480,7 +2515,6 @@ function previewQrCode(event) {
         } else {
             qrImage.style.display = 'none';
             previewContainer.style.display = 'none';
-            qrUrlDisplay.textContent = 'No QR uploaded.';
             qrUrlInput.value = '';
         }
     }
