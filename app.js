@@ -20,7 +20,7 @@ let currentPatientId = null;
 // NEW GLOBAL: Tracks premium status
 let isPremium = false; 
 
-// 🛑 CRITICAL FIX: Use onAuthStateChanged to prevent the redirect loop.
+// 🛑 CRITICAL FIX: Proper authentication state handling
 firebase.auth().onAuthStateChanged((user) => {
     if (user) {
         // If user is logged in, proceed with initialization
@@ -31,17 +31,15 @@ firebase.auth().onAuthStateChanged((user) => {
         }
     } else {
         // If user is NOT logged in, check if it was an explicit logout
-        const explicitLogout = sessionStorage.getItem("explicitLogout");
+        const explicitLogout = localStorage.getItem("explicitLogout");
         
         if (explicitLogout === "true") {
             // Manual logout: clear flag and redirect silently
-            sessionStorage.removeItem("explicitLogout");
+            localStorage.removeItem("explicitLogout");
             window.location.replace('auth.html');
         } else {
             // Unexpected logout (session expiry, token revocation): show warning modal
-            // FIX: Show the modal immediately instead of redirecting
             showUnexpectedLogoutWarning();
-            // Note: The redirection to 'auth.html' now happens via the button inside the modal.
         }
     }
 });
@@ -113,18 +111,42 @@ async function initializeApp() {
 
 // --- NEW FUNCTION: Show Unexpected Logout Modal ---
 function showUnexpectedLogoutWarning() {
+    // Clear all local data first
+    localStorage.clear();
+    sessionStorage.clear();
+    
     const modal = document.getElementById('unexpectedLogoutModal');
     if (modal) {
         // Ensure the modal is always visible and covers the screen
         modal.style.display = 'flex';
-        modal.style.opacity = 1;
+        modal.style.opacity = '1';
         modal.style.visibility = 'visible';
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.width = '100%';
+        modal.style.height = '100%';
+        modal.style.zIndex = '10000';
+        modal.style.background = 'rgba(0, 0, 0, 0.8)';
         
-        // Prevent subsequent actions, clear local storage and force the user to re-authenticate
-        localStorage.clear();
-        sessionStorage.clear();
-        auth.signOut().catch(() => {}); // Ensure Firebase state is clean
+        // Prevent body scrolling
+        document.body.style.overflow = 'hidden';
+        
+        // Ensure Firebase state is clean
+        auth.signOut().catch(() => {});
+    } else {
+        // If modal doesn't exist, redirect directly
+        window.location.replace('auth.html');
     }
+}
+
+function closeUnexpectedLogoutModal() {
+    const modal = document.getElementById('unexpectedLogoutModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+    window.location.replace('auth.html');
 }
 // -----------------------------------------------------------
 
@@ -751,18 +773,29 @@ function updateProfileUI(userData) {
 }
 
 function logoutUser() {
-    // Set flag before signing out
-    sessionStorage.setItem("explicitLogout", "true");
-    
-    auth.signOut().then(() => {
-        localStorage.removeItem('username');
-        localStorage.removeItem('userId');
-        window.location.replace('index.html');
-    }).catch(error => {
-        console.error('Logout failed:', error);
-    });
+    // Show confirmation dialog before logging out
+    if (confirm('Are you sure you want to log out?')) {
+        // Set flag before signing out - use localStorage for persistence
+        localStorage.setItem("explicitLogout", "true");
+        
+        auth.signOut().then(() => {
+            // Clear all local storage except the explicit logout flag
+            const explicitLogoutFlag = localStorage.getItem("explicitLogout");
+            localStorage.clear();
+            if (explicitLogoutFlag) {
+                localStorage.setItem("explicitLogout", "true");
+            }
+            
+            // Use replace to prevent going back
+            window.location.replace('auth.html');
+        }).catch(error => {
+            console.error('Logout failed:', error);
+            // If signOut fails, still redirect but clear the flag
+            localStorage.removeItem("explicitLogout");
+            window.location.replace('auth.html');
+        });
+    }
 }
-
 // -----------------------------------------------------------
 // 4. Prescription Core Logic (Submission & Data)
 // -----------------------------------------------------------
