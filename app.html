@@ -390,21 +390,15 @@
                     </div>
                     <hr>
 
-                    <!-- Prescription Details -->
-                    <div class="section-title d-flex justify-content-between align-items-center">
-                        <span>Prescription Details</span>
-                         <!-- NEW: Copy OD to OS Button (A) -->
-                        <button onclick="copyRightToLeft()" class="btn btn-sm btn-secondary copy-btn">
-                            <i class="fas fa-copy"></i> Copy OD to OS
-                        </button>
-                    </div>
+                    <!-- Prescription Details (UPDATED SECTION) -->
+                    <div class="section-title">Refractive Correction & Prism (SPH, CYL, AXIS)</div>
                     
                     <div class="prescription-table">
                         <!-- Right Eye Table -->
-                        <table>
+                        <table class="mb-4">
                             <thead>
                                 <tr>
-                                    <th colspan="5">RIGHT EYE (OD)</th>
+                                    <th colspan="6">RIGHT EYE (OD)</th>
                                 </tr>
                                 <tr>
                                     <th></th>
@@ -412,22 +406,34 @@
                                     <th>CYL</th>
                                     <th>AXIS</th>
                                     <th>V/A</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
+                                <!-- DISTANCE Row -->
                                 <tr>
                                     <td><strong>DIST</strong></td>
-                                    <td><input type="text" id="rightDistSPH" placeholder="SPH"></td>
-                                    <td><input type="text" id="rightDistCYL" placeholder="CYL"></td>
-                                    <td><input type="text" id="rightDistAXIS" placeholder="AXIS"></td>
-                                    <td><input type="text" id="rightDistVA" placeholder="V/A"></td>
+                                    <td><input type="text" id="rightDistSPH" placeholder="±D"></td>
+                                    <td><input type="text" id="rightDistCYL" placeholder="±D"></td>
+                                    <td><input type="text" id="rightDistAXIS" placeholder="1-180"></td>
+                                    <td><input type="text" id="rightDistVA" placeholder="6/6 or 20/20"></td>
+                                    <td><button onclick="copyRightToLeft(true)" class="btn btn-sm btn-secondary copy-btn" title="Copy Distance & Prism to OS">Dist/Prism →</button></td>
                                 </tr>
+                                <!-- PRISM Row (New) -->
                                 <tr>
+                                    <td><strong>PRISM</strong></td>
+                                    <td colspan="2"><input type="text" id="rightPrismDiopter" placeholder="Prism D"></td>
+                                    <td colspan="2"><input type="text" id="rightPrismBase" placeholder="Base (IN/OUT/UP/DOWN)"></td>
+                                    <td></td>
+                                </tr>
+                                <!-- ADD Power Row (Simplified) -->
+                                <tr class="bg-light">
                                     <td><strong>ADD</strong></td>
-                                    <td><input type="text" id="rightAddSPH" placeholder="SPH"></td>
-                                    <td><input type="text" id="rightAddCYL" placeholder="CYL"></td>
-                                    <td><input type="text" id="rightAddAXIS" placeholder="AXIS"></td>
-                                    <td><input type="text" id="rightAddVA" placeholder="V/A"></td>
+                                    <td><input type="text" id="rightAddSPH" placeholder="+D"></td>
+                                    <td></td> <!-- Blank cell -->
+                                    <td></td> <!-- Blank cell -->
+                                    <td></td> <!-- Blank cell -->
+                                    <td><button onclick="copyRightToLeft(false)" class="btn btn-sm btn-secondary copy-btn" title="Copy Add to OS">Add →</button></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -436,7 +442,7 @@
                         <table>
                             <thead>
                                 <tr>
-                                    <th colspan="5">LEFT EYE (OS)</th>
+                                    <th colspan="6">LEFT EYE (OS)</th>
                                 </tr>
                                 <tr>
                                     <th></th>
@@ -444,28 +450,54 @@
                                     <th>CYL</th>
                                     <th>AXIS</th>
                                     <th>V/A</th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody>
+                                <!-- DISTANCE Row -->
                                 <tr>
                                     <td><strong>DIST</strong></td>
-                                    <td><input type="text" id="leftDistSPH" placeholder="SPH"></td>
-                                    <td><input type="text" id="leftDistCYL" placeholder="CYL"></td>
-                                    <td><input type="text" id="leftDistAXIS" placeholder="AXIS"></td>
-                                    <td><input type="text" id="leftDistVA" placeholder="V/A"></td>
+                                    <td><input type="text" id="leftDistSPH" placeholder="±D"></td>
+                                    <td><input type="text" id="leftDistCYL" placeholder="±D"></td>
+                                    <td><input type="text" id="leftDistAXIS" placeholder="1-180"></td>
+                                    <td><input type="text" id="leftDistVA" placeholder="6/6 or 20/20"></td>
+                                    <td></td>
                                 </tr>
+                                <!-- PRISM Row (New) -->
                                 <tr>
+                                    <td><strong>PRISM</strong></td>
+                                    <td colspan="2"><input type="text" id="leftPrismDiopter" placeholder="Prism D"></td>
+                                    <td colspan="2"><input type="text" id="leftPrismBase" placeholder="Base (IN/OUT/UP/DOWN)"></td>
+                                    <td></td>
+                                </tr>
+                                <!-- ADD Power Row (Simplified) -->
+                                <tr class="bg-light">
                                     <td><strong>ADD</strong></td>
-                                    <td><input type="text" id="leftAddSPH" placeholder="SPH"></td>
-                                    <td><input type="text" id="leftAddCYL" placeholder="CYL"></td>
-                                    <td><input type="text" id="leftAddAXIS" placeholder="AXIS"></td>
-                                    <td><input type="text" id="leftAddVA" placeholder="V/A"></td>
+                                    <td><input type="text" id="leftAddSPH" placeholder="+D"></td>
+                                    <td></td> <!-- Blank cell -->
+                                    <td></td> <!-- Blank cell -->
+                                    <td></td> <!-- Blank cell -->
+                                    <td></td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                     <hr>
 
+                    <!-- Dispensing Parameters (NEW SECTION) -->
+                    <div class="section-title">Dispensing Parameters (PD)</div>
+                    <div class="patient-details" style="grid-template-columns: 1fr 1fr;">
+                        <div>
+                            <label for="pdFar">Pupillary Distance (PD) - Far (mm)</label>
+                            <input type="text" id="pdFar" placeholder="e.g., 60 or 30/30" required>
+                        </div>
+                        <div>
+                            <label for="pdNear">Pupillary Distance (PD) - Near (mm) (Optional)</label>
+                            <input type="text" id="pdNear" placeholder="e.g., 57 or 28.5/28.5">
+                        </div>
+                    </div>
+                    <hr>
+                    
                     <!-- Options -->
                     <div class="section-title">Options</div>
                     <div class="options-row">
@@ -671,7 +703,7 @@
                     </div>
                     <hr>
 
-                    <!-- Prescription Details -->
+                    <!-- Prescription Details (UPDATED PREVIEW) -->
                     <div class="preview-prescription">
                         <h3>Prescription Details</h3>
 
@@ -690,6 +722,7 @@
                                 </tr>
                             </thead>
                             <tbody>
+                                <!-- DISTANCE Row -->
                                 <tr>
                                     <td><strong>DIST</strong></td>
                                     <td><span id="previewrightDistSPH"></span></td>
@@ -697,12 +730,19 @@
                                     <td><span id="previewrightDistAXIS"></span></td>
                                     <td><span id="previewrightDistVA"></span></td>
                                 </tr>
+                                <!-- PRISM Row -->
                                 <tr>
+                                    <td><strong>PRISM</strong></td>
+                                    <td colspan="2"><span id="previewrightPrismDiopter"></span></td>
+                                    <td colspan="2"><span id="previewrightPrismBase"></span></td>
+                                </tr>
+                                <!-- ADD Power Row (Simplified) -->
+                                <tr class="bg-light">
                                     <td><strong>ADD</strong></td>
                                     <td><span id="previewrightAddSPH"></span></td>
-                                    <td><span id="previewrightAddCYL"></span></td>
-                                    <td><span id="previewrightAddAXIS"></span></td>
-                                    <td><span id="previewrightAddVA"></span></td>
+                                    <td></td> <!-- Blank cell -->
+                                    <td></td> <!-- Blank cell -->
+                                    <td></td> <!-- Blank cell -->
                                 </tr>
                             </tbody>
                         </table>
@@ -722,6 +762,7 @@
                                 </tr>
                             </thead>
                             <tbody>
+                                <!-- DISTANCE Row -->
                                 <tr>
                                     <td><strong>DIST</strong></td>
                                     <td><span id="previewleftDistSPH"></span></td>
@@ -729,18 +770,32 @@
                                     <td><span id="previewleftDistAXIS"></span></td>
                                     <td><span id="previewleftDistVA"></span></td>
                                 </tr>
+                                <!-- PRISM Row -->
                                 <tr>
+                                    <td><strong>PRISM</strong></td>
+                                    <td colspan="2"><span id="previewleftPrismDiopter"></span></td>
+                                    <td colspan="2"><span id="previewleftPrismBase"></span></td>
+                                </tr>
+                                <!-- ADD Power Row (Simplified) -->
+                                <tr class="bg-light">
                                     <td><strong>ADD</strong></td>
                                     <td><span id="previewleftAddSPH"></span></td>
-                                    <td><span id="previewleftAddCYL"></span></td>
-                                    <td><span id="previewleftAddAXIS"></span></td>
-                                    <td><span id="previewleftAddVA"></span></td>
+                                    <td></td> <!-- Blank cell -->
+                                    <td></td> <!-- Blank cell -->
+                                    <td></td> <!-- Blank cell -->
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                     <hr>
 
+                    <!-- Dispensing Parameters Preview (NEW SECTION) -->
+                    <div class="preview-details">
+                        <p><strong>PD Far:</strong> <span id="previewPdFar"></span></p>
+                        <p><strong>PD Near:</strong> <span id="previewPdNear"></span></p>
+                    </div>
+                    <hr>
+                    
                     <!-- Vision Type, Lens Type, Frame Type -->
                     <div class="preview-details">
                         <p><strong>Vision Type:</strong> <span id="previewVisionType"></span></p>
