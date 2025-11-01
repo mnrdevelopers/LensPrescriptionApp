@@ -567,6 +567,31 @@ function showProfileSetup(isForced) {
     document.getElementById('qrUploadStatus').textContent = '';
 }
 
+// Function to open preview section from view modal
+function openPreviewFromView() {
+    if (!currentViewPrescription) {
+        showStatusMessage('No prescription data available for preview.', 'error');
+        return;
+    }
+
+    // Close the view modal
+    closeViewModal();
+    
+    // Set the current prescription data for preview
+    currentPrescriptionData = JSON.parse(JSON.stringify(currentViewPrescription));
+    whatsappImageUrl = null;
+    
+    // Navigate to preview section
+    navigateIfProfileComplete(showPreview, 'preview');
+    
+    // Load the prescription data into preview
+    setTimeout(() => {
+        loadPreviewData(currentPrescriptionData);
+        showStatusMessage('Opened in preview mode. You can now print or download.', 'success');
+    }, 300);
+}
+
+// Update the showPreview function to handle both new and existing prescriptions
 function showPreview(prescriptionData = null) {
     hideAllSections();
     const previewSection = document.getElementById('previewSection');
@@ -574,9 +599,11 @@ function showPreview(prescriptionData = null) {
     
     if (prescriptionData) {
         loadPreviewData(prescriptionData);
-    } else {
-        loadPreviewFromForm();
+    } else if (currentPrescriptionData) {
+        loadPreviewData(currentPrescriptionData);
     }
+    
+    updateActiveNavLink('showPreview');
 }
 
 function hideAllSections() {
