@@ -75,6 +75,12 @@
                         <i class="fas fa-plus-circle"></i> Add Prescription
                     </a>
                 </li>
+                 <!-- NEW: Notifications Link -->
+                 <li class="nav-item">
+                    <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showNotifications, 'notifications')">
+                        <i class="fas fa-bell"></i> Notifications
+                    </a>
+                </li>
                  <!-- NEW: Patients Link (F) -->
                  <li class="nav-item">
                     <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showPatients, 'patients')">
@@ -144,6 +150,12 @@
                 <li class="nav-item">
                     <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showPrescriptionForm, 'form')" data-bs-dismiss="offcanvas">
                         <i class="fas fa-plus-circle"></i> Add Prescription
+                    </a>
+                </li>
+                 <!-- NEW: Notifications Link -->
+                 <li class="nav-item">
+                    <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showNotifications, 'notifications')" data-bs-dismiss="offcanvas">
+                        <i class="fas fa-bell"></i> Notifications
                     </a>
                 </li>
                  <!-- NEW: Patients Link (F) -->
@@ -268,6 +280,18 @@
                 </div>
             </div>
         </section>
+        
+        <!-- NEW: Notifications Section -->
+        <section id="notificationsSection" class="page-section">
+            <div class="container">
+                <h2><i class="fas fa-bell"></i> Notifications & Reminders</h2>
+                <p class="text-muted text-center mb-4">View important patient checkup reminders and system alerts here.</p>
+                <div id="notificationsContent">
+                    <!-- Notifications and reminders will be populated by app.js -->
+                </div>
+            </div>
+        </section>
+        <!-- END NEW: Notifications Section -->
 
         <!-- Add Prescription Section -->
         <section id="prescriptionFormSection" class="page-section">
@@ -863,6 +887,28 @@
     </div>
   </div>
 </div>
+
+<!-- NEW: Premium Feature Prompt Modal -->
+<div id="premiumFeaturePromptModal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="text-center">
+      <i class="fas fa-lock fa-3x text-info mb-3"></i>
+      <h2>Premium Feature</h2>
+      <p class="text-muted">This feature requires a **Premium Subscription**.</p>
+      <p class="fw-bold">Unlock powerful features like exports, sharing, and template saving by upgrading.</p>
+    </div>
+
+    <div class="modal-buttons d-flex justify-content-center gap-3">
+      <button onclick="showPaymentModal(); closePremiumFeaturePrompt();" class="btn btn-primary">
+        <i class="fas fa-crown"></i> Buy Premium
+      </button>
+      <button onclick="closePremiumFeaturePrompt()" class="btn btn-secondary">
+        Continue Free
+      </button>
+    </div>
+  </div>
+</div>
+<!-- END NEW: Premium Feature Prompt Modal -->
 
     <!-- START: Timer Modal for WhatsApp Loading -->
     <div id="whatsappTimerModal" class="modal-overlay">
