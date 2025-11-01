@@ -420,6 +420,7 @@ body.dark-mode .offcanvas-body .navbar-nav .nav-link-custom.active {
 
 .page-section.active {
     display: block;
+    margin-top: -50px;
 }
 
 @keyframes fadeIn {
