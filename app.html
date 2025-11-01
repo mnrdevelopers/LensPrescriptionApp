@@ -14,7 +14,7 @@
     
     <!-- PWA Meta Tags (Confirmed present for App Capabilities) -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="LensRx"> <!-- Updated short title -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#1e3a8a"> <!-- Use premium navy for theme color -->
@@ -912,6 +912,24 @@
   </div>
 </div>
 <!-- END NEW: Premium Feature Prompt Modal -->
+
+<!-- START: Unexpected Logout Modal (NEW ADDITION) -->
+<div id="unexpectedLogoutModal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="text-center">
+      <i class="fas fa-exclamation-circle fa-3x text-danger mb-3"></i>
+      <h2>Session Expired</h2>
+      <p class="text-muted mb-4">You have been automatically logged out due to **inactivity** or a **session security change**. Please log back in to continue.</p>
+    </div>
+
+    <div class="modal-buttons d-flex justify-content-center">
+      <button onclick="window.location.replace('auth.html')" class="btn btn-primary">
+        <i class="fas fa-sign-in-alt"></i> Go to Login
+      </button>
+    </div>
+  </div>
+</div>
+<!-- END: Unexpected Logout Modal -->
 
     <!-- START: Timer Modal for WhatsApp Loading -->
     <div id="whatsappTimerModal" class="modal-overlay">
