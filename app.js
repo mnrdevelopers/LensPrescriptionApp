@@ -1470,8 +1470,7 @@ async function fetchPrescriptions() {
         
         // 2. Client-side Filtering for Date Range and Search (Resilient approach)
         prescriptions = prescriptions.filter(rx => {
-            // Firestore timestamps need .toDate() if fetched via data(). We assume
-            // rx.date is already a valid date string from the `submitPrescription` function.
+            // Use the date stored in the prescription, which is an ISO string
             const rxDate = new Date(rx.date);
             
             // Apply Date Range Filter
@@ -1504,11 +1503,22 @@ async function fetchPrescriptions() {
     }
 }
 
+// FIX APPLIED HERE: Using a consistent YYYY-MM-DD format for reliable comparison
+function getYYYYMMDD(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 function groupPrescriptionsByDate(prescriptions) {
-    const today = new Date().toLocaleDateString();
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayFormatted = yesterday.toLocaleDateString();
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    
+    // Get clean date strings for comparison
+    const todayStr = getYYYYMMDD(today);
+    const yesterdayStr = getYYYYMMDD(yesterday);
 
     const grouped = {
         'Today': [],
@@ -1517,11 +1527,13 @@ function groupPrescriptionsByDate(prescriptions) {
     };
 
     prescriptions.forEach(prescription => {
-        const prescriptionDate = new Date(prescription.date).toLocaleDateString(); 
+        // Use the ISO date stored in Firestore
+        const rxDate = new Date(prescription.date);
+        const rxDateStr = getYYYYMMDD(rxDate);
         
-        if (prescriptionDate === today) {
+        if (rxDateStr === todayStr) {
             grouped['Today'].push(prescription);
-        } else if (prescriptionDate === yesterdayFormatted) {
+        } else if (rxDateStr === yesterdayStr) {
             grouped['Yesterday'].push(prescription);
         } else {
             grouped['Older'].push(prescription);
@@ -1578,11 +1590,14 @@ function displayPrescriptions(prescriptions) {
     });
 }
 
-// B: Updated displayPrescriptions to include Age/Mobile and Time
+// FIX APPLIED HERE: Re-formatting the date using the original stored value
 function addPrescriptionRow(tbody, prescription) {
     const row = tbody.insertRow();
     
+    // Ensure we use the date property which holds the ISO string
     const date = new Date(prescription.date);
+    
+    // Use the original date and time stored in the prescription object
     const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     const timeStr = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     
@@ -1759,7 +1774,7 @@ function loadPreviewData(data) {
         }
     });
 
-    // NEW: UPI/QR Display Logic in Preview Section
+    // NEW: UPI QR Image in Preview section
     const userData = JSON.parse(localStorage.getItem('userProfile') || '{}');
     const previewUpiContainer = document.getElementById('previewUpiContainer');
     const previewQrCodeImage = document.getElementById('previewQrCodeImage');
