@@ -450,7 +450,7 @@ function showDashboard() {
     
     document.getElementById('statsTimePeriod').value = 'daily';
     fetchDashboardStats();
-    fetchCheckupReminders(false); // Do not display on dashboard load, just count
+    fetchCheckupReminders(false); // Only update count on dashboard
 }
 
 function showNotifications() {
@@ -1388,8 +1388,8 @@ function loadTemplate(templateId) {
         const template = JSON.parse(selectedOption.dataset.templateData);
         
         document.getElementById('visionType').value = template.visionType || 'Single Vision';
-        document.getElementById('lensType').value = template.lensType || 'Polycarbonate (PC)';
-        document.getElementById('frameType').value = template.frameType || 'Full Rim (Acetate)';
+        document.getElementById('lensType').value = template.lensType || 'Blue Cut';
+        document.getElementById('frameType').value = template.frameType || 'Full Rim';
         
         // NEW: Load PD fields
         document.getElementById('pdFar').value = template.pdFar || '';
@@ -1604,6 +1604,7 @@ function addPrescriptionRow(tbody, prescription) {
     });
 
     const actionsCell = row.insertCell();
+    actionsCell.className = 'table-actions';
     
     const previewBtn = document.createElement('button');
     previewBtn.innerHTML = '👁️';
@@ -1615,15 +1616,16 @@ function addPrescriptionRow(tbody, prescription) {
     deleteBtn.innerHTML = '🗑️';
     deleteBtn.className = 'btn-delete';
     deleteBtn.title = 'Delete';
-    // --- MODIFIED: Lock delete action for non-premium users ---
-    deleteBtn.onclick = () => {
+    
+    // FIXED: Proper delete button handler
+    deleteBtn.onclick = (e) => {
+        e.stopPropagation(); // Prevent event bubbling
         if (!isPremium) {
-            showPremiumFeaturePrompt(); // Show premium feature lock message
+            showPremiumFeaturePrompt();
         } else {
             showDeleteModal(prescription);
         }
     };
-    // ---------------------------------------------------------
     
     actionsCell.appendChild(previewBtn);
     actionsCell.appendChild(deleteBtn);
@@ -1640,50 +1642,68 @@ function previewPrescription(prescription) {
     showPreview(prescription);
 }
 
-// E: Custom Delete Modal Implementations
+// E: Enhanced Custom Delete Modal Implementations
 function showDeleteModal(prescription) {
+    console.log('Show delete modal called for:', prescription);
+    
     selectedPrescriptionToDelete = prescription;
     const modal = document.getElementById('deleteConfirmationModal');
     const nameDisplay = document.getElementById('deleteRxName');
+    
+    if (!modal) {
+        console.error('Delete modal not found!');
+        showStatusMessage('Error: Delete modal not found', 'error');
+        return;
+    }
     
     if (nameDisplay) {
         nameDisplay.textContent = `Prescription for ${prescription.patientName} (Mobile: ${prescription.mobile})`;
     }
     
-    if (modal) {
-        modal.style.display = 'flex';
-    }
+    // Show modal with proper styling
+    modal.style.display = 'flex';
+    modal.style.opacity = '1';
+    modal.style.visibility = 'visible';
+    
+    console.log('Delete modal should be visible now');
 }
 
 function closeDeleteModal() {
-    selectedPrescriptionToDelete = null;
     const modal = document.getElementById('deleteConfirmationModal');
     if (modal) {
         modal.style.display = 'none';
+        modal.style.opacity = '0';
+        modal.style.visibility = 'hidden';
     }
+    selectedPrescriptionToDelete = null;
 }
 
 async function confirmDeleteAction() {
+    console.log('Confirm delete called');
+    
     if (!selectedPrescriptionToDelete) {
         showStatusMessage('No prescription selected for deletion.', 'error');
         return;
     }
     
-    closeDeleteModal(); 
-    
     const prescription = selectedPrescriptionToDelete;
+    console.log('Deleting prescription:', prescription.id);
+    
+    closeDeleteModal();
     
     try {
+        // Show loading state
+        showStatusMessage('Deleting prescription...', 'info');
+        
         await db.collection('prescriptions').doc(prescription.id).delete();
         showStatusMessage('Prescription deleted successfully!', 'success');
-        fetchPrescriptions();
+        
+        // Refresh the prescriptions list
+        await fetchPrescriptions();
+        
     } catch (error) {
-        // --- START FIX: Log the specific error for debugging ---
         console.error('Error deleting prescription:', error);
-        showStatusMessage('Error deleting prescription. Check the browser console for specific details (e.g., Firestore Security Rules issue).', 'error');
-        // --- END FIX ---
-    } finally {
-        selectedPrescriptionToDelete = null;
+        showStatusMessage('Error deleting prescription: ' + error.message, 'error');
     }
 }
 
@@ -1731,15 +1751,11 @@ function loadPreviewData(data) {
         'rightAddSPH',
         'leftAddSPH'
     ];
-    
-    // Ensure prescriptionData exists before attempting to access nested properties
-    const presData = data.prescriptionData || {};
 
     prescriptionFields.forEach(field => {
         const element = document.getElementById(`preview${field}`);
-        if (element) {
-            // Updated to use the local presData object
-            element.textContent = presData[field] || '';
+        if (element && data.prescriptionData) {
+            element.textContent = data.prescriptionData[field] || '';
         }
     });
 
@@ -1861,12 +1877,9 @@ function printPreview() {
     const pdFar = document.getElementById('previewPdFar')?.textContent || '';
     const pdNear = document.getElementById('previewPdNear')?.textContent || '';
     
-    // START FIX: Fetching options directly from preview elements
     const visionType = document.getElementById('previewVisionType')?.textContent || '';
     const lensType = document.getElementById('previewLensType')?.textContent || '';
     const frameType = document.getElementById('previewFrameType')?.textContent || '';
-    // END FIX: Fetching options directly from preview elements
-    
     const amount = document.getElementById('previewAmount')?.textContent || '';
     const paymentMode = document.getElementById('previewPaymentMode')?.textContent || '';
 
@@ -1888,8 +1901,7 @@ function printPreview() {
         `;
     }
 
-    // UPDATED PRESCRIPTION DATA (Use preview elements which reflect current state)
-    // NOTE: This data extraction should mirror the loadPreviewData function to ensure consistency
+    // UPDATED PRESCRIPTION DATA
     const prescriptionData = {
         rightDist: {
             SPH: document.getElementById('previewrightDistSPH')?.textContent || '',
@@ -1897,7 +1909,7 @@ function printPreview() {
             AXIS: document.getElementById('previewrightDistAXIS')?.textContent || '',
             VA: document.getElementById('previewrightDistVA')?.textContent || ''
         },
-        rightPrism: { 
+        rightPrism: { // NEW
             DIOPTER: document.getElementById('previewrightPrismDiopter')?.textContent || '',
             BASE: document.getElementById('previewrightPrismBase')?.textContent || ''
         },
@@ -1910,7 +1922,7 @@ function printPreview() {
             AXIS: document.getElementById('previewleftDistAXIS')?.textContent || '',
             VA: document.getElementById('previewleftDistVA')?.textContent || ''
         },
-        leftPrism: { 
+        leftPrism: { // NEW
             DIOPTER: document.getElementById('previewleftPrismDiopter')?.textContent || '',
             BASE: document.getElementById('previewleftPrismBase')?.textContent || ''
         },
@@ -1921,10 +1933,7 @@ function printPreview() {
     
     // Logic to display Prism if present
     const getPrismRow = (eyeData) => {
-        // Only render the prism row if EITHER the diopter or base is present
         if (eyeData.DIOPTER || eyeData.BASE) {
-            // Note: Since the table layout has 5 cells (Type, SPH, CYL, AXIS, V/A), 
-            // the Prism row needs to span columns correctly to maintain width.
             return `
                 <tr>
                     <td class="section-heading">PRISM</td>
@@ -2424,11 +2433,12 @@ function previewQrCode(event) {
             qrImage.src = previousUrl;
             qrImage.style.display = 'block';
             previewContainer.style.display = 'block';
-            qrUrlDisplay.textContent = previousUrl.length > 50 ? previousUrl.upiQrUrl.substring(0, 47) + '...' : previousUrl;
+            qrUrlDisplay.textContent = previousUrl.length > 50 ? previousUrl.substring(0, 47) + '...' : previousUrl;
             qrUrlInput.value = previousUrl;
         } else {
             qrImage.style.display = 'none';
             previewContainer.style.display = 'none';
+            qrUrlDisplay.textContent = 'No QR uploaded.';
             qrUrlInput.value = '';
         }
     }
@@ -3000,7 +3010,7 @@ async function fetchDashboardStats() {
     }
 
     try {
-        const querySnapshot = await baseQuery.orderBy('createdAt', 'desc').get();
+        const querySnapshot = await baseQuery.get();
         let totalPrescriptions = 0;
         let totalRevenue = 0;
         
