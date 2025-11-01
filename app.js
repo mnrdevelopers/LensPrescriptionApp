@@ -1604,6 +1604,7 @@ function addPrescriptionRow(tbody, prescription) {
     });
 
     const actionsCell = row.insertCell();
+    actionsCell.className = 'table-actions';
     
     const previewBtn = document.createElement('button');
     previewBtn.innerHTML = '👁️';
@@ -1615,14 +1616,20 @@ function addPrescriptionRow(tbody, prescription) {
     deleteBtn.innerHTML = '🗑️';
     deleteBtn.className = 'btn-delete';
     deleteBtn.title = 'Delete';
-    // --- MODIFIED: Lock delete action for non-premium users ---
-    deleteBtn.onclick = () => {
+    
+    // FIXED: Proper delete button handler
+    deleteBtn.onclick = (e) => {
+        e.stopPropagation(); // Prevent event bubbling
         if (!isPremium) {
-            showPremiumFeaturePrompt(); // Show premium feature lock message
+            showPremiumFeaturePrompt();
         } else {
             showDeleteModal(prescription);
         }
     };
+    
+    actionsCell.appendChild(previewBtn);
+    actionsCell.appendChild(deleteBtn);
+}
     // ---------------------------------------------------------
     
     actionsCell.appendChild(previewBtn);
@@ -1640,47 +1647,68 @@ function previewPrescription(prescription) {
     showPreview(prescription);
 }
 
-// E: Custom Delete Modal Implementations
+// E: Enhanced Custom Delete Modal Implementations
 function showDeleteModal(prescription) {
+    console.log('Show delete modal called for:', prescription);
+    
     selectedPrescriptionToDelete = prescription;
     const modal = document.getElementById('deleteConfirmationModal');
     const nameDisplay = document.getElementById('deleteRxName');
+    
+    if (!modal) {
+        console.error('Delete modal not found!');
+        showStatusMessage('Error: Delete modal not found', 'error');
+        return;
+    }
     
     if (nameDisplay) {
         nameDisplay.textContent = `Prescription for ${prescription.patientName} (Mobile: ${prescription.mobile})`;
     }
     
-    if (modal) {
-        modal.style.display = 'flex';
-    }
+    // Show modal with proper styling
+    modal.style.display = 'flex';
+    modal.style.opacity = '1';
+    modal.style.visibility = 'visible';
+    
+    console.log('Delete modal should be visible now');
 }
 
 function closeDeleteModal() {
-    selectedPrescriptionToDelete = null;
     const modal = document.getElementById('deleteConfirmationModal');
     if (modal) {
         modal.style.display = 'none';
+        modal.style.opacity = '0';
+        modal.style.visibility = 'hidden';
     }
+    selectedPrescriptionToDelete = null;
 }
 
 async function confirmDeleteAction() {
+    console.log('Confirm delete called');
+    
     if (!selectedPrescriptionToDelete) {
         showStatusMessage('No prescription selected for deletion.', 'error');
         return;
     }
     
-    closeDeleteModal(); 
-    
     const prescription = selectedPrescriptionToDelete;
+    console.log('Deleting prescription:', prescription.id);
+    
+    closeDeleteModal();
     
     try {
+        // Show loading state
+        showStatusMessage('Deleting prescription...', 'info');
+        
         await db.collection('prescriptions').doc(prescription.id).delete();
         showStatusMessage('Prescription deleted successfully!', 'success');
-        fetchPrescriptions();
+        
+        // Refresh the prescriptions list
+        await fetchPrescriptions();
+        
     } catch (error) {
-        showStatusMessage('Error deleting prescription. Check console for details.', 'error');
-    } finally {
-        selectedPrescriptionToDelete = null;
+        console.error('Error deleting prescription:', error);
+        showStatusMessage('Error deleting prescription: ' + error.message, 'error');
     }
 }
 
