@@ -91,7 +91,7 @@ body.dark-mode {
     background: rgba(255, 255, 255, 0.1);
 }
 
-/* 2. Navigation Bar (Links - Desktop Only) */
+/* 2. Navigation Bar (Links - Fixed to Top, below Header) */
 .app-navbar {
     top: var(--header-height); /* Positioned directly below the header */
     left: 0;
@@ -173,10 +173,11 @@ body.dark-mode {
     }
     
     /* Center the branding when the mobile toggler is visible */
+    /* FIX: Removed conflicting negative margin, relying on flex for cleaner centering */
     .app-header .header-brand {
         flex-grow: 1;
         justify-content: center;
-        margin-left: -50px; /* Offset the toggler width */
+        /* margin-left: -50px; /* Offset the toggler width */ /* REMOVED THIS LINE */
     }
     
     /* Ensure action icons remain on the right */
