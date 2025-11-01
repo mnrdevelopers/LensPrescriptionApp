@@ -524,18 +524,43 @@ function showProfileSetup(isForced) {
         saveBtn.textContent = isForced ? 'Save Profile & Continue' : 'Save Changes';
     }
 
-    if (!isForced) {
-        const userData = JSON.parse(localStorage.getItem('userProfile') || '{}');
-        document.getElementById('setupClinicName').value = userData.clinicName || '';
-        document.getElementById('setupOptometristName').value = userData.optometristName || '';
-        document.getElementById('setupAddress').value = userData.address || '';
-        document.getElementById('setupContactNumber').value = userData.contactNumber || '';
+    const userData = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    
+    // Populate form fields from local storage
+    document.getElementById('setupClinicName').value = userData.clinicName || '';
+    document.getElementById('setupOptometristName').value = userData.optometristName || '';
+    document.getElementById('setupAddress').value = userData.address || '';
+    document.getElementById('setupContactNumber').value = userData.contactNumber || '';
+    
+    // NEW: Populate UPI fields
+    document.getElementById('setupUpiId').value = userData.upiId || '';
+    document.getElementById('setupUpiQrUrl').value = userData.upiQrUrl || '';
+    
+    // Store original value to handle upload failure during save
+    document.getElementById('setupUpiQrUrl').dataset.originalValue = userData.upiQrUrl || ''; 
+
+    // Show current QR code if URL exists
+    const qrCodePreviewContainer = document.getElementById('qrCodePreviewContainer');
+    const currentQrCodeImage = document.getElementById('currentQrCodeImage');
+    const qrCodeUrlDisplay = document.getElementById('qrCodeUrlDisplay');
+
+    if (userData.upiQrUrl) {
+        if (qrCodePreviewContainer) qrCodePreviewContainer.style.display = 'block';
+        if (currentQrCodeImage) {
+            currentQrCodeImage.src = userData.upiQrUrl;
+            currentQrCodeImage.style.display = 'block';
+        }
+        if (qrCodeUrlDisplay) qrCodeUrlDisplay.textContent = userData.upiQrUrl.length > 50 ? userData.upiQrUrl.substring(0, 47) + '...' : userData.upiQrUrl;
     } else {
-         document.getElementById('setupClinicName').value = '';
-         document.getElementById('setupOptometristName').value = '';
-         document.getElementById('setupAddress').value = '';
-         document.getElementById('setupContactNumber').value = '';
+        if (qrCodePreviewContainer) qrCodePreviewContainer.style.display = 'none';
+        if (currentQrCodeImage) currentQrCodeImage.style.display = 'none';
+        if (qrCodeUrlDisplay) qrCodeUrlDisplay.textContent = 'No QR uploaded.';
     }
+    
+    // Clear file input on display, as it will be handled on Save
+    const qrFile = document.getElementById('qrCodeFile');
+    if (qrFile) qrFile.value = ''; 
+    document.getElementById('qrUploadStatus').textContent = '';
 }
 
 function showPreview(prescriptionData = null) {
@@ -602,6 +627,10 @@ async function loadUserProfile() {
         if (doc.exists) {
             userData = doc.data();
             
+            // NEW: Merge UPI details into local profile
+            userData.upiId = userData.upiId || '';
+            userData.upiQrUrl = userData.upiQrUrl || '';
+            
             const isDataValid = userData.clinicName && userData.optometristName;
             
             if (isDataValid) {
@@ -626,6 +655,10 @@ async function loadUserProfile() {
         const localProfile = localStorage.getItem('userProfile');
         if (localProfile) {
             userData = JSON.parse(localProfile);
+            // Ensure UPI details are set from local storage fallback
+            userData.upiId = userData.upiId || '';
+            userData.upiQrUrl = userData.upiQrUrl || '';
+            
             isProfileComplete = userData.clinicName && userData.optometristName;
             updateProfileUI(userData);
             if (isProfileComplete) {
@@ -646,25 +679,56 @@ async function saveSetupProfile() {
         return;
     }
 
+    const qrUrlInput = document.getElementById('setupUpiQrUrl');
+    const qrFile = document.getElementById('qrCodeFile');
+    const uploadStatus = document.getElementById('qrUploadStatus');
+    const saveBtn = document.getElementById('saveSetupProfileBtn');
+
+    let upiQrUrl = qrUrlInput.value.trim(); // Start with the existing or manually entered URL
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving...';
+    uploadStatus.textContent = '';
+
+
+    // 1. Check for new file upload and process it
+    if (qrFile.files.length > 0) {
+        uploadStatus.textContent = 'Uploading QR Code... This may take a moment.';
+        try {
+            const imageDataURL = await fileToDataURL(qrFile.files[0]);
+            // NOTE: We use a custom ImgBB upload function for profile setup
+            upiQrUrl = await uploadImageToImgBBForProfile(imageDataURL);
+            qrUrlInput.value = upiQrUrl; // Update hidden field
+            uploadStatus.textContent = 'QR Code uploaded successfully.';
+        } catch (error) {
+            console.error('QR Code upload failed:', error);
+            showStatusMessage('QR Code upload failed. Saving profile without updating QR image. Check API key status.', 'error');
+            // Revert QR code URL to previous value if upload fails
+            upiQrUrl = qrUrlInput.dataset.originalValue || '';
+        }
+    }
+    
+    // 2. Prepare data for Firestore
     const updatedData = {
         clinicName: document.getElementById('setupClinicName').value.trim(),
         optometristName: document.getElementById('setupOptometristName').value.trim(),
         address: document.getElementById('setupAddress').value.trim(),
         contactNumber: document.getElementById('setupContactNumber').value.trim(),
+        // NEW: UPI fields
+        upiId: document.getElementById('setupUpiId').value.trim(),
+        upiQrUrl: upiQrUrl, // Use the potentially new or cleared URL
         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
         email: user.email
     };
     
     if (!updatedData.clinicName || !updatedData.optometristName) {
         showStatusMessage('Clinic Name and Optometrist Name are required to continue.', 'error');
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Profile & Continue';
         return;
     }
 
     try {
-        const saveBtn = document.getElementById('saveSetupProfileBtn');
-        saveBtn.disabled = true;
-        saveBtn.textContent = 'Saving...';
-        
         await db.collection('users').doc(user.uid).set(updatedData, { merge: true });
         
         isProfileComplete = true;
@@ -672,6 +736,8 @@ async function saveSetupProfile() {
         localStorage.setItem('userProfile', JSON.stringify(updatedData));
         
         enableNavigationButtons();
+
+        showStatusMessage('Profile saved successfully!', 'success');
 
         const cameFromPrescriptionForm = document.getElementById('prescriptionFormSection')?.classList.contains('active') || 
                                         lastValidSection === 'form';
@@ -686,9 +752,9 @@ async function saveSetupProfile() {
         console.error('Error saving profile:', error);
         showStatusMessage('Error saving profile: ' + error.message, 'error');
     } finally {
-        const saveBtn = document.getElementById('saveSetupProfileBtn');
         saveBtn.disabled = false;
         saveBtn.textContent = 'Save Profile & Continue';
+        uploadStatus.textContent = '';
     }
 }
 
@@ -708,6 +774,8 @@ function updateProfileUI(userData) {
         { id: 'previewClinicAddress', text: userData.address || 'Clinic Address' },
         { id: 'previewOptometristName', text: userData.optometristName || 'Optometrist Name' },
         { id: 'previewContactNumber', text: userData.contactNumber || 'Contact Number' },
+        // NEW: Update UPI ID
+        { id: 'previewUpiId', text: userData.upiId || 'N/A' }, 
     ];
     
     fields.forEach(field => {
@@ -720,6 +788,13 @@ function updateProfileUI(userData) {
     const dashboardText = document.getElementById('dashboardWelcomeText');
     if (dashboardText) {
         dashboardText.textContent = `Welcome, ${userData.optometristName || 'Optometrist'}!`;
+    }
+    
+    // NEW: Update UPI QR Image in Preview section
+    const previewQrImage = document.getElementById('previewQrCodeImage');
+    if (previewQrImage) {
+        previewQrImage.src = userData.upiQrUrl || '';
+        previewQrImage.style.display = userData.upiQrUrl ? 'block' : 'none';
     }
 }
 
@@ -837,7 +912,7 @@ function getFormData() {
             rightDistCYL: getStringValue('rightDistCYL'),
             rightDistAXIS: getStringValue('rightDistAXIS'),
             rightDistVA: getStringValue('rightDistVA'),
-            leftDistSPH: getString('leftDistSPH'),
+            leftDistSPH: getStringValue('leftDistSPH'),
             leftDistCYL: getStringValue('leftDistCYL'),
             leftDistAXIS: getStringValue('leftDistAXIS'),
             leftDistVA: getStringValue('leftDistVA'),
@@ -1618,6 +1693,23 @@ function loadPreviewData(data) {
             element.textContent = data.prescriptionData[field] || '';
         }
     });
+
+    // NEW: UPI/QR Display Logic in Preview Section
+    const userData = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    const previewUpiContainer = document.getElementById('previewUpiContainer');
+    const previewQrCodeImage = document.getElementById('previewQrCodeImage');
+    
+    if (data.paymentMode === 'UPI' && userData.upiQrUrl && userData.upiId) {
+        if (previewUpiContainer) previewUpiContainer.style.display = 'block';
+        document.getElementById('previewUpiId').textContent = userData.upiId;
+        if (previewQrCodeImage) {
+            previewQrCodeImage.src = userData.upiQrUrl;
+            previewQrCodeImage.style.display = 'block';
+        }
+    } else {
+        if (previewUpiContainer) previewUpiContainer.style.display = 'none';
+        if (previewQrCodeImage) previewQrCodeImage.style.display = 'none';
+    }
 }
 
 // Output functions (generateImage, printPreview, sendWhatsApp) are complex but remain functionally the same.
@@ -1676,6 +1768,7 @@ function generateImage() {
     });
 }
 
+// MODIFIED printPreview() to include UPI/QR logic
 function printPreview() {
     // --- MODIFIED: Lock printing for non-premium users ---
     if (!isPremium) {
@@ -1690,6 +1783,8 @@ function printPreview() {
         window.print();
         return;
     }
+
+    const userData = JSON.parse(localStorage.getItem('userProfile') || '{}');
 
     const clinicName = document.getElementById('previewClinicName')?.textContent || 'Your Clinic';
     const clinicAddress = document.getElementById('previewClinicAddress')?.textContent || 'Clinic Address';
@@ -1719,6 +1814,24 @@ function printPreview() {
     const frameType = document.getElementById('previewFrameType')?.textContent || '';
     const amount = document.getElementById('previewAmount')?.textContent || '';
     const paymentMode = document.getElementById('previewPaymentMode')?.textContent || '';
+
+    // NEW: UPI Details
+    const upiId = userData.upiId || '';
+    const upiQrUrl = userData.upiQrUrl || '';
+
+    let upiQrHtml = '';
+    
+    if (paymentMode === 'UPI' && upiQrUrl && upiId) {
+        upiQrHtml = `
+            <hr style="border-top: 1px dashed #000; margin: 4px 0;">
+            <div style="text-align: center; margin: 6px 0;">
+                <img src="${upiQrUrl}" class="upi-qr-thermal" alt="Scan to Pay">
+                <p class="upi-id-thermal">SCAN & PAY VIA UPI</p>
+                <p class="upi-id-thermal" style="font-size: 8px; font-weight: normal;">${upiId}</p>
+            </div>
+            <hr style="border-top: 1px dashed #000; margin: 4px 0;">
+        `;
+    }
 
     const prescriptionData = {
         rightDist: {
@@ -1796,6 +1909,23 @@ function printPreview() {
                     body { margin: 0; padding: 2mm; width: 58mm; }
                     @page { margin: 0; padding: 0; size: 58mm auto; }
                     .no-print { display: none !important; }
+                    /* NEW: Thermal QR Code Styles (must be repeated here) */
+                    .upi-qr-thermal {
+                        width: 40mm !important; 
+                        height: auto !important;
+                        display: block !important;
+                        margin: 5px auto !important;
+                        filter: grayscale(100%) contrast(150%) !important; 
+                        -webkit-filter: grayscale(100%) contrast(150%) !important;
+                    }
+                    .upi-id-thermal {
+                        font-size: 9px !important;
+                        font-weight: bold !important;
+                        text-align: center !important;
+                        margin: 2px 0 !important;
+                        color: black !important;
+                        line-height: 1;
+                    }
                 }
                 .print-controls { text-align: center; margin-top: 10px; padding: 10px; background: #f5f5f5; border-radius: 5px; }
                 .print-btn { padding: 8px 16px; margin: 0 5px; border: none; border-radius: 3px; cursor: pointer; font-size: 10px; }
@@ -1867,6 +1997,10 @@ function printPreview() {
                     <div class="amount-value">₹ ${amount}</div>
                 </div>
             </div>
+            
+            <!-- UPI QR CODE INJECTION -->
+            ${upiQrHtml}
+
             <div class="footer">
                 <div class="thank-you">Thank you for choosing ${clinicName}</div>
                 <div>For queries: ${contactNumber}</div>
@@ -1893,6 +2027,59 @@ function printPreview() {
     printWindow.document.open();
     printWindow.document.write(printHTML);
     printWindow.document.close();
+}
+
+function generateImage() {
+    // --- MODIFIED: Lock download for non-premium users ---
+    if (!isPremium) {
+        showPremiumFeaturePrompt();
+        return;
+    }
+    // ----------------------------------------------------
+    
+    const btn = document.querySelector('.btn-download');
+    if (btn) {
+        btn.classList.add('btn-loading');
+        btn.textContent = 'Generating Image...';
+    }
+    showStatusMessage('Generating Image for Download...', 'info');
+
+    const patientName = document.getElementById('previewPatientName')?.textContent || 'Patient';
+    const shortDate = new Date().toLocaleDateString('en-IN', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric' 
+    }).replace(/\//g, '-');
+    const filename = `Prescription_${patientName}_${shortDate}.png`;
+
+    const element = document.getElementById('prescriptionPreview');
+    
+    html2canvas(element, {
+        scale: 3, 
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff'
+    }).then(canvas => {
+        const imageDataURL = canvas.toDataURL('image/png');
+        
+        const downloadLink = document.createElement('a');
+        downloadLink.href = imageDataURL;
+        downloadLink.download = filename;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+
+        showStatusMessage('Image (PNG) downloaded successfully!', 'success');
+        
+    }).catch((error) => {
+        showStatusMessage('Export failed. See console for details.', 'error');
+        
+    }).finally(() => {
+        if (btn) {
+            btn.classList.remove('btn-loading');
+            btn.textContent = 'Download'; 
+        }
+    });
 }
 
 async function sendWhatsAppMessage(mobile, imageUrl) {
@@ -2048,6 +2235,112 @@ function dataURLToBlob(dataURL) {
 }
 // *******************************************************************************************************
 
+
+// NEW Utility Function: File to Data URL
+function fileToDataURL(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+// NEW Utility Function: Upload Image to ImgBB for Profile (similar to existing WhatsApp one but dedicated)
+async function uploadImageToImgBBForProfile(base64Image) {
+    // IMPORTANT: IMGBB_API_KEY must be configured in firebase-config.js via Remote Config.
+    if (!IMGBB_API_KEY || IMGBB_API_KEY === 'DISABLED') {
+        throw new Error('Image upload service (ImgBB) is currently unavailable or API key is missing.');
+    }
+    
+    // Extract base64 part only
+    const base64Data = base64Image.split(',')[1];
+    if (!base64Data) {
+        throw new Error('Invalid image data format.');
+    }
+
+    const formData = new FormData();
+    formData.append("image", base64Data); // ImgBB API expects raw base64 data for image parameter
+
+    const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+        method: "POST",
+        body: formData
+    });
+    
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: { message: 'Unknown error during ImgBB upload.' } }));
+        throw new Error(`ImgBB upload failed: ${errorData.error?.message || response.statusText}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.success) {
+        return data.data.url; // Return the hosted URL
+    } else {
+        throw new Error(data.error?.message || 'Image upload failed');
+    }
+}
+
+
+// NEW Profile UI/UX Functions
+function previewQrCode(event) {
+    const file = event.target.files[0];
+    const previewContainer = document.getElementById('qrCodePreviewContainer');
+    const qrImage = document.getElementById('currentQrCodeImage');
+    const qrUrlDisplay = document.getElementById('qrCodeUrlDisplay');
+    const qrUrlInput = document.getElementById('setupUpiQrUrl');
+    const uploadStatus = document.getElementById('qrUploadStatus');
+
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            qrImage.src = e.target.result;
+            qrImage.style.display = 'block';
+            previewContainer.style.display = 'block';
+            qrUrlDisplay.textContent = 'New image selected (will upload on save).';
+            qrUrlInput.value = ''; // Clear hidden URL, it will be uploaded in saveSetupProfile
+            uploadStatus.textContent = '';
+        };
+        reader.readAsDataURL(file);
+    } else {
+        // If file selection is cancelled, restore previous state
+        const userData = JSON.parse(localStorage.getItem('userProfile') || '{}');
+        const previousUrl = userData.upiQrUrl || '';
+        
+        if (previousUrl) {
+            qrImage.src = previousUrl;
+            qrImage.style.display = 'block';
+            previewContainer.style.display = 'block';
+            qrUrlDisplay.textContent = previousUrl.length > 50 ? previousUrl.substring(0, 47) + '...' : previousUrl;
+            qrUrlInput.value = previousUrl;
+        } else {
+            qrImage.style.display = 'none';
+            previewContainer.style.display = 'none';
+            qrUrlDisplay.textContent = 'No QR uploaded.';
+            qrUrlInput.value = '';
+        }
+    }
+}
+
+function removeQrCode() {
+    const previewContainer = document.getElementById('qrCodePreviewContainer');
+    const qrImage = document.getElementById('currentQrCodeImage');
+    const qrUrlInput = document.getElementById('setupUpiQrUrl');
+    const qrFile = document.getElementById('qrCodeFile');
+    const qrCodeUrlDisplay = document.getElementById('qrCodeUrlDisplay');
+    
+    // Clear the form and hidden input
+    if (qrImage) qrImage.style.display = 'none';
+    if (qrFile) qrFile.value = ''; // Clear file input
+    if (qrUrlInput) {
+        qrUrlInput.value = ''; // This will save an empty string to Firestore
+        qrUrlInput.dataset.originalValue = '';
+    }
+    if (previewContainer) previewContainer.style.display = 'none';
+    if (qrCodeUrlDisplay) qrCodeUrlDisplay.textContent = 'QR removed (save to confirm)';
+    
+    showStatusMessage('QR code removed. Click "Save Profile & Continue" to update your details.', 'info');
+}
 
 // -----------------------------------------------------------
 // 8. Monetization and Resilience (C, D)
@@ -2806,7 +3099,6 @@ function forceUpdateCheck() {
     }
 }
 
-
 // Global Exports
 window.showDashboard = showDashboard;
 window.showNotifications = showNotifications; // Export new function
@@ -2847,6 +3139,10 @@ window.loadTemplate = loadTemplate;
 window.checkPatientExists = checkPatientExists;
 // --- EXPORT NEW PREMIUM FEATURE PROMPT FUNCTION ---
 window.showPremiumFeaturePrompt = showPremiumFeaturePrompt;
+
+// NEW UPI FUNCTIONS
+window.previewQrCode = previewQrCode;
+window.removeQrCode = removeQrCode;
 
 // Remote Config Export
 window.initializeRemoteConfig = initializeRemoteConfig;
