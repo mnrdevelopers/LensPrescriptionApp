@@ -588,13 +588,9 @@ function openPreviewFromView() {
     whatsappImageUrl = null;
     
     // Navigate to preview section
-    navigateIfProfileComplete(showPreview, 'preview');
+    navigateIfProfileComplete(() => showPreview(currentPrescriptionData), 'preview');
     
-    // Load the prescription data into preview
-    setTimeout(() => {
-        loadPreviewData(currentPrescriptionData);
-        showStatusMessage('Opened in preview mode. You can now print or download.', 'success');
-    }, 300);
+    showStatusMessage('Opened in preview mode. You can now print or download.', 'success');
 }
 
 // Update the back button in preview section to go back to prescriptions
@@ -611,20 +607,25 @@ function updatePreviewBackButton() {
     }
 }
 
-// Call this function when showing preview
 function showPreview(prescriptionData = null) {
     hideAllSections();
     const previewSection = document.getElementById('previewSection');
     if (previewSection) previewSection.classList.add('active');
     
+    // Always pass the data to loadPreviewData
     if (prescriptionData) {
         loadPreviewData(prescriptionData);
     } else if (currentPrescriptionData) {
         loadPreviewData(currentPrescriptionData);
+    } else {
+        // If no data is available, show error and redirect
+        showStatusMessage('No prescription data available for preview.', 'error');
+        navigateIfProfileComplete(showPrescriptions, 'prescriptions');
+        return;
     }
     
     updateActiveNavLink('showPreview');
-    updatePreviewBackButton(); // Update back button behavior
+    updatePreviewBackButton();
 }
 
 function hideAllSections() {
@@ -2250,7 +2251,7 @@ function validateEditForm(data) {
     return true;
 }
 
-// Update the action buttons in the prescriptions table
+// Update the preview button in the prescriptions table
 function addPrescriptionRow(tbody, prescription) {
     const row = tbody.insertRow();
     
@@ -2278,25 +2279,36 @@ function addPrescriptionRow(tbody, prescription) {
     const actionsCell = row.insertCell();
     actionsCell.className = 'table-actions';
     
-    // View Button
+    // View Button - Opens view modal
     const viewBtn = document.createElement('button');
     viewBtn.innerHTML = '👁️';
     viewBtn.className = 'btn-preview';
     viewBtn.title = 'View Details';
     viewBtn.onclick = () => openViewModal(prescription);
     
-   // Edit Button - Direct edit without going through view modal
-const editBtn = document.createElement('button');
-editBtn.innerHTML = '✏️';
-editBtn.className = 'btn-edit';
-editBtn.title = 'Edit';
-editBtn.onclick = () => {
-    if (!isPremium) {
-        showPremiumFeaturePrompt();
-    } else {
-        openEditModalDirect(prescription);
-    }
-};
+    // Edit Button - Direct edit without going through view modal
+    const editBtn = document.createElement('button');
+    editBtn.innerHTML = '✏️';
+    editBtn.className = 'btn-edit';
+    editBtn.title = 'Edit';
+    editBtn.onclick = () => {
+        if (!isPremium) {
+            showPremiumFeaturePrompt();
+        } else {
+            openEditModalDirect(prescription);
+        }
+    };
+    
+    // Preview Button - Direct preview for printing/downloading
+    const previewBtn = document.createElement('button');
+    previewBtn.innerHTML = '📄';
+    previewBtn.className = 'btn-preview';
+    previewBtn.title = 'Open in Preview (Print/Download)';
+    previewBtn.onclick = () => {
+        currentPrescriptionData = JSON.parse(JSON.stringify(prescription));
+        whatsappImageUrl = null;
+        navigateIfProfileComplete(() => showPreview(currentPrescriptionData), 'preview');
+    };
     
     // Delete Button
     const deleteBtn = document.createElement('button');
@@ -2313,6 +2325,7 @@ editBtn.onclick = () => {
     };
     
     actionsCell.appendChild(viewBtn);
+    actionsCell.appendChild(previewBtn); // Add preview button
     actionsCell.appendChild(editBtn);
     actionsCell.appendChild(deleteBtn);
 }
@@ -2431,45 +2444,75 @@ function loadPreviewFromForm() {
 
 // FIX APPLIED HERE: Corrected date object parsing for Firestore Timestamps (solving [object Object])
 function loadPreviewData(data) {
-    document.getElementById('previewPatientName').textContent = data.patientName || '';
-    document.getElementById('previewAge').textContent = data.age || '';
-    document.getElementById('previewGender').textContent = data.gender || '';
-    document.getElementById('previewMobile').textContent = data.mobile || '';
-    document.getElementById('previewAmount').textContent = data.amount?.toFixed(2) || '0.00';
-    document.getElementById('previewVisionType').textContent = data.visionType || '';
-    document.getElementById('previewLensType').textContent = data.lensType || '';
-    document.getElementById('previewFrameType').textContent = data.frameType || '';
-    document.getElementById('previewPaymentMode').textContent = data.paymentMode || '';
+    // Ensure data exists
+    if (!data) {
+        console.error('No data provided to loadPreviewData');
+        showStatusMessage('Error loading prescription data.', 'error');
+        return;
+    }
+
+    // Safe data access with defaults
+    const patientName = data.patientName || 'N/A';
+    const age = data.age || 'N/A';
+    const gender = data.gender || 'N/A';
+    const mobile = data.mobile || 'N/A';
+    const amount = data.amount ? data.amount.toFixed(2) : '0.00';
+    const visionType = data.visionType || 'N/A';
+    const lensType = data.lensType || 'N/A';
+    const frameType = data.frameType || 'N/A';
+    const paymentMode = data.paymentMode || 'N/A';
+    const pdFar = data.pdFar || 'N/A';
+    const pdNear = data.pdNear || 'N/A';
     
-    // FIX START: Handle Timestamp object conversion for Next Checkup Date
+    // Get prescription data with safe defaults
+    const presData = data.prescriptionData || {};
+
+    // Update preview elements with safe values
+    const elements = {
+        'previewPatientName': patientName,
+        'previewAge': age,
+        'previewGender': gender,
+        'previewMobile': mobile,
+        'previewAmount': amount,
+        'previewVisionType': visionType,
+        'previewLensType': lensType,
+        'previewFrameType': frameType,
+        'previewPaymentMode': paymentMode,
+        'previewPdFar': pdFar,
+        'previewPdNear': pdNear
+    };
+
+    // Update all text elements
+    Object.keys(elements).forEach(elementId => {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.textContent = elements[elementId];
+        }
+    });
+
+    // Handle Next Checkup Date with better error handling
     let checkupDate = 'N/A';
     if (data.nextCheckupDate) {
         let dateObj = null;
         if (typeof data.nextCheckupDate === 'string') {
-            // This case should ideally not happen after submission, but kept as fallback
             dateObj = new Date(data.nextCheckupDate); 
         } else if (typeof data.nextCheckupDate.toDate === 'function') {
-            // Case 1: Raw Firestore Timestamp object (when passing raw doc.data())
             dateObj = data.nextCheckupDate.toDate();
         } else if (data.nextCheckupDate.seconds) {
-            // Case 2: Plain object {seconds, nanoseconds} (from JSON.parse(JSON.stringify(Timestamp)))
             dateObj = new Date(data.nextCheckupDate.seconds * 1000);
         }
         
-        // Ensure the resulting object is a valid Date before formatting
         if (dateObj instanceof Date && !isNaN(dateObj)) {
             checkupDate = dateObj.toLocaleDateString();
         }
     }
-    document.getElementById('previewNextCheckupDate').textContent = checkupDate;
-    // FIX END
+    
+    const nextCheckupElement = document.getElementById('previewNextCheckupDate');
+    if (nextCheckupElement) {
+        nextCheckupElement.textContent = checkupDate;
+    }
 
-    // NEW PD FIELDS
-    document.getElementById('previewPdFar').textContent = data.pdFar || 'N/A';
-    document.getElementById('previewPdNear').textContent = data.pdNear || 'N/A';
-    // END NEW PD FIELDS
-
-    // UPDATED prescriptionFields to match new structure
+    // Update prescription fields with safe defaults
     const prescriptionFields = [
         // Dist
         'rightDistSPH', 'rightDistCYL', 'rightDistAXIS', 'rightDistVA',
@@ -2484,19 +2527,20 @@ function loadPreviewData(data) {
 
     prescriptionFields.forEach(field => {
         const element = document.getElementById(`preview${field}`);
-        if (element && data.prescriptionData) {
-            element.textContent = data.prescriptionData[field] || '';
+        if (element) {
+            element.textContent = presData[field] || '';
         }
     });
 
-    // NEW: UPI QR Image in Preview section
+    // Update UPI QR Image in Preview section
     const userData = JSON.parse(localStorage.getItem('userProfile') || '{}');
     const previewUpiContainer = document.getElementById('previewUpiContainer');
     const previewQrCodeImage = document.getElementById('previewQrCodeImage');
     
-    if (data.paymentMode === 'UPI' && userData.upiQrUrl && userData.upiId) {
+    if (paymentMode === 'UPI' && userData.upiQrUrl && userData.upiId) {
         if (previewUpiContainer) previewUpiContainer.style.display = 'block';
-        document.getElementById('previewUpiId').textContent = userData.upiId;
+        const upiIdElement = document.getElementById('previewUpiId');
+        if (upiIdElement) upiIdElement.textContent = userData.upiId;
         if (previewQrCodeImage) {
             previewQrCodeImage.src = userData.upiQrUrl;
             previewQrCodeImage.style.display = 'block';
