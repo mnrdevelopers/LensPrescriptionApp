@@ -672,181 +672,202 @@
             </div>
         </section>
 
-        <!-- Preview Section -->
-        <section id="previewSection" class="page-section">
-            <div class="preview-container">
-                <button onclick="navigateIfProfileComplete(showPrescriptions, 'prescriptions')" class="btn btn-back">
-                    <i class="fas fa-arrow-left"></i> Back
-                </button>
+      <!-- Preview Section -->
+<section id="previewSection" class="page-section">
+    <div class="preview-container">
+        <button onclick="navigateIfProfileComplete(showPrescriptions, 'prescriptions')" class="btn btn-back">
+            <i class="fas fa-arrow-left"></i> Back
+        </button>
 
-                <!-- Prescription Preview Container -->
-                <div id="prescriptionPreview">
-                    <!-- Clinic Details -->
-                    <div class="preview-header">
-                        <h2 id="previewClinicName">Loading...</h2>
-                        <p id="previewClinicAddress">Please wait...</p>
-                    </div>
-                    <hr>
-
-                    <!-- Optometrist Details -->
-                    <div class="preview-details">
-                        <p id="previewOptometristName"><strong>Loading...</strong></p>
-                        <p id="previewContactNumber"><strong>Please wait...</strong></p>
-                        <p><strong>Date:</strong> <span id="previewcurrentDate"></span></p>
-                    </div>
-                    <hr>
-
-                    <!-- Patient Details -->
-                    <div class="preview-details">
-                        <p><strong>Patient Name:</strong> <span id="previewPatientName"></span></p>
-                        <p><strong>Age:</strong> <span id="previewAge"></span></p>
-                        <p><strong>Gender:</strong> <span id="previewGender"></span></p>
-                        <p><strong>Mobile:</strong> <span id="previewMobile"></span></p>
-                        <!-- H: Checkup date in preview -->
-                        <p><strong>Next Checkup:</strong> <span id="previewNextCheckupDate"></span></p>
-                    </div>
-                    <hr>
-
-                    <!-- Prescription Details (UPDATED PREVIEW) -->
-                    <div class="preview-prescription">
-                        <h3>Prescription Details</h3>
-
-                        <!-- Right Eye Table -->
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th colspan="5">RIGHT EYE (OD)</th>
-                                </tr>
-                                <tr>
-                                    <th></th>
-                                    <th>SPH</th>
-                                    <th>CYL</th>
-                                    <th>AXIS</th>
-                                    <th>V/A</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- DISTANCE Row -->
-                                <tr>
-                                    <td><strong>DIST</strong></td>
-                                    <td><span id="previewrightDistSPH"></span></td>
-                                    <td><span id="previewrightDistCYL"></span></td>
-                                    <td><span id="previewrightDistAXIS"></span></td>
-                                    <td><span id="previewrightDistVA"></span></td>
-                                </tr>
-                                <!-- PRISM Row -->
-                                <tr>
-                                    <td><strong>PRISM</strong></td>
-                                    <td colspan="2"><span id="previewrightPrismDiopter"></span></td>
-                                    <td colspan="2"><span id="previewrightPrismBase"></span></td>
-                                </tr>
-                                <!-- ADD Power Row (Simplified) -->
-                                <tr class="bg-light">
-                                    <td><strong>ADD</strong></td>
-                                    <td><span id="previewrightAddSPH"></span></td>
-                                    <td></td> <!-- Blank cell -->
-                                    <td></td> <!-- Blank cell -->
-                                    <td></td> <!-- Blank cell -->
-                                </tr>
-                            </tbody>
-                        </table>
-
-                        <!-- Left Eye Table -->
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th colspan="5">LEFT EYE (OS)</th>
-                                </tr>
-                                <tr>
-                                    <th></th>
-                                    <th>SPH</th>
-                                    <th>CYL</th>
-                                    <th>AXIS</th>
-                                    <th>V/A</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- DISTANCE Row -->
-                                <tr>
-                                    <td><strong>DIST</strong></td>
-                                    <td><span id="previewleftDistSPH"></span></td>
-                                    <td><span id="previewleftDistCYL"></span></td>
-                                    <td><span id="previewleftDistAXIS"></span></td>
-                                    <td><span id="previewleftDistVA"></span></td>
-                                </tr>
-                                <!-- PRISM Row -->
-                                <tr>
-                                    <td><strong>PRISM</strong></td>
-                                    <td colspan="2"><span id="previewleftPrismDiopter"></span></td>
-                                    <td colspan="2"><span id="previewleftPrismBase"></span></td>
-                                </tr>
-                                <!-- ADD Power Row (Simplified) -->
-                                <tr class="bg-light">
-                                    <td><strong>ADD</strong></td>
-                                    <td><span id="previewleftAddSPH"></span></td>
-                                    <td></td> <!-- Blank cell -->
-                                    <td></td> <!-- Blank cell -->
-                                    <td></td> <!-- Blank cell -->
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <hr>
-
-                    <!-- Dispensing Parameters Preview (NEW SECTION) -->
-                    <div class="preview-details">
-                        <p><strong>PD Far:</strong> <span id="previewPdFar"></span></p>
-                        <p><strong>PD Near:</strong> <span id="previewPdNear"></span></p>
-                    </div>
-                    <hr>
-                    
-                    <!-- Vision Type, Lens Type, Frame Type -->
-                    <div class="preview-details">
-                        <p><strong>Vision Type:</strong> <span id="previewVisionType"></span></p>
-                        <p><strong>Lens Type:</strong> <span id="previewLensType"></span></p>
-                        <p><strong>Frame Type:</strong> <span id="previewFrameType"></span></p>
-                    </div>
-                    <hr>
-
-                    <!-- Amount -->
-                    <div class="preview-details">
-                        <p><strong>Amount:</strong> ₹<span id="previewAmount"></span></p>
-                        <p><strong>Payment Mode:</strong> <span id="previewPaymentMode"></span></p>
-                    </div>
-                    
-                    <!-- NEW: UPI QR/ID in Preview -->
-                    <div id="previewUpiContainer" style="display: none;">
-                        <div class="text-center mb-2">
-                             <img id="previewQrCodeImage" alt="UPI QR Code" style="width: 100px; height: 100px; margin: 0 auto; display: block;">
-                             <p style="font-size: 10px; margin-top: 5px;">Scan to Pay (UPI)</p>
-                             <p style="font-weight: bold; font-size: 11px;">UPI ID: <span id="previewUpiId"></span></p>
-                        </div>
-                        <hr>
-                    </div>
-                    <!-- END NEW: UPI QR/ID in Preview -->
-                    <hr>
-
-                    <!-- Thank You Note -->
-                    <div class="preview-footer">
-                        <p>Thank you for choosing Us</p>
-                        <p>We hope to see you again soon.</p>
-                    </div>
-                </div>
-
-                <!-- Buttons -->
-                <div class="preview-buttons">
-                    <button onclick="generateImage()" class="btn btn-download">
-                        <i class="fas fa-image"></i> Download 
-                    </button>
-                    <button onclick="printPreview()" class="btn btn-print">
-                        <i class="fas fa-print"></i> Print
-                    </button>
-                    <button onclick="sendWhatsApp()" class="btn btn-whatsapp">
-                        <i class="fab fa-whatsapp"></i> WhatsApp
-                    </button>
-                </div>
+        <!-- Prescription Preview Container -->
+        <div id="prescriptionPreview">
+            <!-- Clinic Details -->
+            <div class="preview-header">
+                <h2 id="previewClinicName">Loading...</h2>
+                <p id="previewClinicAddress">Please wait...</p>
             </div>
-        </section>
+            <hr>
+
+            <!-- Optometrist Details -->
+            <div class="preview-details">
+                <p id="previewOptometristName"><strong>Loading...</strong></p>
+                <p id="previewContactNumber"><strong>Please wait...</strong></p>
+                <p><strong>Date:</strong> <span id="previewcurrentDate"></span></p>
+            </div>
+            <hr>
+
+            <!-- Patient Details -->
+            <div class="preview-details">
+                <p><strong>Patient Name:</strong> <span id="previewPatientName"></span></p>
+                <p><strong>Age:</strong> <span id="previewAge"></span></p>
+                <p><strong>Gender:</strong> <span id="previewGender"></span></p>
+                <p><strong>Mobile:</strong> <span id="previewMobile"></span></p>
+                <!-- H: Checkup date in preview -->
+                <p><strong>Next Checkup:</strong> <span id="previewNextCheckupDate"></span></p>
+            </div>
+            <hr>
+
+            <!-- Prescription Details (UPDATED PREVIEW) -->
+            <div class="preview-prescription">
+                <h3>Prescription Details</h3>
+
+                <!-- Right Eye Table -->
+                <table>
+                    <thead>
+                        <tr>
+                            <th colspan="5">RIGHT EYE (OD)</th>
+                        </tr>
+                        <tr>
+                            <th></th>
+                            <th>SPH</th>
+                            <th>CYL</th>
+                            <th>AXIS</th>
+                            <th>V/A</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- DISTANCE Row -->
+                        <tr>
+                            <td><strong>DIST</strong></td>
+                            <td><span id="previewrightDistSPH"></span></td>
+                            <td><span id="previewrightDistCYL"></span></td>
+                            <td><span id="previewrightDistAXIS"></span></td>
+                            <td><span id="previewrightDistVA"></span></td>
+                        </tr>
+                        <!-- PRISM Row -->
+                        <tr>
+                            <td><strong>PRISM</strong></td>
+                            <td colspan="2"><span id="previewrightPrismDiopter"></span></td>
+                            <td colspan="2"><span id="previewrightPrismBase"></span></td>
+                        </tr>
+                        <!-- ADD Power Row (Simplified) -->
+                        <tr class="bg-light">
+                            <td><strong>ADD</strong></td>
+                            <td><span id="previewrightAddSPH"></span></td>
+                            <td></td> <!-- Blank cell -->
+                            <td></td> <!-- Blank cell -->
+                            <td></td> <!-- Blank cell -->
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Left Eye Table -->
+                <table>
+                    <thead>
+                        <tr>
+                            <th colspan="5">LEFT EYE (OS)</th>
+                        </tr>
+                        <tr>
+                            <th></th>
+                            <th>SPH</th>
+                            <th>CYL</th>
+                            <th>AXIS</th>
+                            <th>V/A</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- DISTANCE Row -->
+                        <tr>
+                            <td><strong>DIST</strong></td>
+                            <td><span id="previewleftDistSPH"></span></td>
+                            <td><span id="previewleftDistCYL"></span></td>
+                            <td><span id="previewleftDistAXIS"></span></td>
+                            <td><span id="previewleftDistVA"></span></td>
+                        </tr>
+                        <!-- PRISM Row -->
+                        <tr>
+                            <td><strong>PRISM</strong></td>
+                            <td colspan="2"><span id="previewleftPrismDiopter"></span></td>
+                            <td colspan="2"><span id="previewleftPrismBase"></span></td>
+                        </tr>
+                        <!-- ADD Power Row (Simplified) -->
+                        <tr class="bg-light">
+                            <td><strong>ADD</strong></td>
+                            <td><span id="previewleftAddSPH"></span></td>
+                            <td></td> <!-- Blank cell -->
+                            <td></td> <!-- Blank cell -->
+                            <td></td> <!-- Blank cell -->
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <hr>
+
+            <!-- Dispensing Parameters Preview (NEW SECTION) -->
+            <div class="preview-details">
+                <p><strong>PD Far:</strong> <span id="previewPdFar"></span></p>
+                <p><strong>PD Near:</strong> <span id="previewPdNear"></span></p>
+            </div>
+            <hr>
+            
+            <!-- Vision Type, Lens Type, Frame Type -->
+            <div class="preview-details">
+                <p><strong>Vision Type:</strong> <span id="previewVisionType"></span></p>
+                <p><strong>Lens Type:</strong> <span id="previewLensType"></span></p>
+                <p><strong>Frame Type:</strong> <span id="previewFrameType"></span></p>
+            </div>
+            <hr>
+
+            <!-- Amount -->
+            <div class="preview-details">
+                <p><strong>Amount:</strong> ₹<span id="previewAmount"></span></p>
+                <p><strong>Payment Mode:</strong> <span id="previewPaymentMode"></span></p>
+            </div>
+            
+            <!-- NEW: UPI QR/ID in Preview -->
+            <div id="previewUpiContainer" style="display: none;">
+                <div class="text-center mb-2">
+                     <img id="previewQrCodeImage" alt="UPI QR Code" style="width: 100px; height: 100px; margin: 0 auto; display: block;">
+                     <p style="font-size: 10px; margin-top: 5px;">Scan to Pay (UPI)</p>
+                     <p style="font-weight: bold; font-size: 11px;">UPI ID: <span id="previewUpiId"></span></p>
+                </div>
+                <hr>
+            </div>
+
+            <!-- NEW: App Promotion Section (This will appear in images and prints) -->
+            <div class="app-promotion-section">
+                <div class="app-promotion-header">
+                    <img src="lenslogo.png" alt="LensRx" class="app-promotion-logo">
+                    <div class="app-promotion-text">
+                        <h4 style="margin: 0; color: #1e3a8a; font-weight: bold;">LensRx Prescription App</h4>
+                        <p style="margin: 2px 0; font-size: 14px; color: #666;">Digital Prescription Management</p>
+                    </div>
+                </div>
+                <div class="app-promotion-content">
+                    <p style="margin: 0; font-size: 14px; color: #333;">
+                        <strong>View your prescription online anytime at:</strong>
+                    </p>
+                    <p style="margin: 5px 0; font-size: 16px; font-weight: bold; color: #007bff;">
+                        lensrx.online
+                    </p>
+                </div>
+                <p style="margin: 5px 0 0 0; font-size: 12px; color: #6b7280;">
+                    Powered by MNR Developers • Secure Digital Prescriptions
+                </p>
+            </div>
+            <hr>
+
+            <!-- Thank You Note -->
+            <div class="preview-footer">
+                <p>Thank you for choosing Us</p>
+                <p>We hope to see you again soon.</p>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="preview-buttons">
+            <button onclick="generateImage()" class="btn btn-download">
+                <i class="fas fa-image"></i> Download 
+            </button>
+            <button onclick="printPreview()" class="btn btn-print">
+                <i class="fas fa-print"></i> Print
+            </button>
+            <button onclick="sendWhatsApp()" class="btn btn-whatsapp">
+                <i class="fab fa-whatsapp"></i> WhatsApp
+            </button>
+        </div>
+    </div>
+</section>
         
         <!-- Custom Delete Confirmation Modal (E) -->
         <div id="deleteConfirmationModal" class="modal-overlay">
@@ -1075,28 +1096,6 @@
     </div>
     <!-- END: Timer Modal for WhatsApp Loading -->
 
-        <!-- Add this before the closing </div> of #prescriptionPreview -->
-<div id="appPromotionSection" style="text-align: center; margin: 20px 0; padding: 15px; background: linear-gradient(135deg, #f8f9fa, #e9ecef); border-radius: 10px; border: 2px dashed #007bff;">
-    <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 10px;">
-        <img src="lenslogo.png" alt="LensRx" style="width: 40px; height: 40px; border-radius: 8px;">
-        <div style="text-align: left;">
-            <h4 style="margin: 0; color: #1e3a8a; font-weight: bold;">LensRx Prescription App</h4>
-            <p style="margin: 2px 0; font-size: 14px; color: #666;">Digital Prescription Management</p>
-        </div>
-    </div>
-    <div style="background: white; padding: 10px; border-radius: 8px; margin: 10px 0;">
-        <p style="margin: 0; font-size: 14px; color: #333;">
-            <strong>View your prescription online anytime at:</strong>
-        </p>
-        <a href="https://lensrx.online" target="_blank" style="color: #007bff; font-size: 16px; font-weight: bold; text-decoration: none;">
-            lensrx.online
-        </a>
-    </div>
-    <p style="margin: 5px 0 0 0; font-size: 12px; color: #6b7280;">
-        Powered by MNR Developers • Secure Digital Prescriptions
-    </p>
-</div>
-
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
@@ -1124,6 +1123,7 @@ if ('serviceWorker' in navigator) {
     </script>
 </body>
 </html>
+
 
 
 
