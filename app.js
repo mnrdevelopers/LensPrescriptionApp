@@ -2647,8 +2647,7 @@ function printPreview() {
     const age = document.getElementById('previewAge')?.textContent || '';
     const gender = document.getElementById('previewGender')?.textContent || '';
     const mobile = document.getElementById('previewMobile')?.textContent || '';
-    // NEW: Get the formatted next checkup date from the preview element
-    const nextCheckupDate = document.getElementById('previewNextCheckupDate')?.textContent || 'N/A'; // <-- Fetch formatted value
+    const nextCheckupDate = document.getElementById('previewNextCheckupDate')?.textContent || 'N/A';
 
     // NEW PD Fields
     const pdFar = document.getElementById('previewPdFar')?.textContent || '';
@@ -2678,7 +2677,7 @@ function printPreview() {
         `;
     }
 
-    // UPDATED PRESCRIPTION DATA - INCLUDING ALL MISSING FIELDS
+    // UPDATED PRESCRIPTION DATA
     const prescriptionData = {
         rightDist: {
             SPH: document.getElementById('previewrightDistSPH')?.textContent || '',
@@ -2738,6 +2737,23 @@ function printPreview() {
         return '';
     };
 
+    // NEW: App Promotion Section
+    const appPromotionHtml = `
+        <div style="text-align: center; margin: 8px 0; padding: 6px; background: #f8f9fa; border: 1px dashed #ccc; border-radius: 4px;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 4px;">
+                <img src="lenslogo.png" alt="LensRx" style="width: 20px; height: 20px;">
+                <strong style="font-size: 10px;">LensRx Prescription App</strong>
+            </div>
+            <p style="font-size: 8px; margin: 2px 0; color: #666;">
+                View your prescription online at: 
+                <strong style="color: #007bff;">lensrx.online</strong>
+            </p>
+            <p style="font-size: 7px; margin: 0; color: #888;">
+                Powered by MNR Developers
+            </p>
+        </div>
+    `;
+
     const printHTML = `
         <!DOCTYPE html>
         <html>
@@ -2784,25 +2800,60 @@ function printPreview() {
                 .signature { margin-top: 8px; text-align: right; }
                 .signature-line { border-top: 1px solid #000; width: 30mm; margin-left: auto; padding-top: 1px; text-align: center; font-size: 7px; }
                 
+                /* App Promotion Styles */
+                .app-promotion { 
+                    text-align: center; 
+                    margin: 8px 0; 
+                    padding: 6px; 
+                    background: #f8f9fa; 
+                    border: 1px dashed #ccc; 
+                    border-radius: 4px; 
+                }
+                .app-promotion-header {
+                    display: flex; 
+                    align-items: center; 
+                    justify-content: center; 
+                    gap: 8px; 
+                    margin-bottom: 4px;
+                }
+                .app-logo {
+                    width: 20px; 
+                    height: 20px;
+                }
+                .app-name {
+                    font-size: 10px; 
+                    font-weight: bold;
+                }
+                .app-website {
+                    font-size: 8px; 
+                    margin: 2px 0; 
+                    color: #666;
+                }
+                .app-developer {
+                    font-size: 7px; 
+                    margin: 0; 
+                    color: #888;
+                }
+
                 /* UPDATED TABLE STYLES FOR PRISM/ADD */
                 .rx-table-header th.prism-base-header {
-                    width: 15mm; /* Allocate more space for Base */
+                    width: 15mm;
                 }
                 .rx-table-header th.va-header {
-                    width: 10mm; /* Narrower for VA */
+                    width: 10mm;
                 }
                 .rx-table-header th.sph-cyl-header {
                     width: 12mm;
                 }
                 .add-row td:nth-child(2) {
-                    text-align: left; /* Keep ADD value on left to align with SPH */
+                    text-align: left;
                 }
 
                 @media print {
                     body { margin: 0; padding: 2mm; width: 58mm; }
                     @page { margin: 0; padding: 0; size: 58mm auto; }
                     .no-print { display: none !important; }
-                    /* NEW: Thermal QR Code Styles (must be repeated here) */
+                    /* Thermal QR Code Styles */
                     .upi-qr-thermal {
                         width: 40mm !important; 
                         height: auto !important;
@@ -2854,7 +2905,6 @@ function printPreview() {
                     <div class="patient-label">PD Far / Near:</div>
                     <div class="patient-value">${pdFar} / ${pdNear || 'N/A'}</div>
                 </div>
-                <!-- FIX: Added Next Checkup Date for Thermal Print -->
                 <div class="patient-row">
                     <div class="patient-label">Next Checkup:</div>
                     <div class="patient-value">${nextCheckupDate}</div>
@@ -2931,6 +2981,9 @@ function printPreview() {
             
             <!-- UPI QR CODE INJECTION -->
             ${upiQrHtml}
+
+            <!-- NEW: APP PROMOTION SECTION -->
+            ${appPromotionHtml}
 
             <div class="footer">
                 <div class="thank-you">Thank you for choosing ${clinicName}</div>
