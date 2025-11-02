@@ -3073,12 +3073,12 @@ async function sendWhatsAppMessage(mobile, imageUrl) {
         const optometristName = document.getElementById('previewOptometristName')?.textContent || 'Optometrist';
         const patientName = document.getElementById('previewPatientName')?.textContent || 'Patient';
         
-        const message = `Hello ${patientName},\n\nYour eye prescription from ${clinicName} is ready.\n\nThank you for visiting us!\n\n- ${optometristName}`;
+        const message = `Hello ${patientName},\n\nYour eye prescription from ${clinicName} is ready.\n\n🔗 View your prescription online: https://lensrx.online\n\nThank you for visiting us!\n\n- ${optometristName}\n\n*Powered by LensRx Prescription App*`;
         
         let whatsappUrl;
         
         if (imageUrl.startsWith('http')) {
-            const messageWithImage = `${message}\n\nView your prescription: ${imageUrl}`;
+            const messageWithImage = `${message}\n\n📄 Prescription Image: ${imageUrl}`;
             const encodedMessageWithImage = encodeURIComponent(messageWithImage);
             whatsappUrl = `https://wa.me/${formattedMobile}?text=${encodedMessageWithImage}`;
         } else {
