@@ -266,7 +266,7 @@ function showInstallPromotion() {
             <div class="install-content">
                 <i class="fas fa-download"></i>
                 <div class="install-text">
-                    <strong>Install Lens Prescription App</strong>
+                    <strong>Install Lens Rx App</strong>
                     <small>Get the full app experience</small>
                 </div>
                 <div class="install-buttons">
@@ -2742,7 +2742,7 @@ function printPreview() {
         <div style="text-align: center; margin: 8px 0; padding: 6px; background: #f8f9fa; border: 1px dashed #ccc; border-radius: 4px;">
             <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 4px;">
                 <img src="lenslogo.png" alt="LensRx" style="width: 20px; height: 20px;">
-                <strong style="font-size: 10px;">LensRx Prescription App</strong>
+                <strong style="font-size: 10px;">Lens Rx App</strong>
             </div>
             <p style="font-size: 8px; margin: 2px 0; color: #666;">
                 View your prescription online at: 
@@ -3073,7 +3073,7 @@ async function sendWhatsAppMessage(mobile, imageUrl) {
         const optometristName = document.getElementById('previewOptometristName')?.textContent || 'Optometrist';
         const patientName = document.getElementById('previewPatientName')?.textContent || 'Patient';
         
-        const message = `Hello ${patientName},\n\nYour eye prescription from ${clinicName} is ready.\n\n🔗 View your prescription online: https://lensrx.online\n\nThank you for visiting us!\n\n- ${optometristName}\n\n*Powered by LensRx Prescription App*`;
+        const message = `Hello ${patientName},\n\nYour eye prescription from ${clinicName} is ready.\n\n🔗 View your prescription online: https://lensrx.online\n\nThank you for visiting us!\n\n- ${optometristName}\n\n*Powered by Lens Rx App*`;
         
         let whatsappUrl;
         
@@ -3665,7 +3665,7 @@ async function proceedToPayment() {
             key: RAZORPAY_KEY_ID,
             amount: plan.amount * 100, 
             currency: 'INR',
-            name: 'Lens Prescription',
+            name: 'Lens Rx',
             description: `${selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1)} Subscription`,
             handler: async function(response) {
                 await handlePaymentSuccess(response, selectedPlan, plan.amount);
