@@ -1,22 +1,9 @@
-// patient.js - Patient Portal Logic
-document.addEventListener('DOMContentLoaded', async function() {
+// patient.js - Patient Portal Logic (Simplified for unauthenticated access)
+document.addEventListener('DOMContentLoaded', function() {
     // Initialize Firebase
     if (typeof firebase !== 'undefined') {
         const db = firebase.firestore();
-        const auth = firebase.auth();
-        
-        // Enable anonymous authentication for patient portal
-        try {
-            await auth.signInAnonymously();
-            console.log('Anonymous authentication successful');
-            showMessage('Secure connection established. Enter your mobile number to search.', 'alert-info');
-        } catch (error) {
-            console.error('Anonymous auth error:', error);
-            showMessage('Setting up secure connection...', 'alert-info');
-            // Try to continue anyway - sometimes auth works in background
-        }
-        
-        setupPatientSearch(db, auth);
+        setupPatientSearch(db);
     } else {
         showMessage('Firebase is not loaded. Please check firebase-config.js.', 'alert-danger');
     }
@@ -25,7 +12,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     applyAntiCaptureMeasures();
 });
 
-function setupPatientSearch(db, auth) {
+function setupPatientSearch(db) {
     const searchForm = document.getElementById('patientSearchForm');
     if (searchForm) {
         searchForm.addEventListener('submit', function(event) {
@@ -43,40 +30,23 @@ function setupPatientSearch(db, auth) {
     const mobileInput = document.getElementById('mobileNumberInput');
     if (mobileInput) {
         mobileInput.addEventListener('input', function(e) {
-            // Only allow numbers and limit to 10 digits
             e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
         });
     }
 }
 
-/**
- * Searches the 'prescriptions' collection for the latest prescription linked to the mobile number.
- * @param {firebase.firestore.Firestore} db 
- * @param {string} mobile 
- */
 async function fetchPrescriptionByMobile(db, mobile) {
     const viewContainer = document.getElementById('prescriptionViewContainer');
     viewContainer.style.display = 'none';
     showMessage('Searching for your prescription...', 'alert-info');
 
     try {
-        // Double-check authentication state
-        const user = firebase.auth().currentUser;
-        if (!user) {
-            console.log('No user found, attempting anonymous auth...');
-            try {
-                await firebase.auth().signInAnonymously();
-            } catch (authError) {
-                console.error('Auth failed:', authError);
-            }
-        }
-
         console.log('Querying prescriptions for mobile:', mobile);
 
-        // Query the main prescriptions collection
+        // Query the prescriptions collection (no authentication needed)
         const querySnapshot = await db.collection('prescriptions')
             .where('mobile', '==', mobile)
-            .orderBy('createdAt', 'desc') // Get the latest one first
+            .orderBy('createdAt', 'desc')
             .limit(1)
             .get();
 
@@ -89,45 +59,25 @@ async function fetchPrescriptionByMobile(db, mobile) {
         const latestRx = doc.data();
         console.log('Found prescription:', latestRx);
         
-        // Fetch the corresponding Optometrist/Clinic Profile
-        const optometristUID = latestRx.userId;
+        // Fetch optometrist profile (this will fail without auth, so use defaults)
         let optometristProfile = { 
             clinicName: 'Our Eye Care Clinic', 
-            optometristName: 'Your Optometrist',
-            clinicAddress: '',
-            phone: ''
+            optometristName: 'Your Optometrist'
         };
-        
-        if (optometristUID) {
-            try {
-                const userDoc = await db.collection('users').doc(optometristUID).get();
-                if (userDoc.exists) {
-                    optometristProfile = { ...optometristProfile, ...userDoc.data() };
-                    console.log('Found optometrist profile:', optometristProfile);
-                }
-            } catch (profileError) {
-                console.log('Could not fetch optometrist profile:', profileError);
-                // Continue with default profile
-            }
-        }
         
         displayPrescription(latestRx, optometristProfile);
         
     } catch (error) {
         console.error('Error fetching prescription:', error);
         
-        // Specific error handling
         if (error.code === 'permission-denied') {
-            showMessage('Access denied. Please refresh the page and try again.', 'alert-danger');
-        } else if (error.code === 'not-found') {
-            showMessage('Service temporarily unavailable. Please try again later.', 'alert-danger');
-        } else if (error.message && error.message.includes('index')) {
-            showMessage('Search feature is being optimized. Please try again in a moment.', 'alert-warning');
+            showMessage('Access denied. The security rules may need updating.', 'alert-danger');
         } else {
             showMessage('Network error. Please check your connection and try again.', 'alert-danger');
         }
     }
 }
+
 
 /**
  * Displays the prescription data in the secure view container.
