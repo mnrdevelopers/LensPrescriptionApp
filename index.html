@@ -277,210 +277,6 @@
             opacity: 0.8;
         }
         
-        /* Thermal Printer Ad Styles */
-        .printer-ad {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 320px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            z-index: 1000;
-            overflow: hidden;
-            transform: translateY(100px);
-            opacity: 0;
-            transition: all 0.5s ease;
-        }
-        
-        .printer-ad.show {
-            transform: translateY(0);
-            opacity: 1;
-        }
-        
-        .printer-ad-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .printer-ad-title {
-            font-size: 1.2rem;
-            font-weight: bold;
-            margin: 0;
-        }
-        
-        .printer-ad-close {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-            padding: 0;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            transition: background 0.3s ease;
-        }
-        
-        .printer-ad-close:hover {
-            background: rgba(255,255,255,0.2);
-        }
-        
-        .printer-ad-body {
-            padding: 20px;
-        }
-        
-        .printer-image {
-            width: 100%;
-            height: 180px;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 15px;
-            overflow: hidden;
-        }
-        
-        .printer-image img {
-            max-width: 80%;
-            max-height: 80%;
-            object-fit: contain;
-        }
-        
-        .printer-name {
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 5px;
-        }
-        
-        .printer-description {
-            color: #666;
-            font-size: 0.9rem;
-            margin-bottom: 15px;
-            line-height: 1.4;
-        }
-        
-        .printer-price {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #28a745;
-            margin-bottom: 15px;
-        }
-        
-        .printer-features {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        
-        .printer-feature {
-            background: #f8f9fa;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            color: #495057;
-        }
-        
-        .printer-ad-actions {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .printer-btn {
-            flex: 1;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .printer-btn-buy {
-            background: #28a745;
-            color: white;
-        }
-        
-        .printer-btn-buy:hover {
-            background: #218838;
-        }
-        
-        .printer-btn-later {
-            background: #6c757d;
-            color: white;
-        }
-        
-        .printer-btn-later:hover {
-            background: #5a6268;
-        }
-        
-        .printer-confirmation {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 320px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            z-index: 1001;
-            padding: 20px;
-            display: none;
-        }
-        
-        .printer-confirmation.show {
-            display: block;
-        }
-        
-        .printer-confirmation-title {
-            font-size: 1.2rem;
-            font-weight: bold;
-            margin-bottom: 15px;
-            color: #333;
-        }
-        
-        .printer-confirmation-buttons {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .confirmation-btn {
-            flex: 1;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .confirmation-btn-yes {
-            background: #28a745;
-            color: white;
-        }
-        
-        .confirmation-btn-yes:hover {
-            background: #218838;
-        }
-        
-        .confirmation-btn-no {
-            background: #dc3545;
-            color: white;
-        }
-        
-        .confirmation-btn-no:hover {
-            background: #c82333;
-        }
-        
         /* Responsive Design */
         @media (max-width: 768px) {
             .hero-title {
@@ -514,18 +310,6 @@
             .section-title h2 {
                 font-size: 2rem;
             }
-            
-            .printer-ad {
-                width: 300px;
-                right: 10px;
-                bottom: 10px;
-            }
-            
-            .printer-confirmation {
-                width: 300px;
-                right: 10px;
-                bottom: 10px;
-            }
         }
         
         @media (max-width: 480px) {
@@ -540,67 +324,10 @@
             .feature-card {
                 padding: 20px;
             }
-            
-            .printer-ad {
-                width: calc(100% - 20px);
-                right: 10px;
-                left: 10px;
-            }
-            
-            .printer-confirmation {
-                width: calc(100% - 20px);
-                right: 10px;
-                left: 10px;
-            }
         }
     </style>
 </head>
 <body class="landing-page">
-    <!-- Thermal Printer Advertisement -->
-    <div class="printer-ad" id="printerAd">
-        <div class="printer-ad-header">
-            <h3 class="printer-ad-title">Recommended Product</h3>
-            <button class="printer-ad-close" id="adCloseBtn">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="printer-ad-body">
-            <div class="printer-image">
-                <i class="fas fa-print" style="font-size: 4rem; color: #667eea;"></i>
-            </div>
-            <h4 class="printer-name">58mm Thermal Receipt Printer</h4>
-            <p class="printer-description">Perfect for printing prescriptions directly from Lens Rx app. Compact, reliable, and easy to use.</p>
-            <div class="printer-price">₹2,499</div>
-            <div class="printer-features">
-                <span class="printer-feature">Bluetooth</span>
-                <span class="printer-feature">USB</span>
-                <span class="printer-feature">58mm</span>
-                <span class="printer-feature">Thermal</span>
-            </div>
-            <div class="printer-ad-actions">
-                <button class="printer-btn printer-btn-buy" id="buyNowBtn">
-                    <i class="fas fa-shopping-cart"></i> Buy Now
-                </button>
-                <button class="printer-btn printer-btn-later" id="learnMoreBtn">
-                    <i class="fas fa-info-circle"></i> Learn More
-                </button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Confirmation Dialog -->
-    <div class="printer-confirmation" id="confirmationDialog">
-        <h4 class="printer-confirmation-title">Have you purchased this printer or not interested?</h4>
-        <div class="printer-confirmation-buttons">
-            <button class="confirmation-btn confirmation-btn-yes" id="confirmBought">
-                <i class="fas fa-check"></i> I Bought It
-            </button>
-            <button class="confirmation-btn confirmation-btn-no" id="confirmNotInterested">
-                <i class="fas fa-times"></i> Not Interested
-            </button>
-        </div>
-    </div>
-
     <!-- Hero Section -->
     <section class="hero-section">
         <div class="container">
@@ -900,56 +627,6 @@
                     }
                 });
             });
-            
-            // Thermal Printer Ad Logic
-            const printerAd = document.getElementById('printerAd');
-            const adCloseBtn = document.getElementById('adCloseBtn');
-            const confirmationDialog = document.getElementById('confirmationDialog');
-            const confirmBought = document.getElementById('confirmBought');
-            const confirmNotInterested = document.getElementById('confirmNotInterested');
-            const buyNowBtn = document.getElementById('buyNowBtn');
-            const learnMoreBtn = document.getElementById('learnMoreBtn');
-            
-            // Check if user has already dismissed the ad
-            const adDismissed = localStorage.getItem('printerAdDismissed');
-            
-            // Show ad after a delay if not dismissed
-            if (!adDismissed) {
-                setTimeout(() => {
-                    printerAd.classList.add('show');
-                }, 3000);
-            }
-            
-            // Close button click handler
-            adCloseBtn.addEventListener('click', function() {
-                confirmationDialog.classList.add('show');
-            });
-            
-            // User bought the printer
-            confirmBought.addEventListener('click', function() {
-                localStorage.setItem('printerAdDismissed', 'bought');
-                printerAd.classList.remove('show');
-                confirmationDialog.classList.remove('show');
-            });
-            
-            // User is not interested
-            confirmNotInterested.addEventListener('click', function() {
-                localStorage.setItem('printerAdDismissed', 'not-interested');
-                printerAd.classList.remove('show');
-                confirmationDialog.classList.remove('show');
-            });
-            
-            // Buy Now button
-            buyNowBtn.addEventListener('click', function() {
-                // Redirect to purchase page or open product link
-                window.open('https://amzn.in/d/bWNNtVE', '_blank');
-            });
-            
-            // Learn More button
-            learnMoreBtn.addEventListener('click', function() {
-                // Show more details about the product
-                alert('This 58mm thermal printer is compatible with Lens Rx app and provides professional prescription printing. Features include Bluetooth and USB connectivity, compact design, and easy paper loading.');
-            });
         });
         
         // Function to handle logout redirection (called from app.js)
@@ -960,4 +637,3 @@
     </script>
 </body>
 </html>
-
