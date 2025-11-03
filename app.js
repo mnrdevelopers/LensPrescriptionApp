@@ -614,9 +614,14 @@ function showPreview(prescriptionData = null) {
     
     // Always pass the data to loadPreviewData
     if (prescriptionData) {
-        loadPreviewData(prescriptionData);
+        // Small delay to ensure DOM is ready
+        setTimeout(() => {
+            loadPreviewData(prescriptionData);
+        }, 100);
     } else if (currentPrescriptionData) {
-        loadPreviewData(currentPrescriptionData);
+        setTimeout(() => {
+            loadPreviewData(currentPrescriptionData);
+        }, 100);
     } else {
         // If no data is available, show error and redirect
         showStatusMessage('No prescription data available for preview.', 'error');
@@ -2467,8 +2472,28 @@ function loadPreviewData(data) {
     // Get prescription data with safe defaults
     const presData = data.prescriptionData || {};
 
-    // Update preview elements with safe values
-    const elements = {
+    // Get user profile data
+    const userData = JSON.parse(localStorage.getItem('userProfile') || '{}');
+
+    // Update clinic information
+    const clinicElements = {
+        'previewClinicName': userData.clinicName || 'Your Clinic Name',
+        'previewClinicAddress': userData.address || 'Clinic Address',
+        'previewContactNumber': userData.contactNumber || 'Contact Number',
+        'previewOptometristName': userData.optometristName || 'Optometrist Name',
+        'previewClinicNameFooter': userData.clinicName || 'Our Clinic',
+        'previewOptometristNameFooter': userData.optometristName || 'Optometrist Name'
+    };
+
+    Object.keys(clinicElements).forEach(elementId => {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.textContent = clinicElements[elementId];
+        }
+    });
+
+    // Update patient information
+    const patientElements = {
         'previewPatientName': patientName,
         'previewAge': age,
         'previewGender': gender,
@@ -2482,11 +2507,10 @@ function loadPreviewData(data) {
         'previewPdNear': pdNear
     };
 
-    // Update all text elements
-    Object.keys(elements).forEach(elementId => {
+    Object.keys(patientElements).forEach(elementId => {
         const element = document.getElementById(elementId);
         if (element) {
-            element.textContent = elements[elementId];
+            element.textContent = patientElements[elementId];
         }
     });
 
@@ -2514,42 +2538,182 @@ function loadPreviewData(data) {
 
     // Update prescription fields with safe defaults
     const prescriptionFields = [
-        // Dist
+        // Right Eye - Distance
         'rightDistSPH', 'rightDistCYL', 'rightDistAXIS', 'rightDistVA',
-        'leftDistSPH', 'leftDistCYL', 'leftDistAXIS', 'leftDistVA',
-        // Prism
+        // Right Eye - Prism
         'rightPrismDiopter', 'rightPrismBase',
-        'leftPrismDiopter', 'leftPrismBase',
-        // Add (Simplified)
+        // Right Eye - Add
         'rightAddSPH',
+        // Left Eye - Distance
+        'leftDistSPH', 'leftDistCYL', 'leftDistAXIS', 'leftDistVA',
+        // Left Eye - Prism
+        'leftPrismDiopter', 'leftPrismBase',
+        // Left Eye - Add
         'leftAddSPH'
     ];
 
     prescriptionFields.forEach(field => {
         const element = document.getElementById(`preview${field}`);
         if (element) {
-            element.textContent = presData[field] || '';
+            // Handle empty values by showing dash
+            const value = presData[field] || '-';
+            element.textContent = value;
+            
+            // Add styling for empty values
+            if (value === '-') {
+                element.style.color = '#6c757d';
+                element.style.fontStyle = 'italic';
+            } else {
+                element.style.color = '';
+                element.style.fontStyle = '';
+            }
         }
     });
 
     // Update UPI QR Image in Preview section
-    const userData = JSON.parse(localStorage.getItem('userProfile') || '{}');
     const previewUpiContainer = document.getElementById('previewUpiContainer');
     const previewQrCodeImage = document.getElementById('previewQrCodeImage');
+    const previewUpiId = document.getElementById('previewUpiId');
     
     if (paymentMode === 'UPI' && userData.upiQrUrl && userData.upiId) {
-        if (previewUpiContainer) previewUpiContainer.style.display = 'block';
-        const upiIdElement = document.getElementById('previewUpiId');
-        if (upiIdElement) upiIdElement.textContent = userData.upiId;
+        if (previewUpiContainer) {
+            previewUpiContainer.style.display = 'block';
+            // Add fade-in animation
+            previewUpiContainer.style.animation = 'fadeIn 0.5s ease-in';
+        }
         if (previewQrCodeImage) {
             previewQrCodeImage.src = userData.upiQrUrl;
             previewQrCodeImage.style.display = 'block';
+            // Add loading error handling
+            previewQrCodeImage.onerror = function() {
+                this.style.display = 'none';
+                console.error('Failed to load UPI QR code image');
+            };
+        }
+        if (previewUpiId) {
+            previewUpiId.textContent = userData.upiId;
         }
     } else {
         if (previewUpiContainer) previewUpiContainer.style.display = 'none';
         if (previewQrCodeImage) previewQrCodeImage.style.display = 'none';
+        if (previewUpiId) previewUpiId.textContent = '-';
     }
+
+    // Update clinic logo (use UPI QR as logo or default)
+    const clinicLogo = document.getElementById('previewClinicLogo');
+    if (clinicLogo) {
+        if (userData.upiQrUrl) {
+            clinicLogo.src = userData.upiQrUrl;
+            clinicLogo.alt = `${userData.clinicName || 'Clinic'} Logo`;
+        } else {
+            // Use the app logo as fallback
+            clinicLogo.src = 'lenslogo.png';
+            clinicLogo.alt = 'LensRx Clinic Logo';
+        }
+        
+        // Add error handling for logo
+        clinicLogo.onerror = function() {
+            this.src = 'lenslogo.png';
+            this.alt = 'LensRx Default Logo';
+        };
+    }
+
+    // Update current date
+    const today = new Date();
+    const options = { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        weekday: 'long'
+    };
+    const todayDate = today.toLocaleDateString('en-US', options);
+    
+    const currentDateElement = document.getElementById('previewcurrentDate');
+    if (currentDateElement) {
+        currentDateElement.textContent = todayDate;
+    }
+
+    // Add visual enhancements for better readability
+    enhancePrescriptionDisplay();
+
+    console.log('Prescription preview loaded successfully:', data);
 }
+
+// Helper function to enhance prescription display
+function enhancePrescriptionDisplay() {
+    // Add color coding for different prescription types
+    const distanceValues = document.querySelectorAll('.table-row:not(.prism-row):not(.add-row) span:not(.type-label)');
+    distanceValues.forEach(span => {
+        if (span.textContent !== '-' && span.textContent.trim() !== '') {
+            const value = parseFloat(span.textContent);
+            if (!isNaN(value)) {
+                if (value < 0) {
+                    span.style.color = '#dc3545'; // Red for negative values
+                    span.style.fontWeight = 'bold';
+                } else if (value > 0) {
+                    span.style.color = '#28a745'; // Green for positive values
+                    span.style.fontWeight = 'bold';
+                }
+            }
+        }
+    });
+
+    // Highlight important patient information
+    const importantInfo = document.querySelectorAll('.patient-value, .amount-value');
+    importantInfo.forEach(element => {
+        if (element.textContent !== 'N/A' && element.textContent !== '-' && element.textContent.trim() !== '') {
+            element.style.fontWeight = '600';
+            element.style.color = '#1e3a8a';
+        }
+    });
+
+    // Add subtle animations
+    const sections = document.querySelectorAll('.prescription-section, .parameters-section, .specifications-section');
+    sections.forEach((section, index) => {
+        section.style.animation = `fadeInUp 0.5s ease-out ${index * 0.1}s both`;
+    });
+}
+
+// Add CSS animations for the professional preview
+function addPreviewAnimations() {
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        
+        .professional-prescription {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        .prescription-section, .parameters-section, .specifications-section, .payment-section {
+            opacity: 0;
+            animation-fill-mode: both;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// Call this function when the preview section is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    addPreviewAnimations();
+});
 
 // Output functions (generateImage, printPreview, sendWhatsApp) are complex but remain functionally the same.
 // They are kept for brevity but should be assumed to be present and correct from the previous detailed response.
