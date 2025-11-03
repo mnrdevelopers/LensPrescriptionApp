@@ -1592,25 +1592,6 @@ body.dark-mode .offcanvas-body .navbar-nav .nav-link-custom.active {
     }
 }
 
-/* Mobile responsive for thermal preview */
-@media (max-width: 768px) {
-    #prescriptionPreview {
-        margin: 10px;
-        padding: 8px;
-        font-size: 9px;
-    }
-    
-    .preview-header h2 {
-        font-size: 11px;
-    }
-    
-    .preview-prescription th,
-    .preview-prescription td {
-        padding: 3px 1px;
-        font-size: 7px;
-    }
-}
-
 /* WhatsApp button specific styles */
 .btn-whatsapp {
     background: #25D366 !important;
@@ -2922,4 +2903,25 @@ body.dark-mode .modal-footer {
         gap: 20px;
         text-align: center;
     }
+}
+
+/* OVERRIDE CONFLICTING PREVIEW STYLES */
+#prescriptionPreview {
+    margin: 0 auto !important;
+    padding: 30px !important;
+    font-size: inherit !important;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
+.preview-buttons {
+    display: none !important;
+}
+
+.preview-actions {
+    display: flex !important;
+}
+
+/* Ensure new professional styles take precedence */
+.professional-prescription * {
+    box-sizing: border-box !important;
 }
