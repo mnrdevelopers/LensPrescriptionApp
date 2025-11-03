@@ -1623,7 +1623,7 @@ body.dark-mode .offcanvas-body .navbar-nav .nav-link-custom.active {
 }
 
 /* Enhanced preview buttons container */
-.preview-buttons {
+.preview-actions { /* Renamed from .preview-buttons for clarity */
     display: flex;
     justify-content: center;
     gap: 15px;
@@ -1631,7 +1631,7 @@ body.dark-mode .offcanvas-body .navbar-nav .nav-link-custom.active {
     flex-wrap: wrap;
 }
 
-.preview-buttons .btn {
+.preview-actions .btn {
     padding: 12px 20px;
     font-size: 14px;
     min-width: 120px;
@@ -1646,12 +1646,12 @@ body.dark-mode .offcanvas-body .navbar-nav .nav-link-custom.active {
 
 /* Mobile responsive for preview buttons */
 @media (max-width: 768px) {
-    .preview-buttons {
+    .preview-actions {
         flex-direction: column;
         gap: 10px;
     }
     
-    .preview-buttons .btn {
+    .preview-actions .btn {
         width: 100%;
         min-width: auto;
     }
@@ -1727,7 +1727,7 @@ body.dark-mode .offcanvas-body .navbar-nav .nav-link-custom.active {
     
     /* Hide all UI elements */
     .navbar,
-    .preview-buttons,
+    .preview-actions, /* Updated to use the new action button container */
     .btn-back,
     .install-prompt,
     .update-notification,
@@ -1765,6 +1765,7 @@ body.dark-mode .offcanvas-body .navbar-nav .nav-link-custom.active {
 }
 
 /* Ensure only essential styles are applied on print */
+/* NOTE: These styles were likely redundant with the new .professional-prescription block and the @media print block. Removing these specific overrides is cleaner, but keeping them highly scoped prevents future conflict if the element structure changes. */
 #prescriptionPreview .preview-header h2 {
     font-size: 14px;
 }
@@ -1784,7 +1785,7 @@ body.dark-mode .offcanvas-body .navbar-nav .nav-link-custom.active {
     font-size: 9px;
 }
 
-/* ===== CRITICAL MISSING STYLES ===== */
+/* ===== CRITICAL MISSING STYLES (Retained and placed higher for proper precedence) ===== */
 
 /* 1. Navigation Disabled State */
 .nav-link-custom.nav-disabled {
@@ -1823,13 +1824,14 @@ input:valid, select:valid {
 }
 
 /* 4. Premium Feature Lock Styles */
-.btn-premium-locked {
+.btn-disabled { /* Changed from .btn-premium-locked */
     position: relative;
-    opacity: 0.7;
-    cursor: not-allowed;
+    opacity: 0.6;
+    cursor: not-allowed !important;
+    pointer-events: none;
 }
 
-.btn-premium-locked::before {
+.btn-disabled::before {
     content: '🔒';
     margin-right: 8px;
 }
@@ -1854,7 +1856,8 @@ input:valid, select:valid {
 /* 7. Print-specific Improvements */
 @media print {
     .btn-back,
-    .preview-buttons,
+    .preview-buttons, /* Kept for compatibility but should be obsolete */
+    .preview-actions, /* New action buttons */
     .app-header,
     .app-navbar {
         display: none !important;
@@ -1878,7 +1881,7 @@ body.dark-mode .premium-offcanvas-header {
     background: var(--premium-navy) !important;
 }
 
-/* 9. Status Message Refinements */
+/* 9. Status Message Refinements (Retained for consistency) */
 .status-message {
     z-index: 10000;
     position: fixed;
@@ -2232,7 +2235,7 @@ body.dark-mode .premium-offcanvas-header {
     font-size: 1.1rem;
 }
 
-/* Dark Mode Support */
+/* Dark Mode Support for Modals */
 body.dark-mode .prescription-view-section,
 body.dark-mode .edit-prescription-section {
     background: #33364b;
@@ -2264,7 +2267,7 @@ body.dark-mode .info-value {
     color: var(--dark-text);
 }
 
-/* Responsive Design */
+/* Responsive Design for Modals */
 @media (max-width: 768px) {
     .modal-overlay .modal-content.large {
         width: 98%;
@@ -2592,7 +2595,8 @@ body.dark-mode .modal-footer {
 }
 
 /* Section Titles */
-.section-title {
+/* NOTE: This conflicts with the general .section-title used in forms/setup. Keeping the general one but refining this block for the preview only. */
+.professional-prescription .section-title {
     font-size: 18px;
     font-weight: bold;
     color: #1e3a8a;
@@ -2650,7 +2654,8 @@ body.dark-mode .modal-footer {
     border-bottom: 1px solid #dee2e6;
 }
 
-.prescription-table {
+/* Prescription Table Structure for Preview */
+.professional-prescription .prescription-table {
     display: flex;
     flex-direction: column;
     gap: 1px;
@@ -2758,7 +2763,7 @@ body.dark-mode .modal-footer {
 }
 
 /* App Promotion */
-.app-promotion-section {
+.professional-prescription .app-promotion-section {
     background: linear-gradient(135deg, #f8f9fa, #e9ecef);
     padding: 20px;
     border-radius: 10px;
@@ -2843,7 +2848,7 @@ body.dark-mode .modal-footer {
     font-weight: 600;
 }
 
-/* Dark Mode Support */
+/* Dark Mode Support (for Preview) */
 .dark-mode .professional-prescription {
     background: #1a1a1a;
     color: #e0e0e0;
@@ -2868,7 +2873,7 @@ body.dark-mode .modal-footer {
     border-color: #555;
 }
 
-/* Responsive Design */
+/* Responsive Design (for Preview) */
 @media (max-width: 768px) {
     .professional-prescription {
         padding: 20px;
@@ -2906,16 +2911,8 @@ body.dark-mode .modal-footer {
 }
 
 /* OVERRIDE CONFLICTING PREVIEW STYLES */
-#prescriptionPreview {
-    margin: 0 auto !important;
-    padding: 30px !important;
-    font-size: inherit !important;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-}
-
-.preview-buttons {
-    display: none !important;
-}
+/* REMOVED: #prescriptionPreview margin/padding overrides as they are redundant with .professional-prescription class. */
+/* REMOVED: .preview-buttons display: none !important; as it was replaced by .preview-actions */
 
 .preview-actions {
     display: flex !important;
