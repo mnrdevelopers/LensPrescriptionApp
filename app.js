@@ -35,7 +35,7 @@ firebase.auth().onAuthStateChanged((user) => {
         }
     } else {
         // If user is NOT logged in, redirect to auth page
-        window.location.replace('auth.html');
+        window.location.replace('index.html');
     }
 });
 
@@ -866,11 +866,11 @@ function logoutUser() {
             localStorage.removeItem('freshRegistration');
             localStorage.removeItem('isFirstPrescription');
             
-            window.location.replace('auth.html');
+            window.location.replace('index.html');
         }).catch(error => {
             console.error('Logout failed:', error);
             // If signOut fails, still redirect
-            window.location.replace('auth.html');
+            window.location.replace('index.html');
         });
     }
     // If user clicks "Cancel", do nothing (stay on the page)
@@ -897,7 +897,7 @@ async function submitPrescription() {
     
     const user = auth.currentUser;
     if (!user) {
-        window.location.href = 'auth.html';
+        window.location.href = 'index.html';
         return;
     }
 
