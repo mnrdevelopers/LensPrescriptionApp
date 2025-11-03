@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legal - Lens Rx</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="lenslogo.png">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #4a6cf7;
+            --secondary-color: #6a11cb;
+            --dark-color: #1e2a4a;
+            --light-color: #f8f9fa;
+            --text-color: #333;
+            --text-light: #666;
+            --border-radius: 12px;
+            --box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            --transition: all 0.3s ease;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: #f9fafb;
+        }
+        
+        /* Navigation */
+        .navbar {
+            padding: 1rem 0;
+            background-color: white;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--dark-color);
+        }
+        
+        .navbar-brand img {
+            height: 40px;
+            margin-right: 10px;
+        }
+        
+        .nav-link {
+            font-weight: 500;
+            margin: 0 0.5rem;
+            color: var(--dark-color);
+            transition: var(--transition);
+        }
+        
+        .nav-link:hover, .nav-link.active {
+            color: var(--primary-color);
+        }
+        
+        .btn-nav {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 50px;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+        
+        .btn-nav:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 20px rgba(74, 108, 247, 0.4);
+            color: white;
+        }
+        
+        /* Legal Header */
+        .legal-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 100px 0 60px;
+            text-align: center;
+        }
+        
+        .legal-header h1 {
+            font-size: 2.8rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+        
+        .legal-header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        /* Legal Content */
+        .legal-content {
+            padding: 80px 0;
+        }
+        
+        .legal-nav {
+            position: sticky;
+            top: 100px;
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 30px;
+            box-shadow: var(--box-shadow);
+            margin-bottom: 30px;
+        }
+        
+        .legal-nav h4 {
+            margin-bottom: 20px;
+            color: var(--dark-color);
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .legal-nav ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .legal-nav li {
+            margin-bottom: 12px;
+        }
+        
+        .legal-nav a {
+            color: var(--text-light);
+            text-decoration: none;
+            transition: var(--transition);
+            display: block;
+            padding: 8px 0;
+            border-left: 3px solid transparent;
+            padding-left: 15px;
+        }
+        
+        .legal-nav a:hover, .legal-nav a.active {
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+        }
+        
+        .legal-document {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 50px;
+            box-shadow: var(--box-shadow);
+        }
+        
+        .document-section {
+            margin-bottom: 50px;
+        }
+        
+        .document-section h2 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: var(--dark-color);
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .document-section h3 {
+            font-size: 1.4rem;
+            margin: 30px 0 15px;
+            color: var(--dark-color);
+        }
+        
+        .document-section p {
+            margin-bottom: 15px;
+            color: var(--text-light);
+        }
+        
+        .document-section ul {
+            margin-bottom: 20px;
+            padding-left: 20px;
+        }
+        
+        .document-section li {
+            margin-bottom: 10px;
+            color: var(--text-light);
+            line-height: 1.7;
+        }
+        
+        .highlight-box {
+            background: rgba(74, 108, 247, 0.05);
+            border-left: 4px solid var(--primary-color);
+            padding: 20px;
+            border-radius: 0 var(--border-radius) var(--border-radius) 0;
+            margin: 25px 0;
+        }
+        
+        .last-updated {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-radius: var(--border-radius);
+            margin-top: 40px;
+            font-style: italic;
+            color: var(--text-light);
+        }
+        
+        /* Footer */
+        .footer {
+            background: var(--dark-color);
+            color: white;
+            padding: 60px 0 30px;
+        }
+        
+        .footer h5 {
+            font-size: 1.2rem;
+            margin-bottom: 25px;
+        }
+        
+        .footer-links {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .footer-links li {
+            margin-bottom: 12px;
+        }
+        
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+        
+        .footer-links a:hover {
+            color: white;
+        }
+        
+        .footer-bottom {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 25px 0;
+            margin-top: 50px;
+            text-align: center;
+        }
+        
+        .footer-bottom p {
+            margin: 0;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .developer-credit {
+            margin-top: 10px;
+            font-size: 1rem;
+        }
+        
+        .developer-credit strong {
+            color: var(--primary-color);
+        }
+        
+        /* Responsive */
+        @media (max-width: 992px) {
+            .legal-nav {
+                position: static;
+                margin-bottom: 40px;
+            }
+            
+            .legal-document {
+                padding: 30px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .legal-header h1 {
+                font-size: 2.2rem;
+            }
+            
+            .legal-header p {
+                font-size: 1.1rem;
+            }
+            
+            .legal-content {
+                padding: 50px 0;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .legal-document {
+                padding: 20px;
+            }
+            
+            .document-section h2 {
+                font-size: 1.6rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">
+                <img src="lenslogo.png" alt="Lens Rx Logo">
+                Lens Rx
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html#features">Features</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html#how-it-works">How It Works</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html#contact">Contact</a>
+                    </li>
+                    <li class="nav-item ms-2">
+                        <a href="auth.html" class="btn btn-nav">Login</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Legal Header -->
+    <section class="legal-header">
+        <div class="container">
+            <h1 data-aos="fade-up">Legal Information</h1>
+            <p data-aos="fade-up" data-aos-delay="100">Review our Terms & Conditions and Privacy Policy to understand how we protect your data and serve you better.</p>
+        </div>
+    </section>
+
+    <!-- Legal Content -->
+    <section class="legal-content">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-3">
+                    <div class="legal-nav" data-aos="fade-right">
+                        <h4>Legal Documents</h4>
+                        <ul>
+                            <li><a href="#" class="active" id="terms-link">Terms & Conditions</a></li>
+                            <li><a href="#" id="privacy-link">Privacy Policy</a></li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="col-lg-9">
+                    <!-- Terms & Conditions Document -->
+                    <div class="legal-document" id="terms-content" data-aos="fade-up">
+                        <h1>Terms & Conditions</h1>
+                        <p class="lead">Last updated: January 15, 2023</p>
+                        
+                        <div class="document-section">
+                            <h2>1. Acceptance of Terms</h2>
+                            <p>By accessing and using Lens Rx ("the Application"), you accept and agree to be bound by the terms and provision of this agreement.</p>
+                            <p>These Terms govern your use of the Lens Rx application, website, and services ("Services"). Please read them carefully before using our Services.</p>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>2. Description of Service</h2>
+                            <p>Lens Rx is a professional eye care management solution designed for optometrists to:</p>
+                            <ul>
+                                <li>Create and manage digital eye prescriptions</li>
+                                <li>Store patient records securely</li>
+                                <li>Generate professional prescription printouts</li>
+                                <li>Analyze practice performance through reports</li>
+                                <li>Share prescriptions with patients via digital channels</li>
+                            </ul>
+                            <p>The Service is provided "as is" and we reserve the right to modify, suspend, or discontinue the Service at any time.</p>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>3. User Accounts</h2>
+                            <h3>3.1 Account Creation</h3>
+                            <p>To use Lens Rx, you must create an account by providing accurate and complete information. You are responsible for maintaining the confidentiality of your account credentials.</p>
+                            
+                            <h3>3.2 Account Security</h3>
+                            <p>You are solely responsible for all activities that occur under your account. Notify us immediately of any unauthorized use of your account or any other security breaches.</p>
+                            
+                            <h3>3.3 Account Termination</h3>
+                            <p>We reserve the right to terminate or suspend accounts that violate these Terms or engage in illegal or harmful activities.</p>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>4. User Responsibilities</h2>
+                            <p>As a user of Lens Rx, you agree to:</p>
+                            <ul>
+                                <li>Use the Service only for lawful purposes and in accordance with these Terms</li>
+                                <li>Provide accurate patient information and maintain proper records</li>
+                                <li>Comply with all applicable healthcare regulations and privacy laws</li>
+                                <li>Not attempt to circumvent any security measures</li>
+                                <li>Not use the Service to transmit malicious code or engage in harmful activities</li>
+                                <li>Not reverse engineer, decompile, or disassemble any portion of the Service</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>5. Data and Privacy</h2>
+                            <p>We take data privacy seriously. Our Privacy Policy explains how we collect, use, and protect your information. By using Lens Rx, you consent to our data practices as described in the Privacy Policy.</p>
+                            
+                            <div class="highlight-box">
+                                <p><strong>Important:</strong> You are responsible for ensuring that you have proper consent from patients to store and process their personal and health information in our system, in compliance with applicable laws and regulations.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>6. Intellectual Property</h2>
+                            <p>The Lens Rx application, including its source code, databases, functionality, software, website designs, audio, video, text, photographs, and graphics, are owned by MNR Developers and are protected by copyright and trademark laws.</p>
+                            <p>You may not copy, modify, distribute, sell, or lease any part of our Services or software without explicit written permission.</p>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>7. Payment Terms</h2>
+                            <p>Certain features of Lens Rx may be offered on a subscription basis. By subscribing, you agree to pay all applicable fees as described during the subscription process.</p>
+                            <ul>
+                                <li>Subscription fees are billed in advance on a recurring basis</li>
+                                <li>You can cancel your subscription at any time</li>
+                                <li>No refunds are provided for partial subscription periods</li>
+                                <li>We reserve the right to change subscription fees with 30 days notice</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>8. Disclaimer of Warranties</h2>
+                            <p>The Service is provided "as is" and "as available" without warranties of any kind, either express or implied. We do not warrant that:</p>
+                            <ul>
+                                <li>The Service will meet your specific requirements</li>
+                                <li>The Service will be uninterrupted, timely, secure, or error-free</li>
+                                <li>The results that may be obtained from the use of the Service will be accurate or reliable</li>
+                                <li>The quality of any products, services, information, or other material obtained through the Service will meet your expectations</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>9. Limitation of Liability</h2>
+                            <p>To the fullest extent permitted by law, in no event shall Lens Rx, its developers, or affiliates be liable for any indirect, incidental, special, consequential, or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from:</p>
+                            <ul>
+                                <li>Your access to or use of or inability to access or use the Service</li>
+                                <li>Any conduct or content of any third party on the Service</li>
+                                <li>Any content obtained from the Service</li>
+                                <li>Unauthorized access, use, or alteration of your transmissions or content</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>10. Governing Law</h2>
+                            <p>These Terms shall be governed by and construed in accordance with the laws of the State of California, without regard to its conflict of law provisions.</p>
+                            <p>Any disputes arising under these Terms shall be resolved in the state or federal courts located in San Francisco County, California.</p>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>11. Changes to Terms</h2>
+                            <p>We reserve the right to modify these Terms at any time. We will provide notice of significant changes through the Service or by email. Continued use of the Service after such modifications constitutes acceptance of the updated Terms.</p>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>12. Contact Information</h2>
+                            <p>If you have any questions about these Terms, please contact us at:</p>
+                            <p><strong>Email:</strong> legal@lensrx.com<br>
+                            <strong>Address:</strong> 123 Tech Street, Digital City, CA 94102</p>
+                        </div>
+                        
+                        <div class="last-updated">
+                            <p><strong>Last Updated:</strong> January 15, 2023</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Privacy Policy Document -->
+                    <div class="legal-document" id="privacy-content" style="display: none;" data-aos="fade-up">
+                        <h1>Privacy Policy</h1>
+                        <p class="lead">Last updated: January 15, 2023</p>
+                        
+                        <div class="document-section">
+                            <h2>1. Introduction</h2>
+                            <p>Lens Rx ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our application and services.</p>
+                            <p>Please read this Privacy Policy carefully. By accessing or using Lens Rx, you agree to the collection and use of information in accordance with this policy.</p>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>2. Information We Collect</h2>
+                            <h3>2.1 Personal Information</h3>
+                            <p>When you create an account, we collect:</p>
+                            <ul>
+                                <li>Name and contact information (email address)</li>
+                                <li>Professional details (clinic name, address, phone number)</li>
+                                <li>Account credentials</li>
+                            </ul>
+                            
+                            <h3>2.2 Patient Information</h3>
+                            <p>When you use Lens Rx to manage patient records, we store:</p>
+                            <ul>
+                                <li>Patient demographic information (name, age, gender, contact details)</li>
+                                <li>Eye prescription data (SPH, CYL, AXIS, V/A values)</li>
+                                <li>Vision type, lens specifications, and frame information</li>
+                                <li>Payment and billing information</li>
+                                <li>Prescription dates and history</li>
+                            </ul>
+                            
+                            <h3>2.3 Technical Information</h3>
+                            <p>We automatically collect certain information when you use our Services:</p>
+                            <ul>
+                                <li>Device information (type, operating system, browser)</li>
+                                <li>IP address and general location data</li>
+                                <li>Usage data (features used, time spent, errors)</li>
+                                <li>Cookies and similar tracking technologies</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>3. How We Use Your Information</h2>
+                            <p>We use the collected information for the following purposes:</p>
+                            <ul>
+                                <li>To provide, maintain, and improve our Services</li>
+                                <li>To process transactions and send related information</li>
+                                <li>To send administrative messages, updates, and security alerts</li>
+                                <li>To respond to your comments, questions, and requests</li>
+                                <li>To monitor and analyze usage trends and preferences</li>
+                                <li>To detect, prevent, and address technical issues and security risks</li>
+                                <li>To comply with legal obligations</li>
+                            </ul>
+                            
+                            <div class="highlight-box">
+                                <p><strong>Patient Data:</strong> We process patient data on your behalf as a data processor. You, as the healthcare provider, are the data controller responsible for obtaining proper patient consent and complying with applicable healthcare privacy regulations.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>4. Data Storage and Security</h2>
+                            <h3>4.1 Data Storage</h3>
+                            <p>All data is stored securely using Firebase services with encryption both in transit and at rest. Data is stored in secure data centers with appropriate physical and technical safeguards.</p>
+                            
+                            <h3>4.2 Security Measures</h3>
+                            <p>We implement appropriate security measures to protect against unauthorized access, alteration, disclosure, or destruction of your personal information, including:</p>
+                            <ul>
+                                <li>Encryption of sensitive data</li>
+                                <li>Regular security assessments and testing</li>
+                                <li>Access controls and authentication mechanisms</li>
+                                <li>Secure development practices</li>
+                                <li>Regular backups and disaster recovery procedures</li>
+                            </ul>
+                            
+                            <h3>4.3 Data Retention</h3>
+                            <p>We retain your information for as long as necessary to provide our Services and fulfill the purposes outlined in this Privacy Policy, unless a longer retention period is required or permitted by law.</p>
+                            <p>You can request deletion of your account and associated data at any time by contacting us.</p>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>5. Information Sharing and Disclosure</h2>
+                            <p>We do not sell, trade, or otherwise transfer your personal information to third parties except in the following circumstances:</p>
+                            <ul>
+                                <li><strong>Service Providers:</strong> We may share information with trusted third-party service providers who assist us in operating our Services, conducting our business, or servicing you, as long as those parties agree to keep this information confidential.</li>
+                                <li><strong>Legal Requirements:</strong> We may disclose your information if required to do so by law or in response to valid requests by public authorities.</li>
+                                <li><strong>Business Transfers:</strong> In the event of a merger, acquisition, or sale of all or a portion of our assets, your information may be transferred as part of that transaction.</li>
+                                <li><strong>With Your Consent:</strong> We may share your information with third parties when we have your explicit consent to do so.</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>6. Your Rights and Choices</h2>
+                            <p>Depending on your location, you may have the following rights regarding your personal information:</p>
+                            <ul>
+                                <li><strong>Access:</strong> You can request access to the personal information we hold about you.</li>
+                                <li><strong>Correction:</strong> You can request correction of inaccurate or incomplete information.</li>
+                                <li><strong>Deletion:</strong> You can request deletion of your personal information, subject to certain exceptions.</li>
+                                <li><strong>Restriction:</strong> You can request restriction of processing of your personal information.</li>
+                                <li><strong>Portability:</strong> You can request a copy of your data in a structured, machine-readable format.</li>
+                                <li><strong>Objection:</strong> You can object to processing of your personal information in certain circumstances.</li>
+                            </ul>
+                            <p>To exercise these rights, please contact us using the information provided in the "Contact Us" section.</p>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>7. Cookies and Tracking Technologies</h2>
+                            <p>We use cookies and similar tracking technologies to track activity on our Service and hold certain information. Cookies are files with a small amount of data which may include an anonymous unique identifier.</p>
+                            <p>You can instruct your browser to refuse all cookies or to indicate when a cookie is being sent. However, if you do not accept cookies, you may not be able to use some portions of our Service.</p>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>8. International Data Transfers</h2>
+                            <p>Your information, including personal data, may be transferred to — and maintained on — computers located outside of your state, province, country, or other governmental jurisdiction where the data protection laws may differ from those of your jurisdiction.</p>
+                            <p>We will take all steps reasonably necessary to ensure that your data is treated securely and in accordance with this Privacy Policy.</p>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>9. Children's Privacy</h2>
+                            <p>Our Service is not intended for individuals under the age of 18. We do not knowingly collect personally identifiable information from children under 18.</p>
+                            <p>If you are a parent or guardian and you are aware that your child has provided us with personal data, please contact us. If we become aware that we have collected personal data from children without verification of parental consent, we take steps to remove that information from our servers.</p>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>10. Changes to This Privacy Policy</h2>
+                            <p>We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "last updated" date.</p>
+                            <p>We will let you know via email and/or a prominent notice on our Service prior to the change becoming effective and update the "effective date" at the top of this Privacy Policy.</p>
+                            <p>You are advised to review this Privacy Policy periodically for any changes. Changes to this Privacy Policy are effective when they are posted on this page.</p>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>11. Contact Us</h2>
+                            <p>If you have any questions about this Privacy Policy, please contact us:</p>
+                            <p><strong>Email:</strong> privacy@lensrx.com<br>
+                            <strong>Address:</strong> 123 Tech Street, Digital City, CA 94102</p>
+                        </div>
+                        
+                        <div class="last-updated">
+                            <p><strong>Last Updated:</strong> January 15, 2023</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 col-md-6 mb-4 mb-lg-0">
+                    <h5>Lens Rx</h5>
+                    <p class="mt-4" style="color: rgba(255, 255, 255, 0.7);">Professional eye care management solution for optometrists. Streamline your practice with our comprehensive digital platform.</p>
+                </div>
+                
+                <div class="col-lg-2 col-md-6 mb-4 mb-lg-0">
+                    <h5>Quick Links</h5>
+                    <ul class="footer-links">
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="index.html#features">Features</a></li>
+                        <li><a href="index.html#how-it-works">How It Works</a></li>
+                        <li><a href="index.html#contact">Contact</a></li>
+                    </ul>
+                </div>
+                
+                <div class="col-lg-2 col-md-6 mb-4 mb-lg-0">
+                    <h5>Legal</h5>
+                    <ul class="footer-links">
+                        <li><a href="#" id="footer-terms-link">Terms & Conditions</a></li>
+                        <li><a href="#" id="footer-privacy-link">Privacy Policy</a></li>
+                    </ul>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <h5>Contact Info</h5>
+                    <ul class="footer-links mt-4">
+                        <li><i class="fas fa-map-marker-alt me-2"></i> 123 Tech Street, Digital City</li>
+                        <li><i class="fas fa-phone-alt me-2"></i> +1 (555) 123-4567</li>
+                        <li><i class="fas fa-envelope me-2"></i> support@lensrx.com</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2023 Lens Rx. All rights reserved.</p>
+                <p class="developer-credit">Developed by <strong>Alex Johnson</strong></p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    
+    <script>
+        // Initialize AOS (Animate On Scroll)
+        AOS.init({
+            duration: 800,
+            easing: 'ease-in-out',
+            once: true
+        });
+        
+        // Document navigation functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const termsLink = document.getElementById('terms-link');
+            const privacyLink = document.getElementById('privacy-link');
+            const footerTermsLink = document.getElementById('footer-terms-link');
+            const footerPrivacyLink = document.getElementById('footer-privacy-link');
+            const termsContent = document.getElementById('terms-content');
+            const privacyContent = document.getElementById('privacy-content');
+            
+            // Function to show terms and hide privacy
+            function showTerms() {
+                termsContent.style.display = 'block';
+                privacyContent.style.display = 'none';
+                termsLink.classList.add('active');
+                privacyLink.classList.remove('active');
+            }
+            
+            // Function to show privacy and hide terms
+            function showPrivacy() {
+                termsContent.style.display = 'none';
+                privacyContent.style.display = 'block';
+                privacyLink.classList.add('active');
+                termsLink.classList.remove('active');
+            }
+            
+            // Add event listeners
+            termsLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                showTerms();
+            });
+            
+            privacyLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                showPrivacy();
+            });
+            
+            footerTermsLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                showTerms();
+                // Scroll to top
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+            
+            footerPrivacyLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                showPrivacy();
+                // Scroll to top
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+            
+            // Smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    
+                    const targetId = this.getAttribute('href');
+                    if (targetId === '#') return;
+                    
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                        window.scrollTo({
+                            top: targetElement.offsetTop - 80,
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
