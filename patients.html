@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Prescription - Lens Rx</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/x-icon" href="lenslogo.png">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --premium-navy: #1e3a8a; 
+            --premium-gold: #fbbf24;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Times New Roman', serif;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container-custom {
+            max-width: 600px;
+            margin: 50px auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .logo-section {
+            margin-bottom: 25px;
+        }
+
+        .logo {
+            width: 70px;
+            height: 70px;
+            margin-bottom: 10px;
+        }
+        
+        h1 {
+            color: var(--premium-navy);
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .search-form-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .search-form-group input {
+            flex-grow: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            text-align: center;
+        }
+        
+        .search-form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+
+        .btn-search {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+
+        .btn-search:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(40, 167, 69, 0.3);
+        }
+
+        /* Message Box */
+        .message-box {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            display: none;
+        }
+
+        /* Prescription View Styles */
+        #prescriptionViewContainer {
+            margin-top: 30px;
+            border: 2px solid var(--premium-navy);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: left;
+            position: relative;
+            background: #fdfdfd;
+            
+            /* Anti-Capture CSS */
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        /* Anti-Capture Overlay Hint */
+        #prescriptionViewContainer::after {
+            content: "🔒 Viewing digital prescription copy. Downloads and screenshots are restricted.";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 10px;
+            color: #dc3545;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 2px;
+            border-radius: 10px 10px 0 0;
+            opacity: 0.8;
+        }
+        
+        .rx-header {
+            text-align: center;
+            border-bottom: 2px solid var(--premium-gold);
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .rx-header h3 {
+            color: var(--premium-navy);
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .rx-patient-details, .rx-prescription-table {
+            margin-bottom: 20px;
+        }
+
+        .rx-patient-details div {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+            border-bottom: 1px dotted #ccc;
+        }
+        .rx-patient-details strong {
+            color: var(--primary-color);
+        }
+
+        .rx-prescription-table table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        .rx-prescription-table th {
+            background: var(--premium-navy);
+            color: white;
+            padding: 8px 5px;
+            text-align: center;
+            border: 1px solid white;
+        }
+        .rx-prescription-table td {
+            padding: 8px 5px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+        .rx-eye-label {
+            font-weight: bold;
+            background: #f8f9fa;
+        }
+        .rx-add-row td {
+            background: #e9f7ef !important;
+            font-weight: bold;
+        }
+        
+        .disclaimer {
+            font-size: 0.8rem;
+            color: var(--secondary-color);
+            margin-top: 15px;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-custom">
+        <div class="logo-section">
+            <img src="lenslogo.png" alt="Lens Rx Logo" class="logo">
+            <h1>Lens Rx Patient Portal</h1>
+            <p class="text-muted">Securely view your latest prescription using your registered mobile number.</p>
+        </div>
+
+        <div id="searchSection">
+            <form id="patientSearchForm">
+                <div class="search-form-group">
+                    <input type="tel" id="mobileNumberInput" placeholder="Enter your 10-digit Mobile Number" pattern="[0-9]{10}" required maxlength="10">
+                    <button type="submit" class="btn-search">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+            </form>
+            <div id="messageBox" class="message-box alert-info">Enter your mobile number to retrieve your prescription.</div>
+        </div>
+
+        <div id="prescriptionViewContainer" style="display: none;">
+            <div class="rx-header">
+                <h3>Your Latest Prescription</h3>
+                <p class="text-muted" id="clinicInfoDisplay">Prescription from [Clinic Name]</p>
+                <p class="text-muted" id="optometristInfoDisplay">Checked by [Optometrist Name]</p>
+            </div>
+
+            <div class="rx-patient-details">
+                <div><strong>Patient Name:</strong> <span id="rxPatientName"></span></div>
+                <div><strong>Mobile:</strong> <span id="rxMobile"></span></div>
+                <div><strong>Date Issued:</strong> <span id="rxDate"></span></div>
+                <div><strong>Next Checkup:</strong> <span id="rxNextCheckupDate" class="text-success"></span></div>
+            </div>
+
+            <div class="rx-prescription-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Eye</th>
+                            <th>Type</th>
+                            <th>SPH</th>
+                            <th>CYL</th>
+                            <th>AXIS</th>
+                            <th>PD (Far/Near)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Right Eye -->
+                        <tr>
+                            <td rowspan="2" class="rx-eye-label"><strong>OD (R)</strong></td>
+                            <td>DIST</td>
+                            <td id="rxRightDistSPH"></td>
+                            <td id="rxRightDistCYL"></td>
+                            <td id="rxRightDistAXIS"></td>
+                            <td rowspan="2" id="rxPDFarNear"></td>
+                        </tr>
+                        <tr class="rx-add-row">
+                            <td>ADD</td>
+                            <td id="rxRightAddSPH" colspan="3"></td>
+                        </tr>
+                        <!-- Left Eye -->
+                        <tr>
+                            <td rowspan="2" class="rx-eye-label"><strong>OS (L)</strong></td>
+                            <td>DIST</td>
+                            <td id="rxLeftDistSPH"></td>
+                            <td id="rxLeftDistCYL"></td>
+                            <td id="rxLeftDistAXIS"></td>
+                            <td rowspan="2"></td>
+                        </tr>
+                        <tr class="rx-add-row">
+                            <td>ADD</td>
+                            <td id="rxLeftAddSPH" colspan="3"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="rx-details">
+                <div><strong>Vision Type:</strong> <span id="rxVisionType"></span></div>
+                <div><strong>Lens Type:</strong> <span id="rxLensType"></span></div>
+                <div><strong>Frame Type:</strong> <span id="rxFrameType"></span></div>
+            </div>
+            
+            <div class="disclaimer">
+                This is a digital copy for viewing only. Physical printouts, downloads, and screen capture features have been disabled for security and data privacy.
+            </div>
+        </div>
+        
+        <div class="text-center mt-4">
+            <a href="index.html" class="btn btn-secondary btn-sm">
+                <i class="fas fa-home"></i> Back to Landing Page
+            </a>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="patient.js"></script>
+
+</body>
+</html>
