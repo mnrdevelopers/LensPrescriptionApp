@@ -1559,6 +1559,7 @@ body.dark-mode .offcanvas-body .navbar-nav .nav-link-custom.active {
 /* Enhanced preview container for better printing */
 #prescriptionPreview {
     width: 100%;
+    max-width: 58mm;
     margin: 20px auto;
     padding: 10px;
     background: white;
