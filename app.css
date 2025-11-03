@@ -2700,3 +2700,389 @@ body.dark-mode .modal-footer {
 .dark-mode .app-promotion-content p:last-child {
     color: #60a5fa;
 }
+
+/* Professional Prescription Preview Styles */
+.professional-prescription {
+    max-width: 210mm; /* A4 width */
+    min-height: 297mm; /* A4 height */
+    margin: 0 auto;
+    padding: 30px;
+    background: white;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #333;
+    line-height: 1.5;
+}
+
+/* Header */
+.prescription-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 25px;
+}
+
+.clinic-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+.clinic-logo img {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+}
+
+.clinic-details h1 {
+    margin: 0 0 8px 0;
+    font-size: 24px;
+    color: #1e3a8a;
+    font-weight: bold;
+}
+
+.clinic-address, .clinic-contact {
+    margin: 4px 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.prescription-meta {
+    text-align: right;
+}
+
+.prescription-id {
+    font-size: 20px;
+    font-weight: bold;
+    color: #007bff;
+    margin-bottom: 10px;
+}
+
+.date-info p {
+    margin: 4px 0;
+    font-size: 14px;
+    color: #666;
+}
+
+/* Divider */
+.divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #007bff, transparent);
+    margin: 25px 0;
+}
+
+/* Section Titles */
+.section-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #1e3a8a;
+    margin-bottom: 20px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #007bff;
+}
+
+/* Patient Section */
+.patient-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.patient-info-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.patient-info-item label {
+    font-weight: 600;
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.patient-value {
+    font-weight: 500;
+    color: #333;
+    font-size: 16px;
+}
+
+/* Prescription Grid */
+.prescription-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+.eye-prescription {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid #e9ecef;
+}
+
+.eye-title {
+    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+    color: #1e3a8a;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.prescription-table {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.table-header, .table-row {
+    display: grid;
+    grid-template-columns: 1fr 0.8fr 0.8fr 0.8fr 0.8fr;
+    gap: 8px;
+    padding: 10px;
+    align-items: center;
+}
+
+.table-header {
+    background: #007bff;
+    color: white;
+    font-weight: bold;
+    border-radius: 6px 6px 0 0;
+}
+
+.table-row {
+    background: white;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.table-row:last-child {
+    border-bottom: none;
+}
+
+.prism-row, .add-row {
+    background: #f8f9fa !important;
+}
+
+.type-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+/* Parameters & Specifications */
+.parameters-grid, .specs-grid, .payment-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.parameter-item, .spec-item, .payment-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.parameter-item label, .spec-item label, .payment-item label {
+    font-weight: 600;
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.parameter-value, .spec-value, .payment-value {
+    font-weight: 500;
+    color: #333;
+    font-size: 16px;
+}
+
+.amount-value {
+    font-size: 20px;
+    font-weight: bold;
+    color: #28a745;
+}
+
+/* UPI Section */
+.upi-content {
+    text-align: center;
+}
+
+.qr-container {
+    display: inline-flex;
+    align-items: center;
+    gap: 30px;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid #e9ecef;
+}
+
+.qr-code {
+    width: 150px;
+    height: 150px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+}
+
+.upi-details {
+    text-align: left;
+}
+
+.upi-id {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.upi-note {
+    color: #666;
+    font-size: 14px;
+}
+
+/* App Promotion */
+.app-promotion-section {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid #dee2e6;
+    margin: 25px 0;
+}
+
+.app-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+}
+
+.app-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+}
+
+.app-text h4 {
+    margin: 0 0 5px 0;
+    color: #1e3a8a;
+    font-size: 16px;
+}
+
+.app-text p {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.app-text strong {
+    color: #007bff;
+}
+
+/* Footer */
+.prescription-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 2px solid #e9ecef;
+}
+
+.thank-you {
+    color: #666;
+    font-style: italic;
+}
+
+.signature {
+    text-align: center;
+}
+
+.signature-line {
+    width: 200px;
+    height: 1px;
+    background: #333;
+    margin-bottom: 5px;
+}
+
+.signature p {
+    margin: 2px 0;
+    font-size: 14px;
+}
+
+/* Action Buttons */
+.preview-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 30px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.btn-download, .btn-print, .btn-whatsapp {
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* Dark Mode Support */
+.dark-mode .professional-prescription {
+    background: #1a1a1a;
+    color: #e0e0e0;
+}
+
+.dark-mode .eye-prescription {
+    background: #2d2d2d;
+    border-color: #404040;
+}
+
+.dark-mode .table-header {
+    background: #0056b3;
+}
+
+.dark-mode .table-row {
+    background: #2d2d2d;
+    border-color: #404040;
+}
+
+.dark-mode .app-promotion-section {
+    background: linear-gradient(135deg, #2d2d2d, #404040);
+    border-color: #555;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .professional-prescription {
+        padding: 20px;
+        margin: 10px;
+    }
+    
+    .prescription-header {
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .prescription-meta {
+        text-align: left;
+    }
+    
+    .prescription-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .preview-actions {
+        flex-direction: column;
+    }
+    
+    .qr-container {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .prescription-footer {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+    }
+}
