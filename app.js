@@ -2599,21 +2599,17 @@ function loadPreviewData(data) {
         if (previewUpiId) previewUpiId.textContent = '-';
     }
 
-    // Update clinic logo (use UPI QR as logo or default)
+   // Update clinic logo (ALWAYS use the default app logo or a dedicated clinic logo image)
     const clinicLogo = document.getElementById('previewClinicLogo');
     if (clinicLogo) {
-        if (userData.upiQrUrl) {
-            clinicLogo.src = userData.upiQrUrl;
-            clinicLogo.alt = `${userData.clinicName || 'Clinic'} Logo`;
-        } else {
-            // Use the app logo as fallback
-            clinicLogo.src = 'lenslogo.png';
-            clinicLogo.alt = 'LensRx Clinic Logo';
-        }
+        // Since UPI QR URL is for payment, we explicitly set the default app logo here.
+        // If a separate clinic logo upload field existed, we would check that first.
+        clinicLogo.src = 'lenslogo.png'; 
+        clinicLogo.alt = `${userData.clinicName || 'Clinic'} Logo`;
         
-        // Add error handling for logo
+        // Add error handling for logo (fallback to default if image file path fails)
         clinicLogo.onerror = function() {
-            this.src = 'lenslogo.png';
+            this.src = 'lenslogo.png'; // Ensure a safe fallback
             this.alt = 'LensRx Default Logo';
         };
     }
