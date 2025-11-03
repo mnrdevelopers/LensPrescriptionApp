@@ -2922,3 +2922,25 @@ body.dark-mode .modal-footer {
 .professional-prescription * {
     box-sizing: border-box !important;
 }
+
+/* --- FIX FOR PAYMENT DETAILS DISPLAY --- */
+
+/* 1. Ensure Payment Item labels/values are visible in Dark Mode */
+.dark-mode .professional-prescription .payment-item label {
+    color: var(--dark-secondary-text) !important;
+}
+.dark-mode .professional-prescription .payment-value {
+    color: var(--dark-text) !important;
+}
+
+/* 2. Ensure the display property is correct for all children in the payment-grid
+   This might be inheriting unwanted properties from .table-row in some browsers.
+   Explicitly ensuring the direct children of .payment-grid are visible. */
+.professional-prescription .payment-grid > .payment-item {
+    display: flex !important;
+    /* Reset any inherited grid properties if not needed */
+    grid-column: auto;
+    grid-row: auto;
+}
+
+/* --- END FIX FOR PAYMENT DETAILS DISPLAY --- */
