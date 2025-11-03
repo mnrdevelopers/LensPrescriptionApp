@@ -2582,7 +2582,7 @@ function generateImage() {
     html2canvas(element, {
         scale: 3, 
         useCORS: true,
-        allowTaint: true,
+        allowTaint: false,
         backgroundColor: '#ffffff'
     }).then(canvas => {
         const imageDataURL = canvas.toDataURL('image/png');
