@@ -1014,6 +1014,16 @@ body.dark-mode .offcanvas-body .navbar-nav .nav-link-custom.active {
     border-bottom: 1px solid #dee2e6;
 }
 
+/* Preview Section */
+.preview-container {
+    max-width: 800px;
+    margin: 0 auto;
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
 .btn-back {
     background-color: var(--secondary-color);
     color: white;
@@ -1546,6 +1556,159 @@ body.dark-mode .offcanvas-body .navbar-nav .nav-link-custom.active {
     }
 }
 
+/* Enhanced preview container for better printing */
+#prescriptionPreview {
+    width: 100%;
+    max-width: 58mm;
+    margin: 20px auto;
+    padding: 10px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    line-height: 1.2;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-sizing: border-box;
+}
+/* Compact header for thermal preview */
+.preview-header {
+    text-align: center;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #333;
+}
+
+.preview-header h2 {
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: 3px;
+    color: #000;
+}
+
+.preview-header p {
+    font-size: 9px;
+    margin: 1px 0;
+    color: #555;
+}
+
+/* Compact details */
+.preview-details {
+    margin-bottom: 8px;
+}
+
+.preview-details p {
+    margin: 2px 0;
+    font-size: 9px;
+    padding: 1px 0;
+}
+
+/* Compact prescription tables */
+.preview-prescription {
+    margin: 8px 0;
+}
+
+.preview-prescription h3 {
+    text-align: center;
+    font-size: 10px;
+    font-weight: bold;
+    margin: 6px 0;
+    background: #f5f5f5;
+    padding: 4px;
+    border-radius: 2px;
+}
+
+.preview-prescription table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 4px 0;
+    font-size: 8px;
+}
+
+.preview-prescription th {
+    background: #e9ecef;
+    border: 1px solid #dee2e6;
+    padding: 4px 2px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.preview-prescription td {
+    border: 1px solid #dee2e6;
+    padding: 4px 2px;
+    text-align: center;
+}
+
+/* Compact footer */
+.preview-footer {
+    text-align: center;
+    margin-top: 10px;
+    padding-top: 6px;
+    border-top: 1px solid #333;
+    font-size: 8px;
+    color: #555;
+}
+
+/* Horizontal rules for thermal */
+#prescriptionPreview hr {
+    border: none;
+    border-top: 1px solid #ccc;
+    margin: 6px 0;
+}
+
+/* PDF Generation Specific Styles */
+.pdf-container {
+    width: 58mm;
+    margin: 0 auto;
+    padding: 3mm;
+    background: white;
+    font-family: 'Courier New', monospace;
+    font-size: 9px;
+    line-height: 1.1;
+    color: black;
+}
+
+.pdf-header {
+    text-align: center;
+    margin-bottom: 4px;
+    padding-bottom: 3px;
+    border-bottom: 1px solid #000;
+}
+
+.pdf-header h2 {
+    font-size: 11px;
+    font-weight: bold;
+    margin-bottom: 1px;
+    text-transform: uppercase;
+}
+
+.pdf-patient-info {
+    margin-bottom: 4px;
+    padding: 3px;
+    border: 1px solid #000;
+}
+
+.pdf-prescription-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 4px 0;
+    font-size: 7px;
+}
+
+.pdf-prescription-table th {
+    background: #f0f0f0;
+    border: 1px solid #000;
+    padding: 2px 1px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.pdf-prescription-table td {
+    border: 1px solid #000;
+    padding: 2px 1px;
+    text-align: center;
+}
+
 /* Status Messages */
 .status-message {
     position: fixed;
@@ -1592,6 +1755,25 @@ body.dark-mode .offcanvas-body .navbar-nav .nav-link-custom.active {
     }
 }
 
+/* Mobile responsive for thermal preview */
+@media (max-width: 768px) {
+    #prescriptionPreview {
+        margin: 10px;
+        padding: 8px;
+        font-size: 9px;
+    }
+    
+    .preview-header h2 {
+        font-size: 11px;
+    }
+    
+    .preview-prescription th,
+    .preview-prescription td {
+        padding: 3px 1px;
+        font-size: 7px;
+    }
+}
+
 /* WhatsApp button specific styles */
 .btn-whatsapp {
     background: #25D366 !important;
@@ -1623,7 +1805,7 @@ body.dark-mode .offcanvas-body .navbar-nav .nav-link-custom.active {
 }
 
 /* Enhanced preview buttons container */
-.preview-actions { /* Renamed from .preview-buttons for clarity */
+.preview-buttons {
     display: flex;
     justify-content: center;
     gap: 15px;
@@ -1631,7 +1813,7 @@ body.dark-mode .offcanvas-body .navbar-nav .nav-link-custom.active {
     flex-wrap: wrap;
 }
 
-.preview-actions .btn {
+.preview-buttons .btn {
     padding: 12px 20px;
     font-size: 14px;
     min-width: 120px;
@@ -1646,12 +1828,12 @@ body.dark-mode .offcanvas-body .navbar-nav .nav-link-custom.active {
 
 /* Mobile responsive for preview buttons */
 @media (max-width: 768px) {
-    .preview-actions {
+    .preview-buttons {
         flex-direction: column;
         gap: 10px;
     }
     
-    .preview-actions .btn {
+    .preview-buttons .btn {
         width: 100%;
         min-width: auto;
     }
@@ -1681,47 +1863,58 @@ body.dark-mode .offcanvas-body .navbar-nav .nav-link-custom.active {
 }
 
 /* Clean 58mm Thermal Printer Print & PDF Styles */
-/* CORRECTED Print styles for thermal printer */
 @media print {
-    /* Reset only for prescription preview during actual printing */
-    body * {
-        visibility: hidden;
+    /* Reset everything for thermal printer */
+    * {
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        text-shadow: none !important;
+        background: transparent !important;
+        color: black !important;
+        float: none !important;
+        position: static !important;
     }
     
+    /* Hide everything except prescription */
+    body * {
+        display: none !important;
+        visibility: hidden !important;
+    }
+    
+    /* Show only prescription preview */
     #prescriptionPreview,
     #prescriptionPreview * {
-        visibility: visible !important;
         display: block !important;
+        visibility: visible !important;
     }
     
     /* Thermal printer specific container */
     #prescriptionPreview {
-        position: absolute !important;
-        left: 0 !important;
-        top: 0 !important;
         width: 58mm !important;
         min-height: auto !important;
         margin: 0 !important;
         padding: 3mm !important;
+        border: none !important;
         background: white !important;
         color: black !important;
         font-family: 'Courier New', monospace !important;
         font-size: 9px !important;
         line-height: 1.1 !important;
         box-shadow: none !important;
-        border: none !important;
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
     }
     
-    /* Hide all UI elements during print */
-    .app-header,
-    .app-navbar,
-    .preview-actions,
+    /* Hide all UI elements */
+    .navbar,
+    .preview-buttons,
     .btn-back,
     .install-prompt,
     .update-notification,
     .status-message {
         display: none !important;
-        visibility: hidden !important;
     }
     
     /* Page setup for thermal printer */
@@ -1730,7 +1923,6 @@ body.dark-mode .offcanvas-body .navbar-nav .nav-link-custom.active {
         padding: 0;
         size: 58mm auto;
     }
-}
 
      /* NEW: Thermal QR Code Style */
     #prescriptionPreview .upi-qr-thermal {
@@ -1755,7 +1947,6 @@ body.dark-mode .offcanvas-body .navbar-nav .nav-link-custom.active {
 }
 
 /* Ensure only essential styles are applied on print */
-/* NOTE: These styles were likely redundant with the new .professional-prescription block and the @media print block. Removing these specific overrides is cleaner, but keeping them highly scoped prevents future conflict if the element structure changes. */
 #prescriptionPreview .preview-header h2 {
     font-size: 14px;
 }
@@ -1775,7 +1966,7 @@ body.dark-mode .offcanvas-body .navbar-nav .nav-link-custom.active {
     font-size: 9px;
 }
 
-/* ===== CRITICAL MISSING STYLES (Retained and placed higher for proper precedence) ===== */
+/* ===== CRITICAL MISSING STYLES ===== */
 
 /* 1. Navigation Disabled State */
 .nav-link-custom.nav-disabled {
@@ -1814,14 +2005,13 @@ input:valid, select:valid {
 }
 
 /* 4. Premium Feature Lock Styles */
-.btn-disabled { /* Changed from .btn-premium-locked */
+.btn-premium-locked {
     position: relative;
-    opacity: 0.6;
-    cursor: not-allowed !important;
-    pointer-events: none;
+    opacity: 0.7;
+    cursor: not-allowed;
 }
 
-.btn-disabled::before {
+.btn-premium-locked::before {
     content: '🔒';
     margin-right: 8px;
 }
@@ -1846,8 +2036,7 @@ input:valid, select:valid {
 /* 7. Print-specific Improvements */
 @media print {
     .btn-back,
-    .preview-buttons, /* Kept for compatibility but should be obsolete */
-    .preview-actions, /* New action buttons */
+    .preview-buttons,
     .app-header,
     .app-navbar {
         display: none !important;
@@ -1871,7 +2060,7 @@ body.dark-mode .premium-offcanvas-header {
     background: var(--premium-navy) !important;
 }
 
-/* 9. Status Message Refinements (Retained for consistency) */
+/* 9. Status Message Refinements */
 .status-message {
     z-index: 10000;
     position: fixed;
@@ -2225,7 +2414,7 @@ body.dark-mode .premium-offcanvas-header {
     font-size: 1.1rem;
 }
 
-/* Dark Mode Support for Modals */
+/* Dark Mode Support */
 body.dark-mode .prescription-view-section,
 body.dark-mode .edit-prescription-section {
     background: #33364b;
@@ -2257,7 +2446,7 @@ body.dark-mode .info-value {
     color: var(--dark-text);
 }
 
-/* Responsive Design for Modals */
+/* Responsive Design */
 @media (max-width: 768px) {
     .modal-overlay .modal-content.large {
         width: 98%;
@@ -2511,426 +2700,3 @@ body.dark-mode .modal-footer {
 .dark-mode .app-promotion-content p:last-child {
     color: #60a5fa;
 }
-
-/* Professional Prescription Preview Styles */
-.professional-prescription {
-    max-width: 210mm; /* A4 width */
-    min-height: 297mm; /* A4 height */
-    margin: 0 auto;
-    padding: 30px;
-    background: white;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    border-radius: 12px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    color: #333;
-    line-height: 1.5;
-}
-
-/* Header */
-.prescription-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 25px;
-}
-
-.clinic-info {
-    display: flex;
-    align-items: flex-start;
-    gap: 20px;
-}
-
-.clinic-logo img {
-    width: 80px;
-    height: 80px;
-    border-radius: 8px;
-    border: 2px solid #e9ecef;
-}
-
-.clinic-details h1 {
-    margin: 0 0 8px 0;
-    font-size: 24px;
-    color: #1e3a8a;
-    font-weight: bold;
-}
-
-.clinic-address, .clinic-contact {
-    margin: 4px 0;
-    color: #666;
-    font-size: 14px;
-}
-
-.prescription-meta {
-    text-align: right;
-}
-
-.prescription-id {
-    font-size: 20px;
-    font-weight: bold;
-    color: #007bff;
-    margin-bottom: 10px;
-}
-
-.date-info p {
-    margin: 4px 0;
-    font-size: 14px;
-    color: #666;
-}
-
-/* Divider */
-.divider {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, #007bff, transparent);
-    margin: 25px 0;
-}
-
-/* Section Titles */
-/* NOTE: This conflicts with the general .section-title used in forms/setup. Keeping the general one but refining this block for the preview only. */
-.professional-prescription .section-title {
-    font-size: 18px;
-    font-weight: bold;
-    color: #1e3a8a;
-    margin-bottom: 20px;
-    padding-bottom: 8px;
-    border-bottom: 2px solid #007bff;
-}
-
-/* Patient Section */
-.patient-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
-}
-
-.patient-info-item {
-    display: flex;
-    flex-direction: column;
-}
-
-.patient-info-item label {
-    font-weight: 600;
-    color: #666;
-    font-size: 14px;
-    margin-bottom: 5px;
-}
-
-.patient-value {
-    font-weight: 500;
-    color: #333;
-    font-size: 16px;
-}
-
-/* Prescription Grid */
-.prescription-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 30px;
-}
-
-.eye-prescription {
-    background: #f8f9fa;
-    padding: 20px;
-    border-radius: 10px;
-    border: 1px solid #e9ecef;
-}
-
-.eye-title {
-    text-align: center;
-    font-size: 16px;
-    font-weight: bold;
-    color: #1e3a8a;
-    margin-bottom: 15px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #dee2e6;
-}
-
-/* Prescription Table Structure for Preview */
-.professional-prescription .prescription-table {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-}
-
-.table-header, .table-row {
-    display: grid;
-    grid-template-columns: 1fr 0.8fr 0.8fr 0.8fr 0.8fr;
-    gap: 8px;
-    padding: 10px;
-    align-items: center;
-}
-
-.table-header {
-    background: #007bff;
-    color: white;
-    font-weight: bold;
-    border-radius: 6px 6px 0 0;
-}
-
-.table-row {
-    background: white;
-    border-bottom: 1px solid #e9ecef;
-}
-
-.table-row:last-child {
-    border-bottom: none;
-}
-
-.prism-row, .add-row {
-    background: #f8f9fa !important;
-}
-
-.type-label {
-    font-weight: 600;
-    color: #495057;
-}
-
-/* Parameters & Specifications */
-.parameters-grid, .specs-grid, .payment-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
-}
-
-.parameter-item, .spec-item, .payment-item {
-    display: flex;
-    flex-direction: column;
-}
-
-.parameter-item label, .spec-item label, .payment-item label {
-    font-weight: 600;
-    color: #666;
-    font-size: 14px;
-    margin-bottom: 5px;
-}
-
-.parameter-value, .spec-value, .payment-value {
-    font-weight: 500;
-    color: #333;
-    font-size: 16px;
-}
-
-.amount-value {
-    font-size: 20px;
-    font-weight: bold;
-    color: #28a745;
-}
-
-/* UPI Section */
-.upi-content {
-    text-align: center;
-}
-
-.qr-container {
-    display: inline-flex;
-    align-items: center;
-    gap: 30px;
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    border: 1px solid #e9ecef;
-}
-
-.qr-code {
-    width: 150px;
-    height: 150px;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-}
-
-.upi-details {
-    text-align: left;
-}
-
-.upi-id {
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 8px;
-}
-
-.upi-note {
-    color: #666;
-    font-size: 14px;
-}
-
-/* App Promotion */
-.professional-prescription .app-promotion-section {
-    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-    padding: 20px;
-    border-radius: 10px;
-    border: 1px solid #dee2e6;
-    margin: 25px 0;
-}
-
-.app-info {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 15px;
-}
-
-.app-logo {
-    width: 40px;
-    height: 40px;
-    border-radius: 6px;
-}
-
-.app-text h4 {
-    margin: 0 0 5px 0;
-    color: #1e3a8a;
-    font-size: 16px;
-}
-
-.app-text p {
-    margin: 0;
-    color: #666;
-    font-size: 14px;
-}
-
-.app-text strong {
-    color: #007bff;
-}
-
-/* Footer */
-.prescription-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    margin-top: 40px;
-    padding-top: 20px;
-    border-top: 2px solid #e9ecef;
-}
-
-.thank-you {
-    color: #666;
-    font-style: italic;
-}
-
-.signature {
-    text-align: center;
-}
-
-.signature-line {
-    width: 200px;
-    height: 1px;
-    background: #333;
-    margin-bottom: 5px;
-}
-
-.signature p {
-    margin: 2px 0;
-    font-size: 14px;
-}
-
-/* Action Buttons */
-.preview-actions {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    margin-top: 30px;
-    padding: 20px;
-    background: #f8f9fa;
-    border-radius: 10px;
-}
-
-.btn-download, .btn-print, .btn-whatsapp {
-    padding: 12px 24px;
-    font-size: 16px;
-    font-weight: 600;
-}
-
-/* Dark Mode Support (for Preview) */
-.dark-mode .professional-prescription {
-    background: #1a1a1a;
-    color: #e0e0e0;
-}
-
-.dark-mode .eye-prescription {
-    background: #2d2d2d;
-    border-color: #404040;
-}
-
-.dark-mode .table-header {
-    background: #0056b3;
-}
-
-.dark-mode .table-row {
-    background: #2d2d2d;
-    border-color: #404040;
-}
-
-.dark-mode .app-promotion-section {
-    background: linear-gradient(135deg, #2d2d2d, #404040);
-    border-color: #555;
-}
-
-/* Responsive Design (for Preview) */
-@media (max-width: 768px) {
-    .professional-prescription {
-        padding: 20px;
-        margin: 10px;
-    }
-    
-    .prescription-header {
-        flex-direction: column;
-        gap: 20px;
-    }
-    
-    .prescription-meta {
-        text-align: left;
-    }
-    
-    .prescription-grid {
-        grid-template-columns: 1fr;
-        gap: 20px;
-    }
-    
-    .preview-actions {
-        flex-direction: column;
-    }
-    
-    .qr-container {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .prescription-footer {
-        flex-direction: column;
-        gap: 20px;
-        text-align: center;
-    }
-}
-
-/* OVERRIDE CONFLICTING PREVIEW STYLES */
-/* REMOVED: #prescriptionPreview margin/padding overrides as they are redundant with .professional-prescription class. */
-/* REMOVED: .preview-buttons display: none !important; as it was replaced by .preview-actions */
-
-.preview-actions {
-    display: flex !important;
-}
-
-/* Ensure new professional styles take precedence */
-.professional-prescription * {
-    box-sizing: border-box !important;
-}
-
-/* --- FIX FOR PAYMENT DETAILS DISPLAY --- */
-
-/* 1. Ensure Payment Item labels/values are visible in Dark Mode */
-.dark-mode .professional-prescription .payment-item label {
-    color: var(--dark-secondary-text) !important;
-}
-.dark-mode .professional-prescription .payment-value {
-    color: var(--dark-text) !important;
-}
-
-/* 2. Ensure the display property is correct for all children in the payment-grid
-   This might be inheriting unwanted properties from .table-row in some browsers.
-   Explicitly ensuring the direct children of .payment-grid are visible. */
-.professional-prescription .payment-grid > .payment-item {
-    display: flex !important;
-    /* Reset any inherited grid properties if not needed */
-    grid-column: auto;
-    grid-row: auto;
-}
-
-/* --- END FIX FOR PAYMENT DETAILS DISPLAY --- */
