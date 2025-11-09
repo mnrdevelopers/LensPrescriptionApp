@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upgrade to Premium - Lens Rx</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/x-icon" href="lenslogo.png">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="app.css">
+    
+    <!-- Razorpay Integration -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+</head>
+<body class="payment-page">
+    <!-- Header -->
+    <header class="app-header">
+        <div class="container-fluid d-flex justify-content-between align-items-center">
+            <a class="navbar-brand header-brand text-white" href="app.html">
+                <img src="lenslogo.png" alt="Lens Rx Logo" class="nav-logo">
+                <span>Lens Rx</span>
+            </a>
+            <button onclick="goBack()" class="btn btn-outline-light">
+                <i class="fas fa-arrow-left"></i> Back to App
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="payment-container">
+        <div class="payment-header text-center mb-5">
+            <i class="fas fa-crown fa-4x text-warning mb-3"></i>
+            <h1>Upgrade to Premium</h1>
+            <p class="lead">Unlock unlimited prescriptions and powerful features</p>
+        </div>
+
+        <!-- Current Plan Status -->
+        <div id="currentPlanStatus" class="alert alert-info text-center mb-4">
+            <!-- Will be populated by JavaScript -->
+        </div>
+
+        <!-- Subscription Plans -->
+        <div class="subscription-plans row g-4">
+            <!-- Monthly Plan -->
+            <div class="col-md-6">
+                <div class="plan-card monthly-plan" onclick="selectPlan('monthly')">
+                    <div class="plan-header">
+                        <h3>Monthly Plan</h3>
+                        <div class="plan-price">
+                            <span class="price" id="monthlyPrice">₹99</span>
+                            <span class="period">/month</span>
+                        </div>
+                    </div>
+                    <ul class="plan-features">
+                        <li><i class="fas fa-check"></i> Unlimited Prescriptions</li>
+                        <li><i class="fas fa-check"></i> All Premium Features</li>
+                        <li><i class="fas fa-check"></i> Priority Support</li>
+                        <li><i class="fas fa-check"></i> Cancel Anytime</li>
+                    </ul>
+                    <div class="plan-selector text-center mt-3">
+                        <input type="radio" name="plan" id="monthlyPlan" value="monthly">
+                        <label for="monthlyPlan" class="btn btn-outline-primary">Select Monthly</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Yearly Plan -->
+            <div class="col-md-6">
+                <div class="plan-card yearly-plan popular" onclick="selectPlan('yearly')">
+                    <div class="popular-badge">Most Popular</div>
+                    <div class="plan-header">
+                        <h3>Yearly Plan</h3>
+                        <div class="plan-price">
+                            <span class="price" id="yearlyPrice">₹499</span>
+                            <span class="period">/year</span>
+                        </div>
+                        <div class="savings" id="yearlySavings">Save 58%</div>
+                    </div>
+                    <ul class="plan-features">
+                        <li><i class="fas fa-check"></i> Unlimited Prescriptions</li>
+                        <li><i class="fas fa-check"></i> All Premium Features</li>
+                        <li><i class="fas fa-check"></i> Priority Support</li>
+                        <li><i class="fas fa-check"></i> Best Value</li>
+                    </ul>
+                    <div class="plan-selector text-center mt-3">
+                        <input type="radio" name="plan" id="yearlyPlan" value="yearly" checked>
+                        <label for="yearlyPlan" class="btn btn-primary">Select Yearly</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feature Comparison -->
+        <div class="feature-comparison mt-5">
+            <h3 class="text-center mb-4">Premium Features</h3>
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th class="text-center">Free</th>
+                            <th class="text-center">Premium</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Monthly Prescriptions</td>
+                            <td class="text-center">10</td>
+                            <td class="text-center"><strong>Unlimited</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Export & Download</td>
+                            <td class="text-center"><i class="fas fa-times text-danger"></i></td>
+                            <td class="text-center"><i class="fas fa-check text-success"></i></td>
+                        </tr>
+                        <tr>
+                            <td>Print Prescriptions</td>
+                            <td class="text-center"><i class="fas fa-times text-danger"></i></td>
+                            <td class="text-center"><i class="fas fa-check text-success"></i></td>
+                        </tr>
+                        <tr>
+                            <td>WhatsApp Sharing</td>
+                            <td class="text-center"><i class="fas fa-times text-danger"></i></td>
+                            <td class="text-center"><i class="fas fa-check text-success"></i></td>
+                        </tr>
+                        <tr>
+                            <td>Template Saving</td>
+                            <td class="text-center"><i class="fas fa-times text-danger"></i></td>
+                            <td class="text-center"><i class="fas fa-check text-success"></i></td>
+                        </tr>
+                        <tr>
+                            <td>Delete Prescriptions</td>
+                            <td class="text-center"><i class="fas fa-times text-danger"></i></td>
+                            <td class="text-center"><i class="fas fa-check text-success"></i></td>
+                        </tr>
+                        <tr>
+                            <td>Edit Prescriptions</td>
+                            <td class="text-center"><i class="fas fa-times text-danger"></i></td>
+                            <td class="text-center"><i class="fas fa-check text-success"></i></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Payment Action -->
+        <div class="payment-action text-center mt-5">
+            <button onclick="proceedToPayment()" class="btn btn-success btn-lg px-5">
+                <i class="fas fa-lock"></i> Proceed to Payment
+            </button>
+            <p class="text-muted mt-3">
+                <small>Secure payment powered by Razorpay</small>
+            </p>
+        </div>
+
+        <!-- Payment Processing Modal (for loading state) -->
+        <div id="paymentProcessingModal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="text-center">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">Processing...</span>
+                    </div>
+                    <h4>Processing Payment</h4>
+                    <p>Please wait while we process your payment...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="payment.js"></script>
+</body>
+</html>
