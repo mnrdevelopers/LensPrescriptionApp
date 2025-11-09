@@ -309,7 +309,7 @@ body.dark-mode .offcanvas-body .navbar-nav .nav-link-custom.active {
     outline-offset: 1px;
 }
 
-/* 2. Navigation Bar (Links - Fixed to Top, below Header) */
+/* 2. NAVIGATION BAR (Links - Fixed to Top, below Header) */
 .app-navbar {
     top: var(--header-height); /* Positioned directly below the header */
     left: 0;
@@ -1116,13 +1116,16 @@ body.dark-mode .offcanvas-body .navbar-nav .nav-link-custom.active {
     font-size: 1rem;
 }
 
-/* Payment Modal Styles (Premium Enhancement - Kept existing good styles) */
+/* --- REMOVED OLD MODAL PAYMENT STYLES --- */
+/*
 .subscription-plans {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
   margin: 20px 0;
 }
+*/
+/* --- END REMOVED OLD MODAL PAYMENT STYLES --- */
 
 /* Responsive Design */
 @media (max-width: 991.98px) {
@@ -1190,9 +1193,13 @@ body.dark-mode .offcanvas-body .navbar-nav .nav-link-custom.active {
         width: 100%;
     }
 
+    /* --- REMOVED OLD MODAL PAYMENT STYLES --- */
+    /*
     .subscription-plans {
         grid-template-columns: 1fr;
     }
+    */
+    /* --- END REMOVED OLD MODAL PAYMENT STYLES --- */
     
     /* G: Template Bar responsive fix */
     .template-management-bar {
@@ -1231,13 +1238,33 @@ body.dark-mode .offcanvas-body .navbar-nav .nav-link-custom.active {
     font-weight: bold;
     border: 2px solid white;
 }
-/* Payment Modal Styles (Premium Enhancement - Kept existing good styles) */
+
+/* --- REMOVED OLD MODAL PAYMENT STYLES AND ASSOCIATED STYLES --- */
+
+/*
 .subscription-plans {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
   margin: 20px 0;
 }
+
+.payment-status {
+  padding: 20px;
+  text-align: center;
+}
+
+.payment-success {
+  color: #28a745;
+}
+
+.payment-error {
+  color: #dc3545;
+}
+*/
+
+/* --- END REMOVED OLD MODAL PAYMENT STYLES AND ASSOCIATED STYLES --- */
+
 
 /* Enhanced Modal Content */
 .modal-content.large {
@@ -1262,20 +1289,6 @@ body.dark-mode .offcanvas-body .navbar-nav .nav-link-custom.active {
 /* Modal Icons */
 #paymentModal .fas.fa-crown {
     color: var(--premium-gold) !important;
-}
-
-/* Payment Status Styles */
-.payment-status {
-  padding: 20px;
-  text-align: center;
-}
-
-.payment-success {
-  color: #28a745;
-}
-
-.payment-error {
-  color: #dc3545;
 }
 
 /* Usage Counter Styles */
