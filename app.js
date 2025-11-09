@@ -3498,12 +3498,12 @@ function addUsageCounterToDashboard() {
     }
 }
 
-async function updatePremiumUI() {
+function updatePremiumUI() {
     const user = auth.currentUser;
     if (!user) return;
 
     const subscription = await checkActiveSubscription(user.uid);
-    isPremium = subscription.active; // Re-set global status
+    isPremium = subscription.active;
     const remainingDays = subscription.remainingDays || 0;
     
     const daysCountDisplay = isPremium && remainingDays > 0 ? `(${remainingDays}d)` : '';
@@ -3518,7 +3518,7 @@ async function updatePremiumUI() {
         } else {
             navStatusContainer.innerHTML = `<span class="badge bg-warning" title="Free plan - ${FREE_PRESCRIPTION_LIMIT} prescriptions/month"><i class="fas fa-user me-1"></i> Free</span>`;
             if (navBuyButtonContainer) {
-                navBuyButtonContainer.innerHTML = `<button onclick="showPaymentModal()" class="btn btn-sm btn-primary ms-2" style="background: var(--premium-gold); color: var(--premium-navy); border: none; font-weight: 600; padding: 6px 12px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><i class="fas fa-arrow-up"></i></button>`;
+                navBuyButtonContainer.innerHTML = `<a href="payment.html" class="btn btn-sm btn-primary ms-2" style="background: var(--premium-gold); color: var(--premium-navy); border: none; font-weight: 600; padding: 6px 12px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><i class="fas fa-arrow-up"></i></a>`;
             }
         }
     }
@@ -3532,7 +3532,7 @@ async function updatePremiumUI() {
             mobileBuyButtonElement.innerHTML = '';
         } else {
             mobileStatusElement.innerHTML = `<div class="text-center"><span class="badge bg-warning mb-2"><i class="fas fa-user"></i> Free Plan</span><br><small class="text-muted">${FREE_PRESCRIPTION_LIMIT} prescriptions/month</small></div>`;
-            mobileBuyButtonElement.innerHTML = `<div class="text-center mt-3"><button onclick="showPaymentModal()" class="btn btn-primary w-75" style="background: var(--premium-navy); border: none; font-weight: 600;"><i class="fas fa-arrow-up"></i> Buy Premium</button></div>`;
+            mobileBuyButtonElement.innerHTML = `<div class="text-center mt-3"><a href="payment.html" class="btn btn-primary w-75" style="background: var(--premium-navy); border: none; font-weight: 600;"><i class="fas fa-arrow-up"></i> Buy Premium</a></div>`;
         }
     }
 
@@ -3546,8 +3546,7 @@ async function updatePremiumUI() {
         }
     }
     
-    // Ensure lock state is applied/removed after UI updates
-    lockFeatures(); 
+    lockFeatures();
 }
 
 // --- NEW FUNCTION: Show prompt for premium features ---
@@ -3617,118 +3616,8 @@ function updatePlanPrices() {
 }
 
 function showPaymentModal() {
-    const modal = document.getElementById('paymentModal');
-    if (modal) {
-        modal.style.display = 'flex';
-        updatePlanPrices();
-        selectPlan('yearly');
-    }
+    window.location.href = 'payment.html';
 }
-
-function closePaymentModal() {
-    const modal = document.getElementById('paymentModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-}
-
-function selectPlan(planType) {
-    selectedPlan = planType;
-    
-    document.querySelectorAll('.plan-card').forEach(card => {
-        card.classList.remove('selected');
-    });
-    
-    document.querySelectorAll(`.${planType}-plan`).forEach(card => {
-        card.classList.add('selected');
-    });
-    
-    document.getElementById(`${planType}Plan`).checked = true;
-}
-
-async function proceedToPayment() {
-    if (!RAZORPAY_KEY_ID || RAZORPAY_KEY_ID === 'DISABLED') {
-        showStatusMessage('Payment system is currently unavailable. Please try again later.', 'error');
-        return;
-    }
-
-    const plan = SUBSCRIPTION_PLANS[selectedPlan.toUpperCase()];
-    if (!plan) {
-        showStatusMessage('Invalid plan selected.', 'error');
-        return;
-    }
-
-    try {
-        document.getElementById('paymentProcessingModal').style.display = 'flex';
-
-        const options = {
-            key: RAZORPAY_KEY_ID,
-            amount: plan.amount * 100, 
-            currency: 'INR',
-            name: 'Lens Rx',
-            description: `${selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1)} Subscription`,
-            handler: async function(response) {
-                await handlePaymentSuccess(response, selectedPlan, plan.amount);
-            },
-            prefill: {
-                name: auth.currentUser.displayName || '',
-                email: auth.currentUser.email
-            },
-            theme: {
-                color: '#007bff'
-            },
-            modal: {
-                ondismiss: function() {
-                    document.getElementById('paymentProcessingModal').style.display = 'none';
-                }
-            }
-        };
-
-        const razorpay = new Razorpay(options);
-        razorpay.open();
-        
-        document.getElementById('paymentProcessingModal').style.display = 'none';
-
-    } catch (error) {
-        document.getElementById('paymentProcessingModal').style.display = 'none';
-        showStatusMessage('Payment failed: ' + error.message, 'error');
-    }
-}
-
-async function handlePaymentSuccess(paymentResponse, planType, amount) {
-    try {
-        const user = auth.currentUser;
-        
-        const now = new Date();
-        const plan = SUBSCRIPTION_PLANS[planType.toUpperCase()];
-        const expiryDate = new Date(now.getTime() + plan.duration * 24 * 60 * 60 * 1000);
-
-        await db.collection('subscriptions').doc(user.uid).set({
-            userId: user.uid,
-            plan: planType,
-            amount: amount,
-            paymentId: paymentResponse.razorpay_payment_id,
-            orderId: paymentResponse.razorpay_order_id,
-            signature: paymentResponse.razorpay_signature,
-            purchaseDate: firebase.firestore.FieldValue.serverTimestamp(),
-            expiryDate: expiryDate,
-            status: 'active'
-        });
-
-        closePaymentModal();
-        showStatusMessage('Payment successful! Your subscription is now active.', 'success');
-        
-        setTimeout(() => {
-            // After successful payment, setting isPremium to true and reloading ensures all locks are removed
-            isPremium = true; 
-            window.location.reload(); 
-        }, 2000);
-
-    } catch (error) {
-        showStatusMessage('Payment verification failed. Please contact support.', 'error');
-    }
-}
-
 
 // -----------------------------------------------------------
 // 9. Utility Functions (Unchanged)
