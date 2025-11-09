@@ -3498,7 +3498,7 @@ function addUsageCounterToDashboard() {
     }
 }
 
-function updatePremiumUI() {
+async function updatePremiumUI() {
     const user = auth.currentUser;
     if (!user) return;
 
