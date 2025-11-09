@@ -1,19 +1,21 @@
 // service-worker.js - OPTIMIZED VERSION WITH INSTANT UPDATES
-const CACHE_NAME = 'lens-prescription-v20'; // Increment this with each code change
+const CACHE_NAME = 'lens-prescription-v21'; // Increment this with each code change
 const APP_BASE_PATH = '/LensPrescriptionApp';
 
 // CRITICAL: Add timestamp to force cache busting
-const BUILD_TIMESTAMP = '20241201-2000'; // UPDATE THIS WITH EACH DEPLOYMENT
+const BUILD_TIMESTAMP = '20241201-2100'; // UPDATE THIS WITH EACH DEPLOYMENT
 
 const ASSETS = [
   `${APP_BASE_PATH}/`,
   `${APP_BASE_PATH}/index.html`,
   `${APP_BASE_PATH}/auth.html`,
   `${APP_BASE_PATH}/app.html`,
+  `${APP_BASE_PATH}/payment.html`,
   `${APP_BASE_PATH}/app.css`,
   `${APP_BASE_PATH}/auth.css`,
   `${APP_BASE_PATH}/app.js`,
   `${APP_BASE_PATH}/auth.js`,
+  `${APP_BASE_PATH}/payment.js`,
   `${APP_BASE_PATH}/firebase-config.js`,
   `${APP_BASE_PATH}/reset-password.html`,
   `${APP_BASE_PATH}/reset-password.js`,
@@ -201,6 +203,7 @@ self.addEventListener('message', (event) => {
     });
   }
 });
+
 
 
 
