@@ -3,7 +3,7 @@ const CACHE_NAME = 'lens-prescription-v22'; // Increment this with each code cha
 const APP_BASE_PATH = '/';
 
 // CRITICAL: Add timestamp to force cache busting
-const BUILD_TIMESTAMP = '20241201-2100'; // UPDATE THIS WITH EACH DEPLOYMENT
+const BUILD_TIMESTAMP = '20241201-2200'; // UPDATE THIS WITH EACH DEPLOYMENT
 
 const ASSETS = [
   `${APP_BASE_PATH}/`,
