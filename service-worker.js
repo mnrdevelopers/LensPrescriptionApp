@@ -1,6 +1,6 @@
 // service-worker.js - OPTIMIZED VERSION WITH INSTANT UPDATES
-const CACHE_NAME = 'lens-prescription-v21'; // Increment this with each code change
-const APP_BASE_PATH = '/LensPrescriptionApp';
+const CACHE_NAME = 'lens-prescription-v22'; // Increment this with each code change
+const APP_BASE_PATH = '/';
 
 // CRITICAL: Add timestamp to force cache busting
 const BUILD_TIMESTAMP = '20241201-2100'; // UPDATE THIS WITH EACH DEPLOYMENT
