@@ -1,0 +1,4354 @@
+// app.js - Consolidated from app.js and script.js - FULL FEATURE SET
+// Global Variables
+let currentPrescriptionData = null;
+let whatsappImageUrl = null;
+let isFormFilled = false;
+let deferredPrompt;
+let isProfileComplete = false;
+let lastValidSection = 'dashboard'; 
+let timerInterval;
+let timerSeconds = 0;
+let isFirstPrescription = localStorage.getItem('isFirstPrescription') !== 'false'; // D: PWA Flag
+let selectedPrescriptionToDelete = null; // E: Custom Delete Modal
+let patientLookupData = null; // F: Patient data cache after lookup
+let selectedPlan = 'yearly'; // Default to yearly plan
+
+// Global variables for modal management
+let currentViewPrescription = null;
+let currentEditPrescription = null;
+
+// --- NEW FEATURE GLOBALS (F, G, H) ---
+let currentPatientId = null; 
+// ------------------------------------
+
+// NEW GLOBAL: Tracks premium status
+let isPremium = false; 
+
+// ✅ KEEP THIS SIMPLE VERSION - PUT IT BACK!
+firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+        // If user is logged in, proceed with initialization
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeApp);
+        } else {
+            initializeApp();
+        }
+    } else {
+        // If user is NOT logged in, redirect to auth page
+        window.location.replace('index.html');
+    }
+});
+
+async function initializeApp() {
+    console.log('Initializing app...');
+    const user = auth.currentUser;
+    
+    if (!user) {
+        console.error('No user found during initialization');
+        return;
+    }
+
+    // --- NEW: Load dark mode state ---
+    loadDarkModeState();
+    // --------------------------------
+
+    setCurrentDate();
+    
+    // Load user profile and check for completion
+    await loadUserProfile();
+    
+    // Initialize Remote Config
+    const configLoaded = await initializeRemoteConfig();
+    
+    if (!configLoaded) {
+        console.warn('Remote Config failed, using default configuration');
+        showStatusMessage('Using default configuration', 'info');
+    }
+    
+    setupEventListeners();
+    setupPWA();
+    setupServiceWorkerUpdates();
+    
+    setInitialDateFilters();
+    
+    try {
+        // --- MODIFIED: Determine premium status early ---
+        const subscription = await checkActiveSubscription(user.uid);
+        isPremium = subscription.active;
+        // ------------------------------------------------
+
+        // Add usage counter to dashboard
+        addUsageCounterToDashboard();
+        
+        await updateSubscriptionStatus();
+        await updatePremiumUI(); 
+        
+        // C: Check and update usage counter with Resilience check
+        await checkPrescriptionLimit(true); 
+
+        // G: Fetch templates after initialization
+        fetchTemplates(); 
+        
+        // H: Fetch reminders on Dashboard load
+        if (window.location.hash.includes('dashboard')) {
+            fetchCheckupReminders(false); // Do not display on dashboard load, just count
+        }
+        
+        // --- NEW: Apply feature locks/unlocks based on premium status ---
+        lockFeatures();
+        // -----------------------------------------------------------------
+
+        console.log('App initialized successfully');
+    } catch (error) {
+        console.error('Error during app initialization:', error);
+    }
+}
+// -----------------------------------------------------------
+
+
+// -----------------------------------------------------------
+// 1. Core App Setup Helpers
+// -----------------------------------------------------------
+
+function loadDarkModeState() {
+    const isDark = localStorage.getItem('darkMode') === 'true';
+    if (isDark) {
+        document.body.classList.add('dark-mode');
+        // Update toggle icon immediately
+        const toggle = document.getElementById('darkModeToggle');
+        if (toggle) toggle.innerHTML = '<i class="fas fa-sun"></i>';
+    }
+}
+
+function toggleDarkMode() {
+    document.body.classList.toggle('dark-mode');
+    const isDark = document.body.classList.contains('dark-mode');
+    localStorage.setItem('darkMode', isDark);
+    
+    const toggle = document.getElementById('darkModeToggle');
+    if (toggle) {
+        toggle.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    }
+}
+
+function setInitialDateFilters() {
+    const today = new Date().toISOString().split('T')[0];
+    const startDateElements = [
+        document.getElementById('prescriptionDateStart'),
+        document.getElementById('reportDateStart')
+    ];
+    const endDateElements = [
+        document.getElementById('prescriptionDateEnd'),
+        document.getElementById('reportDateEnd')
+    ];
+    
+    endDateElements.forEach(el => {
+        if (el) el.value = today;
+    });
+
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const defaultStart = thirtyDaysAgo.toISOString().split('T')[0];
+    
+    startDateElements.forEach(el => {
+        if (el) el.value = defaultStart;
+    });
+}
+
+function setCurrentDate() {
+    const today = new Date();
+    const options = { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        weekday: 'long'
+    };
+    const todayDate = today.toLocaleDateString('en-US', options);
+    
+    const currentDateElement = document.getElementById('currentDate');
+    const previewCurrentDateElement = document.getElementById('previewcurrentDate');
+    
+    if (currentDateElement) {
+        currentDateElement.textContent = todayDate;
+    }
+    
+    if (previewCurrentDateElement) {
+        previewCurrentDateElement.textContent = todayDate;
+    }
+}
+
+function setupEventListeners() {
+    
+    // Form field tracking
+    const formFields = ['patientName', 'age', 'patientMobile'];
+    formFields.forEach(field => {
+        const element = document.getElementById(field);
+        if (element) {
+            element.addEventListener('input', checkFormFilled);
+        }
+    });
+
+    // Exit prompt handlers
+    const confirmExit = document.getElementById('confirmExit');
+    const cancelExit = document.getElementById('cancelExit');
+    if (confirmExit) confirmExit.addEventListener('click', confirmExitAction);
+    if (cancelExit) cancelExit.addEventListener('click', cancelExitAction);
+
+    // Input validation
+    setupInputValidation();
+
+    // Browser back button handling for the form
+    window.addEventListener('popstate', handleBrowserBack);
+    
+    if (history.state === null || history.state?.page === 'initial') {
+        const initialPage = window.location.hash.substring(1) || 'dashboard';
+        history.replaceState({ page: initialPage }, initialPage, location.href); 
+    }
+    
+    // Dashboard Stats listener
+    const statsSelect = document.getElementById('statsTimePeriod');
+    if (statsSelect) {
+        statsSelect.addEventListener('change', fetchDashboardStats);
+    }
+    
+    // F: Patient Search Listener
+    const patientSearchInput = document.getElementById('patientSearchInput');
+    if (patientSearchInput) {
+        patientSearchInput.addEventListener('keyup', filterPatients);
+    }
+}
+
+function setupPWA() {
+    // Service Worker Registration — use relative path so it works at any hosting root
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./service-worker.js')
+            .then((registration) => {
+                
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            showUpdateNotification();
+                        }
+                    });
+                });
+            });
+    }
+    // PWA Install Prompt
+    window.addEventListener('beforeinstallprompt', (event) => {
+        event.preventDefault();
+        deferredPrompt = event;
+    });
+
+    // Handle PWA installed event
+    window.addEventListener('appinstalled', () => {
+        deferredPrompt = null;
+        hideInstallPromotion();
+    });
+
+    // ── ONLINE / OFFLINE BANNER ──────────────────────────────────
+    const offlineBanner = document.getElementById('offlineBanner');
+
+    function showOfflineBanner() {
+        if (offlineBanner) {
+            offlineBanner.style.display = 'flex';
+            // Push main content down so banner doesn't overlap
+            document.body.style.setProperty('--offline-nudge', '38px');
+        }
+    }
+
+    function hideOfflineBanner() {
+        if (offlineBanner) {
+            offlineBanner.style.display = 'none';
+            document.body.style.removeProperty('--offline-nudge');
+        }
+    }
+
+    window.addEventListener('online',  () => {
+        hideOfflineBanner();
+        showStatusMessage('Back online — syncing data…', 'success');
+    });
+
+    window.addEventListener('offline', () => {
+        showOfflineBanner();
+    });
+
+    // Show immediately if already offline
+    if (!navigator.onLine) {
+        showOfflineBanner();
+    }
+}
+
+function showInstallPromotion() {
+    hideInstallPromotion();
+    
+    const installPrompt = document.createElement('div');
+    installPrompt.id = 'installPrompt';
+    installPrompt.innerHTML = `
+        <div class="install-prompt">
+            <div class="install-content">
+                <i class="fas fa-download"></i>
+                <div class="install-text">
+                    <strong>Install Lens Rx App</strong>
+                    <small>Get the full app experience</small>
+                </div>
+                <div class="install-buttons">
+                    <button onclick="installPWA()" class="btn btn-primary btn-sm">
+                        Install
+                    </button>
+                    <button onclick="hideInstallPromotion()" class="btn btn-secondary btn-sm">
+                        Later
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(installPrompt);
+    
+    setTimeout(() => {
+        if (document.getElementById('installPrompt')) {
+            hideInstallPromotion();
+        }
+    }, 15000);
+}
+
+function hideInstallPromotion() {
+    const installPrompt = document.getElementById('installPrompt');
+    if (installPrompt) {
+        installPrompt.remove();
+    }
+}
+
+function showUpdateNotification() {
+    const updateNotification = document.createElement('div');
+    updateNotification.id = 'updateNotification';
+    updateNotification.innerHTML = `
+        <div class="update-notification">
+            <div class="update-content">
+                <i class="fas fa-sync-alt"></i>
+                <span>New version available!</span>
+                <button onclick="window.location.reload()" class="btn btn-success btn-sm">
+                    Update
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(updateNotification);
+}
+
+// Status message function for PDF feedback
+function showStatusMessage(message, type = 'info') {
+    const existingMessages = document.querySelectorAll('.status-message');
+    existingMessages.forEach(msg => msg.remove());
+
+    const statusMessage = document.createElement('div');
+    statusMessage.className = `status-message alert status-${type}`;
+    statusMessage.innerHTML = `
+        <i class="fas fa-${getStatusIcon(type)}"></i>
+        ${message}
+    `;
+    statusMessage.style.cssText = `
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        z-index: 10000;
+        min-width: 250px;
+        padding: 12px 16px;
+        border-radius: 8px;
+        background: ${getStatusColor(type)};
+        color: white;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        animation: slideInRight 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
+    `;
+    
+    document.body.appendChild(statusMessage);
+    
+    setTimeout(() => {
+        if (statusMessage.parentNode) {
+            statusMessage.remove();
+        }
+    }, 4000);
+}
+
+function getStatusIcon(type) {
+    const icons = {
+        'success': 'check-circle',
+        'error': 'exclamation-circle',
+        'warning': 'exclamation-triangle',
+        'info': 'info-circle'
+    };
+    return icons[type] || 'info-circle';
+}
+
+function getStatusColor(type) {
+    const colors = {
+        'success': '#28a745',
+        'error': '#dc3545',
+        'warning': '#ffc107',
+        'info': '#17a2b8'
+    };
+    return colors[type] || '#17a2b8';
+}
+
+function installPWA() {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === "accepted") {
+                console.log("User accepted the install prompt.");
+            } else {
+                console.log("User dismissed the install prompt.");
+            }
+            deferredPrompt = null;
+        });
+    }
+}
+
+// -----------------------------------------------------------
+// 2. Navigation and Routing
+// -----------------------------------------------------------
+
+/**
+ * Checks if profile is complete before navigating. Forces user to setup screen if not.
+ */
+// Update the navigateIfProfileComplete function to include preview
+function navigateIfProfileComplete(navFunction, sectionName) {
+    if (isProfileComplete) {
+        enableNavigationButtons();
+        
+        const hash = sectionName === 'dashboard' ? 'dashboard' : 
+                     sectionName === 'form' ? 'form' : 
+                     sectionName === 'notifications' ? 'notifications' :
+                     sectionName === 'prescriptions' ? 'prescriptions' : 
+                     sectionName === 'reports' ? 'reports' : 
+                     sectionName === 'patients' ? 'patients' : 
+                     sectionName === 'preview' ? 'preview' :
+                     'setup';
+        
+        history.replaceState({ page: sectionName }, sectionName, `app.html#${hash}`);
+
+        navFunction();
+        lastValidSection = sectionName;
+        updateBottomNav(sectionName);
+    } else {
+        showProfileSetup(true); 
+    }
+}
+
+/**
+ * Syncs the bottom mobile navigation active state with the current section.
+ */
+function updateBottomNav(sectionName) {
+    const navMap = {
+        'dashboard':      'bnav-dashboard',
+        'form':           'bnav-form',
+        'patients':       'bnav-patients',
+        'prescriptions':  'bnav-prescriptions',
+        'setup':          'bnav-profile'
+    };
+
+    document.querySelectorAll('.bottom-nav-item').forEach(item => {
+        item.classList.remove('active');
+    });
+
+    const activeId = navMap[sectionName];
+    if (activeId) {
+        const el = document.getElementById(activeId);
+        if (el) el.classList.add('active');
+    }
+}
+
+// Update the routeToHashedSection function to handle preview
+function routeToHashedSection() {
+    const hash = window.location.hash.substring(1); 
+
+    switch (hash) {
+        case 'dashboard':
+            showDashboard();
+            break;
+        case 'form':
+            showPrescriptionForm();
+            break;
+        case 'notifications':
+            showNotifications();
+            break;
+        case 'prescriptions':
+            showPrescriptions();
+            break;
+        case 'reports':
+            showReports();
+            break;
+        case 'patients': 
+            showPatients();
+            break;
+        case 'preview': // Add preview case
+            showPreview();
+            break;
+        case 'setup':
+            showProfileSetup(false);
+            break;
+        default:
+            showDashboard();
+            break;
+    }
+}
+
+function showDashboard() {
+    hideAllSections();
+    const dashboardSection = document.getElementById('dashboardSection');
+    if (dashboardSection) dashboardSection.classList.add('active');
+    updateActiveNavLink('showDashboard');
+    
+    document.getElementById('statsTimePeriod').value = 'daily';
+    fetchDashboardStats();
+    fetchCheckupReminders(false); // Only update count on dashboard
+}
+
+function showNotifications() {
+    hideAllSections();
+    const notificationsSection = document.getElementById('notificationsSection');
+    if (notificationsSection) notificationsSection.classList.add('active');
+    updateActiveNavLink('showNotifications');
+    
+    fetchCheckupReminders(true); // Fetch and display reminders on this page
+}
+
+function showPrescriptionForm() {
+    hideAllSections();
+    const formSection = document.getElementById('prescriptionFormSection');
+    if (formSection) formSection.classList.add('active');
+    updateActiveNavLink('showPrescriptionForm'); 
+    
+    resetForm(true); 
+    applyFormFieldsConfig();
+    fetchTemplates(); 
+    lastValidSection = 'form';
+}
+
+function showPrescriptions() {
+    hideAllSections();
+    const prescriptionsSection = document.getElementById('prescriptionsSection');
+    if (prescriptionsSection) prescriptionsSection.classList.add('active');
+    updateActiveNavLink('showPrescriptions'); 
+    
+    fetchPrescriptions();
+}
+
+function showReports() {
+    hideAllSections();
+    const reportsSection = document.getElementById('reportsSection');
+    if (reportsSection) reportsSection.classList.add('active');
+    updateActiveNavLink('showReports'); 
+    
+    fetchReportDataByRange();
+}
+
+function showPatients() {
+    hideAllSections();
+    const patientsSection = document.getElementById('patientsSection');
+    if (patientsSection) patientsSection.classList.add('active');
+    updateActiveNavLink('showPatients'); 
+    
+    fetchPatients();
+}
+
+function showProfileSetup(isForced) {
+    hideAllSections();
+    const setupSection = document.getElementById('profileSetupSection');
+    if (setupSection) setupSection.classList.add('active');
+    
+    if (isForced) {
+        disableNavigationButtons();
+    } else {
+        enableNavigationButtons();
+    }
+    updateActiveNavLink('showProfileSetup'); 
+
+    const user = auth.currentUser;
+    const emailDisplay = document.getElementById('userEmailDisplay');
+    if (emailDisplay) {
+        emailDisplay.textContent = user ? user.email : 'N/A';
+        updatePremiumUI();
+    }
+
+    const saveBtn = document.getElementById('saveSetupProfileBtn');
+    if (saveBtn) {
+        saveBtn.textContent = isForced ? 'Save Profile & Continue' : 'Save Changes';
+    }
+
+    const userData = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    
+    // Populate form fields from local storage
+    document.getElementById('setupClinicName').value = userData.clinicName || '';
+    document.getElementById('setupOptometristName').value = userData.optometristName || '';
+    document.getElementById('setupAddress').value = userData.address || '';
+    document.getElementById('setupContactNumber').value = userData.contactNumber || '';
+    
+    // NEW: Populate UPI fields
+    document.getElementById('setupUpiId').value = userData.upiId || '';
+    document.getElementById('setupUpiQrUrl').value = userData.upiQrUrl || '';
+    
+    // Store original value to handle upload failure during save
+    document.getElementById('setupUpiQrUrl').dataset.originalValue = userData.upiQrUrl || ''; 
+
+    // Show current QR code if URL exists
+    const qrCodePreviewContainer = document.getElementById('qrCodePreviewContainer');
+    const currentQrCodeImage = document.getElementById('currentQrCodeImage');
+    const qrCodeUrlDisplay = document.getElementById('qrCodeUrlDisplay');
+
+    if (userData.upiQrUrl) {
+        if (qrCodePreviewContainer) qrCodePreviewContainer.style.display = 'block';
+        if (currentQrCodeImage) {
+            currentQrCodeImage.src = userData.upiQrUrl;
+            currentQrCodeImage.style.display = 'block';
+        }
+        if (qrCodeUrlDisplay) qrCodeUrlDisplay.textContent = userData.upiQrUrl.length > 50 ? userData.upiQrUrl.substring(0, 47) + '...' : userData.upiQrUrl;
+    } else {
+        if (qrCodePreviewContainer) qrCodePreviewContainer.style.display = 'none';
+        if (currentQrCodeImage) currentQrCodeImage.style.display = 'none';
+        if (qrCodeUrlDisplay) qrCodeUrlDisplay.textContent = 'No QR uploaded.';
+    }
+    
+    // Clear file input on display, as it will be handled on Save
+    const qrFile = document.getElementById('qrCodeFile');
+    if (qrFile) qrFile.value = ''; 
+    document.getElementById('qrUploadStatus').textContent = '';
+}
+
+// Function to open preview section from view modal
+function openPreviewFromView() {
+    if (!currentViewPrescription) {
+        showStatusMessage('No prescription data available for preview.', 'error');
+        return;
+    }
+
+    // Close the view modal
+    closeViewModal();
+    
+    // Set the current prescription data for preview
+    currentPrescriptionData = JSON.parse(JSON.stringify(currentViewPrescription));
+    whatsappImageUrl = null;
+    
+    // Navigate to preview section
+    navigateIfProfileComplete(() => showPreview(currentPrescriptionData), 'preview');
+    
+    showStatusMessage('Opened in preview mode. You can now print or download.', 'success');
+}
+
+// Update the back button in preview section to go back to prescriptions
+function updatePreviewBackButton() {
+    const backButton = document.querySelector('.btn-back');
+    if (backButton) {
+        backButton.onclick = () => {
+            if (lastValidSection === 'prescriptions') {
+                navigateIfProfileComplete(showPrescriptions, 'prescriptions');
+            } else {
+                navigateIfProfileComplete(showDashboard, 'dashboard');
+            }
+        };
+    }
+}
+
+function showPreview(prescriptionData = null) {
+    hideAllSections();
+    const previewSection = document.getElementById('previewSection');
+    if (previewSection) previewSection.classList.add('active');
+    
+    // Always pass the data to loadPreviewData
+    if (prescriptionData) {
+        loadPreviewData(prescriptionData);
+    } else if (currentPrescriptionData) {
+        loadPreviewData(currentPrescriptionData);
+    } else {
+        // If no data is available, show error and redirect
+        showStatusMessage('No prescription data available for preview.', 'error');
+        navigateIfProfileComplete(showPrescriptions, 'prescriptions');
+        return;
+    }
+    
+    updateActiveNavLink('showPreview');
+    updatePreviewBackButton();
+}
+
+function hideAllSections() {
+    const sections = document.querySelectorAll('.page-section');
+    sections.forEach(section => section.classList.remove('active'));
+}
+
+function updateActiveNavLink(activeFunction) {
+    const navLinks = document.querySelectorAll('.nav-link-custom');
+    navLinks.forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('onclick')?.includes(activeFunction)) {
+            link.classList.add('active');
+        }
+    });
+
+    // Map function name to bottom nav tab dataset
+    const tabMap = {
+        'showDashboard': 'dashboard',
+        'showPrescriptionForm': 'form',
+        'showPatients': 'patients',
+        'showPrescriptions': 'prescriptions',
+        'showProfileSetup': 'setup'
+    };
+
+    const targetTab = tabMap[activeFunction];
+    const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
+    bottomNavItems.forEach(item => {
+        if (targetTab && item.dataset.tab === targetTab) {
+            item.classList.add('active');
+        } else {
+            item.classList.remove('active');
+        }
+    });
+}
+
+function disableNavigationButtons() {
+    const navButtons = document.querySelectorAll('.nav-link-custom');
+    navButtons.forEach(btn => {
+        btn.classList.add('nav-disabled');
+    });
+}
+
+function enableNavigationButtons() {
+    const navButtons = document.querySelectorAll('.nav-link-custom');
+    navButtons.forEach(btn => {
+        btn.classList.remove('nav-disabled');
+    });
+}
+
+// -----------------------------------------------------------
+// 3. User & Profile Management
+// -----------------------------------------------------------
+
+async function loadUserProfile() {
+    const user = auth.currentUser;
+    if (!user) {
+        return;
+    }
+
+    const isFreshRegistration = localStorage.getItem('freshRegistration') === 'true';
+    if (isFreshRegistration) {
+        localStorage.removeItem('freshRegistration');
+    }
+    
+    let userData = null;
+
+    try {
+        const doc = await db.collection('users').doc(user.uid).get();
+        
+        if (doc.exists) {
+            userData = doc.data();
+            
+            // NEW: Merge UPI details into local profile
+            userData.upiId = userData.upiId || '';
+            userData.upiQrUrl = userData.upiQrUrl || '';
+            
+            const isDataValid = userData.clinicName && userData.optometristName;
+            
+            if (isDataValid) {
+                isProfileComplete = true;
+                updateProfileUI(userData);
+                localStorage.setItem('userProfile', JSON.stringify(userData));
+                enableNavigationButtons(); 
+                routeToHashedSection(); 
+                return;
+            }
+            
+            isProfileComplete = false;
+            showProfileSetup(true);
+
+        } else {
+            isProfileComplete = false;
+            showProfileSetup(true);
+        }
+    } catch (error) {
+        console.error('Error loading user profile from Firestore:', error);
+        
+        const localProfile = localStorage.getItem('userProfile');
+        if (localProfile) {
+            userData = JSON.parse(localProfile);
+            // Ensure UPI details are set from local storage fallback
+            userData.upiId = userData.upiId || '';
+            userData.upiQrUrl = userData.upiQrUrl || '';
+            
+            isProfileComplete = userData.clinicName && userData.optometristName;
+            updateProfileUI(userData);
+            if (isProfileComplete) {
+                enableNavigationButtons();
+                routeToHashedSection();
+            } else {
+                showProfileSetup(true);
+            }
+        } else {
+            showProfileSetup(true);
+        }
+    }
+}
+
+async function saveSetupProfile() {
+    const user = auth.currentUser;
+    if (!user) {
+        return;
+    }
+
+    const qrUrlInput = document.getElementById('setupUpiQrUrl');
+    const qrFile = document.getElementById('qrCodeFile');
+    const uploadStatus = document.getElementById('qrUploadStatus');
+    const saveBtn = document.getElementById('saveSetupProfileBtn');
+
+    let upiQrUrl = qrUrlInput.value.trim(); // Start with the existing or manually entered URL
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving...';
+    uploadStatus.textContent = '';
+
+
+    // 1. Check for new file upload and process it
+    if (qrFile.files.length > 0) {
+        uploadStatus.textContent = 'Uploading QR Code... This may take a moment.';
+        try {
+            const imageDataURL = await fileToDataURL(qrFile.files[0]);
+            // Use ImageKit upload function for profile QR setup
+            upiQrUrl = await uploadImageToImageKitForProfile(imageDataURL);
+            qrUrlInput.value = upiQrUrl; // Update hidden field
+            uploadStatus.textContent = 'QR Code uploaded successfully.';
+        } catch (error) {
+            console.error('QR Code upload failed:', error);
+            showStatusMessage('QR Code upload failed. Saving profile without updating QR image. Check API key status.', 'error');
+            // Revert QR code URL to previous value if upload fails
+            upiQrUrl = qrUrlInput.dataset.originalValue || '';
+        }
+    }
+    
+    // 2. Prepare data for Firestore
+    const updatedData = {
+        clinicName: document.getElementById('setupClinicName').value.trim(),
+        optometristName: document.getElementById('setupOptometristName').value.trim(),
+        address: document.getElementById('setupAddress').value.trim(),
+        contactNumber: document.getElementById('setupContactNumber').value.trim(),
+        // NEW: UPI fields
+        upiId: document.getElementById('setupUpiId').value.trim(),
+        upiQrUrl: upiQrUrl, // Use the potentially new or cleared URL
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        email: user.email
+    };
+    
+    if (!updatedData.clinicName || !updatedData.optometristName) {
+        showStatusMessage('Clinic Name and Optometrist Name are required to continue.', 'error');
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Profile & Continue';
+        return;
+    }
+
+    try {
+        await db.collection('users').doc(user.uid).set(updatedData, { merge: true });
+        
+        isProfileComplete = true;
+        updateProfileUI(updatedData);
+        localStorage.setItem('userProfile', JSON.stringify(updatedData));
+        
+        enableNavigationButtons();
+
+        showStatusMessage('Profile saved successfully!', 'success');
+
+        const cameFromPrescriptionForm = document.getElementById('prescriptionFormSection')?.classList.contains('active') || 
+                                        lastValidSection === 'form';
+        
+        if (cameFromPrescriptionForm) {
+            navigateIfProfileComplete(showPrescriptionForm, 'form');
+        } else {
+            navigateIfProfileComplete(showDashboard, 'dashboard');
+        }
+
+    } catch (error) {
+        console.error('Error saving profile:', error);
+        showStatusMessage('Error saving profile: ' + error.message, 'error');
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Profile & Continue';
+        uploadStatus.textContent = '';
+    }
+}
+
+
+function updateProfileUI(userData) {
+    
+    if (!userData) {
+        return;
+    }
+    
+    const fields = [
+        { id: 'clinicName', text: userData.clinicName || 'Your Clinic Name' },
+        { id: 'clinicAddress', text: userData.address || 'Clinic Address' },
+        { id: 'optometristName', text: userData.optometristName || 'Optometrist Name' },
+        { id: 'contactNumber', text: userData.contactNumber || 'Contact Number' },
+        { id: 'previewClinicName', text: userData.clinicName || 'Your Clinic Name' },
+        { id: 'previewClinicAddress', text: userData.address || 'Clinic Address' },
+        { id: 'previewOptometristName', text: userData.optometristName || 'Optometrist Name' },
+        { id: 'previewContactNumber', text: userData.contactNumber || 'Contact Number' },
+        // NEW: Update UPI ID
+        { id: 'previewUpiId', text: userData.upiId || 'N/A' }, 
+    ];
+    
+    fields.forEach(field => {
+        const element = document.getElementById(field.id);
+        if (element) {
+            element.textContent = field.text;
+        }
+    });
+
+    const dashboardText = document.getElementById('dashboardWelcomeText');
+    if (dashboardText) {
+        dashboardText.textContent = `Welcome, ${userData.optometristName || 'Optometrist'}!`;
+    }
+    
+    // NEW: Update UPI QR Image in Preview section
+    const previewQrImage = document.getElementById('previewQrCodeImage');
+    if (previewQrImage) {
+        previewQrImage.src = userData.upiQrUrl || '';
+        previewQrImage.style.display = userData.upiQrUrl ? 'block' : 'none';
+    }
+}
+
+function logoutUser() {
+    // Show confirmation dialog before logging out
+    const confirmLogout = confirm('Are you sure you want to log out?');
+    
+    if (confirmLogout) {
+        // Set flag before signing out
+        sessionStorage.setItem("explicitLogout", "true");
+        
+        auth.signOut().then(() => {
+            localStorage.removeItem('username');
+            localStorage.removeItem('userId');
+            localStorage.removeItem('userProfile');
+            localStorage.removeItem('freshRegistration');
+            localStorage.removeItem('isFirstPrescription');
+            
+            window.location.replace('index.html');
+        }).catch(error => {
+            console.error('Logout failed:', error);
+            // If signOut fails, still redirect
+            window.location.replace('index.html');
+        });
+    }
+    // If user clicks "Cancel", do nothing (stay on the page)
+}
+// -----------------------------------------------------------
+// 4. Prescription Core Logic (Submission & Data)
+// -----------------------------------------------------------
+
+async function submitPrescription() {
+    if (!isProfileComplete) {
+        showStatusMessage('Please complete your Clinic Profile before adding prescriptions.', 'error');
+        showProfileSetup(true);
+        return;
+    }
+
+    // --- MODIFIED: Direct check on submission ---
+    // This check handles both premium status and limit checking
+    const canSubmit = await checkPrescriptionLimit();
+    if (!canSubmit) {
+        // Limit check will show the appropriate prompt modal (Limit Reached), no need for a separate error
+        return; 
+    }
+    // ------------------------------------------
+    
+    const user = auth.currentUser;
+    if (!user) {
+        window.location.href = 'index.html';
+        return;
+    }
+
+    const formData = getFormData();
+    
+    if (!validateFormData(formData)) {
+        showStatusMessage('Please fill all required patient and amount fields correctly.', 'error');
+        return;
+    }
+
+    try {
+        const nextCheckupDate = new Date();
+        nextCheckupDate.setDate(nextCheckupDate.getDate() + 365);
+        
+        const patientData = await savePatientRecord(formData, nextCheckupDate);
+
+        const newPrescriptionRef = await db.collection('prescriptions').add({
+            userId: user.uid,
+            patientId: patientData.patientId, 
+            ...formData,
+            // Store date as ISO string for client-side display consistency
+            date: new Date().toISOString(), 
+            // Store nextCheckupDate as Firebase Timestamp object
+            nextCheckupDate: firebase.firestore.Timestamp.fromDate(nextCheckupDate), 
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        currentPrescriptionData = { 
+            ...formData, 
+            // Store the nextCheckupDate as a Timestamp object for consistency, loadPreviewData will handle formatting
+            nextCheckupDate: firebase.firestore.Timestamp.fromDate(nextCheckupDate)
+        };
+        
+        whatsappImageUrl = null; 
+        
+        checkAndPromptPWAInstall();
+
+        showPreview(currentPrescriptionData);
+        
+        resetForm();
+
+    } catch (error) {
+        console.error('Error saving prescription:', error);
+        showStatusMessage('Error saving prescription. Please check logs.', 'error');
+    }
+}
+
+function getFormData() {
+    const getNumberValue = (id) => {
+        const value = document.getElementById(id)?.value.trim();
+        return value ? parseFloat(value) : 0;
+    };
+    const getStringValue = (id) => document.getElementById(id)?.value.trim() || '';
+
+    return {
+        patientId: getStringValue('patientId'),
+        patientName: getStringValue('patientName'),
+        age: getNumberValue('age'),
+        gender: getStringValue('gender'),
+        mobile: getStringValue('patientMobile'),
+        amount: getNumberValue('amount'),
+        // NEW PD FIELDS
+        pdFar: getStringValue('pdFar'),
+        pdNear: getStringValue('pdNear'),
+        // END NEW PD FIELDS
+        visionType: getStringValue('visionType'),
+        lensType: getStringValue('lensType'),
+        frameType: getStringValue('frameType'),
+        paymentMode: getStringValue('paymentMode'),
+        prescriptionData: {
+            // Distance
+            rightDistSPH: getStringValue('rightDistSPH'),
+            rightDistCYL: getStringValue('rightDistCYL'),
+            rightDistAXIS: getStringValue('rightDistAXIS'),
+            rightDistVA: getStringValue('rightDistVA'),
+            leftDistSPH: getStringValue('leftDistSPH'),
+            leftDistCYL: getStringValue('leftDistCYL'),
+            leftDistAXIS: getStringValue('leftDistAXIS'),
+            leftDistVA: getStringValue('leftDistVA'),
+            // Prism
+            rightPrismDiopter: getStringValue('rightPrismDiopter'),
+            rightPrismBase: getStringValue('rightPrismBase'),
+            leftPrismDiopter: getStringValue('leftPrismDiopter'),
+            leftPrismBase: getStringValue('leftPrismBase'),
+            // Add Power (Simplified)
+            rightAddSPH: getStringValue('rightAddSPH'), // Now only the ADD power value
+            leftAddSPH: getStringValue('leftAddSPH'),
+        },
+        customFields: (function() {
+            const customData = {};
+            const config = getFormFieldsConfig();
+            if (config.customFields) {
+                config.customFields.forEach(f => {
+                    customData[f.name] = getStringValue(f.id);
+                });
+            }
+            return customData;
+        })()
+    };
+}
+
+function validateFormData(data) {
+    if (!data.patientName) return false;
+    if (!data.age || data.age <= 0) return false;
+    if (!data.mobile || !data.mobile.match(/^\d{10}$/)) return false;
+    if (!data.amount || data.amount < 0) return false;
+    if (!data.pdFar) return false; // PD Far is now required
+    return true;
+}
+
+function resetForm(clearPatientData = false) {
+    const form = document.getElementById('prescriptionForm');
+    if (form) {
+        form.querySelectorAll('input:not([type="hidden"]), select').forEach(element => {
+            if (element.tagName === 'INPUT') {
+                element.value = '';
+            } else if (element.tagName === 'SELECT') {
+                element.selectedIndex = 0; 
+            }
+        });
+        // Clear all prescription data inputs
+        document.querySelectorAll('#prescriptionFormSection input[type="text"], #prescriptionFormSection input[type="number"]').forEach(input => input.value = '');
+    }
+    isFormFilled = false;
+    
+    // Clear patient data if requested
+    if (clearPatientData) {
+        document.getElementById('patientId').value = '';
+        currentPatientId = null;
+        patientLookupData = null;
+    }
+}
+
+// A: Copy OD to OS Function (MODIFIED)
+function copyRightToLeft(isDist = true) {
+    // --- MODIFIED: Use new feature lock prompt ---
+    if (!isPremium) {
+        showPremiumFeaturePrompt();
+        return;
+    }
+    // ------------------------------------------
+    
+    if (isDist) {
+        const distFields = ['DistSPH', 'DistCYL', 'DistAXIS', 'DistVA'];
+        distFields.forEach(field => {
+            const rightValue = document.getElementById(`right${field}`)?.value;
+            const leftElement = document.getElementById(`left${field}`);
+            if (leftElement) {
+                leftElement.value = rightValue;
+                leftElement.dispatchEvent(new Event('input'));
+            }
+        });
+        
+        // Copy Prism fields
+        const prismDiopter = document.getElementById('rightPrismDiopter')?.value;
+        const prismBase = document.getElementById('rightPrismBase')?.value;
+        
+        document.getElementById('leftPrismDiopter').value = prismDiopter;
+        document.getElementById('leftPrismBase').value = prismBase;
+        
+        showStatusMessage("Right Eye (OD) Distance & Prism copied to Left Eye (OS).", 'info');
+        
+    } else {
+        // Copy Add field only
+        const addValue = document.getElementById('rightAddSPH')?.value;
+        document.getElementById('leftAddSPH').value = addValue;
+        
+        showStatusMessage("Right Eye (OD) Add power copied to Left Eye (OS).", 'info');
+    }
+}
+
+// -----------------------------------------------------------
+// 5. Patient/History Management
+// -----------------------------------------------------------
+
+async function savePatientRecord(formData, nextCheckupDate) {
+    const user = auth.currentUser;
+    const patientId = formData.patientId;
+    const patientData = {
+        userId: user.uid,
+        name: formData.patientName,
+        mobile: formData.mobile,
+        age: formData.age,
+        gender: formData.gender,
+        lastVisit: firebase.firestore.FieldValue.serverTimestamp(),
+        nextCheckupDate: firebase.firestore.Timestamp.fromDate(nextCheckupDate),
+    };
+    
+    try {
+        if (patientId) {
+            // Update existing patient
+            await db.collection('patients').doc(patientId).update(patientData);
+            return { ...patientData, patientId };
+        } else {
+            // Create new patient
+            const newPatientRef = await db.collection('patients').add({
+                ...patientData,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                prescriptionCount: 1 
+            });
+            document.getElementById('patientId').value = newPatientRef.id;
+            return { ...patientData, patientId: newPatientRef.id };
+        }
+    } catch (error) {
+        console.error('Error saving patient record:', error);
+        throw new Error('Failed to save patient record.');
+    }
+}
+
+async function checkPatientExists(mobile) {
+    const user = auth.currentUser;
+    const mobileValue = mobile.replace(/\D/g, '');
+    
+    if (!mobileValue || mobileValue.length !== 10) {
+        document.getElementById('patientId').value = '';
+        currentPatientId = null;
+        patientLookupData = null;
+        return;
+    }
+    
+    try {
+        const querySnapshot = await db.collection('patients')
+            .where('userId', '==', user.uid)
+            .where('mobile', '==', mobileValue)
+            .limit(1)
+            .get();
+
+        if (querySnapshot.empty) {
+            showStatusMessage('New patient: Ready to create record.', 'info');
+            document.getElementById('patientId').value = '';
+            currentPatientId = null;
+            patientLookupData = null;
+            return;
+        }
+
+        const doc = querySnapshot.docs[0];
+        const patient = doc.data();
+        
+        document.getElementById('patientId').value = doc.id;
+        document.getElementById('patientName').value = patient.name || '';
+        document.getElementById('age').value = patient.age || '';
+        document.getElementById('gender').value = patient.gender || 'Male';
+        
+        currentPatientId = doc.id;
+        patientLookupData = patient;
+
+        showStatusMessage(`Patient ${patient.name} found. Details autofilled.`, 'success');
+        
+    } catch (error) {
+        console.error('Error checking patient existence:', error);
+        showStatusMessage('Error checking patient database.', 'error');
+    }
+}
+
+async function fetchPatients() {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    try {
+        const querySnapshot = await db.collection('patients')
+            .where('userId', '==', user.uid)
+            .orderBy('lastVisit', 'desc')
+            .get();
+
+        const patients = [];
+        const today = new Date();
+        
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            const lastVisitDate = data.lastVisit?.toDate().toLocaleDateString() || 'N/A';
+            const nextCheckupDate = data.nextCheckupDate?.toDate();
+            
+            const isDue = nextCheckupDate && nextCheckupDate <= today;
+            
+            patients.push({
+                id: doc.id,
+                ...data,
+                lastVisitDisplay: lastVisitDate,
+                nextCheckupDisplay: nextCheckupDate ? nextCheckupDate.toLocaleDateString() : 'N/A',
+                isDue: isDue
+            });
+        });
+
+        displayPatients(patients);
+
+    } catch (error) {
+        console.error('Error fetching patients:', error);
+        showStatusMessage('Error fetching patient records.', 'error');
+    }
+}
+
+function displayPatients(patients) {
+    const tbody = document.getElementById('patientTable')?.getElementsByTagName('tbody')[0];
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+
+    if (!patients || patients.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No patient records found.</td></tr>';
+        return;
+    }
+
+    patients.forEach(patient => {
+        const row = tbody.insertRow();
+        
+        const nextCheckupClass = patient.isDue ? 'text-danger fw-bold' : '';
+        
+        row.insertCell().textContent = patient.name;
+        row.insertCell().textContent = patient.mobile;
+        row.insertCell().textContent = `${patient.age || 'N/A'} / ${patient.gender || 'N/A'}`;
+        row.insertCell().textContent = patient.lastVisitDisplay;
+        row.insertCell().innerHTML = `<span class="${nextCheckupClass}">${patient.nextCheckupDisplay}</span>`;
+        row.insertCell().textContent = patient.prescriptionCount || 0;
+
+        const actionsCell = row.insertCell();
+        const viewHistoryBtn = document.createElement('button');
+        viewHistoryBtn.innerHTML = '<i class="fas fa-history"></i>';
+        viewHistoryBtn.className = 'btn-view-history';
+        viewHistoryBtn.title = 'View Prescriptions';
+        // F: Set filter by mobile number and jump to prescription list
+        viewHistoryBtn.onclick = () => filterPrescriptionsByMobile(patient.mobile); 
+        
+        actionsCell.appendChild(viewHistoryBtn);
+    });
+
+    filterPatients();
+}
+
+function filterPrescriptionsByMobile(mobile) {
+    navigateIfProfileComplete(showPrescriptions, 'prescriptions');
+    
+    // Set the search input value and trigger fetch/filter
+    setTimeout(() => {
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.value = mobile;
+            fetchPrescriptions();
+            showStatusMessage(`Filtered history for mobile: ${mobile}`, 'info');
+        }
+    }, 100);
+}
+
+function filterPatients() {
+    const input = document.getElementById('patientSearchInput')?.value.toLowerCase();
+    const table = document.getElementById('patientTable');
+    const tbody = table?.getElementsByTagName('tbody')[0];
+    if (!tbody || !input) return;
+    
+    const rows = tbody.getElementsByTagName('tr');
+
+    for (let row of rows) {
+        const name = row.cells[0]?.textContent.toLowerCase() || '';
+        const mobile = row.cells[1]?.textContent.toLowerCase() || '';
+        
+        row.style.display = (name.includes(input) || mobile.includes(input)) ? '' : 'none';
+    }
+}
+
+async function fetchCheckupReminders(displayOnPage = false) {
+    const user = auth.currentUser;
+    if (!user) return;
+    
+    const today = new Date();
+    const thirtyDaysFuture = new Date();
+    thirtyDaysFuture.setDate(today.getDate() + 30);
+    thirtyDaysFuture.setHours(23, 59, 59, 999); // Ensure inclusive check
+
+    const notificationsContent = document.getElementById('notificationsContent');
+    
+    let htmlContent = '';
+
+    try {
+        const querySnapshot = await db.collection('patients')
+            .where('userId', '==', user.uid)
+            .where('nextCheckupDate', '<=', firebase.firestore.Timestamp.fromDate(thirtyDaysFuture))
+            .orderBy('nextCheckupDate', 'asc') // Order by date ascending
+            .get();
+
+        let countDue = 0;
+        let reminders = [];
+        
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            const nextCheckupDate = data.nextCheckupDate?.toDate();
+            
+            if (nextCheckupDate && nextCheckupDate <= thirtyDaysFuture) {
+                countDue++;
+                reminders.push({
+                    name: data.name,
+                    mobile: data.mobile,
+                    date: nextCheckupDate.toLocaleDateString(),
+                    isDue: nextCheckupDate <= today
+                });
+            }
+        });
+
+        // 1. Update Dashboard Card and Header Badge
+        const statReminders = document.getElementById('statRemindersDue');
+        if (statReminders) {
+            statReminders.textContent = countDue.toString();
+        }
+        
+        const badge = document.getElementById('headerNotificationBadge');
+        if (badge) {
+            if (countDue > 0) {
+                badge.textContent = countDue.toString();
+                badge.style.display = 'block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+        
+        // 2. Display on Notifications Page if requested
+        if (displayOnPage && notificationsContent) {
+            if (reminders.length === 0) {
+                 htmlContent = `<div class="alert alert-success text-center">
+                                    <i class="fas fa-check-circle me-2"></i>No patient checkup reminders due in the next 30 days!
+                                </div>`;
+            } else {
+                htmlContent += `<div class="alert alert-warning">
+                                    <i class="fas fa-calendar-check me-2"></i>You have **${reminders.length} patients** due for a checkup soon (within 30 days).
+                                </div>
+                                <ul class="list-group list-group-flush">`;
+
+                reminders.forEach(r => {
+                    const statusText = r.isDue ? 'OVERDUE' : 'DUE SOON';
+                    const statusClass = r.isDue ? 'list-group-item-danger' : 'list-group-item-warning';
+                    
+                    htmlContent += `
+                        <li class="list-group-item ${statusClass} d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${r.name}</strong> 
+                                <span class="badge bg-secondary ms-2">${r.mobile}</span>
+                                <br>
+                                <small class="text-muted">Next Checkup: ${r.date}</small>
+                            </div>
+                            <span class="badge bg-dark">${statusText}</span>
+                            <button onclick="filterPrescriptionsByMobile('${r.mobile}')" class="btn btn-sm btn-info ms-3">
+                                <i class="fas fa-history"></i> History
+                            </button>
+                        </li>
+                    `;
+                });
+                htmlContent += `</ul>`;
+            }
+            notificationsContent.innerHTML = htmlContent;
+        }
+
+    } catch (error) {
+        console.error('Error fetching checkup reminders:', error);
+        
+        const statReminders = document.getElementById('statRemindersDue');
+        if (statReminders) {
+            statReminders.textContent = 'N/A';
+        }
+        
+        if (displayOnPage && notificationsContent) {
+            notificationsContent.innerHTML = `<div class="alert alert-danger text-center">
+                                                <i class="fas fa-exclamation-circle me-2"></i>Error loading reminders. Check your network or permissions.
+                                            </div>`;
+        }
+    }
+}
+
+// -----------------------------------------------------------
+// 6. Templates (G)
+// -----------------------------------------------------------
+
+async function fetchTemplates() {
+    const user = auth.currentUser;
+    const select = document.getElementById('templateSelect');
+    if (!user || !select) return;
+    
+    select.innerHTML = '<option value="">-- Select Template --</option>';
+
+    try {
+        // We fetch templates even for free users, but lock the save function.
+        const querySnapshot = await db.collection('templates')
+            .where('userId', '==', user.uid)
+            .orderBy('name', 'asc')
+            .get();
+
+        querySnapshot.forEach((doc) => {
+            const template = doc.data();
+            const option = document.createElement('option');
+            option.value = doc.id;
+            option.textContent = template.name;
+            option.dataset.templateData = JSON.stringify(template.data);
+            select.appendChild(option);
+        });
+
+    } catch (error) {
+        console.error('Error fetching templates:', error);
+    }
+}
+
+async function saveAsTemplate() {
+    // --- MODIFIED: Use new feature lock prompt ---
+    if (!isPremium) {
+        showPremiumFeaturePrompt();
+        return;
+    }
+    // ------------------------------------------
+    
+    const user = auth.currentUser;
+    if (!user) return;
+    
+    const templateName = window.prompt("Enter a name for this prescription template:");
+    if (!templateName || templateName.trim() === "") {
+        showStatusMessage("Template save cancelled.", 'info');
+        return;
+    }
+    
+    const formData = getFormData();
+    
+    const templateData = {
+        visionType: formData.visionType,
+        lensType: formData.lensType,
+        frameType: formData.frameType,
+        prescriptionData: formData.prescriptionData,
+        pdFar: formData.pdFar, // NEW
+        pdNear: formData.pdNear // NEW
+    };
+    
+    try {
+        await db.collection('templates').add({
+            userId: user.uid, // ← Make sure this is included
+            name: templateName.trim(),
+            data: templateData,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        showStatusMessage(`Template "${templateName}" saved successfully!`, 'success');
+        fetchTemplates();
+        
+    } catch (error) {
+        console.error('Error saving template:', error);
+        showStatusMessage('Failed to save template. Please try again.', 'error');
+    }
+}
+
+function loadTemplate(templateId) {
+    if (!templateId) return;
+
+    const select = document.getElementById('templateSelect');
+    const selectedOption = Array.from(select.options).find(opt => opt.value === templateId);
+    
+    if (!selectedOption || !selectedOption.dataset.templateData) {
+        showStatusMessage('Template data not found.', 'error');
+        return;
+    }
+
+    try {
+        const template = JSON.parse(selectedOption.dataset.templateData);
+        
+        document.getElementById('visionType').value = template.visionType || 'Single Vision';
+        document.getElementById('lensType').value = template.lensType || 'Blue Cut';
+        document.getElementById('frameType').value = template.frameType || 'Full Rim';
+        
+        // NEW: Load PD fields
+        document.getElementById('pdFar').value = template.pdFar || '';
+        document.getElementById('pdNear').value = template.pdNear || '';
+
+        const presData = template.prescriptionData;
+        
+        // UPDATED: List of fields to populate
+        const fields = [
+            // Dist
+            'rightDistSPH', 'rightDistCYL', 'rightDistAXIS', 'rightDistVA',
+            'leftDistSPH', 'leftDistCYL', 'leftDistAXIS', 'leftDistVA',
+            // Prism
+            'rightPrismDiopter', 'rightPrismBase', 
+            'leftPrismDiopter', 'leftPrismBase',
+            // Add (Simplified)
+            'rightAddSPH',
+            'leftAddSPH'
+        ];
+
+        fields.forEach(field => {
+            const element = document.getElementById(field);
+            if (element) {
+                element.value = presData[field] || '';
+            }
+        });
+
+        showStatusMessage(`Template "${selectedOption.textContent}" loaded.`, 'success');
+        
+    } catch (error) {
+        console.error('Error loading template:', error);
+        showStatusMessage('Error applying template.', 'error');
+    }
+}
+
+
+// -----------------------------------------------------------
+// 7. Data Display (Prescriptions, Reports)
+// -----------------------------------------------------------
+
+async function fetchPrescriptions() {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const startDateInput = document.getElementById('prescriptionDateStart').value;
+    const endDateInput = document.getElementById('prescriptionDateEnd').value;
+    const searchInput = document.getElementById('searchInput').value.trim().toLowerCase();
+    
+    if (startDateInput && endDateInput && new Date(startDateInput) > new Date(endDateInput)) {
+        showStatusMessage('Start date cannot be after end date.', 'error');
+        return;
+    }
+
+    const startDate = startDateInput ? new Date(startDateInput) : null;
+    const endDate = endDateInput ? new Date(endDateInput) : null;
+    
+    if (endDate) {
+        // Set end date to end of day for inclusive filtering
+        endDate.setHours(23, 59, 59, 999);
+    }
+    
+    // 1. Initial Firestore Query (Simplified for maximum index compatibility)
+    // We only filter by the user ID and order by the creation time (descending).
+    // The query relies on a simple composite index on (userId, createdAt, desc).
+    let baseQuery = db.collection('prescriptions')
+        .where('userId', '==', user.uid);
+
+    try {
+        const querySnapshot = await baseQuery.orderBy('createdAt', 'desc').get();
+
+        let prescriptions = [];
+        querySnapshot.forEach((doc) => {
+            prescriptions.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+        
+        // 2. Client-side Filtering for Date Range and Search (Resilient approach)
+        prescriptions = prescriptions.filter(rx => {
+            // Use the date stored in the prescription, which is an ISO string
+            const rxDate = new Date(rx.date);
+            
+            // Apply Date Range Filter
+            const isAfterStart = !startDate || (rxDate.getTime() >= startDate.getTime());
+            const isBeforeEnd = !endDate || (rxDate.getTime() <= endDate.getTime());
+            
+            if (!isAfterStart || !isBeforeEnd) {
+                return false;
+            }
+            
+            // Apply Search Filter
+            if (searchInput) {
+                const name = rx.patientName.toLowerCase();
+                const mobile = rx.mobile;
+                // Match search input against name or mobile number
+                return name.includes(searchInput) || mobile.includes(searchInput);
+            }
+            
+            return true;
+        });
+
+        // 3. Client-side Sorting (No sorting needed as Firestore already provided descending order)
+        
+        displayPrescriptions(prescriptions); // This line was causing the error
+        
+    } catch (error) {
+        // 🚨 CRITICAL ERROR LOGGING: This remains the most important part of debugging index issues.
+        console.error('CRITICAL FIRESTORE ERROR fetching prescriptions:', error);
+        showStatusMessage('Error fetching prescriptions. You need a composite index on `userId` (Ascending) and `createdAt` (Descending). Check the browser console for details and follow the link to create the required index if one is present.', 'error');
+    }
+}
+
+// FIX APPLIED HERE: Using a consistent YYYY-MM-DD format for reliable comparison
+function getYYYYMMDD(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function groupPrescriptionsByDate(prescriptions) {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    
+    // Get clean date strings for comparison
+    const todayStr = getYYYYMMDD(today);
+    const yesterdayStr = getYYYYMMDD(yesterday);
+
+    const grouped = {
+        'Today': [],
+        'Yesterday': [],
+        'Older': []
+    };
+
+    prescriptions.forEach(prescription => {
+        // Use the ISO date stored in Firestore
+        const rxDate = new Date(prescription.date);
+        const rxDateStr = getYYYYMMDD(rxDate);
+        
+        if (rxDateStr === todayStr) {
+            grouped['Today'].push(prescription);
+        } else if (rxDateStr === yesterdayStr) {
+            grouped['Yesterday'].push(prescription);
+        } else {
+            grouped['Older'].push(prescription);
+        }
+    });
+
+    const finalGrouped = {};
+    Object.keys(grouped).forEach(group => {
+        if (grouped[group].length > 0) {
+            finalGrouped[group] = grouped[group];
+        }
+    });
+
+    return finalGrouped;
+}
+
+// -----------------------------------------------------------
+// 7.1. New displayPrescriptions Function (Fix)
+// -----------------------------------------------------------
+function displayNoPrescriptionsFound(tbody) {
+    tbody.innerHTML = '<tr><td colspan="10" class="text-center">No prescriptions found for the selected filter.</td></tr>';
+}
+
+function displayPrescriptions(prescriptions) {
+    const tbody = document.getElementById('prescriptionTable')?.getElementsByTagName('tbody')[0];
+    if (!tbody) return;
+    
+    tbody.innerHTML = ''; // Clear existing rows
+
+    if (!prescriptions || prescriptions.length === 0) {
+        displayNoPrescriptionsFound(tbody);
+        return;
+    }
+    
+    // Group and display prescriptions
+    const grouped = groupPrescriptionsByDate(prescriptions);
+    const groupOrder = ['Today', 'Yesterday', 'Older'];
+
+    groupOrder.forEach(groupName => {
+        const group = grouped[groupName];
+        if (group && group.length > 0) {
+            // Add group header row
+            const headerRow = tbody.insertRow();
+            headerRow.classList.add('prescription-group-header');
+            const headerCell = headerRow.insertCell();
+            headerCell.colSpan = 10;
+            headerCell.textContent = `${groupName} (${group.length} prescriptions)`;
+
+            // Add prescription rows for the group
+            group.forEach(prescription => {
+                addPrescriptionRow(tbody, prescription);
+            });
+        }
+    });
+}
+
+// View Modal Functions
+function openViewModal(prescription) {
+    currentViewPrescription = JSON.parse(JSON.stringify(prescription)); // Deep copy
+    const modal = document.getElementById('viewPrescriptionModal');
+    const content = document.getElementById('viewPrescriptionContent');
+    
+    if (!modal || !content) return;
+    
+    content.innerHTML = generateViewContent(currentViewPrescription);
+    modal.style.display = 'flex';
+    modal.style.opacity = '1';
+    modal.style.visibility = 'visible';
+}
+
+function closeViewModal() {
+    const modal = document.getElementById('viewPrescriptionModal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.style.opacity = '0';
+        modal.style.visibility = 'hidden';
+    }
+    currentViewPrescription = null;
+}
+
+// Update the generateViewContent function to show better instructions
+function generateViewContent(prescription) {
+    const presData = prescription.prescriptionData || {};
+    const hasPatientLink = !!prescription.patientId;
+    
+    return `
+        <div class="prescription-view-section" style="border-left-color: var(--info-color);">
+            <h4><i class="fas fa-info-circle"></i> Quick Actions</h4>
+            <p style="margin: 0; font-size: 0.9rem; color: var(--secondary-color);">
+                Use the buttons below to edit this prescription or open it in preview mode for printing and sharing.
+            </p>
+        </div>
+
+        <div class="patient-info-grid">
+            <div class="info-item">
+                <span class="info-label">Patient Name</span>
+                <span class="info-value">${prescription.patientName || 'N/A'}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Age / Gender</span>
+                <span class="info-value">${prescription.age || 'N/A'} / ${prescription.gender || 'N/A'}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Mobile</span>
+                <span class="info-value">${prescription.mobile || 'N/A'}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Date</span>
+                <span class="info-value">${new Date(prescription.date).toLocaleDateString()}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Patient Record</span>
+                <span class="info-value">
+                    ${hasPatientLink ? 
+                        '<span style="color: var(--success-color);"><i class="fas fa-link"></i> Linked</span>' : 
+                        '<span style="color: var(--warning-color);"><i class="fas fa-unlink"></i> Not Linked</span>'
+                    }
+                </span>
+            </div>
+        </div>
+
+        <!-- Rest of the prescription details remain the same -->
+        <div class="prescription-view-section">
+            <h4>Refractive Correction</h4>
+            <table class="prescription-table-view">
+                <thead>
+                    <tr>
+                        <th>Eye</th>
+                        <th>Type</th>
+                        <th>SPH</th>
+                        <th>CYL</th>
+                        <th>AXIS</th>
+                        <th>V/A</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td rowspan="3"><strong>OD</strong></td>
+                        <td><strong>DIST</strong></td>
+                        <td>${presData.rightDistSPH || ''}</td>
+                        <td>${presData.rightDistCYL || ''}</td>
+                        <td>${presData.rightDistAXIS || ''}</td>
+                        <td>${presData.rightDistVA || ''}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>PRISM</strong></td>
+                        <td colspan="2">${presData.rightPrismDiopter || ''}</td>
+                        <td colspan="2">${presData.rightPrismBase || ''}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ADD</strong></td>
+                        <td>${presData.rightAddSPH || ''}</td>
+                        <td colspan="3"></td>
+                    </tr>
+                    <tr>
+                        <td rowspan="3"><strong>OS</strong></td>
+                        <td><strong>DIST</strong></td>
+                        <td>${presData.leftDistSPH || ''}</td>
+                        <td>${presData.leftDistCYL || ''}</td>
+                        <td>${presData.leftDistAXIS || ''}</td>
+                        <td>${presData.leftDistVA || ''}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>PRISM</strong></td>
+                        <td colspan="2">${presData.leftPrismDiopter || ''}</td>
+                        <td colspan="2">${presData.leftPrismBase || ''}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ADD</strong></td>
+                        <td>${presData.leftAddSPH || ''}</td>
+                        <td colspan="3"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="prescription-view-section">
+            <h4>Dispensing Parameters</h4>
+            <div class="patient-info-grid">
+                <div class="info-item">
+                    <span class="info-label">PD Far</span>
+                    <span class="info-value">${prescription.pdFar || 'N/A'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">PD Near</span>
+                    <span class="info-value">${prescription.pdNear || 'N/A'}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="prescription-view-section">
+            <h4>Lens & Frame Specifications</h4>
+            <div class="patient-info-grid">
+                <div class="info-item">
+                    <span class="info-label">Vision Type</span>
+                    <span class="info-value">${prescription.visionType || 'N/A'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Lens Type</span>
+                    <span class="info-value">${prescription.lensType || 'N/A'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Frame Type</span>
+                    <span class="info-value">${prescription.frameType || 'N/A'}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="prescription-view-section">
+            <h4>Payment Details</h4>
+            <div class="patient-info-grid">
+                <div class="info-item">
+                    <span class="info-label">Amount</span>
+                    <span class="info-value">₹${prescription.amount?.toFixed(2) || '0.00'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Payment Mode</span>
+                    <span class="info-value">${prescription.paymentMode || 'N/A'}</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Edit Modal Functions
+function openEditModal() {
+    if (!currentViewPrescription) {
+        showStatusMessage('No prescription data available for editing.', 'error');
+        return;
+    }
+    
+    // Close view modal and store the prescription data
+    const prescriptionToEdit = JSON.parse(JSON.stringify(currentViewPrescription));
+    closeViewModal();
+    
+    currentEditPrescription = prescriptionToEdit;
+    
+    const modal = document.getElementById('editPrescriptionModal');
+    const form = document.getElementById('editPrescriptionForm');
+    
+    if (!modal || !form) return;
+    
+    form.innerHTML = generateEditForm(currentEditPrescription);
+    modal.style.display = 'flex';
+    modal.style.opacity = '1';
+    modal.style.visibility = 'visible';
+}
+
+function closeEditModal() {
+    const modal = document.getElementById('editPrescriptionModal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.style.opacity = '0';
+        modal.style.visibility = 'hidden';
+    }
+    currentEditPrescription = null;
+}
+
+function generateEditForm(prescription) {
+    // Ensure prescriptionData exists with safe defaults
+    const presData = prescription.prescriptionData || {};
+    
+    return `
+        <div class="edit-prescription-grid">
+            <div class="edit-form-group">
+                <label for="editPatientName">Patient Name *</label>
+                <input type="text" id="editPatientName" value="${prescription.patientName || ''}" required>
+            </div>
+            <div class="edit-form-group">
+                <label for="editAge">Age *</label>
+                <input type="number" id="editAge" value="${prescription.age || ''}" required>
+            </div>
+            <div class="edit-form-group">
+                <label for="editGender">Gender *</label>
+                <select id="editGender">
+                    <option value="Male" ${(prescription.gender || 'Male') === 'Male' ? 'selected' : ''}>Male</option>
+                    <option value="Female" ${(prescription.gender || 'Male') === 'Female' ? 'selected' : ''}>Female</option>
+                    <option value="Other" ${(prescription.gender || 'Male') === 'Other' ? 'selected' : ''}>Other</option>
+                </select>
+            </div>
+            <div class="edit-form-group">
+                <label for="editMobile">Mobile *</label>
+                <input type="tel" id="editMobile" value="${prescription.mobile || ''}" required>
+            </div>
+        </div>
+
+        <div class="edit-prescription-section">
+            <h4>Right Eye (OD) Prescription</h4>
+            <div class="edit-prescription-grid">
+                <div class="edit-form-group">
+                    <label for="editRightDistSPH">DIST SPH</label>
+                    <input type="text" id="editRightDistSPH" value="${presData.rightDistSPH || ''}" placeholder="±D">
+                </div>
+                <div class="edit-form-group">
+                    <label for="editRightDistCYL">DIST CYL</label>
+                    <input type="text" id="editRightDistCYL" value="${presData.rightDistCYL || ''}" placeholder="±D">
+                </div>
+                <div class="edit-form-group">
+                    <label for="editRightDistAXIS">DIST AXIS</label>
+                    <input type="text" id="editRightDistAXIS" value="${presData.rightDistAXIS || ''}" placeholder="1-180">
+                </div>
+                <div class="edit-form-group">
+                    <label for="editRightDistVA">DIST V/A</label>
+                    <input type="text" id="editRightDistVA" value="${presData.rightDistVA || ''}" placeholder="6/6 or 20/20">
+                </div>
+                <div class="edit-form-group">
+                    <label for="editRightPrismDiopter">PRISM Diopter</label>
+                    <input type="text" id="editRightPrismDiopter" value="${presData.rightPrismDiopter || ''}" placeholder="Prism D">
+                </div>
+                <div class="edit-form-group">
+                    <label for="editRightPrismBase">PRISM Base</label>
+                    <input type="text" id="editRightPrismBase" value="${presData.rightPrismBase || ''}" placeholder="IN/OUT/UP/DOWN">
+                </div>
+                <div class="edit-form-group">
+                    <label for="editRightAddSPH">ADD SPH</label>
+                    <input type="text" id="editRightAddSPH" value="${presData.rightAddSPH || ''}" placeholder="+D">
+                </div>
+            </div>
+        </div>
+
+        <div class="edit-prescription-section">
+            <h4>Left Eye (OS) Prescription</h4>
+            <div class="edit-prescription-grid">
+                <div class="edit-form-group">
+                    <label for="editLeftDistSPH">DIST SPH</label>
+                    <input type="text" id="editLeftDistSPH" value="${presData.leftDistSPH || ''}" placeholder="±D">
+                </div>
+                <div class="edit-form-group">
+                    <label for="editLeftDistCYL">DIST CYL</label>
+                    <input type="text" id="editLeftDistCYL" value="${presData.leftDistCYL || ''}" placeholder="±D">
+                </div>
+                <div class="edit-form-group">
+                    <label for="editLeftDistAXIS">DIST AXIS</label>
+                    <input type="text" id="editLeftDistAXIS" value="${presData.leftDistAXIS || ''}" placeholder="1-180">
+                </div>
+                <div class="edit-form-group">
+                    <label for="editLeftDistVA">DIST V/A</label>
+                    <input type="text" id="editLeftDistVA" value="${presData.leftDistVA || ''}" placeholder="6/6 or 20/20">
+                </div>
+                <div class="edit-form-group">
+                    <label for="editLeftPrismDiopter">PRISM Diopter</label>
+                    <input type="text" id="editLeftPrismDiopter" value="${presData.leftPrismDiopter || ''}" placeholder="Prism D">
+                </div>
+                <div class="edit-form-group">
+                    <label for="editLeftPrismBase">PRISM Base</label>
+                    <input type="text" id="editLeftPrismBase" value="${presData.leftPrismBase || ''}" placeholder="IN/OUT/UP/DOWN">
+                </div>
+                <div class="edit-form-group">
+                    <label for="editLeftAddSPH">ADD SPH</label>
+                    <input type="text" id="editLeftAddSPH" value="${presData.leftAddSPH || ''}" placeholder="+D">
+                </div>
+            </div>
+        </div>
+
+        <div class="edit-prescription-section">
+            <h4>Additional Details</h4>
+            <div class="edit-prescription-grid">
+                <div class="edit-form-group">
+                    <label for="editPdFar">PD Far *</label>
+                    <input type="text" id="editPdFar" value="${prescription.pdFar || ''}" required placeholder="e.g., 60 or 30/30">
+                </div>
+                <div class="edit-form-group">
+                    <label for="editPdNear">PD Near</label>
+                    <input type="text" id="editPdNear" value="${prescription.pdNear || ''}" placeholder="e.g., 57 or 28.5/28.5">
+                </div>
+                <div class="edit-form-group">
+                    <label for="editVisionType">Vision Type</label>
+                    <select id="editVisionType">
+                        <option value="Single Vision" ${(prescription.visionType || 'Single Vision') === 'Single Vision' ? 'selected' : ''}>Single Vision</option>
+                        <option value="Bifocal" ${(prescription.visionType || 'Single Vision') === 'Bifocal' ? 'selected' : ''}>Bifocal</option>
+                        <option value="Progressive" ${(prescription.visionType || 'Single Vision') === 'Progressive' ? 'selected' : ''}>Progressive</option>
+                        <option value="Reading" ${(prescription.visionType || 'Single Vision') === 'Reading' ? 'selected' : ''}>Reading</option>
+                        <option value="Computer/Degressive" ${(prescription.visionType || 'Single Vision') === 'Computer/Degressive' ? 'selected' : ''}>Computer/Degressive</option>
+                    </select>
+                </div>
+                <div class="edit-form-group">
+                    <label for="editLensType">Lens Type</label>
+                    <select id="editLensType">
+                        <option value="Polycarbonate (PC)" ${(prescription.lensType || 'Polycarbonate (PC)') === 'Polycarbonate (PC)' ? 'selected' : ''}>Polycarbonate (PC)</option>
+                        <option value="High Index 1.67" ${(prescription.lensType || 'Polycarbonate (PC)') === 'High Index 1.67' ? 'selected' : ''}>High Index 1.67</option>
+                        <option value="Trivex" ${(prescription.lensType || 'Polycarbonate (PC)') === 'Trivex' ? 'selected' : ''}>Trivex</option>
+                        <option value="Standard CR-39" ${(prescription.lensType || 'Polycarbonate (PC)') === 'Standard CR-39' ? 'selected' : ''}>Standard CR-39</option>
+                        <option value="Photochromic (Transitions)" ${(prescription.lensType || 'Polycarbonate (PC)') === 'Photochromic (Transitions)' ? 'selected' : ''}>Photochromic (Transitions)</option>
+                        <option value="Anti-Reflective Coating (ARC)" ${(prescription.lensType || 'Polycarbonate (PC)') === 'Anti-Reflective Coating (ARC)' ? 'selected' : ''}>Anti-Reflective Coating (ARC)</option>
+                        <option value="Blue-Light Filter" ${(prescription.lensType || 'Polycarbonate (PC)') === 'Blue-Light Filter' ? 'selected' : ''}>Blue-Light Filter</option>
+                    </select>
+                </div>
+                <div class="edit-form-group">
+                    <label for="editFrameType">Frame Type</label>
+                    <select id="editFrameType">
+                        <option value="Full Rim (Acetate)" ${(prescription.frameType || 'Full Rim (Acetate)') === 'Full Rim (Acetate)' ? 'selected' : ''}>Full Rim (Acetate)</option>
+                        <option value="Half Rim (Metal)" ${(prescription.frameType || 'Full Rim (Acetate)') === 'Half Rim (Metal)' ? 'selected' : ''}>Half Rim (Metal)</option>
+                        <option value="Rimless (Titanium)" ${(prescription.frameType || 'Full Rim (Acetate)') === 'Rimless (Titanium)' ? 'selected' : ''}>Rimless (Titanium)</option>
+                        <option value="Metal (Monel)" ${(prescription.frameType || 'Full Rim (Acetate)') === 'Metal (Monel)' ? 'selected' : ''}>Metal (Monel)</option>
+                        <option value="Plastic (TR-90/Flexible)" ${(prescription.frameType || 'Full Rim (Acetate)') === 'Plastic (TR-90/Flexible)' ? 'selected' : ''}>Plastic (TR-90/Flexible)</option>
+                    </select>
+                </div>
+                <div class="edit-form-group">
+                    <label for="editAmount">Amount (₹) *</label>
+                    <input type="number" id="editAmount" value="${prescription.amount || ''}" step="0.01" required>
+                </div>
+                <div class="edit-form-group">
+                    <label for="editPaymentMode">Payment Mode</label>
+                    <select id="editPaymentMode">
+                        <option value="Cash" ${(prescription.paymentMode || 'Cash') === 'Cash' ? 'selected' : ''}>Cash</option>
+                        <option value="Card" ${(prescription.paymentMode || 'Cash') === 'Card' ? 'selected' : ''}>Card</option>
+                        <option value="UPI" ${(prescription.paymentMode || 'Cash') === 'UPI' ? 'selected' : ''}>UPI</option>
+                        <option value="Online" ${(prescription.paymentMode || 'Cash') === 'Online' ? 'selected' : ''}>Online</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+async function updatePrescription() {
+    if (!currentEditPrescription) {
+        showStatusMessage('No prescription selected for editing.', 'error');
+        return;
+    }
+
+    const formData = getEditFormData();
+    
+    if (!validateEditForm(formData)) {
+        showStatusMessage('Please fill all required fields correctly.', 'error');
+        return;
+    }
+
+    try {
+        // Show loading state
+        showStatusMessage('Updating prescription and patient details...', 'info');
+
+        // Update prescription first
+        await db.collection('prescriptions').doc(currentEditPrescription.id).update({
+            ...formData,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Update patient record if patientId exists
+        if (currentEditPrescription.patientId) {
+            await updatePatientRecord(currentEditPrescription.patientId, formData);
+        } else {
+            // If no patientId, try to find patient by mobile and update
+            await findAndUpdatePatientByMobile(formData);
+        }
+
+        showStatusMessage('Prescription and patient details updated successfully!', 'success');
+        closeEditModal();
+        await fetchPrescriptions(); // Refresh the prescriptions list
+        await fetchPatients(); // Refresh the patients list if we're on that page
+        
+    } catch (error) {
+        console.error('Error updating prescription and patient:', error);
+        showStatusMessage('Error updating: ' + error.message, 'error');
+    }
+}
+
+// Function to update patient record
+async function updatePatientRecord(patientId, prescriptionData) {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const patientUpdateData = {
+        name: prescriptionData.patientName,
+        mobile: prescriptionData.mobile,
+        age: prescriptionData.age,
+        gender: prescriptionData.gender,
+        lastVisit: firebase.firestore.FieldValue.serverTimestamp(),
+        // Don't update nextCheckupDate when editing prescription
+    };
+
+    await db.collection('patients').doc(patientId).update(patientUpdateData);
+    console.log('Patient record updated:', patientId);
+}
+
+// Function to find and update patient by mobile number
+async function findAndUpdatePatientByMobile(prescriptionData) {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    try {
+        const querySnapshot = await db.collection('patients')
+            .where('userId', '==', user.uid)
+            .where('mobile', '==', prescriptionData.mobile)
+            .limit(1)
+            .get();
+
+        if (!querySnapshot.empty) {
+            const patientDoc = querySnapshot.docs[0];
+            await updatePatientRecord(patientDoc.id, prescriptionData);
+            
+            // Also update the prescription with the patientId for future reference
+            await db.collection('prescriptions').doc(currentEditPrescription.id).update({
+                patientId: patientDoc.id
+            });
+            
+            console.log('Patient found and updated by mobile:', patientDoc.id);
+        } else {
+            console.log('No patient found with mobile:', prescriptionData.mobile);
+            // Optionally create a new patient record here if needed
+            // await createNewPatientFromPrescription(prescriptionData);
+        }
+    } catch (error) {
+        console.error('Error finding patient by mobile:', error);
+    }
+}
+
+// Add this option to the edit modal footer for creating patient records
+function addCreatePatientOption() {
+    const modalFooter = document.querySelector('#editPrescriptionModal .modal-footer');
+    if (modalFooter && !currentEditPrescription?.patientId) {
+        const createPatientBtn = document.createElement('button');
+        createPatientBtn.type = 'button';
+        createPatientBtn.className = 'btn btn-info';
+        createPatientBtn.innerHTML = '<i class="fas fa-user-plus"></i> Create Patient Record';
+        createPatientBtn.onclick = createPatientFromPrescription;
+        
+        modalFooter.insertBefore(createPatientBtn, modalFooter.firstChild);
+    }
+}
+
+async function createPatientFromPrescription() {
+    const formData = getEditFormData();
+    
+    if (!formData.patientName || !formData.mobile) {
+        showStatusMessage('Patient name and mobile are required to create patient record.', 'error');
+        return;
+    }
+
+    try {
+        const user = auth.currentUser;
+        const nextCheckupDate = new Date();
+        nextCheckupDate.setDate(nextCheckupDate.getDate() + 365);
+
+        const newPatientRef = await db.collection('patients').add({
+            userId: user.uid,
+            name: formData.patientName,
+            mobile: formData.mobile,
+            age: formData.age,
+            gender: formData.gender,
+            lastVisit: firebase.firestore.FieldValue.serverTimestamp(),
+            nextCheckupDate: firebase.firestore.Timestamp.fromDate(nextCheckupDate),
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            prescriptionCount: 1
+        });
+
+        // Update the current prescription with the new patientId
+        await db.collection('prescriptions').doc(currentEditPrescription.id).update({
+            patientId: newPatientRef.id
+        });
+
+        // Update local reference
+        currentEditPrescription.patientId = newPatientRef.id;
+
+        showStatusMessage('Patient record created and linked successfully!', 'success');
+        
+        // Remove the create button and refresh
+        const createBtn = document.querySelector('#editPrescriptionModal .btn-info');
+        if (createBtn) createBtn.remove();
+        
+    } catch (error) {
+        console.error('Error creating patient record:', error);
+        showStatusMessage('Error creating patient record: ' + error.message, 'error');
+    }
+}
+
+// Optional: Create new patient if not found
+async function createNewPatientFromPrescription(prescriptionData) {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    try {
+        const nextCheckupDate = new Date();
+        nextCheckupDate.setDate(nextCheckupDate.getDate() + 365);
+
+        const newPatientRef = await db.collection('patients').add({
+            userId: user.uid,
+            name: prescriptionData.patientName,
+            mobile: prescriptionData.mobile,
+            age: prescriptionData.age,
+            gender: prescriptionData.gender,
+            lastVisit: firebase.firestore.FieldValue.serverTimestamp(),
+            nextCheckupDate: firebase.firestore.Timestamp.fromDate(nextCheckupDate),
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            prescriptionCount: 1
+        });
+
+        // Update prescription with new patientId
+        await db.collection('prescriptions').doc(currentEditPrescription.id).update({
+            patientId: newPatientRef.id
+        });
+
+        console.log('New patient created from prescription:', newPatientRef.id);
+    } catch (error) {
+        console.error('Error creating new patient:', error);
+    }
+}
+
+function getEditFormData() {
+    const getValue = (id) => document.getElementById(id)?.value.trim() || '';
+    const getNumberValue = (id) => {
+        const value = getValue(id);
+        return value ? parseFloat(value) : 0;
+    };
+
+    return {
+        patientName: getValue('editPatientName'),
+        age: getNumberValue('editAge'),
+        gender: getValue('editGender'),
+        mobile: getValue('editMobile'),
+        pdFar: getValue('editPdFar'),
+        pdNear: getValue('editPdNear'),
+        visionType: getValue('editVisionType'),
+        lensType: getValue('editLensType'),
+        frameType: getValue('editFrameType'),
+        amount: getNumberValue('editAmount'),
+        paymentMode: getValue('editPaymentMode'),
+        patientId: currentEditPrescription?.patientId || '', // Include patientId
+        prescriptionData: {
+            rightDistSPH: getValue('editRightDistSPH'),
+            rightDistCYL: getValue('editRightDistCYL'),
+            rightDistAXIS: getValue('editRightDistAXIS'),
+            rightDistVA: getValue('editRightDistVA'),
+            rightPrismDiopter: getValue('editRightPrismDiopter'),
+            rightPrismBase: getValue('editRightPrismBase'),
+            rightAddSPH: getValue('editRightAddSPH'),
+            leftDistSPH: getValue('editLeftDistSPH'),
+            leftDistCYL: getValue('editLeftDistCYL'),
+            leftDistAXIS: getValue('editLeftDistAXIS'),
+            leftDistVA: getValue('editLeftDistVA'),
+            leftPrismDiopter: getValue('editLeftPrismDiopter'),
+            leftPrismBase: getValue('editLeftPrismBase'),
+            leftAddSPH: getValue('editLeftAddSPH')
+        }
+    };
+}
+
+function validateEditForm(data) {
+    if (!data.patientName) {
+        showStatusMessage('Patient name is required.', 'error');
+        return false;
+    }
+    if (!data.age || data.age <= 0) {
+        showStatusMessage('Valid age is required.', 'error');
+        return false;
+    }
+    if (!data.mobile || !data.mobile.match(/^\d{10}$/)) {
+        showStatusMessage('Valid 10-digit mobile number is required.', 'error');
+        return false;
+    }
+    if (!data.pdFar) {
+        showStatusMessage('PD Far is required.', 'error');
+        return false;
+    }
+    if (!data.amount || data.amount < 0) {
+        showStatusMessage('Valid amount is required.', 'error');
+        return false;
+    }
+    return true;
+}
+
+// Update the preview button in the prescriptions table
+function addPrescriptionRow(tbody, prescription) {
+    const row = tbody.insertRow();
+    
+    const date = new Date(prescription.date);
+    const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const timeStr = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    
+    const fields = [
+        `${dateStr} @ ${timeStr}`,
+        prescription.patientName,
+        prescription.age,
+        prescription.mobile, 
+        `₹${prescription.amount?.toFixed(2) || '0.00'}`,
+        prescription.visionType,
+        prescription.lensType,
+        prescription.frameType,
+        prescription.paymentMode
+    ];
+
+    fields.forEach((field) => {
+        const cell = row.insertCell();
+        cell.textContent = field;
+    });
+
+    const actionsCell = row.insertCell();
+    actionsCell.className = 'table-actions';
+    
+    // View Button - Opens view modal
+    const viewBtn = document.createElement('button');
+    viewBtn.innerHTML = '<i class="fas fa-eye"></i>';
+    viewBtn.className = 'action-btn action-btn-view';
+    viewBtn.title = 'View Prescription Details';
+    viewBtn.onclick = () => openViewModal(prescription);
+    
+    // Preview Button - Direct preview for printing/downloading
+    const previewBtn = document.createElement('button');
+    previewBtn.innerHTML = '<i class="fas fa-print"></i>';
+    previewBtn.className = 'action-btn action-btn-preview';
+    previewBtn.title = 'Print / Share Preview';
+    previewBtn.onclick = () => {
+        currentPrescriptionData = JSON.parse(JSON.stringify(prescription));
+        whatsappImageUrl = null;
+        navigateIfProfileComplete(() => showPreview(currentPrescriptionData), 'preview');
+    };
+
+    // Edit Button - Direct edit
+    const editBtn = document.createElement('button');
+    editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+    editBtn.className = 'action-btn action-btn-edit';
+    editBtn.title = 'Edit Prescription';
+    editBtn.onclick = () => {
+        if (!isPremium) {
+            showPremiumFeaturePrompt();
+        } else {
+            openEditModalDirect(prescription);
+        }
+    };
+    
+    // Delete Button
+    const deleteBtn = document.createElement('button');
+    deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+    deleteBtn.className = 'action-btn action-btn-delete';
+    deleteBtn.title = 'Delete Prescription';
+    deleteBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (!isPremium) {
+            showPremiumFeaturePrompt();
+        } else {
+            showDeleteModal(prescription);
+        }
+    };
+    
+    actionsCell.appendChild(viewBtn);
+    actionsCell.appendChild(previewBtn);
+    actionsCell.appendChild(editBtn);
+    actionsCell.appendChild(deleteBtn);
+}
+
+// Add direct edit function for the edit button
+function openEditModalDirect(prescription) {
+    currentEditPrescription = JSON.parse(JSON.stringify(prescription));
+    
+    const modal = document.getElementById('editPrescriptionModal');
+    const form = document.getElementById('editPrescriptionForm');
+    
+    if (!modal || !form) return;
+    
+    form.innerHTML = generateEditForm(currentEditPrescription);
+    modal.style.display = 'flex';
+    modal.style.opacity = '1';
+    modal.style.visibility = 'visible';
+    
+    // Add create patient button if no patientId exists
+    setTimeout(() => {
+        addCreatePatientOption();
+    }, 100);
+}
+
+function filterPrescriptions() {
+    // Note: The main filtering is now done in fetchPrescriptions() using firebase queries 
+    // and supplemental client-side search. This function is essentially now a no-op 
+    // unless the user performs keyup after fetch.
+}
+
+function previewPrescription(prescription) {
+    whatsappImageUrl = null;
+    showPreview(prescription);
+}
+
+// E: Enhanced Custom Delete Modal Implementations
+function showDeleteModal(prescription) {
+    console.log('Show delete modal called for:', prescription);
+    
+    selectedPrescriptionToDelete = prescription;
+    const modal = document.getElementById('deleteConfirmationModal');
+    const nameDisplay = document.getElementById('deleteRxName');
+    
+    if (!modal) {
+        console.error('Delete modal not found!');
+        showStatusMessage('Error: Delete modal not found', 'error');
+        return;
+    }
+    
+    if (nameDisplay) {
+        nameDisplay.textContent = `Prescription for ${prescription.patientName} (Mobile: ${prescription.mobile})`;
+    }
+    
+    // Show modal with proper styling
+    modal.style.display = 'flex';
+    modal.style.opacity = '1';
+    modal.style.visibility = 'visible';
+    
+    console.log('Delete modal should be visible now');
+}
+
+function closeDeleteModal() {
+    const modal = document.getElementById('deleteConfirmationModal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.style.opacity = '0';
+        modal.style.visibility = 'hidden';
+    }
+    selectedPrescriptionToDelete = null;
+}
+
+async function confirmDeleteAction() {
+    console.log('Confirm delete called');
+    
+    if (!selectedPrescriptionToDelete) {
+        showStatusMessage('No prescription selected for deletion.', 'error');
+        return;
+    }
+    
+    const prescription = selectedPrescriptionToDelete;
+    console.log('Deleting prescription:', prescription.id);
+    
+    closeDeleteModal();
+    
+    try {
+        // Show loading state
+        showStatusMessage('Deleting prescription...', 'info');
+        
+        await db.collection('prescriptions').doc(prescription.id).delete();
+        showStatusMessage('Prescription deleted successfully!', 'success');
+        
+        // Refresh the prescriptions list
+        await fetchPrescriptions();
+        
+    } catch (error) {
+        console.error('Error deleting prescription:', error);
+        showStatusMessage('Error deleting prescription: ' + error.message, 'error');
+    }
+}
+
+// Preview Management (Updated for H: Next Checkup Date)
+function loadPreviewFromForm() {
+    const formData = getFormData();
+    if (!validateFormData(formData)) {
+        showPrescriptionForm();
+        return;
+    }
+    // Create a mock Timestamp object for the new submission preview
+    const nextCheckupDateTimestamp = firebase.firestore.Timestamp.fromDate(new Date(new Date().setDate(new Date().getDate() + 365)));
+    
+    loadPreviewData({
+        ...formData,
+        nextCheckupDate: nextCheckupDateTimestamp
+    });
+}
+
+// FIX APPLIED HERE: Corrected date object parsing for Firestore Timestamps (solving [object Object])
+function loadPreviewData(data) {
+    // Ensure data exists
+    if (!data) {
+        console.error('No data provided to loadPreviewData');
+        showStatusMessage('Error loading prescription data.', 'error');
+        return;
+    }
+
+    // Safe data access with defaults
+    const patientName = data.patientName || 'N/A';
+    const age = data.age || 'N/A';
+    const gender = data.gender || 'N/A';
+    const mobile = data.mobile || 'N/A';
+    const amount = data.amount ? data.amount.toFixed(2) : '0.00';
+    const visionType = data.visionType || 'N/A';
+    const lensType = data.lensType || 'N/A';
+    const frameType = data.frameType || 'N/A';
+    const paymentMode = data.paymentMode || 'N/A';
+    const pdFar = data.pdFar || 'N/A';
+    const pdNear = data.pdNear || 'N/A';
+    
+    // Get prescription data with safe defaults
+    const presData = data.prescriptionData || {};
+
+    // Update preview elements with safe values
+    const elements = {
+        'previewPatientName': patientName,
+        'previewAge': age,
+        'previewGender': gender,
+        'previewMobile': mobile,
+        'previewAmount': amount,
+        'previewVisionType': visionType,
+        'previewLensType': lensType,
+        'previewFrameType': frameType,
+        'previewPaymentMode': paymentMode,
+        'previewPdFar': pdFar,
+        'previewPdNear': pdNear
+    };
+
+    // Update all text elements
+    Object.keys(elements).forEach(elementId => {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.textContent = elements[elementId];
+        }
+    });
+
+    // Handle Next Checkup Date with better error handling
+    let checkupDate = 'N/A';
+    if (data.nextCheckupDate) {
+        let dateObj = null;
+        if (typeof data.nextCheckupDate === 'string') {
+            dateObj = new Date(data.nextCheckupDate); 
+        } else if (typeof data.nextCheckupDate.toDate === 'function') {
+            dateObj = data.nextCheckupDate.toDate();
+        } else if (data.nextCheckupDate.seconds) {
+            dateObj = new Date(data.nextCheckupDate.seconds * 1000);
+        }
+        
+        if (dateObj instanceof Date && !isNaN(dateObj)) {
+            checkupDate = dateObj.toLocaleDateString();
+        }
+    }
+    
+    const nextCheckupElement = document.getElementById('previewNextCheckupDate');
+    if (nextCheckupElement) {
+        nextCheckupElement.textContent = checkupDate;
+    }
+
+    // Update prescription fields with safe defaults
+    const prescriptionFields = [
+        // Dist
+        'rightDistSPH', 'rightDistCYL', 'rightDistAXIS', 'rightDistVA',
+        'leftDistSPH', 'leftDistCYL', 'leftDistAXIS', 'leftDistVA',
+        // Prism
+        'rightPrismDiopter', 'rightPrismBase',
+        'leftPrismDiopter', 'leftPrismBase',
+        // Add (Simplified)
+        'rightAddSPH',
+        'leftAddSPH'
+    ];
+
+    prescriptionFields.forEach(field => {
+        const element = document.getElementById(`preview${field}`);
+        if (element) {
+            element.textContent = presData[field] || '';
+        }
+    });
+
+    // Update UPI QR Image in Preview section
+    const userData = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    const previewUpiContainer = document.getElementById('previewUpiContainer');
+    const previewQrCodeImage = document.getElementById('previewQrCodeImage');
+    
+    if (paymentMode === 'UPI' && userData.upiQrUrl && userData.upiId) {
+        if (previewUpiContainer) previewUpiContainer.style.display = 'block';
+        const upiIdElement = document.getElementById('previewUpiId');
+        if (upiIdElement) upiIdElement.textContent = userData.upiId;
+        if (previewQrCodeImage) {
+            previewQrCodeImage.src = userData.upiQrUrl;
+            previewQrCodeImage.style.display = 'block';
+        }
+    } else {
+        if (previewUpiContainer) previewUpiContainer.style.display = 'none';
+        if (previewQrCodeImage) previewQrCodeImage.style.display = 'none';
+    }
+}
+
+// Output functions (generateImage, printPreview, sendWhatsApp) are complex but remain functionally the same.
+// They are kept for brevity but should be assumed to be present and correct from the previous detailed response.
+// *******************************************************************************************************
+function generateImage() {
+    // --- MODIFIED: Lock download for non-premium users ---
+    if (!isPremium) {
+        showPremiumFeaturePrompt();
+        return;
+    }
+    // ----------------------------------------------------
+    
+    const btn = document.querySelector('.btn-download');
+    if (btn) {
+        btn.classList.add('btn-loading');
+        btn.textContent = 'Generating Image...';
+    }
+    showStatusMessage('Generating Image for Download...', 'info');
+
+    const patientName = document.getElementById('previewPatientName')?.textContent || 'Patient';
+    const shortDate = new Date().toLocaleDateString('en-IN', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric' 
+    }).replace(/\//g, '-');
+    const filename = `Prescription_${patientName}_${shortDate}.png`;
+
+    const element = document.getElementById('prescriptionPreview');
+    
+    html2canvas(element, {
+        scale: 3, 
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: '#ffffff'
+    }).then(canvas => {
+        const imageDataURL = canvas.toDataURL('image/png');
+        
+        const downloadLink = document.createElement('a');
+        downloadLink.href = imageDataURL;
+        downloadLink.download = filename;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+
+        showStatusMessage('Image (PNG) downloaded successfully!', 'success');
+        
+    }).catch((error) => {
+        showStatusMessage('Export failed. See console for details.', 'error');
+        
+    }).finally(() => {
+        if (btn) {
+            btn.classList.remove('btn-loading');
+            btn.textContent = 'Download'; 
+        }
+    });
+}
+
+// MODIFIED printPreview() to include UPI/QR logic
+function printPreview() {
+    // --- MODIFIED: Lock printing for non-premium users ---
+    if (!isPremium) {
+        showPremiumFeaturePrompt();
+        return;
+    }
+    // ----------------------------------------------------
+    
+    const printWindow = window.open('', '_blank', 'width=350,height=600');
+    
+    if (!printWindow) {
+        window.print();
+        return;
+    }
+
+    const userData = JSON.parse(localStorage.getItem('userProfile') || '{}');
+
+    const clinicName = document.getElementById('previewClinicName')?.textContent || 'Your Clinic';
+    const clinicAddress = document.getElementById('previewClinicAddress')?.textContent || 'Clinic Address';
+    const optometristName = document.getElementById('previewOptometristName')?.textContent || 'Optometrist Name';
+    const contactNumber = document.getElementById('previewContactNumber')?.textContent || 'Contact Number';
+    
+    const now = new Date();
+    const shortDate = now.toLocaleDateString('en-IN', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric' 
+    });
+    const shortTime = now.toLocaleTimeString('en-IN', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: true 
+    });
+    const currentDateTime = `${shortDate} ${shortTime}`;
+    
+    const patientName = document.getElementById('previewPatientName')?.textContent || '';
+    const age = document.getElementById('previewAge')?.textContent || '';
+    const gender = document.getElementById('previewGender')?.textContent || '';
+    const mobile = document.getElementById('previewMobile')?.textContent || '';
+    const nextCheckupDate = document.getElementById('previewNextCheckupDate')?.textContent || 'N/A';
+
+    // NEW PD Fields
+    const pdFar = document.getElementById('previewPdFar')?.textContent || '';
+    const pdNear = document.getElementById('previewPdNear')?.textContent || '';
+    
+    const visionType = document.getElementById('previewVisionType')?.textContent || '';
+    const lensType = document.getElementById('previewLensType')?.textContent || '';
+    const frameType = document.getElementById('previewFrameType')?.textContent || '';
+    const amount = document.getElementById('previewAmount')?.textContent || '';
+    const paymentMode = document.getElementById('previewPaymentMode')?.textContent || '';
+
+    // NEW: UPI Details
+    const upiId = userData.upiId || '';
+    const upiQrUrl = userData.upiQrUrl || '';
+
+    let upiQrHtml = '';
+    
+    if (paymentMode === 'UPI' && upiQrUrl && upiId) {
+        upiQrHtml = `
+            <hr style="border-top: 1px dashed #000; margin: 4px 0;">
+            <div style="text-align: center; margin: 6px 0;">
+                <img src="${upiQrUrl}" class="upi-qr-thermal" alt="Scan to Pay">
+                <p class="upi-id-thermal">SCAN & PAY VIA UPI</p>
+                <p class="upi-id-thermal" style="font-size: 8px; font-weight: normal;">${upiId}</p>
+            </div>
+            <hr style="border-top: 1px dashed #000; margin: 4px 0;">
+        `;
+    }
+
+    // UPDATED PRESCRIPTION DATA
+    const prescriptionData = {
+        rightDist: {
+            SPH: document.getElementById('previewrightDistSPH')?.textContent || '',
+            CYL: document.getElementById('previewrightDistCYL')?.textContent || '',
+            AXIS: document.getElementById('previewrightDistAXIS')?.textContent || '',
+            VA: document.getElementById('previewrightDistVA')?.textContent || ''
+        },
+        rightPrism: {
+            DIOPTER: document.getElementById('previewrightPrismDiopter')?.textContent || '',
+            BASE: document.getElementById('previewrightPrismBase')?.textContent || ''
+        },
+        rightAdd: {
+            SPH: document.getElementById('previewrightAddSPH')?.textContent || '',
+        },
+        leftDist: {
+            SPH: document.getElementById('previewleftDistSPH')?.textContent || '',
+            CYL: document.getElementById('previewleftDistCYL')?.textContent || '',
+            AXIS: document.getElementById('previewleftDistAXIS')?.textContent || '',
+            VA: document.getElementById('previewleftDistVA')?.textContent || ''
+        },
+        leftPrism: {
+            DIOPTER: document.getElementById('previewleftPrismDiopter')?.textContent || '',
+            BASE: document.getElementById('previewleftPrismBase')?.textContent || ''
+        },
+        leftAdd: {
+            SPH: document.getElementById('previewleftAddSPH')?.textContent || '',
+        }
+    };
+    
+    // Logic to display Prism if present
+    const getPrismRow = (eyeData) => {
+        if (eyeData.DIOPTER || eyeData.BASE) {
+            return `
+                <tr>
+                    <td class="section-heading">PRISM</td>
+                    <td colspan="2">${eyeData.DIOPTER}</td>
+                    <td colspan="2">${eyeData.BASE}</td>
+                </tr>
+            `;
+        }
+        return '';
+    };
+
+    // Logic to display ADD if present
+    const getAddRow = (eyeData) => {
+        if (eyeData.SPH) {
+            return `
+                <tr class="add-row">
+                    <td class="section-heading">ADD</td>
+                    <td>${eyeData.SPH}</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            `;
+        }
+        return '';
+    };
+
+    // NEW: App Promotion Section
+    const appPromotionHtml = `
+        <div style="text-align: center; margin: 8px 0; padding: 6px; background: #f8f9fa; border: 1px dashed #ccc; border-radius: 4px;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 4px;">
+                <img src="lenslogo.png" alt="LensRx" style="width: 20px; height: 20px;">
+                <strong style="font-size: 10px;">Lens Rx App</strong>
+            </div>
+            <p style="font-size: 8px; margin: 2px 0; color: #666;">
+                View your prescription online at: 
+                <strong style="color: #007bff;">lensrx.online</strong>
+            </p>
+            <p style="font-size: 7px; margin: 0; color: #888;">
+                Powered by MNR Developers
+            </p>
+        </div>
+    `;
+
+    const printHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Prescription - ${patientName}</title>
+            <meta charset="UTF-8">
+            <style>
+                * {
+                    margin: 0; padding: 0; box-sizing: border-box; font-family: 'Courier New', monospace;
+                }
+                body {
+                    width: 58mm; margin: 0 auto; padding: 3mm; background: white; color: black; font-size: 9px; line-height: 1.1;
+                }
+                .clinic-header { text-align: center; margin-bottom: 4px; padding-bottom: 3px; border-bottom: 1px solid #000; }
+                .clinic-name { font-size: 11px; font-weight: bold; margin-bottom: 1px; text-transform: uppercase; }
+                .clinic-address { font-size: 8px; margin-bottom: 1px; }
+                .clinic-contact { font-size: 8px; font-weight: bold; }
+                .header-info { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 8px; }
+                .name-section { font-weight: bold; }
+                .date-section { text-align: right; font-weight: bold; }
+                .prescription-title { text-align: center; font-size: 10px; font-weight: bold; margin: 4px 0; text-decoration: underline; }
+                .patient-info { margin-bottom: 4px; padding: 3px; border: 1px solid #000; }
+                .patient-row { display: flex; margin-bottom: 1px; }
+                .patient-label { font-weight: bold; width: 25mm; }
+                .patient-value { flex: 1; }
+                .prescription-section { margin: 4px 0; }
+                .eye-title { text-align: center; background: #e0e0e0; padding: 2px; font-weight: bold; font-size: 9px; border: 1px solid #000; border-bottom: none; }
+                .prescription-table { width: 100%; border-collapse: collapse; margin-bottom: 3px; font-size: 7px; }
+                .prescription-table th { background: #f0f0f0; border: 1px solid #000; padding: 2px 1px; text-align: center; font-weight: bold; }
+                .prescription-table td { border: 1px solid #000; padding: 2px 1px; text-align: center; }
+                .section-heading { background: #e8e8e8 !important; font-weight: bold; }
+                .options-section { margin: 4px 0; border: 1px solid #000; }
+                .options-title { background: #e0e0e0; padding: 2px; text-align: center; font-weight: bold; font-size: 9px; }
+                .options-content { padding: 3px; }
+                .option-row { display: flex; margin-bottom: 1px; }
+                .option-label { font-weight: bold; width: 20mm; }
+                .option-value { flex: 1; }
+                .amount-section { border: 1px solid #000; margin: 4px 0; }
+                .amount-row { display: flex; padding: 2px 3px; }
+                .amount-label { font-weight: bold; width: 25mm; }
+                .amount-value { flex: 1; font-weight: bold; font-size: 10px; }
+                .footer { margin-top: 6px; padding-top: 3px; border-top: 1px solid #000; text-align: center; font-size: 7px; }
+                .thank-you { margin-bottom: 2px; font-style: italic; }
+                .signature { margin-top: 8px; text-align: right; }
+                .signature-line { border-top: 1px solid #000; width: 30mm; margin-left: auto; padding-top: 1px; text-align: center; font-size: 7px; }
+                
+                /* App Promotion Styles */
+                .app-promotion { 
+                    text-align: center; 
+                    margin: 8px 0; 
+                    padding: 6px; 
+                    background: #f8f9fa; 
+                    border: 1px dashed #ccc; 
+                    border-radius: 4px; 
+                }
+                .app-promotion-header {
+                    display: flex; 
+                    align-items: center; 
+                    justify-content: center; 
+                    gap: 8px; 
+                    margin-bottom: 4px;
+                }
+                .app-logo {
+                    width: 20px; 
+                    height: 20px;
+                }
+                .app-name {
+                    font-size: 10px; 
+                    font-weight: bold;
+                }
+                .app-website {
+                    font-size: 8px; 
+                    margin: 2px 0; 
+                    color: #666;
+                }
+                .app-developer {
+                    font-size: 7px; 
+                    margin: 0; 
+                    color: #888;
+                }
+
+                /* UPDATED TABLE STYLES FOR PRISM/ADD */
+                .rx-table-header th.prism-base-header {
+                    width: 15mm;
+                }
+                .rx-table-header th.va-header {
+                    width: 10mm;
+                }
+                .rx-table-header th.sph-cyl-header {
+                    width: 12mm;
+                }
+                .add-row td:nth-child(2) {
+                    text-align: left;
+                }
+
+                @media print {
+                    body { margin: 0; padding: 2mm; width: 58mm; }
+                    @page { margin: 0; padding: 0; size: 58mm auto; }
+                    .no-print { display: none !important; }
+                    /* Thermal QR Code Styles */
+                    .upi-qr-thermal {
+                        width: 40mm !important; 
+                        height: auto !important;
+                        display: block !important;
+                        margin: 5px auto !important;
+                        filter: grayscale(100%) contrast(150%) !important; 
+                        -webkit-filter: grayscale(100%) contrast(150%) !important;
+                    }
+                    .upi-id-thermal {
+                        font-size: 9px !important;
+                        font-weight: bold !important;
+                        text-align: center !important;
+                        margin: 2px 0 !important;
+                        color: black !important;
+                        line-height: 1;
+                    }
+                }
+                .print-controls { text-align: center; margin-top: 10px; padding: 10px; background: #f5f5f5; border-radius: 5px; }
+                .print-btn { padding: 8px 16px; margin: 0 5px; border: none; border-radius: 3px; cursor: pointer; font-size: 10px; }
+                .print-primary { background: #007bff; color: white; }
+                .print-secondary { background: #6c757d; color: white; }
+            </style>
+        </head>
+        <body>
+            <div class="clinic-header">
+                <div class="clinic-name">${clinicName}</div>
+                <div class="clinic-address">${clinicAddress}</div>
+                <div class="clinic-contact">📞 ${contactNumber}</div>
+            </div>
+            <div class="header-info">
+                <div class="name-section"><strong>${optometristName}</strong></div>
+                <div class="date-section"><strong>${currentDateTime}</strong></div>
+            </div>
+            <div class="prescription-title">EYE PRESCRIPTION</div>
+            <div class="patient-info">
+                <div class="patient-row">
+                    <div class="patient-label">Patient Name:</div>
+                    <div class="patient-value">${patientName}</div>
+                </div>
+                <div class="patient-row">
+                    <div class="patient-label">Age / Gender:</div>
+                    <div class="patient-value">${age} / ${gender}</div>
+                </div>
+                <div class="patient-row">
+                    <div class="patient-label">Mobile:</div>
+                    <div class="patient-value">${mobile}</div>
+                </div>
+                <div class="patient-row">
+                    <div class="patient-label">PD Far / Near:</div>
+                    <div class="patient-value">${pdFar} / ${pdNear || 'N/A'}</div>
+                </div>
+                <div class="patient-row">
+                    <div class="patient-label">Next Checkup:</div>
+                    <div class="patient-value">${nextCheckupDate}</div>
+                </div>
+            </div>
+            
+            <div class="prescription-section">
+                <div class="eye-title">RIGHT EYE (OD)</div>
+                <table class="prescription-table">
+                    <thead>
+                        <tr>
+                            <th class="rx-table-header">Type</th>
+                            <th class="sph-cyl-header">SPH</th>
+                            <th class="sph-cyl-header">CYL</th>
+                            <th>AXIS</th>
+                            <th class="va-header">V/A</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="section-heading">DIST</td>
+                            <td>${prescriptionData.rightDist.SPH}</td>
+                            <td>${prescriptionData.rightDist.CYL}</td>
+                            <td>${prescriptionData.rightDist.AXIS}</td>
+                            <td>${prescriptionData.rightDist.VA}</td>
+                        </tr>
+                        ${getPrismRow(prescriptionData.rightPrism)}
+                        ${getAddRow(prescriptionData.rightAdd)}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="prescription-section">
+                <div class="eye-title">LEFT EYE (OS)</div>
+                <table class="prescription-table">
+                    <thead>
+                        <tr>
+                            <th class="rx-table-header">Type</th>
+                            <th class="sph-cyl-header">SPH</th>
+                            <th class="sph-cyl-header">CYL</th>
+                            <th>AXIS</th>
+                            <th class="va-header">V/A</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="section-heading">DIST</td>
+                            <td>${prescriptionData.leftDist.SPH}</td>
+                            <td>${prescriptionData.leftDist.CYL}</td>
+                            <td>${prescriptionData.leftDist.AXIS}</td>
+                            <td>${prescriptionData.leftDist.VA}</td>
+                        </tr>
+                        ${getPrismRow(prescriptionData.leftPrism)}
+                        ${getAddRow(prescriptionData.leftAdd)}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="options-section">
+                <div class="options-title">RECOMMENDED OPTIONS</div>
+                <div class="options-content">
+                    <div class="option-row"><div class="option-label">Vision Type:</div><div class="option-value">${visionType}</div></div>
+                    <div class="option-row"><div class="option-label">Lens Type:</div><div class="option-value">${lensType}</div></div>
+                    <div class="option-row"><div class="option-label">Frame Type:</div><div class="option-value">${frameType}</div></div>
+                    <div class="option-row"><div class="option-label">Payment Mode:</div><div class="option-value">${paymentMode}</div></div>
+                </div>
+            </div>
+            <div class="amount-section">
+                <div class="amount-row">
+                    <div class="amount-label">TOTAL AMOUNT:</div>
+                    <div class="amount-value">₹ ${amount}</div>
+                </div>
+            </div>
+            
+            <!-- UPI QR CODE INJECTION -->
+            ${upiQrHtml}
+
+            <!-- NEW: APP PROMOTION SECTION -->
+            ${appPromotionHtml}
+
+            <div class="footer">
+                <div class="thank-you">Thank you for choosing ${clinicName}</div>
+                <div>For queries: ${contactNumber}</div>
+                <div class="signature">
+                    <div class="signature-line">
+                        Authorized Signature<br>
+                        <strong>${optometristName}</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="no-print print-controls">
+                <button class="print-btn print-primary" onclick="printPreview()">🖨️ Print Now</button>
+                <button class="print-btn print-secondary" onclick="window.close()">❌ Close</button>
+            </div>
+            <script>
+                setTimeout(function() { window.print(); }, 500);
+                window.onafterprint = function() { setTimeout(function() { window.close(); }, 1000); };
+                setTimeout(function() { if (!window.closed) { window.close(); } }, 10000);
+            </script>
+        </body>
+        </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(printHTML);
+    printWindow.document.close();
+}
+
+function generateImage() {
+    // --- MODIFIED: Lock download for non-premium users ---
+    if (!isPremium) {
+        showPremiumFeaturePrompt();
+        return;
+    }
+    // ----------------------------------------------------
+    
+    const btn = document.querySelector('.btn-download');
+    if (btn) {
+        btn.classList.add('btn-loading');
+        btn.textContent = 'Generating Image...';
+    }
+    showStatusMessage('Generating Image for Download...', 'info');
+
+    const patientName = document.getElementById('previewPatientName')?.textContent || 'Patient';
+    const shortDate = new Date().toLocaleDateString('en-IN', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric' 
+    }).replace(/\//g, '-');
+    const filename = `Prescription_${patientName}_${shortDate}.png`;
+
+    const element = document.getElementById('prescriptionPreview');
+    
+    html2canvas(element, {
+        scale: 3, 
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff'
+    }).then(canvas => {
+        const imageDataURL = canvas.toDataURL('image/png');
+        
+        const downloadLink = document.createElement('a');
+        downloadLink.href = imageDataURL;
+        downloadLink.download = filename;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+
+        showStatusMessage('Image (PNG) downloaded successfully!', 'success');
+        
+    }).catch((error) => {
+        showStatusMessage('Export failed. See console for details.', 'error');
+        
+    }).finally(() => {
+        if (btn) {
+            btn.classList.remove('btn-loading');
+            btn.textContent = 'Download'; 
+        }
+    });
+}
+
+async function sendWhatsAppMessage(mobile, imageUrl) {
+    try {
+        let formattedMobile = (mobile || '').replace(/\D/g, '');
+        
+        // Prepend India country code 91 if 10-digit phone number is passed
+        if (formattedMobile.length === 10) {
+            formattedMobile = '91' + formattedMobile;
+        }
+
+        const clinicName = document.getElementById('previewClinicName')?.textContent || 'Our Clinic';
+        const optometristName = document.getElementById('previewOptometristName')?.textContent || 'Optometrist';
+        const patientName = document.getElementById('previewPatientName')?.textContent || 'Patient';
+        
+        let messageText = `Hello ${patientName},\n\nYour eye prescription from ${clinicName} is ready.\n\n🔗 View your prescription image:\n${imageUrl}\n\nThank you for visiting us!\n\n- ${optometristName}\n\n*Powered by Lens Rx App*`;
+        
+        const encodedMessage = encodeURIComponent(messageText);
+        // Universal API endpoint works reliably across all browsers and desktop/mobile apps
+        const whatsappUrl = `https://api.whatsapp.com/send?phone=${formattedMobile}&text=${encodedMessage}`;
+        
+        const whatsappWindow = window.open(whatsappUrl, '_blank');
+        
+        if (!whatsappWindow) {
+            showStatusMessage('Popup blocked. Please allow popups for WhatsApp.', 'warning');
+        } else {
+            showStatusMessage('Opening WhatsApp with prescription image link...', 'success');
+        }
+        
+    } catch (error) {
+        throw new Error('Failed to send WhatsApp message: ' + error.message);
+    }
+}
+
+function startWhatsappTimer() {
+    const modal = document.getElementById('whatsappTimerModal');
+    const timerDisplay = document.getElementById('timerDisplay');
+    
+    if (modal) modal.style.display = 'flex';
+    timerSeconds = 0;
+    
+    if (timerDisplay) timerDisplay.textContent = '00:00';
+
+    timerInterval = setInterval(() => {
+        timerSeconds++;
+        const minutes = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
+        const seconds = String(timerSeconds % 60).padStart(2, '0');
+        if (timerDisplay) timerDisplay.textContent = `${minutes}:${seconds}`;
+    }, 1000);
+}
+
+function stopWhatsappTimer() {
+    clearInterval(timerInterval);
+    const modal = document.getElementById('whatsappTimerModal');
+    if (modal) {
+        modal.style.display = 'none';
+        
+    }
+}
+
+async function sendWhatsApp() {
+    // --- MODIFIED: Lock sharing for non-premium users ---
+    if (!isPremium) {
+        showPremiumFeaturePrompt();
+        return;
+    }
+    // ----------------------------------------------------
+    
+    const mobile = document.getElementById('previewMobile')?.textContent;
+    if (!mobile) {
+        showStatusMessage('No mobile number available for WhatsApp', 'error');
+        return;
+    }
+    
+    if (whatsappImageUrl) {
+        await sendWhatsAppMessage(mobile, whatsappImageUrl);
+        return;
+    }
+    
+    startWhatsappTimer(); 
+    
+    try {
+        const element = document.getElementById('prescriptionPreview');
+        if (!element) {
+            showStatusMessage('Prescription preview not found', 'error');
+            stopWhatsappTimer();
+            return;
+        }
+
+        const canvas = await html2canvas(element, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: false,
+            backgroundColor: '#ffffff'
+        });
+
+        const imageData = canvas.toDataURL('image/png');
+        
+        try {
+            whatsappImageUrl = await uploadImageToImageKit(imageData);
+        } catch (imgError) {
+            console.warn('ImageKit primary upload fallback:', imgError);
+            whatsappImageUrl = await uploadImageToImgBB(imageData).catch(() => imageData); 
+        }
+
+        await sendWhatsAppMessage(mobile, whatsappImageUrl);
+        
+    } catch (error) {
+        showStatusMessage('Failed to send WhatsApp: ' + error.message, 'error');
+    } finally {
+        stopWhatsappTimer(); 
+    }
+}
+
+/**
+ * Uploads base64 image data to ImageKit API.
+ * Returns the public hosted ImageKit URL for WhatsApp sharing & storage.
+ */
+async function uploadImageToImageKit(base64Image, fileName = null) {
+    const name = fileName || `prescription_${Date.now()}.png`;
+    const base64Data = base64Image.includes(',') ? base64Image : `data:image/png;base64,${base64Image}`;
+
+    const formData = new FormData();
+    formData.append("file", base64Data);
+    formData.append("fileName", name);
+    formData.append("useUniqueFileName", "true");
+    formData.append("folder", "/prescriptions");
+    if (typeof IMAGEKIT_PUBLIC_KEY !== 'undefined' && IMAGEKIT_PUBLIC_KEY) {
+        formData.append("publicKey", IMAGEKIT_PUBLIC_KEY);
+    }
+
+    const headers = {};
+    if (typeof IMAGEKIT_PRIVATE_KEY !== 'undefined' && IMAGEKIT_PRIVATE_KEY) {
+        headers["Authorization"] = "Basic " + btoa(IMAGEKIT_PRIVATE_KEY + ":");
+    }
+
+    try {
+        const response = await fetch("https://upload.imagekit.io/api/v1/files/upload", {
+            method: "POST",
+            headers: headers,
+            body: formData
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            if (data && data.url) {
+                console.log('✅ ImageKit upload successful:', data.url);
+                return data.url;
+            }
+        }
+        const errJson = await response.json().catch(() => ({}));
+        throw new Error(`ImageKit error ${response.status}: ${errJson.message || response.statusText}`);
+    } catch (err) {
+        console.warn('ImageKit upload fallback:', err);
+        return uploadImageToImgBB(base64Image);
+    }
+}
+
+async function uploadImageToImgBB(base64Image) {
+    if (!IMGBB_API_KEY || IMGBB_API_KEY === 'DISABLED') {
+        throw new Error('Image upload service is currently unavailable.');
+    }
+    
+    const blob = dataURLToBlob(base64Image);
+    const formData = new FormData();
+    formData.append("image", blob);
+
+    const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+        method: "POST",
+        body: formData
+    });
+    
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.success) {
+        return data.data.url;
+    } else {
+        throw new Error(data.error?.message || 'Image upload failed');
+    }
+}
+
+function dataURLToBlob(dataURL) {
+    const parts = dataURL.split(';base64,');
+    const contentType = parts[0].split(':')[1];
+    const raw = window.atob(parts[1]);
+    const uInt8Array = new Uint8Array(raw.length);
+    
+    for (let i = 0; i < raw.length; ++i) {
+        uInt8Array[i] = raw.charCodeAt(i);
+    }
+    
+    return new Blob([uInt8Array], { type: contentType });
+}
+
+function fileToDataURL(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+/**
+ * Uploads profile QR Code image to ImageKit.
+ */
+async function uploadImageToImageKitForProfile(base64Image) {
+    return uploadImageToImageKit(base64Image, `qr_code_${Date.now()}.png`);
+}
+
+async function uploadImageToImgBBForProfile(base64Image) {
+    return uploadImageToImageKitForProfile(base64Image);
+}
+
+
+// NEW Profile UI/UX Functions
+function previewQrCode(event) {
+    const file = event.target.files[0];
+    const previewContainer = document.getElementById('qrCodePreviewContainer');
+    const qrImage = document.getElementById('currentQrCodeImage');
+    const qrUrlDisplay = document.getElementById('qrCodeUrlDisplay');
+    const qrUrlInput = document.getElementById('setupUpiQrUrl');
+    const uploadStatus = document.getElementById('qrUploadStatus');
+
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            qrImage.src = e.target.result;
+            qrImage.style.display = 'block';
+            previewContainer.style.display = 'block';
+            qrUrlDisplay.textContent = 'New image selected (will upload on save).';
+            qrUrlInput.value = ''; // Clear hidden URL, it will be uploaded in saveSetupProfile
+            uploadStatus.textContent = '';
+        };
+        reader.readAsDataURL(file);
+    } else {
+        // If file selection is cancelled, restore previous state
+        const userData = JSON.parse(localStorage.getItem('userProfile') || '{}');
+        const previousUrl = userData.upiQrUrl || '';
+        
+        if (previousUrl) {
+            qrImage.src = previousUrl;
+            qrImage.style.display = 'block';
+            previewContainer.style.display = 'block';
+            qrUrlDisplay.textContent = previousUrl.length > 50 ? previousUrl.substring(0, 47) + '...' : previousUrl;
+            qrUrlInput.value = previousUrl;
+        } else {
+            qrImage.style.display = 'none';
+            previewContainer.style.display = 'none';
+            qrUrlInput.value = '';
+        }
+    }
+}
+
+function removeQrCode() {
+    const previewContainer = document.getElementById('qrCodePreviewContainer');
+    const qrImage = document.getElementById('currentQrCodeImage');
+    const qrUrlInput = document.getElementById('setupUpiQrUrl');
+    const qrFile = document.getElementById('qrCodeFile');
+    const qrCodeUrlDisplay = document.getElementById('qrCodeUrlDisplay');
+    
+    // Clear the form and hidden input
+    if (qrImage) qrImage.style.display = 'none';
+    if (qrFile) qrFile.value = ''; // Clear file input
+    if (qrUrlInput) {
+        qrUrlInput.value = ''; // This will save an empty string to Firestore
+        qrUrlInput.dataset.originalValue = '';
+    }
+    if (previewContainer) previewContainer.style.display = 'none';
+    if (qrCodeUrlDisplay) qrCodeUrlDisplay.textContent = 'QR removed (save to confirm)';
+    
+    showStatusMessage('QR code removed. Click "Save Profile & Continue" to update your details.', 'info');
+}
+
+// -----------------------------------------------------------
+// 8. Monetization and Resilience (C, D)
+// -----------------------------------------------------------
+
+function checkAndPromptPWAInstall() {
+    if (isFirstPrescription) {
+        isFirstPrescription = false;
+        localStorage.setItem('isFirstPrescription', 'false'); 
+        
+        if (deferredPrompt) {
+            showInstallPromotion(); 
+        }
+    }
+}
+
+async function checkPrescriptionLimit(isInitialLoad = false) {
+    const user = auth.currentUser;
+    if (!user) return false;
+
+    // Premium users bypass the limit immediately
+    if (isPremium) {
+        return true;
+    }
+
+    try {
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
+        // subscription check already done in initializeApp, just proceed with limit check
+        
+        const querySnapshot = await db.collection('prescriptions')
+            .where('userId', '==', user.uid)
+            .where('createdAt', '>=', monthStart)
+            .where('createdAt', '<=', monthEnd)
+            .get();
+
+        const prescriptionCount = querySnapshot.size;
+        
+        updateUsageCounter(prescriptionCount);
+
+        if (prescriptionCount >= FREE_PRESCRIPTION_LIMIT) {
+            if (RAZORPAY_KEY_ID) {
+                if (!isInitialLoad) { 
+                     showLimitReachedPrompt(); // Show specific limit message
+                }
+                return false;
+            } else {
+                // If payment is disabled, treat as unlimited free
+                return true;
+            }
+        }
+        
+        return true;
+    } catch (error) {
+        if (!isInitialLoad) {
+             showStatusMessage('Warning: Database error prevented limit check. Allowing submission temporarily. Please report this issue.', 'error');
+        }
+        return true; 
+    }
+}
+
+function updateUsageCounter(currentCount) {
+    const usageElement = document.getElementById('usageCounter');
+    if (!usageElement) return;
+
+    const percentage = (currentCount / FREE_PRESCRIPTION_LIMIT) * 100;
+    const progressBarStyle = `width: ${Math.min(100, percentage)}%`; // Cap at 100%
+    const statusText = percentage >= 100 ? `<span class="text-warning fw-bold">Limit Reached</span>` : `${FREE_PRESCRIPTION_LIMIT - currentCount} remaining`;
+
+    usageElement.innerHTML = `
+        <div class="usage-counter">
+            <h5><i class="fas fa-chart-line"></i> Monthly Usage: ${statusText}</h5>
+            <p>${currentCount} of ${FREE_PRESCRIPTION_LIMIT} free prescriptions used</p>
+            <div class="progress">
+                <div class="progress-bar" role="progressbar" style="${progressBarStyle}"></div>
+            </div>
+            <small>Upgrade for unlimited prescriptions</small>
+        </div>
+    `;
+}
+
+async function checkActiveSubscription(userId) {
+    try {
+        const subscriptionDoc = await db.collection('subscriptions').doc(userId).get();
+
+        if (subscriptionDoc.exists) {
+            const subscription = subscriptionDoc.data();
+            const now = new Date();
+            
+            if (subscription.expiryDate && typeof subscription.expiryDate.toDate === 'function') {
+                const expiryDate = subscription.expiryDate.toDate();
+                
+                const isActive = expiryDate > now;
+                let remainingDays = 0;
+                
+                if (isActive) {
+                    const diffTime = expiryDate.getTime() - now.getTime();
+                    remainingDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                }
+                
+                return {
+                    active: isActive,
+                    plan: subscription.plan,
+                    expiryDate: expiryDate,
+                    remainingDays: remainingDays
+                };
+            }
+        }
+
+        return { active: false };
+    } catch (error) {
+        throw error; // Propagate error for resilience check in checkPrescriptionLimit
+    }
+}
+
+async function updateSubscriptionStatus() {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const subscription = await checkActiveSubscription(user.uid);
+    const statusElement = document.getElementById('subscriptionStatus');
+    
+    // Update global status
+    isPremium = subscription.active; 
+    
+    if (statusElement) {
+        if (subscription.active) {
+            const expiryDate = subscription.expiryDate.toLocaleDateString();
+            statusElement.innerHTML = `
+                <div class="alert alert-success">
+                    <i class="fas fa-crown"></i> 
+                    <strong>Premium Member</strong> - Subscription active until ${expiryDate}
+                </div>
+            `;
+        } else {
+            statusElement.innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Free Plan</strong> - ${FREE_PRESCRIPTION_LIMIT} prescriptions per month
+                </div>
+            `;
+        }
+    }
+}
+
+function addUsageCounterToDashboard() {
+    const dashboardSection = document.getElementById('dashboardSection');
+    if (dashboardSection) {
+        const usageCounterHTML = `
+            <div id="usageCounter">
+                <!-- Usage counter will be dynamically updated -->
+            </div>
+        `;
+        
+        const welcomeText = document.getElementById('dashboardWelcomeText');
+        if (welcomeText) {
+            welcomeText.insertAdjacentHTML('afterend', usageCounterHTML);
+        }
+        
+        const subscriptionStatusHTML = `
+            <div id="subscriptionStatus" class="mb-4">
+                <!-- Subscription status will be dynamically updated -->
+            </div>
+        `;
+        
+        const statsFilters = document.querySelector('.stats-filters');
+        if (statsFilters) {
+            statsFilters.insertAdjacentHTML('beforebegin', subscriptionStatusHTML);
+        }
+    }
+}
+
+async function updatePremiumUI() {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const subscription = await checkActiveSubscription(user.uid);
+    isPremium = subscription.active;
+    const remainingDays = subscription.remainingDays || 0;
+    
+    const daysCountDisplay = isPremium && remainingDays > 0 ? `(${remainingDays}d)` : '';
+
+    const navStatusContainer = document.getElementById('navSubscriptionStatus');
+    const navBuyButtonContainer = document.getElementById('navBuyPremiumButton'); 
+    
+    if (navStatusContainer) {
+        if (isPremium) {
+            navStatusContainer.innerHTML = `<span class="badge badge-premium" title="Premium until ${subscription.expiryDate.toLocaleDateString()}"><i class="fas fa-crown me-1"></i> Premium ${daysCountDisplay}</span>`;
+            if (navBuyButtonContainer) navBuyButtonContainer.innerHTML = '';
+        } else {
+            navStatusContainer.innerHTML = `<span class="badge badge-free" title="Free plan - ${FREE_PRESCRIPTION_LIMIT} prescriptions/month"><i class="fas fa-layer-group me-1"></i> Free Plan</span>`;
+            if (navBuyButtonContainer) {
+                navBuyButtonContainer.innerHTML = `<a href="payment.html" class="btn-upgrade-nav" title="Upgrade to Premium"><i class="fas fa-crown"></i> <span>Upgrade</span></a>`;
+            }
+        }
+    }
+    
+    const mobileStatusElement = document.getElementById('mobileSubscriptionStatus');
+    const mobileBuyButtonElement = document.getElementById('mobileBuyPremiumButton'); 
+    
+    if (mobileStatusElement && mobileBuyButtonElement) {
+        if (isPremium) {
+            mobileStatusElement.innerHTML = `<div class="text-center"><span class="badge bg-success mb-2"><i class="fas fa-crown"></i> Premium Member ${daysCountDisplay}</span><br><small class="text-muted">Valid until ${subscription.expiryDate.toLocaleDateString()}</small></div>`;
+            mobileBuyButtonElement.innerHTML = '';
+        } else {
+            mobileStatusElement.innerHTML = `<div class="text-center"><span class="badge bg-warning mb-2"><i class="fas fa-user"></i> Free Plan</span><br><small class="text-muted">${FREE_PRESCRIPTION_LIMIT} prescriptions/month</small></div>`;
+            mobileBuyButtonElement.innerHTML = `<div class="text-center mt-3"><a href="payment.html" class="btn btn-primary w-75" style="background: var(--premium-navy); border: none; font-weight: 600;"><i class="fas fa-arrow-up"></i> Buy Premium</a></div>`;
+        }
+    }
+
+    const premiumTag = document.getElementById('profilePremiumTag');
+    
+    if (premiumTag) {
+        if (isPremium) {
+            premiumTag.innerHTML = `<span class="badge bg-success ms-2" title="Premium until ${subscription.expiryDate.toLocaleDateString()}"><i class="fas fa-crown me-1"></i> PREMIUM ${daysCountDisplay}</span>`;
+        } else {
+            premiumTag.innerHTML = '';
+        }
+    }
+    
+    lockFeatures();
+}
+
+// --- NEW FUNCTION: Show prompt for premium features ---
+function showPremiumFeaturePrompt() {
+    const modal = document.getElementById('premiumFeaturePromptModal');
+    if (modal) {
+        const messageElement = modal.querySelector('p.text-muted');
+        if (messageElement) {
+            messageElement.innerHTML = `This feature (e.g., **Export, Delete, Templates**) requires a **Premium Subscription**.`;
+        }
+        modal.style.display = 'flex';
+    }
+    showStatusMessage(`This feature is premium-only. Please upgrade.`, 'warning');
+}
+
+function closePremiumFeaturePrompt() {
+    const modal = document.getElementById('premiumFeaturePromptModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+// --------------------------------------------------------
+
+function showLimitReachedPrompt() {
+    const modal = document.getElementById('limitReachedPromptModal');
+    if (modal) {
+        const messageElement = modal.querySelector('p.text-muted');
+        if (messageElement) {
+            messageElement.innerHTML = `You have used all **<span class="fw-bold">${FREE_PRESCRIPTION_LIMIT} free prescriptions</span>** for this month.`;
+        }
+        modal.style.display = 'flex';
+    }
+    showStatusMessage(`You've hit the monthly limit of ${FREE_PRESCRIPTION_LIMIT} free prescriptions.`, 'warning');
+}
+
+function closeLimitReachedPrompt() {
+    const modal = document.getElementById('limitReachedPromptModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function updatePlanPrices() {
+    const weeklyPrice = SUBSCRIPTION_PLANS.WEEKLY ? SUBSCRIPTION_PLANS.WEEKLY.amount : 49;
+    const monthlyPrice = SUBSCRIPTION_PLANS.MONTHLY ? SUBSCRIPTION_PLANS.MONTHLY.amount : 99;
+    const yearlyPrice = SUBSCRIPTION_PLANS.YEARLY ? SUBSCRIPTION_PLANS.YEARLY.amount : 499;
+    
+    const weeklyPriceElement = document.querySelector('.weekly-plan .price');
+    if (weeklyPriceElement) {
+        weeklyPriceElement.textContent = `₹${weeklyPrice}`;
+    }
+
+    const monthlyPriceElement = document.querySelector('.monthly-plan .price');
+    const monthlyPlan = document.querySelector('.monthly-plan');
+    if (monthlyPriceElement && monthlyPlan) {
+        monthlyPriceElement.textContent = `₹${monthlyPrice}`;
+    }
+    
+    const yearlyPriceElement = document.querySelector('.yearly-plan .price');
+    const yearlyPlan = document.querySelector('.yearly-plan');
+    if (yearlyPriceElement && yearlyPlan) {
+        yearlyPriceElement.textContent = `₹${yearlyPrice}`;
+        
+        const monthlyCost = monthlyPrice * 12;
+        const savings = monthlyCost - yearlyPrice;
+        const savingsPercentage = Math.round((savings / monthlyCost) * 100);
+        
+        const savingsElement = yearlyPlan.querySelector('.savings');
+        if (savingsElement) {
+            savingsElement.textContent = `Save ${savingsPercentage}%`;
+        }
+    }
+}
+
+function showPaymentModal() {
+    window.location.href = 'payment.html';
+}
+
+// -----------------------------------------------------------
+// 9. Utility Functions (Unchanged)
+// -----------------------------------------------------------
+
+function handleBrowserBack(event) {
+    const currentState = history.state?.page;
+    
+    if (currentState === 'setup' && !isProfileComplete) {
+        history.pushState({ page: 'setup' }, 'Profile Setup', 'app.html#setup');
+        showStatusMessage('Please save your profile details to continue.', 'warning');
+        return;
+    }
+    
+    if (currentState === 'form' && isFormFilled) {
+        const modal = document.getElementById('exitPromptModal');
+        if (modal) modal.style.display = 'flex';
+        history.pushState({ page: 'form' }, 'Add Prescription', 'app.html#form');
+    }
+}
+
+function checkFormFilled() {
+    const patientName = document.getElementById('patientName')?.value.trim();
+    const age = document.getElementById('age')?.value.trim();
+    const mobile = document.getElementById('patientMobile')?.value.trim();
+    
+    isFormFilled = !!(patientName || age || mobile);
+}
+
+function confirmExitAction() {
+    document.getElementById('exitPromptModal').style.display = 'none';
+    isFormFilled = false;
+    window.history.back();
+}
+
+function cancelExitAction() {
+    document.getElementById('exitPromptModal').style.display = 'none';
+    history.pushState({ page: 'form' }, 'Add Prescription', 'app.html#form');
+}
+
+// UPDATED: setupInputValidation to handle new fields
+function setupInputValidation() {
+    const ageInput = document.getElementById('age');
+    if (ageInput) {
+        ageInput.addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+    }
+
+    const prescriptionInputs = [
+        // Dist
+        { id: 'rightDistSPH', type: 'number' }, { id: 'rightDistCYL', type: 'number' }, 
+        { id: 'rightDistAXIS', type: 'axis' }, { id: 'rightDistVA', type: 'va' },
+        { id: 'leftDistSPH', type: 'number' }, { id: 'leftDistCYL', type: 'number' }, 
+        { id: 'leftDistAXIS', type: 'axis' }, { id: 'leftDistVA', type: 'va' },
+        // Add (Simplified)
+        { id: 'rightAddSPH', type: 'add' }, 
+        { id: 'leftAddSPH', type: 'add' }, 
+        // Prism (New)
+        { id: 'rightPrismDiopter', type: 'prism_diopter' },
+        { id: 'rightPrismBase', type: 'prism_base' },
+        { id: 'leftPrismDiopter', type: 'prism_diopter' },
+        { id: 'leftPrismBase', type: 'prism_base' },
+        // PD (New)
+        { id: 'pdFar', type: 'pd_complex' },
+        { id: 'pdNear', type: 'pd_complex' },
+    ];
+
+    prescriptionInputs.forEach(field => {
+        const element = document.getElementById(field.id);
+        if (element) {
+            element.addEventListener('input', function() {
+                if (field.type === 'number') {
+                    // Allow optional sign, digits, and one decimal point
+                    this.value = this.value.replace(/[^0-9.+-]/g, ''); 
+                } else if (field.type === 'va') {
+                    // Allow digits, /, and . (for decimal VA, e.g., 0.8, 6/6)
+                    this.value = this.value.replace(/[^0-9/N.]/g, '').toUpperCase();
+                } else if (field.type === 'add') {
+                    // Only +, digits, and one decimal point (ADD is typically positive)
+                    this.value = this.value.replace(/[^0-9.+]/g, '');
+                } else if (field.type === 'axis') {
+                    // Only digits (0-180)
+                    this.value = this.value.replace(/[^0-9]/g, '');
+                } else if (field.type === 'prism_diopter') {
+                    // Prism diopter (e.g., 1.5) - only digits and one decimal point
+                     this.value = this.value.replace(/[^0-9.]/g, ''); 
+                } else if (field.type === 'prism_base') {
+                     // Base direction (IN, OUT, UP, DOWN)
+                     this.value = this.value.toUpperCase().replace(/[^INOUTUPDOWN]/g, '');
+                } else if (field.type === 'pd_complex') {
+                    // Allow monocular or binocular PD (e.g., 60 or 30/30 or 30.5/30.5)
+                     this.value = this.value.replace(/[^0-9./]/g, '');
+                }
+            });
+        }
+    });
+}
+// END UPDATED: setupInputValidation
+
+async function fetchDashboardStats() {
+    const period = document.getElementById('statsTimePeriod').value;
+    const user = auth.currentUser;
+    if (!user) return;
+    
+    let startDate = new Date();
+    let endDate = new Date();
+    endDate.setHours(23, 59, 59, 999); 
+
+    switch (period) {
+        case 'daily':
+            startDate.setHours(0, 0, 0, 0); 
+            break;
+        case 'weekly':
+            startDate.setDate(startDate.getDate() - 7);
+            startDate.setHours(0, 0, 0, 0);
+            break;
+        case 'monthly':
+            startDate.setMonth(startDate.getMonth() - 1);
+            startDate.setHours(0, 0, 0, 0);
+            break;
+        case 'all':
+            startDate = new Date(0); 
+            break;
+    }
+    
+    if (period !== 'all') {
+        startDate.setHours(0, 0, 0, 0);
+    }
+    
+    let baseQuery = db.collection('prescriptions')
+        .where('userId', '==', user.uid);
+    
+    if (period !== 'all') {
+        baseQuery = baseQuery.where('createdAt', '>=', startDate);
+    }
+    
+    if (period !== 'all' || endDate.getTime() !== new Date(2300, 0, 1).getTime()) { 
+        baseQuery = baseQuery.where('createdAt', '<=', endDate);
+    }
+
+    try {
+        const querySnapshot = await baseQuery.get();
+        let totalPrescriptions = 0;
+        let totalRevenue = 0;
+        
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            totalPrescriptions += 1;
+            totalRevenue += (data.amount || 0);
+        });
+        
+        document.getElementById('statPrescriptions').textContent = totalPrescriptions.toString();
+        document.getElementById('statRevenue').textContent = `₹ ${totalRevenue.toFixed(2)}`;
+        
+    } catch (error) {
+        document.getElementById('statPrescriptions').textContent = 'N/A';
+        document.getElementById('statRevenue').textContent = '₹ N/A';
+        showStatusMessage('Failed to load dashboard stats.', 'error');
+    }
+}
+
+async function fetchReportDataByRange() {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const startDateInput = document.getElementById('reportDateStart').value;
+    const endDateInput = document.getElementById('reportDateEnd').value;
+    
+    if (!startDateInput || !endDateInput) {
+        showStatusMessage('Please select both start and end dates for the report.', 'warning');
+        return;
+    }
+
+    let startDate = new Date(startDateInput);
+    let endDate = new Date(endDateInput);
+    
+    endDate.setHours(23, 59, 59, 999);
+    
+    if (startDate > endDate) {
+        showStatusMessage('Start date cannot be after end date.', 'error');
+        return;
+    }
+    
+    try {
+        const querySnapshot = await db.collection('prescriptions')
+            .where('userId', '==', user.uid)
+            .where('createdAt', '>=', startDate)
+            .where('createdAt', '<=', endDate)
+            .orderBy('createdAt', 'asc')
+            .get();
+
+        const prescriptions = [];
+        querySnapshot.forEach((doc) => {
+            prescriptions.push(doc.data());
+        });
+
+        const reportData = processReportDataByDate(prescriptions);
+        displayReport(reportData);
+        
+    } catch (error) {
+        showStatusMessage('Error fetching report data. Check console for details.', 'error');
+    }
+}
+
+function processReportDataByDate(prescriptions) {
+    const reportData = {};
+    let totalPrescriptions = 0;
+    let totalRevenue = 0;
+    
+    prescriptions.forEach((data) => {
+        const timestamp = data.createdAt;
+        if (!timestamp || typeof timestamp.toDate !== 'function') return;
+        
+        const date = timestamp.toDate();
+        const key = date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+        
+        if (!reportData[key]) {
+            reportData[key] = { prescriptions: 0, totalAmount: 0 };
+        }
+        
+        const amount = data.amount || 0;
+        
+        reportData[key].prescriptions += 1;
+        reportData[key].totalAmount += amount;
+        totalPrescriptions += 1;
+        totalRevenue += amount;
+    });
+    
+    return { dailyData: reportData, totalPrescriptions, totalRevenue };
+}
+
+function displayReport(reportSummary) {
+    const tbody = document.getElementById('reportTable')?.getElementsByTagName('tbody')[0];
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    const { dailyData, totalPrescriptions, totalRevenue } = reportSummary;
+
+    if (!dailyData || Object.keys(dailyData).length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center">No data available for the selected range</td></tr>';
+    } else {
+        Object.entries(dailyData).forEach(([date, report]) => {
+            const row = tbody.insertRow();
+            row.insertCell().textContent = date;
+            row.insertCell().textContent = report.prescriptions;
+            row.insertCell().textContent = `₹${report.totalAmount.toFixed(2)}`;
+        });
+    }
+    
+    document.getElementById('reportTotalPrescriptions').textContent = totalPrescriptions.toString();
+    document.getElementById('reportTotalRevenue').textContent = `₹ ${totalRevenue.toFixed(2)}`;
+}
+
+// -----------------------------------------------------------
+// 10. Feature Locking (New Function)
+// -----------------------------------------------------------
+function lockFeatures() {
+    const templateSaveBtn = document.querySelector('#prescriptionFormSection .template-management-bar .btn-tertiary');
+    const previewDownloadBtn = document.querySelector('#previewSection .btn-download');
+    const previewPrintBtn = document.querySelector('#previewSection .btn-print');
+    const previewWhatsAppBtn = document.querySelector('#previewSection .btn-whatsapp');
+    const prescriptionDeleteBtns = document.querySelectorAll('#prescriptionTable .btn-delete');
+    
+    // Lock functions are handled by individual function wrappers (submitPrescription, etc.)
+    // Here we handle the UI visual locks/unlocks
+    
+    const elementsToLock = [templateSaveBtn, previewDownloadBtn, previewPrintBtn, previewWhatsAppBtn];
+    
+    if (!isPremium) {
+        // Apply lock styling and override clicks if necessary
+        elementsToLock.forEach(el => {
+            if (el) {
+                el.classList.add('btn-disabled');
+                el.title = 'Premium feature - Upgrade to unlock';
+            }
+        });
+
+        prescriptionDeleteBtns.forEach(el => {
+             if (el) {
+                el.classList.add('btn-disabled');
+                el.title = 'Premium feature - Delete requires subscription';
+            }
+        });
+        
+    } else {
+        // Remove lock styling and restore functionality where needed
+         elementsToLock.forEach(el => {
+            if (el) {
+                el.classList.remove('btn-disabled');
+                el.title = '';
+            }
+        });
+
+        prescriptionDeleteBtns.forEach(el => {
+            if (el) {
+                el.classList.remove('btn-disabled');
+                el.title = 'Delete';
+            }
+        });
+    }
+}
+
+// Service Worker Update Handler
+function setupServiceWorkerUpdates() {
+    if ('serviceWorker' in navigator) {
+        // Listen for service worker updates
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            console.log('Service Worker updated, reloading page...');
+            showStatusMessage('App updated! Refreshing...', 'info');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        });
+
+        // Listen for custom update messages
+        navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'SW_UPDATED') {
+                console.log('Update detected:', event.data.version);
+                showUpdateNotification(event.data.version);
+            }
+        });
+
+        // Check for updates every hour
+        setInterval(checkForUpdates, 60 * 60 * 1000);
+        
+        // Initial check
+        checkForUpdates();
+    }
+}
+
+// Check for updates
+async function checkForUpdates() {
+    if ('serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.ready;
+        
+        registration.update().then(() => {
+            console.log('Checked for service worker updates');
+        }).catch(error => {
+            console.log('Update check failed:', error);
+        });
+    }
+}
+
+// Update notification with refresh button
+function showUpdateNotification(version) {
+    const existingNotification = document.getElementById('updateNotification');
+    if (existingNotification) existingNotification.remove();
+
+    const updateNotification = document.createElement('div');
+    updateNotification.id = 'updateNotification';
+    updateNotification.innerHTML = `
+        <div class="update-notification">
+            <div class="update-content">
+                <i class="fas fa-sync-alt"></i>
+                <span>New version ${version} available!</span>
+                <button onclick="window.location.reload()" class="btn btn-success btn-sm">
+                    Update Now
+                </button>
+                <button onclick="this.parentElement.parentElement.remove()" class="btn btn-secondary btn-sm">
+                    Later
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(updateNotification);
+}
+
+// Manual update check (call this when you deploy updates)
+function forceUpdateCheck() {
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(registration => {
+            registration.update();
+            showStatusMessage('Checking for updates...', 'info');
+        });
+    }
+}
+
+// Global Exports
+window.showDashboard = showDashboard;
+window.showNotifications = showNotifications; // Export new function
+window.showPrescriptionForm = showPrescriptionForm;
+window.showPrescriptions = showPrescriptions;
+window.showReports = showReports;
+window.showPreview = showPreview;
+window.showProfileSetup = showProfileSetup;
+window.saveSetupProfile = saveSetupProfile;
+window.submitPrescription = submitPrescription;
+window.filterPrescriptions = filterPrescriptions;
+window.generateImage = generateImage;
+window.printPreview = printPreview;
+window.sendWhatsApp = sendWhatsApp;
+window.fetchReportDataByRange = fetchReportDataByRange;
+window.fetchDashboardStats = fetchDashboardStats;
+window.logoutUser = logoutUser;
+window.installPWA = installPWA;
+window.navigateIfProfileComplete = navigateIfProfileComplete; 
+window.showLimitReachedPrompt = showLimitReachedPrompt;
+window.closeLimitReachedPrompt = closeLimitReachedPrompt;
+window.showPaymentModal = showPaymentModal;
+if (typeof closePaymentModal !== 'undefined') window.closePaymentModal = closePaymentModal;
+if (typeof selectPlan !== 'undefined') window.selectPlan = selectPlan;
+if (typeof proceedToPayment !== 'undefined') window.proceedToPayment = proceedToPayment;
+window.toggleDarkMode = toggleDarkMode;
+
+// New Feature Exports
+window.showPatients = showPatients;
+window.fetchPatients = fetchPatients;
+window.filterPatients = filterPatients;
+window.copyRightToLeft = copyRightToLeft;
+window.showDeleteModal = showDeleteModal;
+window.closeDeleteModal = closeDeleteModal;
+window.confirmDeleteAction = confirmDeleteAction;
+window.saveAsTemplate = saveAsTemplate;
+window.loadTemplate = loadTemplate;
+window.checkPatientExists = checkPatientExists;
+// --- EXPORT NEW PREMIUM FEATURE PROMPT FUNCTION ---
+window.showPremiumFeaturePrompt = showPremiumFeaturePrompt;
+window.closePremiumFeaturePrompt = closePremiumFeaturePrompt;
+
+// NEW UPI FUNCTIONS
+window.previewQrCode = previewQrCode;
+window.removeQrCode = removeQrCode;
+
+// FORM FIELD CUSTOMIZER EXPORTS
+window.toggleFormCustomizer = toggleFormCustomizer;
+window.saveFormFieldsConfig = saveFormFieldsConfig;
+window.addCustomRxField = addCustomRxField;
+window.removeCustomRxField = removeCustomRxField;
+window.applyFormFieldsConfig = applyFormFieldsConfig;
+
+window.openViewModal = openViewModal;
+window.closeViewModal = closeViewModal;
+window.openEditModal = openEditModal;
+window.closeEditModal = closeEditModal;
+window.updatePrescription = updatePrescription;
+window.openEditModalDirect = openEditModalDirect;
+window.openPreviewFromView = openPreviewFromView;
+
+// Remote Config Export
+window.initializeRemoteConfig = initializeRemoteConfig;
+
+// Bottom nav + offline banner
+window.updateBottomNav = updateBottomNav;
+
+// =========================================================================
+// IN-APP ADD RX FORM FIELD CUSTOMIZER ENGINE
+// Allows users to hide/show default sections & add custom fields without code
+// =========================================================================
+
+function getFormFieldsConfig() {
+    const defaultConfig = {
+        showPrism: true,
+        showAdd: true,
+        showPdNear: true,
+        showSpecs: true,
+        showPayment: true,
+        customFields: []
+    };
+    try {
+        const stored = localStorage.getItem('rxFormFieldsConfig');
+        return stored ? Object.assign(defaultConfig, JSON.parse(stored)) : defaultConfig;
+    } catch (e) {
+        return defaultConfig;
+    }
+}
+
+function toggleFormCustomizer() {
+    const panel = document.getElementById('formCustomizerPanel');
+    if (!panel) return;
+    const isVisible = panel.style.display !== 'none';
+    panel.style.display = isVisible ? 'none' : 'block';
+    if (!isVisible) {
+        syncCustomizerControls();
+    }
+}
+
+function syncCustomizerControls() {
+    const config = getFormFieldsConfig();
+    const prismCb = document.getElementById('togglePrismRow');
+    const addCb = document.getElementById('toggleAddRow');
+    const pdNearCb = document.getElementById('togglePdNear');
+    const specsCb = document.getElementById('toggleSpecsSection');
+    const paymentCb = document.getElementById('togglePaymentSection');
+
+    if (prismCb) prismCb.checked = config.showPrism;
+    if (addCb) addCb.checked = config.showAdd;
+    if (pdNearCb) pdNearCb.checked = config.showPdNear;
+    if (specsCb) specsCb.checked = config.showSpecs;
+    if (paymentCb) paymentCb.checked = config.showPayment;
+
+    renderCustomFieldsList(config.customFields);
+}
+
+function saveFormFieldsConfig() {
+    const prismCb = document.getElementById('togglePrismRow');
+    const addCb = document.getElementById('toggleAddRow');
+    const pdNearCb = document.getElementById('togglePdNear');
+    const specsCb = document.getElementById('toggleSpecsSection');
+    const paymentCb = document.getElementById('togglePaymentSection');
+
+    const config = getFormFieldsConfig();
+    config.showPrism = prismCb ? prismCb.checked : true;
+    config.showAdd = addCb ? addCb.checked : true;
+    config.showPdNear = pdNearCb ? pdNearCb.checked : true;
+    config.showSpecs = specsCb ? specsCb.checked : true;
+    config.showPayment = paymentCb ? paymentCb.checked : true;
+
+    localStorage.setItem('rxFormFieldsConfig', JSON.stringify(config));
+    applyFormFieldsConfig();
+}
+
+function addCustomRxField() {
+    const nameInput = document.getElementById('newFieldName');
+    const typeInput = document.getElementById('newFieldType');
+
+    if (!nameInput || !nameInput.value.trim()) {
+        showStatusMessage('Please enter a field name.', 'warning');
+        return;
+    }
+
+    const fieldName = nameInput.value.trim();
+    const fieldType = typeInput ? typeInput.value : 'text';
+    const fieldId = 'custom_' + fieldName.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_' + Date.now();
+
+    const config = getFormFieldsConfig();
+    if (!config.customFields) config.customFields = [];
+    config.customFields.push({
+        id: fieldId,
+        name: fieldName,
+        type: fieldType
+    });
+
+    localStorage.setItem('rxFormFieldsConfig', JSON.stringify(config));
+    nameInput.value = '';
+    syncCustomizerControls();
+    applyFormFieldsConfig();
+    showStatusMessage(`Added custom field "${fieldName}"`, 'success');
+}
+
+function removeCustomRxField(fieldId) {
+    const config = getFormFieldsConfig();
+    if (config.customFields) {
+        config.customFields = config.customFields.filter(f => f.id !== fieldId);
+    }
+    localStorage.setItem('rxFormFieldsConfig', JSON.stringify(config));
+    syncCustomizerControls();
+    applyFormFieldsConfig();
+    showStatusMessage('Custom field removed', 'info');
+}
+
+function renderCustomFieldsList(customFields) {
+    const container = document.getElementById('customFieldsList');
+    if (!container) return;
+
+    if (!customFields || customFields.length === 0) {
+        container.innerHTML = `<small class="text-muted">No custom fields added yet.</small>`;
+        return;
+    }
+
+    container.innerHTML = customFields.map(f => `
+        <div class="custom-field-badge d-inline-flex align-items-center gap-2 me-2 mb-2 p-1 px-2 border rounded bg-light" style="font-size: 12px;">
+            <span><strong>${f.name}</strong> (${f.type})</span>
+            <button type="button" onclick="removeCustomRxField('${f.id}')" class="btn btn-sm btn-link text-danger p-0 ms-1" title="Remove Field">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        </div>
+    `).join('');
+}
+
+function applyFormFieldsConfig() {
+    const config = getFormFieldsConfig();
+
+    // 1. Toggle Prism Rows
+    const rightPrism = document.getElementById('rightPrismRow');
+    const leftPrism = document.getElementById('leftPrismRow');
+    if (rightPrism) rightPrism.style.display = config.showPrism ? '' : 'none';
+    if (leftPrism) leftPrism.style.display = config.showPrism ? '' : 'none';
+
+    // 2. Toggle ADD Rows
+    const rightAdd = document.getElementById('rightAddRow');
+    const leftAdd = document.getElementById('leftAddRow');
+    if (rightAdd) rightAdd.style.display = config.showAdd ? '' : 'none';
+    if (leftAdd) leftAdd.style.display = config.showAdd ? '' : 'none';
+
+    // 3. Toggle PD Near
+    const pdNear = document.getElementById('pdNearContainer');
+    if (pdNear) pdNear.style.display = config.showPdNear ? '' : 'none';
+
+    // 4. Toggle Specs Section
+    const specs = document.getElementById('specsSectionContainer');
+    if (specs) specs.style.display = config.showSpecs ? '' : 'none';
+
+    // 5. Toggle Payment Section
+    const payment = document.getElementById('paymentSectionContainer');
+    if (payment) payment.style.display = config.showPayment ? '' : 'none';
+
+    // 6. Render Custom Fields in Prescription Form
+    const customSection = document.getElementById('customRxSectionContainer');
+    const customContainer = document.getElementById('customRxFieldsContainer');
+
+    if (customSection && customContainer) {
+        if (config.customFields && config.customFields.length > 0) {
+            customSection.style.display = 'block';
+            customContainer.innerHTML = config.customFields.map(f => {
+                let inputHtml = '';
+                if (f.type === 'textarea') {
+                    inputHtml = `<textarea id="${f.id}" class="form-control form-control-sm" rows="2" placeholder="Enter ${f.name}"></textarea>`;
+                } else if (f.type === 'number') {
+                    inputHtml = `<input type="number" id="${f.id}" class="form-control form-control-sm" placeholder="Enter ${f.name}">`;
+                } else {
+                    inputHtml = `<input type="text" id="${f.id}" class="form-control form-control-sm" placeholder="Enter ${f.name}">`;
+                }
+
+                return `
+                    <div class="form-group mb-2" style="min-width: 180px; flex: 1;">
+                        <label for="${f.id}" style="font-weight: 600; font-size: 13px;">${f.name}</label>
+                        ${inputHtml}
+                    </div>
+                `;
+            }).join('');
+        } else {
+            customSection.style.display = 'none';
+            customContainer.innerHTML = '';
+        }
+    }
+}
+
+// Auto-apply field configuration on DOM load
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(applyFormFieldsConfig, 300);
+});

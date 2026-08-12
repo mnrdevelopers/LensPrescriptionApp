@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms & Conditions - Lens Rx</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="lenslogo.png">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #4a6cf7;
+            --secondary-color: #6a11cb;
+            --dark-color: #1e2a4a;
+            --light-color: #f8f9fa;
+            --text-color: #333;
+            --text-light: #666;
+            --border-radius: 12px;
+            --box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            --transition: all 0.3s ease;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: #f9fafb;
+        }
+        
+        /* Navigation */
+        .navbar {
+            padding: 1rem 0;
+            background-color: white;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--dark-color);
+        }
+        
+        .navbar-brand img {
+            height: 40px;
+            margin-right: 10px;
+        }
+        
+        .nav-link {
+            font-weight: 500;
+            margin: 0 0.5rem;
+            color: var(--dark-color);
+            transition: var(--transition);
+        }
+        
+        .nav-link:hover, .nav-link.active {
+            color: var(--primary-color);
+        }
+        
+        .btn-nav {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 50px;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+        
+        .btn-nav:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 20px rgba(74, 108, 247, 0.4);
+            color: white;
+        }
+        
+        /* Legal Header */
+        .legal-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 100px 0 60px;
+            text-align: center;
+        }
+        
+        .legal-header h1 {
+            font-size: 2.8rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+        
+        .legal-header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        /* Legal Content */
+        .legal-content {
+            padding: 80px 0;
+        }
+        
+        .legal-nav {
+            position: sticky;
+            top: 100px;
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 30px;
+            box-shadow: var(--box-shadow);
+            margin-bottom: 30px;
+        }
+        
+        .legal-nav h4 {
+            margin-bottom: 20px;
+            color: var(--dark-color);
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .legal-nav ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .legal-nav li {
+            margin-bottom: 12px;
+        }
+        
+        .legal-nav a {
+            color: var(--text-light);
+            text-decoration: none;
+            transition: var(--transition);
+            display: block;
+            padding: 8px 0;
+            border-left: 3px solid transparent;
+            padding-left: 15px;
+        }
+        
+        .legal-nav a:hover, .legal-nav a.active {
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+        }
+        
+        .legal-document {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 50px;
+            box-shadow: var(--box-shadow);
+        }
+        
+        .document-section {
+            margin-bottom: 50px;
+        }
+        
+        .document-section h2 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: var(--dark-color);
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .document-section h3 {
+            font-size: 1.4rem;
+            margin: 30px 0 15px;
+            color: var(--dark-color);
+        }
+        
+        .document-section p {
+            margin-bottom: 15px;
+            color: var(--text-light);
+        }
+        
+        .document-section ul {
+            margin-bottom: 20px;
+            padding-left: 20px;
+        }
+        
+        .document-section li {
+            margin-bottom: 10px;
+            color: var(--text-light);
+            line-height: 1.7;
+        }
+        
+        .highlight-box {
+            background: rgba(74, 108, 247, 0.05);
+            border-left: 4px solid var(--primary-color);
+            padding: 20px;
+            border-radius: 0 var(--border-radius) var(--border-radius) 0;
+            margin: 25px 0;
+        }
+        
+        .last-updated {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-radius: var(--border-radius);
+            margin-top: 40px;
+            font-style: italic;
+            color: var(--text-light);
+        }
+        
+        /* Footer */
+        .footer {
+            background: var(--dark-color);
+            color: white;
+            padding: 60px 0 30px;
+        }
+        
+        .footer h5 {
+            font-size: 1.2rem;
+            margin-bottom: 25px;
+        }
+        
+        .footer-links {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .footer-links li {
+            margin-bottom: 12px;
+        }
+        
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+        
+        .footer-links a:hover {
+            color: white;
+        }
+        
+        .footer-bottom {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 25px 0;
+            margin-top: 50px;
+            text-align: center;
+        }
+        
+        .footer-bottom p {
+            margin: 0;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .developer-credit {
+            margin-top: 10px;
+            font-size: 1rem;
+        }
+        
+        .developer-credit strong {
+            color: var(--primary-color);
+        }
+        
+        /* Responsive */
+        @media (max-width: 992px) {
+            .legal-nav {
+                position: static;
+                margin-bottom: 40px;
+            }
+            
+            .legal-document {
+                padding: 30px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .legal-header h1 {
+                font-size: 2.2rem;
+            }
+            
+            .legal-header p {
+                font-size: 1.1rem;
+            }
+            
+            .legal-content {
+                padding: 50px 0;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .legal-document {
+                padding: 20px;
+            }
+            
+            .document-section h2 {
+                font-size: 1.6rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">
+                <img src="lenslogo.png" alt="Lens Rx Logo">
+                Lens Rx
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html#features">Features</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html#how-it-works">How It Works</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html#contact">Contact</a>
+                    </li>
+                    <li class="nav-item ms-2">
+                        <a href="auth.html" class="btn btn-nav">Login</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Legal Header -->
+    <section class="legal-header">
+        <div class="container">
+            <h1 data-aos="fade-up">Terms & Conditions</h1>
+            <p data-aos="fade-up" data-aos-delay="100">Understand the terms that govern your use of Lens Rx services and platform.</p>
+        </div>
+    </section>
+
+    <!-- Legal Content -->
+    <section class="legal-content">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-3">
+                    <div class="legal-nav" data-aos="fade-right">
+                        <h4>Legal Documents</h4>
+                        <ul>
+                            <li><a href="terms.html" class="active">Terms & Conditions</a></li>
+                            <li><a href="privacy.html">Privacy Policy</a></li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="col-lg-9">
+                    <!-- Terms & Conditions Document -->
+                    <div class="legal-document" id="terms-content" data-aos="fade-up">
+                        <h1>Terms & Conditions</h1>
+                        <p class="lead">Last updated: October 15, 2025</p>
+                        
+                        <div class="document-section">
+                            <h2>1. Acceptance of Terms</h2>
+                            <p>By accessing and using Lens Rx ("the Application"), you accept and agree to be bound by the terms and provision of this agreement.</p>
+                            <p>These Terms govern your use of the Lens Rx application, website, and services ("Services"). Please read them carefully before using our Services.</p>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>2. Description of Service</h2>
+                            <p>Lens Rx is a professional eye care management solution designed for optometrists to:</p>
+                            <ul>
+                                <li>Create and manage digital eye prescriptions</li>
+                                <li>Store patient records securely</li>
+                                <li>Generate professional prescription printouts</li>
+                                <li>Analyze practice performance through reports</li>
+                                <li>Share prescriptions with patients via digital channels</li>
+                            </ul>
+                            <p>The Service is provided "as is" and we reserve the right to modify, suspend, or discontinue the Service at any time.</p>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>3. User Accounts</h2>
+                            <h3>3.1 Account Creation</h3>
+                            <p>To use Lens Rx, you must create an account by providing accurate and complete information. You are responsible for maintaining the confidentiality of your account credentials.</p>
+                            
+                            <h3>3.2 Account Security</h3>
+                            <p>You are solely responsible for all activities that occur under your account. Notify us immediately of any unauthorized use of your account or any other security breaches.</p>
+                            
+                            <h3>3.3 Account Termination</h3>
+                            <p>We reserve the right to terminate or suspend accounts that violate these Terms or engage in illegal or harmful activities.</p>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>4. User Responsibilities</h2>
+                            <p>As a user of Lens Rx, you agree to:</p>
+                            <ul>
+                                <li>Use the Service only for lawful purposes and in accordance with these Terms</li>
+                                <li>Provide accurate patient information and maintain proper records</li>
+                                <li>Comply with all applicable healthcare regulations and privacy laws</li>
+                                <li>Not attempt to circumvent any security measures</li>
+                                <li>Not use the Service to transmit malicious code or engage in harmful activities</li>
+                                <li>Not reverse engineer, decompile, or disassemble any portion of the Service</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>5. Data and Privacy</h2>
+                            <p>We take data privacy seriously. Our Privacy Policy explains how we collect, use, and protect your information. By using Lens Rx, you consent to our data practices as described in the Privacy Policy.</p>
+                            
+                            <div class="highlight-box">
+                                <p><strong>Important:</strong> You are responsible for ensuring that you have proper consent from patients to store and process their personal and health information in our system, in compliance with applicable laws and regulations.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>6. Intellectual Property</h2>
+                            <p>The Lens Rx application, including its source code, databases, functionality, software, website designs, audio, video, text, photographs, and graphics, are owned by MNR Developers and are protected by copyright and trademark laws.</p>
+                            <p>You may not copy, modify, distribute, sell, or lease any part of our Services or software without explicit written permission.</p>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>7. Payment Terms</h2>
+                            <p>Certain features of Lens Rx may be offered on a subscription basis. By subscribing, you agree to pay all applicable fees as described during the subscription process.</p>
+                            <ul>
+                                <li>Subscription fees are billed in advance on a recurring basis</li>
+                                <li>You can cancel your subscription at any time</li>
+                                <li>No refunds are provided for partial subscription periods</li>
+                                <li>We reserve the right to change subscription fees with 30 days notice</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>8. Disclaimer of Warranties</h2>
+                            <p>The Service is provided "as is" and "as available" without warranties of any kind, either express or implied. We do not warrant that:</p>
+                            <ul>
+                                <li>The Service will meet your specific requirements</li>
+                                <li>The Service will be uninterrupted, timely, secure, or error-free</li>
+                                <li>The results that may be obtained from the use of the Service will be accurate or reliable</li>
+                                <li>The quality of any products, services, information, or other material obtained through the Service will meet your expectations</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>9. Limitation of Liability</h2>
+                            <p>To the fullest extent permitted by law, in no event shall Lens Rx, its developers, or affiliates be liable for any indirect, incidental, special, consequential, or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from:</p>
+                            <ul>
+                                <li>Your access to or use of or inability to access or use the Service</li>
+                                <li>Any conduct or content of any third party on the Service</li>
+                                <li>Any content obtained from the Service</li>
+                                <li>Unauthorized access, use, or alteration of your transmissions or content</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>10. Governing Law</h2>
+                            <p>These Terms shall be governed by and construed in accordance with the laws of India, without regard to its conflict of law provisions.</p>
+                            <p>Any disputes arising under these Terms shall be resolved in the courts located in Nizamabad, Telangana, India.</p>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>11. Changes to Terms</h2>
+                            <p>We reserve the right to modify these Terms at any time. We will provide notice of significant changes through the Service or by email. Continued use of the Service after such modifications constitutes acceptance of the updated Terms.</p>
+                        </div>
+                        
+                        <div class="document-section">
+                            <h2>12. Contact Information</h2>
+                            <p>If you have any questions about these Terms, please contact us at:</p>
+                            <p><strong>Email:</strong> legal@lensrx.com<br>
+                            <strong>Address:</strong> Nizamabad, Telangana, India</p>
+                        </div>
+                        
+                        <div class="last-updated">
+                            <p><strong>Last Updated:</strong> October 15, 2025</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 col-md-6 mb-4 mb-lg-0">
+                    <h5>Lens Rx</h5>
+                    <p class="mt-4" style="color: rgba(255, 255, 255, 0.7);">Professional eye care management solution for optometrists. Streamline your practice with our comprehensive digital platform.</p>
+                </div>
+                
+                <div class="col-lg-2 col-md-6 mb-4 mb-lg-0">
+                    <h5>Quick Links</h5>
+                    <ul class="footer-links">
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="index.html#features">Features</a></li>
+                        <li><a href="index.html#how-it-works">How It Works</a></li>
+                        <li><a href="index.html#contact">Contact</a></li>
+                    </ul>
+                </div>
+                
+                <div class="col-lg-2 col-md-6 mb-4 mb-lg-0">
+                    <h5>Legal</h5>
+                    <ul class="footer-links">
+                        <li><a href="terms.html">Terms & Conditions</a></li>
+                        <li><a href="privacy.html">Privacy Policy</a></li>
+                    </ul>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <h5>Contact Info</h5>
+                    <ul class="footer-links mt-4">
+                        <li><i class="fas fa-map-marker-alt me-2"></i> Nizamabad, Telangana</li>
+                        <li><i class="fab fa-whatsapp me-2"></i> +91 7416006394</li>
+                        <li><i class="fas fa-envelope me-2"></i> support@lensrx.com</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2025 Lens Rx. All rights reserved.</p>
+                <p class="developer-credit">Developed with ❤️ by <strong>MANITEJA (MNR DEVELOPERS)</strong></p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    
+    <script>
+        // Initialize AOS (Animate On Scroll)
+        AOS.init({
+            duration: 800,
+            easing: 'ease-in-out',
+            once: true
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "name": "lens-prescription-app",
+  "version": "1.0.0",
+  "description": "Lens Prescription Management App",
+  "dependencies": {
+    "razorpay": "^2.8.6",
+    "pg": "^8.11.3"
+  },
+  "devDependencies": {
+    "@netlify/zip-it-and-ship-it": "^1.0.0"
+  }
+}

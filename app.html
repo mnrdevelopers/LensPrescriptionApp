@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lens Rx App — Professional Eye Care Management</title>
+    <meta name="description" content="Lens Rx is a professional lens prescription management app for optometrists. Manage patients, write prescriptions, and track your practice all in one place.">
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="lenslogo.png">
+    <link rel="apple-touch-icon" href="lenslogo.png">
+
+    <!-- PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="LensRx">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#1e3a8a">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="app.css">
+
+    <!-- Razorpay Integration -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-remote-config-compat.js"></script>
+    <script src="firebase-config.js"></script>
+
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+    
+<!-- 1. HEADER BAR (Logo, Name, Icons - Fixed to Top) -->
+<header class="app-header fixed-top">
+    <div class="container-fluid d-flex justify-content-between align-items-center">
+        <!-- CRITICAL FIX: Mobile Menu Toggle (Left Side, Only on Small Screens) -->
+        <!-- FIX: Removed navbar-toggler class as it was conflicting with custom styling/click area -->
+        <button class="d-lg-none btn btn-icon text-white" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <!-- Logo and Title (Always Visible) -->
+        <a class="navbar-brand header-brand text-white flex-grow-1" href="#" onclick="navigateIfProfileComplete(showDashboard, 'dashboard')">
+            <img src="lenslogo.png" alt="Lens Rx Logo" class="nav-logo">
+            <span>Lens Rx</span>
+        </a>
+
+        <!-- Right Side Icons -->
+        <div class="d-flex align-items-center gap-2 header-icons">
+            <!-- Notifications Icon -->
+            <button onclick="navigateIfProfileComplete(showNotifications, 'notifications')" class="btn btn-icon text-white position-relative" title="Notifications">
+                <i class="fas fa-bell"></i>
+                <span id="headerNotificationBadge" class="badge bg-danger rounded-pill position-absolute top-0 start-100 translate-middle" style="font-size: 0.6em; padding: 0.35em 0.6em; display: none;"></span>
+            </button>
+            
+            <!-- Dark Mode Toggle -->
+            <button onclick="toggleDarkMode()" id="darkModeToggle" class="btn btn-icon text-white" title="Toggle Dark Mode">
+                <i class="fas fa-moon"></i>
+            </button>
+
+            <!-- Logout Icon (Always Visible) -->
+            <button onclick="logoutUser()" class="btn btn-icon text-white" title="Logout">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- Offline Banner (shown by app.js when navigator.onLine is false) -->
+<div id="offlineBanner" class="offline-banner" style="display:none;">
+  <i class="fas fa-wifi-slash"></i>
+  <span>Offline Mode &mdash; Data from local cache. Changes sync when reconnected.</span>
+</div>
+
+<!-- 2. NAVIGATION BAR (Links - Fixed to Top, below Header) -->
+<nav class="app-navbar fixed-top d-none d-lg-flex premium-nav">
+    <div class="container-fluid">
+        <ul class="navbar-nav me-auto d-flex flex-row justify-content-start">
+            <li class="nav-item">
+                <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showDashboard, 'dashboard')">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showPrescriptionForm, 'form')">
+                    <i class="fas fa-plus-circle"></i> Add Rx
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showPatients, 'patients')">
+                    <i class="fas fa-users"></i> Patients
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showPrescriptions, 'prescriptions')">
+                    <i class="fas fa-list"></i> History
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showReports, 'reports')">
+                    <i class="fas fa-chart-bar"></i> Reports
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showProfileSetup, 'setup')">
+                    <i class="fas fa-user-circle"></i> Profile
+                </a>
+            </li>
+        </ul>
+        
+        <!-- Premium Status (Desktop Only) -->
+        <div class="d-flex align-items-center ms-auto">
+            <div id="navSubscriptionStatus" class="navbar-text me-2"></div>
+            <div id="navBuyPremiumButton" class="me-2"></div>
+        </div>
+    </div>
+</nav>
+
+
+<!-- Offcanvas Mobile Menu (Retained for full mobile navigation) -->
+<div class="offcanvas offcanvas-start d-lg-none" tabindex="-1" id="offcanvasNavbar">
+    <div class="offcanvas-header premium-offcanvas-header">
+        <h5 class="offcanvas-title">
+            <i class="fas fa-bars me-2"></i> Menu
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body p-0">
+        <div class="d-flex flex-column h-100">
+            <!-- MOBILE SUBSCRIPTION STATUS HERE -->
+            <div id="mobileSubscriptionStatus" class="p-3 border-bottom bg-light">
+                <!-- Mobile subscription status (Premium/Free + Days Count) will be dynamically updated by app.js -->
+            </div>
+            
+            <!-- NEW: Mobile Buy Premium Button Container -->
+            <div id="mobileBuyPremiumButton" class="p-3 border-bottom bg-light">
+                <!-- Mobile Buy Premium Button will be dynamically updated by app.js -->
+            </div>
+            
+            <!-- Navigation Links -->
+            <ul class="navbar-nav justify-content-start flex-grow-1 p-3">
+                <li class="nav-item">
+                    <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showDashboard, 'dashboard')" data-bs-dismiss="offcanvas">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showPrescriptionForm, 'form')" data-bs-dismiss="offcanvas">
+                        <i class="fas fa-plus-circle"></i> Add Prescription
+                    </a>
+                </li>
+                 <!-- NEW: Notifications Link -->
+                 <li class="nav-item">
+                    <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showNotifications, 'notifications')" data-bs-dismiss="offcanvas">
+                        <i class="fas fa-bell"></i> Notifications
+                    </a>
+                </li>
+                 <!-- NEW: Patients Link (F) -->
+                 <li class="nav-item">
+                    <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showPatients, 'patients')" data-bs-dismiss="offcanvas">
+                        <i class="fas fa-users"></i> Patients
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showPrescriptions, 'prescriptions')" data-bs-dismiss="offcanvas">
+                        <i class="fas fa-list"></i> View Prescriptions
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showReports, 'reports')" data-bs-dismiss="offcanvas">
+                        <i class="fas fa-chart-bar"></i> Reports
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link nav-link-custom" href="#" onclick="navigateIfProfileComplete(showProfileSetup, 'setup')" data-bs-dismiss="offcanvas">
+                        <i class="fas fa-user-circle"></i> Edit Profile
+                    </a>
+                </li>
+            </ul>
+            
+            <!-- Footer -->
+            <div class="p-3 border-top">
+                <small class="text-muted">@2025 Lens-Prescription-App developed by <strong>MANITEJA (MNR DEVELOPERS)</strong></small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Mobile Navigation (visible only on mobile/tablet) -->
+<nav class="bottom-nav d-lg-none" id="bottomNav">
+    <button class="bottom-nav-item active" id="bnav-dashboard"
+        onclick="navigateIfProfileComplete(showDashboard, 'dashboard')">
+        <i class="fas fa-home"></i>
+        <span>Home</span>
+    </button>
+    <button class="bottom-nav-item" id="bnav-form"
+        onclick="navigateIfProfileComplete(showPrescriptionForm, 'form')">
+        <i class="fas fa-plus-circle"></i>
+        <span>Add Rx</span>
+    </button>
+    <button class="bottom-nav-item" id="bnav-patients"
+        onclick="navigateIfProfileComplete(showPatients, 'patients')">
+        <i class="fas fa-users"></i>
+        <span>Patients</span>
+    </button>
+    <button class="bottom-nav-item" id="bnav-prescriptions"
+        onclick="navigateIfProfileComplete(showPrescriptions, 'prescriptions')">
+        <i class="fas fa-list-alt"></i>
+        <span>History</span>
+    </button>
+    <button class="bottom-nav-item" id="bnav-profile"
+        onclick="navigateIfProfileComplete(showProfileSetup, 'setup')">
+        <i class="fas fa-user-circle"></i>
+        <span>Profile</span>
+    </button>
+</nav>
+
+    <!-- Main Content Container -->
+    <div class="main-content">
+        <!-- Profile Setup Section -->
+        <section id="profileSetupSection" class="page-section">
+            <div class="prescription-container">
+                <h2><i class="fas fa-clinic-medical"></i> Clinic Profile Setup</h2>
+                <p class="text-center mb-4">Please enter your clinic details to get started. These details will appear on all your prescriptions.</p>
+
+                <div class="form-group text-center">
+                    <label>Logged-in Email Address:</label>
+                    <div class="d-flex justify-content-center align-items-center">
+                        <strong id="userEmailDisplay" class="text-primary">Loading...</strong>
+                        <span id="profilePremiumTag"></span> <!-- Premium tag added here -->
+                    </div>
+                </div>
+                <hr>
+
+                <div class="form-group">
+                    <label for="setupClinicName">Clinic Name</label>
+                    <input type="text" id="setupClinicName" placeholder="Enter Clinic Name" required>
+                </div>
+                <div class="form-group">
+                    <label for="setupOptometristName">Optometrist Name</label>
+                    <input type="text" id="setupOptometristName" placeholder="Enter Optometrist Name" required>
+                </div>
+                <div class="form-group">
+                    <label for="setupAddress">Clinic Address</label>
+                    <input type="text" id="setupAddress" placeholder="Enter Clinic Address" required>
+                </div>
+                <div class="form-group">
+                    <label for="setupContactNumber">Contact Number</label>
+                    <input type="tel" id="setupContactNumber" placeholder="Enter Contact Number" required>
+                </div>
+                
+                <!-- NEW UPI PAYMENT SECTION -->
+                <div class="section-title mt-5"><i class="fas fa-qrcode"></i> UPI Payment Details</div>
+                <p class="text-muted text-center mb-3">These details are shown on the thermal receipt for UPI payments. You can upload your QR code image via ImageKit.</p>
+                
+                <div class="form-group">
+                    <label for="setupUpiId">Your UPI ID (VPA)</label>
+                    <input type="text" id="setupUpiId" placeholder="e.g., yourname@bankname">
+                </div>
+                
+                <div class="form-group">
+                    <label for="qrCodeFile">Upload UPI QR Code (via ImageKit)</label>
+                    <input type="file" id="qrCodeFile" accept="image/*" class="form-control-file" onchange="previewQrCode(event)">
+                </div>
+                
+                <div class="text-center mt-3 mb-4">
+                    <div id="qrCodePreviewContainer" style="display: none; border: 1px dashed #ccc; padding: 10px; border-radius: 8px; max-width: 200px; margin: 0 auto;">
+                        <img id="currentQrCodeImage" alt="Current QR Code" style="width: 150px; height: 150px; display: none;">
+                        <p id="qrCodeUrlDisplay" class="text-break mt-2" style="font-size: 10px;"></p>
+                        <button onclick="removeQrCode()" class="btn btn-sm btn-danger mt-2"><i class="fas fa-trash"></i> Remove QR</button>
+                    </div>
+                    <div id="qrUploadStatus" class="mt-2 text-primary" style="font-size: 12px; font-weight: bold;"></div>
+                    <input type="hidden" id="setupUpiQrUrl"> <!-- Hidden field to store the ImageKit URL -->
+                </div>
+                <!-- END NEW UPI PAYMENT SECTION -->
+
+                <button onclick="saveSetupProfile()" class="btn btn-primary btn-submit" id="saveSetupProfileBtn">
+                    Save Profile & Continue <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- Dashboard Section -->
+        <section id="dashboardSection" class="page-section active">
+            <div class="dashboard-container">
+                <!-- Welcome Hero Card -->
+                <div class="dashboard-welcome-card">
+                    <h2 id="dashboardWelcomeText">Welcome to Lens Rx</h2>
+                    <p id="dashboardClinicSubtitle">Your professional prescription management system</p>
+                </div>
+
+                <!-- Subscription Status & Usage Counter will be injected here by app.js -->
+
+                <div class="section-title mt-4"><i class="fas fa-chart-bar"></i> Practice Overview</div>
+                <div class="stats-filters">
+                    <label for="statsTimePeriod">View Stats:</label>
+                    <select id="statsTimePeriod" onchange="fetchDashboardStats()">
+                        <option value="daily">Today</option>
+                        <option value="weekly">Last 7 Days</option>
+                        <option value="monthly">Last 30 Days</option>
+                        <option value="all">All Time</option>
+                    </select>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card stat-prescriptions">
+                        <i class="fas fa-file-medical"></i>
+                        <div class="stat-card-info">
+                            <p class="stat-value" id="statPrescriptions">0</p>
+                            <p class="stat-label">Prescriptions</p>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-revenue">
+                        <i class="fas fa-rupee-sign"></i>
+                        <div class="stat-card-info">
+                            <p class="stat-value" id="statRevenue">₹ 0.00</p>
+                            <p class="stat-label">Total Revenue</p>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-reminders" onclick="navigateIfProfileComplete(showPatients, 'patients')">
+                        <i class="fas fa-calendar-check"></i>
+                        <div class="stat-card-info">
+                            <p class="stat-value" id="statRemindersDue">0</p>
+                            <p class="stat-label">Checkup Reminders Due</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="button-group mt-4">
+                    <button onclick="navigateIfProfileComplete(showPrescriptionForm, 'form')" class="btn btn-primary">
+                        <i class="fas fa-plus-circle"></i> Add New Prescription
+                    </button>
+                    <button onclick="navigateIfProfileComplete(showPatients, 'patients')" class="btn btn-tertiary">
+                        <i class="fas fa-users"></i> Manage Patients
+                    </button>
+                    <button onclick="navigateIfProfileComplete(showPrescriptions, 'prescriptions')" class="btn btn-secondary">
+                        <i class="fas fa-list"></i> View Prescriptions
+                    </button>
+                </div>
+            </div>
+        </section>
+        
+        <!-- NEW: Notifications Section -->
+        <section id="notificationsSection" class="page-section">
+            <div class="container">
+                <h2><i class="fas fa-bell"></i> Notifications & Reminders</h2>
+                <p class="text-muted text-center mb-4">View important patient checkup reminders and system alerts here.</p>
+                <div id="notificationsContent">
+                    <!-- Notifications and reminders will be populated by app.js -->
+                </div>
+            </div>
+        </section>
+        <!-- END NEW: Notifications Section -->
+
+        <!-- Add Prescription Section -->
+        <section id="prescriptionFormSection" class="page-section">
+            <div class="prescription-container">
+
+                <!-- Form Customizer Header Button -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <button type="button" onclick="toggleFormCustomizer()" class="btn btn-sm btn-outline-primary" id="toggleCustomizerBtn">
+                        <i class="fas fa-sliders-h"></i> Customize Form Fields (Hide/Show or Add Fields)
+                    </button>
+                </div>
+
+                <!-- Form Customizer Panel (Collapsible) -->
+                <div id="formCustomizerPanel" class="form-customizer-panel" style="display: none;">
+                    <div class="customizer-header">
+                        <h4><i class="fas fa-sliders-h"></i> Add Rx Form Customizer</h4>
+                        <button type="button" onclick="toggleFormCustomizer()" class="btn-close-customizer" title="Close Customizer Panel">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <p class="text-muted" style="font-size: 13px;">Toggle sections to hide or show them, or add your own custom prescription fields without code.</p>
+                    
+                    <div class="customizer-sections-grid">
+                        <div class="customizer-group">
+                            <label class="customizer-switch">
+                                <input type="checkbox" id="togglePrismRow" checked onchange="saveFormFieldsConfig()">
+                                <span class="slider"></span>
+                                <span class="label-text">Show Prism Rows (OD & OS)</span>
+                            </label>
+                        </div>
+                        <div class="customizer-group">
+                            <label class="customizer-switch">
+                                <input type="checkbox" id="toggleAddRow" checked onchange="saveFormFieldsConfig()">
+                                <span class="slider"></span>
+                                <span class="label-text">Show ADD Rows (OD & OS)</span>
+                            </label>
+                        </div>
+                        <div class="customizer-group">
+                            <label class="customizer-switch">
+                                <input type="checkbox" id="togglePdNear" checked onchange="saveFormFieldsConfig()">
+                                <span class="slider"></span>
+                                <span class="label-text">Show PD Near Field</span>
+                            </label>
+                        </div>
+                        <div class="customizer-group">
+                            <label class="customizer-switch">
+                                <input type="checkbox" id="toggleSpecsSection" checked onchange="saveFormFieldsConfig()">
+                                <span class="slider"></span>
+                                <span class="label-text">Show Lens & Frame Specifications</span>
+                            </label>
+                        </div>
+                        <div class="customizer-group">
+                            <label class="customizer-switch">
+                                <input type="checkbox" id="togglePaymentSection" checked onchange="saveFormFieldsConfig()">
+                                <span class="slider"></span>
+                                <span class="label-text">Show Amount & Payment Section</span>
+                            </label>
+                        </div>
+                    </div>
+                    <hr style="margin: 14px 0;">
+
+                    <!-- Add Custom Fields Section -->
+                    <h5 style="font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 8px;"><i class="fas fa-plus-circle"></i> Add Custom Prescription Fields</h5>
+                    <div class="add-custom-field-row d-flex gap-2 mb-2">
+                        <input type="text" id="newFieldName" placeholder="Field Name (e.g. Segment Height, Coating, Notes)" class="form-control form-control-sm">
+                        <select id="newFieldType" class="form-select form-select-sm" style="max-width: 140px;">
+                            <option value="text">Text Input</option>
+                            <option value="number">Number Input</option>
+                            <option value="textarea">Notes / Textarea</option>
+                        </select>
+                        <button type="button" onclick="addCustomRxField()" class="btn btn-sm btn-success" style="white-space: nowrap;">
+                            <i class="fas fa-plus"></i> Add
+                        </button>
+                    </div>
+
+                    <!-- Active Custom Fields List -->
+                    <div id="customFieldsList" class="custom-fields-list mt-2">
+                        <!-- Rendered dynamically -->
+                    </div>
+                </div>
+
+                <div id="prescriptionForm">
+                    <!-- Optical Shop Details -->
+                    <div class="header">
+                        <h2 id="clinicName">Loading...</h2>
+                        <p id="clinicAddress">Please wait...</p>
+                    </div>
+                    <hr>
+
+                    <!-- Optometrist Details -->
+                    <div class="optometrist-details">
+                        <div class="left">
+                            <p><strong id="optometristName">Loading...</strong></p>
+                            <p><strong id="contactNumber">Please wait...</strong></p>
+                        </div>
+                        <div class="right">
+                            <p><strong>Date:</strong> <span id="currentDate"></span></p>
+                        </div>
+                    </div>
+                    <button onclick="navigateIfProfileComplete(showProfileSetup, 'setup')" class="btn btn-edit">Edit Profile</button>
+                    
+                    <hr>
+                    <!-- Patient Details (F: Enhanced for Patient ID check/autofill) -->
+                    <div class="section-title">Patient Details (Enter Mobile to Autofill)</div>
+                    <div class="patient-details">
+                        <div>
+                            <label for="patientName">Patient Name</label>
+                            <input type="text" id="patientName" placeholder="Enter name" required>
+                            <input type="hidden" id="patientId"> <!-- Hidden field for patient ID -->
+                        </div>
+                        <div>
+                            <label for="age">Age</label>
+                            <input type="number" id="age" placeholder="Age" required>
+                        </div>
+                        <div>
+                            <label for="gender">Gender</label>
+                            <select id="gender">
+                                <option>Male</option>
+                                <option>Female</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="patientMobile">Mobile</label>
+                            <!-- On change, check if patient exists -->
+                            <input type="tel" id="patientMobile" placeholder="Enter mobile number" required pattern="[0-9]{10}" onchange="checkPatientExists(this.value)">
+                        </div>
+                    </div>
+                    <hr>
+
+                    <!-- Prescription Details (UPDATED SECTION) -->
+                    <div class="section-title">Refractive Correction & Prism (SPH, CYL, AXIS)</div>
+                    
+                    <div class="prescription-table">
+                        <!-- Right Eye Table -->
+                        <table class="mb-4">
+                            <thead>
+                                <tr>
+                                    <th colspan="6">RIGHT EYE (OD)</th>
+                                </tr>
+                                <tr>
+                                    <th></th>
+                                    <th>SPH</th>
+                                    <th>CYL</th>
+                                    <th>AXIS</th>
+                                    <th>V/A</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- DISTANCE Row -->
+                                <tr>
+                                    <td><strong>DIST</strong></td>
+                                    <td><input type="text" id="rightDistSPH" placeholder="±D"></td>
+                                    <td><input type="text" id="rightDistCYL" placeholder="±D"></td>
+                                    <td><input type="text" id="rightDistAXIS" placeholder="1-180"></td>
+                                    <td><input type="text" id="rightDistVA" placeholder="6/6 or 20/20"></td>
+                                    <td><button onclick="copyRightToLeft(true)" class="btn btn-sm btn-secondary copy-btn" title="Copy Distance & Prism to OS">Dist/Prism →</button></td>
+                                </tr>
+                                <!-- PRISM Row -->
+                                <tr id="rightPrismRow">
+                                    <td><strong>PRISM</strong></td>
+                                    <td colspan="2"><input type="text" id="rightPrismDiopter" placeholder="Prism D"></td>
+                                    <td colspan="2"><input type="text" id="rightPrismBase" placeholder="Base (IN/OUT/UP/DOWN)"></td>
+                                    <td></td>
+                                </tr>
+                                <!-- ADD Power Row -->
+                                <tr id="rightAddRow" class="bg-light">
+                                    <td><strong>ADD</strong></td>
+                                    <td><input type="text" id="rightAddSPH" placeholder="+D"></td>
+                                    <td></td> <!-- Blank cell -->
+                                    <td></td> <!-- Blank cell -->
+                                    <td></td> <!-- Blank cell -->
+                                    <td><button onclick="copyRightToLeft(false)" class="btn btn-sm btn-secondary copy-btn" title="Copy Add to OS">Add →</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <!-- Left Eye Table -->
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th colspan="6">LEFT EYE (OS)</th>
+                                </tr>
+                                <tr>
+                                    <th></th>
+                                    <th>SPH</th>
+                                    <th>CYL</th>
+                                    <th>AXIS</th>
+                                    <th>V/A</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- DISTANCE Row -->
+                                <tr>
+                                    <td><strong>DIST</strong></td>
+                                    <td><input type="text" id="leftDistSPH" placeholder="±D"></td>
+                                    <td><input type="text" id="leftDistCYL" placeholder="±D"></td>
+                                    <td><input type="text" id="leftDistAXIS" placeholder="1-180"></td>
+                                    <td><input type="text" id="leftDistVA" placeholder="6/6 or 20/20"></td>
+                                    <td></td>
+                                </tr>
+                                <!-- PRISM Row -->
+                                <tr id="leftPrismRow">
+                                    <td><strong>PRISM</strong></td>
+                                    <td colspan="2"><input type="text" id="leftPrismDiopter" placeholder="Prism D"></td>
+                                    <td colspan="2"><input type="text" id="leftPrismBase" placeholder="Base (IN/OUT/UP/DOWN)"></td>
+                                    <td></td>
+                                </tr>
+                                <!-- ADD Power Row -->
+                                <tr id="leftAddRow" class="bg-light">
+                                    <td><strong>ADD</strong></td>
+                                    <td><input type="text" id="leftAddSPH" placeholder="+D"></td>
+                                    <td></td> <!-- Blank cell -->
+                                    <td></td> <!-- Blank cell -->
+                                    <td></td> <!-- Blank cell -->
+                                    <td></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <hr>
+
+                    <!-- Dispensing Parameters -->
+                    <div class="section-title">Dispensing Parameters (PD)</div>
+                    <div class="patient-details" style="grid-template-columns: 1fr 1fr;">
+                        <div>
+                            <label for="pdFar">Pupillary Distance (PD) - Far (mm)</label>
+                            <input type="text" id="pdFar" placeholder="e.g., 60 or 30/30" required>
+                        </div>
+                        <div id="pdNearContainer">
+                            <label for="pdNear">Pupillary Distance (PD) - Near (mm) (Optional)</label>
+                            <input type="text" id="pdNear" placeholder="e.g., 57 or 28.5/28.5">
+                        </div>
+                    </div>
+                    <hr>
+                    
+                    <!-- Options Specifications -->
+                    <div id="specsSectionContainer">
+                        <div class="section-title">Lens & Frame Specifications</div>
+                        <div class="options-row">
+                            <div class="form-group">
+                                <label for="visionType">Vision Type</label>
+                                <select id="visionType">
+                                    <option value="Single Vision">Single Vision</option>
+                                    <option value="Bifocal">Bifocal</option>
+                                    <option value="Progressive">Progressive</option>
+                                    <option value="Reading">Reading</option>
+                                    <option value="Computer/Degressive">Computer/Degressive</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="lensType">Lens Material/Treatment</label>
+                                <select id="lensType">
+                                    <option value="Polycarbonate (PC)">Polycarbonate (PC)</option>
+                                    <option value="High Index 1.67">High Index 1.67</option>
+                                    <option value="Trivex">Trivex</option>
+                                    <option value="Standard CR-39">Standard CR-39</option>
+                                    <option value="Photochromic (Transitions)">Photochromic (Transitions)</option>
+                                    <option value="Anti-Reflective Coating (ARC)">Anti-Reflective Coating (ARC)</option>
+                                    <option value="Blue-Light Filter">Blue-Light Filter</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="frameType">Frame Style/Material</label>
+                                <select id="frameType">
+                                    <option value="Full Rim (Acetate)">Full Rim (Acetate)</option>
+                                    <option value="Half Rim (Metal)">Half Rim (Metal)</option>
+                                    <option value="Rimless (Titanium)">Rimless (Titanium)</option>
+                                    <option value="Metal (Monel)">Metal (Monel)</option>
+                                    <option value="Plastic (TR-90/Flexible)">Plastic (TR-90/Flexible)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <hr>
+                    </div>
+
+                    <!-- Custom Prescription Fields (User-Created In-App) -->
+                    <div id="customRxSectionContainer" style="display: none;">
+                        <div class="section-title"><i class="fas fa-edit"></i> Custom Prescription Fields</div>
+                        <div id="customRxFieldsContainer" class="options-row">
+                            <!-- Custom fields rendered dynamically -->
+                        </div>
+                        <hr>
+                    </div>
+
+                    <!-- Amount & Payment -->
+                    <div id="paymentSectionContainer">
+                        <div class="section-title">Amount & Payment Mode</div>
+                        <div class="amount-payment-row">
+                            <div class="form-group">
+                                <label for="amount">Amount (₹)</label>
+                                <input type="number" id="amount" placeholder="Enter amount" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="paymentMode">Payment Mode</label>
+                                <select id="paymentMode">
+                                    <option value="Cash">Cash</option>
+                                    <option value="Card">Card</option>
+                                    <option value="UPI">UPI</option>
+                                    <option value="Online">Online</option>
+                                </select>
+                            </div>
+                        </div>
+                        <hr>
+                    </div>
+
+                    <button onclick="submitPrescription()" class="btn btn-submit">
+                        <i class="fas fa-paper-plane"></i> Submit
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- NEW: Patients Section (F) -->
+        <section id="patientsSection" class="page-section">
+            <div class="container">
+                <h2><i class="fas fa-users"></i> Patient Records</h2>
+                <div class="filter-controls">
+                    <div class="search-bar">
+                        <input type="text" id="patientSearchInput" placeholder="Search by Name or Mobile" onkeyup="filterPatients()">
+                        <button class="btn-search" onclick="fetchPatients()">Search</button>
+                    </div>
+                </div>
+                 <!-- WRAPPER FOR HORIZONTAL SCROLLING -->
+                <div class="table-responsive-mobile">
+                    <table id="patientTable">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Mobile</th>
+                                <th>Age/Gender</th>
+                                <th>Last Visit</th>
+                                <th>Next Checkup</th>
+                                <th>Total Rx</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Patient data loaded by app.js -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- View Prescriptions Section -->
+        <section id="prescriptionsSection" class="page-section">
+            <div class="container">
+                <h2>Prescription History</h2>
+                
+                <div class="filter-controls">
+                    <div class="search-bar">
+                        <input type="text" id="searchInput" placeholder="Search by Name or Mobile" onkeyup="filterPrescriptions()">
+                        <button class="btn-search">Search</button>
+                    </div>
+                    <div class="date-filter-group">
+                        <label for="prescriptionDateStart">Start Date:</label>
+                        <input type="date" id="prescriptionDateStart" onchange="fetchPrescriptions()">
+                        <label for="prescriptionDateEnd">End Date:</label>
+                        <input type="date" id="prescriptionDateEnd" onchange="fetchPrescriptions()">
+                        <button class="btn btn-primary btn-sm" onclick="fetchPrescriptions()"><i class="fas fa-filter"></i> Apply</button>
+                    </div>
+                </div>
+                
+                 <!-- WRAPPER FOR HORIZONTAL SCROLLING -->
+                <div class="table-responsive-mobile">
+                    <table id="prescriptionTable">
+                        <thead>
+                            <tr>
+                                <!-- B: Added Mobile and Age for better list clarity -->
+                                <th>Date & Time</th>
+                                <th>Patient Name</th>
+                                <th>Age</th>
+                                <th>Mobile</th> 
+                                <th>Amount</th>
+                                <th>Vision Type</th>
+                                <th>Lens Type</th>
+                                <th>Frame Type</th>
+                                <th>Payment Mode</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Reports Section -->
+        <section id="reportsSection" class="page-section">
+            <div class="reports-container">
+                <h2>Reports</h2>
+                
+                <div class="date-filter-group report-date-filters">
+                    <label for="reportDateStart">Start Date:</label>
+                    <input type="date" id="reportDateStart" onchange="fetchReportDataByRange()">
+                    <label for="reportDateEnd">End Date:</label>
+                    <input type="date" id="reportDateEnd" onchange="fetchReportDataByRange()">
+                    <button onclick="fetchReportDataByRange()" class="btn btn-primary btn-sm">Generate Report</button>
+                </div>
+
+                <!-- Report Table -->
+                <table id="reportTable">
+                    <thead>
+                        <tr>
+                            <th>Date Group</th>
+                            <th>Prescriptions</th>
+                            <th>Amount Earned</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                
+                <!-- Report Summary -->
+                <div class="report-summary mt-4">
+                    <h3>Summary:</h3>
+                    <p>Total Prescriptions: <strong id="reportTotalPrescriptions">0</strong></p>
+                    <p>Total Revenue: <strong id="reportTotalRevenue">₹ 0.00</strong></p>
+                </div>
+
+            </div>
+        </section>
+
+      <!-- Preview Section -->
+<section id="previewSection" class="page-section">
+    <div class="preview-container">
+        <button onclick="navigateIfProfileComplete(showPrescriptions, 'prescriptions')" class="btn btn-back">
+            <i class="fas fa-arrow-left"></i> Back
+        </button>
+
+        <!-- Prescription Preview Container -->
+        <div id="prescriptionPreview">
+            <!-- Clinic Details -->
+            <div class="preview-header">
+                <h2 id="previewClinicName">Loading...</h2>
+                <p id="previewClinicAddress">Please wait...</p>
+            </div>
+            <hr>
+
+            <!-- Optometrist Details -->
+            <div class="preview-details">
+                <p id="previewOptometristName"><strong>Loading...</strong></p>
+                <p id="previewContactNumber"><strong>Please wait...</strong></p>
+                <p><strong>Date:</strong> <span id="previewcurrentDate"></span></p>
+            </div>
+            <hr>
+
+            <!-- Patient Details -->
+            <div class="preview-details">
+                <p><strong>Patient Name:</strong> <span id="previewPatientName"></span></p>
+                <p><strong>Age:</strong> <span id="previewAge"></span></p>
+                <p><strong>Gender:</strong> <span id="previewGender"></span></p>
+                <p><strong>Mobile:</strong> <span id="previewMobile"></span></p>
+                <!-- H: Checkup date in preview -->
+                <p><strong>Next Checkup:</strong> <span id="previewNextCheckupDate"></span></p>
+            </div>
+            <hr>
+
+            <!-- Prescription Details (UPDATED PREVIEW) -->
+            <div class="preview-prescription">
+                <h3>Prescription Details</h3>
+
+                <!-- Right Eye Table -->
+                <table>
+                    <thead>
+                        <tr>
+                            <th colspan="5">RIGHT EYE (OD)</th>
+                        </tr>
+                        <tr>
+                            <th></th>
+                            <th>SPH</th>
+                            <th>CYL</th>
+                            <th>AXIS</th>
+                            <th>V/A</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- DISTANCE Row -->
+                        <tr>
+                            <td><strong>DIST</strong></td>
+                            <td><span id="previewrightDistSPH"></span></td>
+                            <td><span id="previewrightDistCYL"></span></td>
+                            <td><span id="previewrightDistAXIS"></span></td>
+                            <td><span id="previewrightDistVA"></span></td>
+                        </tr>
+                        <!-- PRISM Row -->
+                        <tr>
+                            <td><strong>PRISM</strong></td>
+                            <td colspan="2"><span id="previewrightPrismDiopter"></span></td>
+                            <td colspan="2"><span id="previewrightPrismBase"></span></td>
+                        </tr>
+                        <!-- ADD Power Row (Simplified) -->
+                        <tr class="bg-light">
+                            <td><strong>ADD</strong></td>
+                            <td><span id="previewrightAddSPH"></span></td>
+                            <td></td> <!-- Blank cell -->
+                            <td></td> <!-- Blank cell -->
+                            <td></td> <!-- Blank cell -->
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Left Eye Table -->
+                <table>
+                    <thead>
+                        <tr>
+                            <th colspan="5">LEFT EYE (OS)</th>
+                        </tr>
+                        <tr>
+                            <th></th>
+                            <th>SPH</th>
+                            <th>CYL</th>
+                            <th>AXIS</th>
+                            <th>V/A</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- DISTANCE Row -->
+                        <tr>
+                            <td><strong>DIST</strong></td>
+                            <td><span id="previewleftDistSPH"></span></td>
+                            <td><span id="previewleftDistCYL"></span></td>
+                            <td><span id="previewleftDistAXIS"></span></td>
+                            <td><span id="previewleftDistVA"></span></td>
+                        </tr>
+                        <!-- PRISM Row -->
+                        <tr>
+                            <td><strong>PRISM</strong></td>
+                            <td colspan="2"><span id="previewleftPrismDiopter"></span></td>
+                            <td colspan="2"><span id="previewleftPrismBase"></span></td>
+                        </tr>
+                        <!-- ADD Power Row (Simplified) -->
+                        <tr class="bg-light">
+                            <td><strong>ADD</strong></td>
+                            <td><span id="previewleftAddSPH"></span></td>
+                            <td></td> <!-- Blank cell -->
+                            <td></td> <!-- Blank cell -->
+                            <td></td> <!-- Blank cell -->
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <hr>
+
+            <!-- Dispensing Parameters Preview (NEW SECTION) -->
+            <div class="preview-details">
+                <p><strong>PD Far:</strong> <span id="previewPdFar"></span></p>
+                <p><strong>PD Near:</strong> <span id="previewPdNear"></span></p>
+            </div>
+            <hr>
+            
+            <!-- Vision Type, Lens Type, Frame Type -->
+            <div class="preview-details">
+                <p><strong>Vision Type:</strong> <span id="previewVisionType"></span></p>
+                <p><strong>Lens Type:</strong> <span id="previewLensType"></span></p>
+                <p><strong>Frame Type:</strong> <span id="previewFrameType"></span></p>
+            </div>
+            <hr>
+
+            <!-- Amount -->
+            <div class="preview-details">
+                <p><strong>Amount:</strong> ₹<span id="previewAmount"></span></p>
+                <p><strong>Payment Mode:</strong> <span id="previewPaymentMode"></span></p>
+            </div>
+            
+            <!-- NEW: UPI QR/ID in Preview -->
+            <div id="previewUpiContainer" style="display: none;">
+                <div class="text-center mb-2">
+                     <img id="previewQrCodeImage" alt="UPI QR Code" style="width: 100px; height: 100px; margin: 0 auto; display: block;">
+                     <p style="font-size: 10px; margin-top: 5px;">Scan to Pay (UPI)</p>
+                     <p style="font-weight: bold; font-size: 11px;">UPI ID: <span id="previewUpiId"></span></p>
+                </div>
+                <hr>
+            </div>
+
+            <!-- NEW: App Promotion Section (This will appear in images and prints) -->
+            <div class="app-promotion-section">
+                <div class="app-promotion-header">
+                    <img src="lenslogo.png" alt="LensRx" class="app-promotion-logo">
+                    <div class="app-promotion-text">
+                        <h4 style="margin: 0; color: #1e3a8a; font-weight: bold;">Lens Rx App</h4>
+                        <p style="margin: 2px 0; font-size: 14px; color: #666;">Digital Prescription Management</p>
+                    </div>
+                </div>
+                <div class="app-promotion-content">
+                    <p style="margin: 0; font-size: 14px; color: #333;">
+                        <strong>View your prescription online anytime at:</strong>
+                    </p>
+                    <p style="margin: 5px 0; font-size: 16px; font-weight: bold; color: #007bff;">
+                        lensrx.online
+                    </p>
+                </div>
+                <p style="margin: 5px 0 0 0; font-size: 12px; color: #6b7280;">
+                    Powered by MNR Developers • Secure Digital Prescriptions
+                </p>
+            </div>
+            <hr>
+
+            <!-- Thank You Note -->
+            <div class="preview-footer">
+                <p>Thank you for choosing Us</p>
+                <p>We hope to see you again soon.</p>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="preview-buttons">
+            <button onclick="generateImage()" class="btn btn-download">
+                <i class="fas fa-image"></i> Download 
+            </button>
+            <button onclick="printPreview()" class="btn btn-print">
+                <i class="fas fa-print"></i> Print
+            </button>
+            <button onclick="sendWhatsApp()" class="btn btn-whatsapp">
+                <i class="fab fa-whatsapp"></i> WhatsApp
+            </button>
+        </div>
+    </div>
+</section>
+        
+        <!-- Custom Delete Confirmation Modal (E) -->
+        <div id="deleteConfirmationModal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="text-center">
+                    <i class="fas fa-trash-alt fa-3x text-danger mb-3"></i>
+                    <h2>Confirm Deletion</h2>
+                    <p class="text-muted mb-4">Are you sure you want to delete this prescription? This action cannot be undone.</p>
+                    <p class="fw-bold" id="deleteRxName">Prescription for [Patient Name]</p>
+                </div>
+
+                <div class="modal-buttons d-flex justify-content-center gap-3">
+                    <button onclick="confirmDeleteAction()" class="btn btn-danger">
+                        <i class="fas fa-check"></i> Yes, Delete
+                    </button>
+                    <button onclick="closeDeleteModal()" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Custom Exit Prompt Modal -->
+        <div id="exitPromptModal" class="modal-overlay">
+            <div class="modal-content">
+                <p>Are you sure you want to leave? Your changes may not be saved.</p>
+                <div class="modal-buttons">
+                    <button id="confirmExit" class="btn btn-danger">Yes, Leave</button>
+                    <button id="cancelExit" class="btn btn-secondary">No, Stay</button>
+                </div>
+            </div>
+        </div>
+
+<!-- Limit Reached Prompt Modal -->
+<div id="limitReachedPromptModal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="text-center">
+      <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+      <h2>Limit Reached!</h2>
+      <p class="text-muted">You have used all <span class="fw-bold">10 free prescriptions</span> for this month.</p>
+      <p class="fw-bold">Please upgrade to Premium for unlimited access.</p>
+    </div>
+
+    <div class="modal-buttons d-flex justify-content-center gap-3">
+      <button onclick="showPaymentModal(); closeLimitReachedPrompt();" class="btn btn-primary">
+        <i class="fas fa-crown"></i> Buy Premium
+      </button>
+      <button onclick="closeLimitReachedPrompt()" class="btn btn-secondary">
+        Not Interested
+      </button>
+    </div>
+  </div>
+</div>
+
+        <!-- Add this after the existing modals in app.html -->
+
+<!-- Update the view modal footer to include preview button -->
+<div id="viewPrescriptionModal" class="modal-overlay">
+    <div class="modal-content large">
+        <div class="modal-header">
+            <h3><i class="fas fa-eye"></i> View Prescription</h3>
+            <button type="button" class="btn-modal-close" onclick="closeViewModal()" title="Close Modal"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body" id="viewPrescriptionContent">
+            <!-- Content will be populated dynamically -->
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeViewModal()">
+                <i class="fas fa-times"></i> Close
+            </button>
+            <button type="button" class="btn btn-info" onclick="openPreviewFromView()">
+                <i class="fas fa-external-link-alt"></i> Preview & Print
+            </button>
+            <button type="button" class="btn btn-primary" onclick="openEditModal()">
+                <i class="fas fa-edit"></i> Edit
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Prescription Modal -->
+<div id="editPrescriptionModal" class="modal-overlay">
+    <div class="modal-content large">
+        <div class="modal-header">
+            <h3><i class="fas fa-edit"></i> Edit Prescription</h3>
+            <button type="button" class="btn-modal-close" onclick="closeEditModal()" title="Close Modal"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <form id="editPrescriptionForm">
+                <!-- Form content will be populated dynamically -->
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeEditModal()">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+            <button type="button" class="btn btn-primary" onclick="updatePrescription()">
+                <i class="fas fa-save"></i> Save Changes
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- NEW: Premium Feature Prompt Modal -->
+<div id="premiumFeaturePromptModal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="text-center">
+      <i class="fas fa-lock fa-3x text-info mb-3"></i>
+      <h2>Premium Feature</h2>
+      <p class="text-muted">This feature requires a <strong>Premium Subscription</strong>.</p>
+      <p class="fw-bold">Unlock powerful features like exports, sharing, and template saving by upgrading.</p>
+    </div>
+
+    <div class="modal-buttons d-flex justify-content-center gap-3">
+      <button onclick="showPaymentModal(); closePremiumFeaturePrompt();" class="btn btn-primary">
+        <i class="fas fa-crown"></i> Buy Premium
+      </button>
+      <button onclick="closePremiumFeaturePrompt()" class="btn btn-secondary">
+        Continue Free
+      </button>
+    </div>
+  </div>
+</div>
+<!-- END NEW: Premium Feature Prompt Modal -->
+
+    <!-- START: Timer Modal for WhatsApp Loading -->
+    <div id="whatsappTimerModal" class="modal-overlay">
+        <div class="modal-content large" style="max-width: 350px;">
+            <h2>Preparing Share Link</h2>
+            <div class="text-center mb-4">
+                <i class="fas fa-clock fa-spin fa-4x text-primary" style="color: #007bff !important;"></i>
+            </div>
+            <p class="text-center">
+                Please wait while we convert the prescription to an image and upload it for sharing. This may take a few seconds.
+            </p>
+            <div class="text-center mt-3">
+                <strong style="font-size: 1.5rem;" id="timerDisplay">00:00</strong>
+            </div>
+        </div>
+    </div>
+    <!-- END: Timer Modal for WhatsApp Loading -->
+
+    <!-- Native Mobile Bottom Navigation Bar (iOS & Android) -->
+    <nav id="bottomNav" class="mobile-bottom-nav d-lg-none">
+        <button type="button" class="bottom-nav-item" data-tab="dashboard" onclick="navigateIfProfileComplete(showDashboard, 'dashboard')">
+            <i class="fas fa-chart-pie"></i>
+            <span>Dashboard</span>
+        </button>
+        <button type="button" class="bottom-nav-item" data-tab="patients" onclick="navigateIfProfileComplete(showPatients, 'patients')">
+            <i class="fas fa-users"></i>
+            <span>Patients</span>
+        </button>
+        <button type="button" class="bottom-nav-item bottom-nav-add" data-tab="form" onclick="navigateIfProfileComplete(showPrescriptionForm, 'form')">
+            <div class="add-icon-wrapper">
+                <i class="fas fa-plus"></i>
+            </div>
+            <span>Add Rx</span>
+        </button>
+        <button type="button" class="bottom-nav-item" data-tab="prescriptions" onclick="navigateIfProfileComplete(showPrescriptions, 'prescriptions')">
+            <i class="fas fa-list-alt"></i>
+            <span>History</span>
+        </button>
+        <button type="button" class="bottom-nav-item" data-tab="setup" onclick="navigateIfProfileComplete(showProfileSetup, 'setup')">
+            <i class="fas fa-user-circle"></i>
+            <span>Profile</span>
+        </button>
+    </nav>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+    <script src="app.js"></script>
+    <!-- Service worker registration is handled by app.js setupPWA() -->
+</body>
+</html>
+
+
+
+
+
+
