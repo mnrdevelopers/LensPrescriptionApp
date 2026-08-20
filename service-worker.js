@@ -1,8 +1,8 @@
-// service-worker.js — LENS RX v25 — Full Offline PWA Support
-const CACHE_NAME = 'lens-prescription-v25';
-const CDN_CACHE  = 'lens-cdn-v25';
+// service-worker.js — LENS RX v26 — Full Offline PWA Support
+const CACHE_NAME = 'lens-prescription-v26';
+const CDN_CACHE  = 'lens-cdn-v26';
 
-const BUILD_TIMESTAMP = '20260812-1750';
+const BUILD_TIMESTAMP = '20260820-1800';
 
 // ── LOCAL APP ASSETS (pre-cached at install for 100% offline access) ───────
 const LOCAL_ASSETS = [
@@ -139,13 +139,17 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        if (response.status === 200) {
+        if (response && response.status === 200) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         }
         return response;
       })
-      .catch(() => caches.match(event.request))
+      .catch(async () => {
+        const cached = await caches.match(event.request);
+        if (cached) return cached;
+        return new Response('', { status: 404, statusText: 'Not Found' });
+      })
   );
 });
 
@@ -158,13 +162,14 @@ async function cdnCacheFirst(request) {
 
   try {
     const response = await fetch(request);
-    if (response.ok) {
+    if (response && response.ok) {
       const cache = await caches.open(CDN_CACHE);
       cache.put(request, response.clone());
     }
     return response;
   } catch {
     return new Response('/* Offline — CDN resource unavailable */', {
+      status: 200,
       headers: { 'Content-Type': 'text/css' }
     });
   }
@@ -174,12 +179,20 @@ async function cdnCacheFirst(request) {
 async function networkFirstHtml(request) {
   try {
     const response = await fetch(request);
-    const cache = await caches.open(CACHE_NAME);
-    cache.put(request, response.clone());
+    if (response && response.ok) {
+      const cache = await caches.open(CACHE_NAME);
+      cache.put(request, response.clone());
+    }
     return response;
   } catch {
     const cached = await caches.match(request);
-    return cached || caches.match('index.html');
+    if (cached) return cached;
+    const fallback = await caches.match('index.html');
+    if (fallback) return fallback;
+    return new Response('<!DOCTYPE html><html><body><h2>Offline</h2><p>Please check your internet connection.</p></body></html>', {
+      status: 200,
+      headers: { 'Content-Type': 'text/html' }
+    });
   }
 }
 
@@ -188,12 +201,28 @@ async function staleWhileRevalidate(request) {
   const cache = await caches.open(CACHE_NAME);
   const cached = await cache.match(request);
 
-  const networkFetch = fetch(request).then((response) => {
-    if (response.ok) cache.put(request, response.clone());
-    return response;
-  }).catch(() => null);
+  const fetchPromise = fetch(request)
+    .then((response) => {
+      if (response && response.ok) {
+        cache.put(request, response.clone());
+      }
+      return response;
+    })
+    .catch(() => null);
 
-  return cached || networkFetch;
+  if (cached) {
+    return cached;
+  }
+
+  const networkResponse = await fetchPromise;
+  if (networkResponse) {
+    return networkResponse;
+  }
+
+  return new Response('', {
+    status: 404,
+    statusText: 'Not Found'
+  });
 }
 
 // ── MESSAGES ──────────────────────────────────────────────────────────────

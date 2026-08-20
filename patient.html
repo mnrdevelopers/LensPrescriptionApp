@@ -3,296 +3,1254 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Prescription - Lens Rx</title>
+    <title>My Prescription Portal - LensRx</title>
+    <meta name="description" content="Securely view, download, and manage your eye prescription online with LensRx Patient Portal.">
 
-    <!-- PWA Manifest -->
+    <!-- PWA Manifest & Icons -->
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/x-icon" href="lenslogo.png">
+    <meta name="theme-color" content="#1e3a8a">
 
-    <!-- Styles -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- html2canvas for Download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
     <style>
         :root {
-            --primary-color: #007bff;
-            --premium-navy: #1e3a8a; 
-            --premium-gold: #fbbf24;
-            --text-color: #333;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --primary-light: #eff6ff;
+            --navy: #0f172a;
+            --navy-light: #1e293b;
+            --accent-gold: #f59e0b;
+            --emerald: #10b981;
+            --emerald-light: #ecfdf5;
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-300: #cbd5e1;
+            --slate-400: #94a3b8;
+            --slate-500: #64748b;
+            --slate-600: #475569;
+            --slate-700: #334155;
+            --slate-800: #1e293b;
+            --slate-900: #0f172a;
+            --card-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+            --card-shadow-lg: 0 20px 35px -10px rgba(15, 23, 42, 0.12), 0 10px 15px -5px rgba(15, 23, 42, 0.06);
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        h1, h2, h3, h4, h5, h6, .brand-title, .section-title {
+            font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
         }
 
         body {
-            font-family: 'Times New Roman', serif;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            background: linear-gradient(180deg, #f0f4ff 0%, #f8fafc 40%, #edf2f7 100%);
             min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container-custom {
-            max-width: 600px;
-            margin: 50px auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            padding: 30px;
-            text-align: center;
-        }
-        
-        .logo-section {
-            margin-bottom: 25px;
-        }
-
-        .logo {
-            width: 70px;
-            height: 70px;
-            margin-bottom: 10px;
-        }
-        
-        h1 {
-            color: var(--premium-navy);
-            font-size: 2rem;
-            font-weight: bold;
-        }
-
-        .search-form-group {
+            color: var(--slate-800);
             display: flex;
-            gap: 10px;
-            margin-top: 20px;
-            max-width: 400px;
-            margin-left: auto;
-            margin-right: auto;
+            flex-direction: column;
         }
 
-        .search-form-group input {
-            flex-grow: 1;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 1rem;
-            text-align: center;
-        }
-        
-        .search-form-group input:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        /* Top Navbar */
+        .portal-nav {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--slate-200);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding: 12px 24px;
         }
 
-        .btn-search {
-            background: linear-gradient(135deg, #28a745, #20c997);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 12px 20px;
-            font-weight: bold;
+        .nav-container {
+            max-width: 900px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--navy);
+        }
+
+        .nav-logo {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+        }
+
+        .brand-text h2 {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--navy);
+            letter-spacing: -0.3px;
+            line-height: 1.2;
+        }
+
+        .brand-text span {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-nav-home {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--slate-600);
+            text-decoration: none;
+            padding: 8px 14px;
+            border-radius: var(--radius-sm);
+            background: var(--slate-100);
             transition: all 0.2s ease;
         }
 
-        .btn-search:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 10px rgba(40, 167, 69, 0.3);
+        .btn-nav-home:hover {
+            background: var(--slate-200);
+            color: var(--navy);
         }
 
-        /* Message Box */
-        .message-box {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 8px;
-            font-weight: bold;
-            display: none;
+        /* Main Container */
+        .main-wrapper {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 32px 20px 60px;
+            flex: 1;
+            width: 100%;
         }
 
-        /* Prescription View Styles */
-        #prescriptionViewContainer {
-            margin-top: 30px;
-            border: 2px solid var(--premium-navy);
-            border-radius: 10px;
-            padding: 20px;
-            text-align: left;
+        /* Hero Search Card */
+        .hero-search-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 36px 28px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            text-align: center;
             position: relative;
-            background: #fdfdfd;
-            
-            /* Anti-Capture CSS */
-            user-select: none;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
+            overflow: hidden;
+            margin-bottom: 28px;
         }
 
-        /* Anti-Capture Overlay Hint */
-        #prescriptionViewContainer::after {
-            content: "🔒 Viewing digital prescription copy. Downloads and screenshots are restricted.";
+        .hero-search-card::before {
+            content: '';
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
-            text-align: center;
-            font-size: 10px;
-            color: #dc3545;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 2px;
-            border-radius: 10px 10px 0 0;
-            opacity: 0.8;
-        }
-        
-        .rx-header {
-            text-align: center;
-            border-bottom: 2px solid var(--premium-gold);
-            padding-bottom: 10px;
-            margin-bottom: 15px;
-        }
-        .rx-header h3 {
-            color: var(--premium-navy);
-            font-size: 1.5rem;
-            font-weight: bold;
+            height: 4px;
+            background: linear-gradient(90deg, #2563eb, #06b6d4, #10b981);
         }
 
-        .rx-patient-details, .rx-prescription-table {
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--primary-light);
+            color: var(--primary);
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 6px 14px;
+            border-radius: 50px;
+            margin-bottom: 14px;
+        }
+
+        .hero-title {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: var(--navy);
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .hero-desc {
+            color: var(--slate-500);
+            font-size: 0.95rem;
+            max-width: 540px;
+            margin: 0 auto 24px;
+            line-height: 1.5;
+        }
+
+        .search-box-wrapper {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .search-input-group {
+            display: flex;
+            align-items: stretch;
+            background: var(--slate-50);
+            border: 2px solid var(--slate-200);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            transition: all 0.25s ease;
+        }
+
+        .search-input-group:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+            background: white;
+        }
+
+        .input-prefix {
+            display: flex;
+            align-items: center;
+            padding: 0 14px;
+            background: var(--slate-100);
+            color: var(--slate-600);
+            font-weight: 700;
+            font-size: 0.95rem;
+            border-right: 1px solid var(--slate-200);
+            gap: 6px;
+        }
+
+        .search-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            padding: 14px 16px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--navy);
+            letter-spacing: 1px;
+            background: transparent;
+        }
+
+        .search-input::placeholder {
+            font-weight: 400;
+            color: var(--slate-400);
+            letter-spacing: normal;
+        }
+
+        .btn-search-submit {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0 24px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .btn-search-submit:hover {
+            background: var(--primary-hover);
+        }
+
+        .search-hint {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            color: var(--slate-400);
+            margin-top: 12px;
+        }
+
+        /* Message / Alert Box */
+        .portal-alert {
+            max-width: 600px;
+            margin: 0 auto 24px;
+            padding: 14px 20px;
+            border-radius: var(--radius-md);
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: none;
+            align-items: center;
+            gap: 12px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .portal-alert.alert-info {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1e40af;
+        }
+
+        .portal-alert.alert-warning {
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            color: #92400e;
+        }
+
+        .portal-alert.alert-danger {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+
+        .portal-alert.alert-success {
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            color: #065f46;
+        }
+
+        /* Prescription History Tabs */
+        .history-selector-wrapper {
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .history-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .history-header h4 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--slate-600);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .history-tabs {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 6px;
+            scrollbar-width: thin;
+        }
+
+        .history-tab-btn {
+            background: white;
+            border: 1.5px solid var(--slate-200);
+            border-radius: 50px;
+            padding: 8px 18px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--slate-600);
+            cursor: pointer;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .history-tab-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .history-tab-btn.active {
+            background: var(--navy);
+            border-color: var(--navy);
+            color: white;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+        }
+
+        .history-tab-btn.active .tab-badge {
+            background: var(--accent-gold);
+            color: var(--navy);
+        }
+
+        .tab-badge {
+            background: var(--slate-100);
+            color: var(--slate-600);
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 20px;
+            font-weight: 700;
+        }
+
+        /* Prescription Main Container */
+        #prescriptionCardContainer {
+            display: none;
+            animation: slideUp 0.4s ease;
+        }
+
+        /* Top Actions Bar */
+        .rx-actions-top {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .rx-actions-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-action-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            border-radius: 50px;
+            border: 1px solid var(--slate-200);
+            background: white;
+            color: var(--slate-700);
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn-action-pill:hover {
+            background: var(--slate-50);
+            border-color: var(--slate-300);
+            transform: translateY(-1px);
+        }
+
+        .btn-action-pill.btn-primary-pill {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+        }
+
+        .btn-action-pill.btn-primary-pill:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-action-pill.btn-whatsapp-pill {
+            background: #25d366;
+            color: white;
+            border-color: #25d366;
+            box-shadow: 0 4px 12px rgba(37, 211, 102, 0.25);
+        }
+
+        .btn-action-pill.btn-whatsapp-pill:hover {
+            background: #20ba5a;
+        }
+
+        /* Printable / Capturable Prescription Card */
+        .digital-rx-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--slate-200);
+            box-shadow: var(--card-shadow-lg);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Card Header */
+        .rx-card-header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+            color: white;
+            padding: 24px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 16px;
+            position: relative;
+        }
+
+        .rx-clinic-branding {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .rx-clinic-icon {
+            width: 46px;
+            height: 46px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            color: #60a5fa;
+            backdrop-filter: blur(4px);
+        }
+
+        .rx-clinic-title h3 {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .verified-badge {
+            color: #38bdf8;
+            font-size: 1rem;
+        }
+
+        .rx-clinic-title p {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 2px;
+        }
+
+        .rx-meta-badge {
+            text-align: right;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 14px;
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .rx-meta-badge .meta-date {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #fde68a;
+        }
+
+        .rx-meta-badge .meta-label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Patient Information Banner */
+        .rx-patient-banner {
+            background: var(--slate-50);
+            padding: 16px 28px;
+            border-bottom: 1px solid var(--slate-200);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 14px;
+        }
+
+        .patient-info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .patient-info-item .label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--slate-400);
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+
+        .patient-info-item .val {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--navy);
+        }
+
+        /* Prescription Power Grid */
+        .rx-grid-section {
+            padding: 24px 28px;
+        }
+
+        .section-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+
+        .section-header-row h4 {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--navy);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .table-responsive-clean {
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
             margin-bottom: 20px;
         }
 
-        .rx-patient-details div {
-            display: flex;
-            justify-content: space-between;
-            padding: 3px 0;
-            border-bottom: 1px dotted #ccc;
-        }
-        .rx-patient-details strong {
-            color: var(--primary-color);
-        }
-
-        .rx-prescription-table table {
+        .rx-modern-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.9rem;
-        }
-        .rx-prescription-table th {
-            background: var(--premium-navy);
-            color: white;
-            padding: 8px 5px;
             text-align: center;
-            border: 1px solid white;
         }
-        .rx-prescription-table td {
-            padding: 8px 5px;
-            text-align: center;
-            border: 1px solid #ddd;
-        }
-        .rx-eye-label {
-            font-weight: bold;
-            background: #f8f9fa;
-        }
-        .rx-add-row td {
-            background: #e9f7ef !important;
-            font-weight: bold;
-        }
-        
-        .disclaimer {
+
+        .rx-modern-table thead th {
+            background: var(--slate-100);
+            color: var(--slate-700);
             font-size: 0.8rem;
-            color: var(--secondary-color);
-            margin-top: 15px;
-            border-top: 1px solid #eee;
-            padding-top: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--slate-200);
+        }
+
+        .rx-modern-table tbody td {
+            padding: 14px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--navy);
+            border-bottom: 1px solid var(--slate-200);
+        }
+
+        .rx-modern-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .eye-tag-od {
+            background: #eff6ff;
+            color: #1d4ed8;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            display: inline-block;
+        }
+
+        .eye-tag-os {
+            background: #fdf2f8;
+            color: #be185d;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            display: inline-block;
+        }
+
+        .row-add-power td {
+            background: #f8fafc;
+            color: var(--slate-600);
+            font-size: 0.88rem;
+        }
+
+        .add-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #ecfdf5;
+            color: #065f46;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+
+        /* Specifications Grid */
+        .specs-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .spec-mini-card {
+            background: var(--slate-50);
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-md);
+            padding: 14px 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .spec-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: white;
+            border: 1px solid var(--slate-200);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .spec-content .spec-title {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--slate-500);
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+
+        .spec-content .spec-value {
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: var(--navy);
+        }
+
+        /* Next Checkup Notification Card */
+        .checkup-callout-card {
+            background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+            border: 1.5px solid #a7f3d0;
+            border-radius: var(--radius-md);
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .checkup-info {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .checkup-icon-box {
+            width: 42px;
+            height: 42px;
+            background: #10b981;
+            color: white;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.25);
+        }
+
+        .checkup-text h5 {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: #065f46;
+        }
+
+        .checkup-text p {
+            font-size: 0.85rem;
+            color: #047857;
+        }
+
+        .btn-calendar {
+            background: white;
+            color: #047857;
+            border: 1px solid #6ee7b7;
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn-calendar:hover {
+            background: #10b981;
+            color: white;
+            border-color: #10b981;
+        }
+
+        /* Card Footer */
+        .rx-card-footer {
+            background: var(--slate-50);
+            border-top: 1px solid var(--slate-200);
+            padding: 18px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            font-size: 0.8rem;
+            color: var(--slate-500);
+        }
+
+        .digital-seal {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--slate-600);
+            font-weight: 600;
+        }
+
+        .digital-seal i {
+            color: var(--primary);
+        }
+
+        /* Clinic Contact Quick Bar */
+        .clinic-contact-bar {
+            margin-top: 24px;
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 20px 24px;
+            border: 1px solid var(--slate-200);
+            box-shadow: var(--card-shadow);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .clinic-contact-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .clinic-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--primary-light);
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .clinic-contact-info h4 {
+            font-size: 0.98rem;
+            font-weight: 700;
+            color: var(--navy);
+        }
+
+        .clinic-contact-info p {
+            font-size: 0.85rem;
+            color: var(--slate-500);
+        }
+
+        .clinic-contact-btns {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Footer */
+        .portal-footer {
+            margin-top: auto;
             text-align: center;
+            padding: 24px;
+            color: var(--slate-500);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--slate-200);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 640px) {
+            .hero-search-card {
+                padding: 26px 18px;
+            }
+            .hero-title {
+                font-size: 1.45rem;
+            }
+            .rx-card-header {
+                padding: 20px;
+            }
+            .rx-grid-section {
+                padding: 18px;
+            }
+            .rx-patient-banner {
+                padding: 14px 18px;
+                grid-template-columns: 1fr 1fr;
+            }
+            .rx-actions-top {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .rx-actions-left {
+                flex-wrap: wrap;
+            }
+            .btn-action-pill {
+                flex: 1;
+                justify-content: center;
+            }
+            .search-input-group {
+                flex-direction: column;
+            }
+            .input-prefix {
+                border-right: none;
+                border-bottom: 1px solid var(--slate-200);
+                padding: 10px 14px;
+            }
+            .btn-search-submit {
+                padding: 14px;
+                justify-content: center;
+            }
+            .clinic-contact-bar {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+            .clinic-contact-left {
+                flex-direction: column;
+            }
+            .clinic-contact-btns {
+                justify-content: center;
+            }
+        }
+
+        /* Print Mode Optimization */
+        @media print {
+            .portal-nav, .hero-search-card, .history-selector-wrapper, .rx-actions-top, .clinic-contact-bar, .portal-footer, .btn-calendar {
+                display: none !important;
+            }
+            body {
+                background: white !important;
+                color: black !important;
+                padding: 0 !important;
+            }
+            .main-wrapper {
+                padding: 0 !important;
+                max-width: 100% !important;
+            }
+            .digital-rx-card {
+                box-shadow: none !important;
+                border: 1px solid #000 !important;
+            }
+            .rx-card-header {
+                background: #1e3a8a !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container-custom">
-        <div class="logo-section">
-            <img src="lenslogo.png" alt="Lens Rx Logo" class="logo">
-            <h1>Lens Rx Patient Portal</h1>
-            <p class="text-muted">Securely view your latest prescription using your registered mobile number.</p>
+
+    <!-- Top Navigation -->
+    <header class="portal-nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-brand">
+                <img src="lenslogo.png" alt="LensRx" class="nav-logo">
+                <div class="brand-text">
+                    <h2>LensRx</h2>
+                    <span>Patient Portal</span>
+                </div>
+            </a>
+            <div class="nav-actions">
+                <a href="index.html" class="btn-nav-home">
+                    <i class="fas fa-arrow-left"></i> Home
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-wrapper">
+
+        <!-- Hero Search Section -->
+        <section class="hero-search-card">
+            <div class="hero-badge">
+                <i class="fas fa-shield-alt"></i> Verified Patient Access
+            </div>
+            <h1 class="hero-title">Find Your Digital Prescription</h1>
+            <p class="hero-desc">Enter your 10-digit registered mobile number to instantly view, save, or download your official eye prescription.</p>
+
+            <div class="search-box-wrapper">
+                <form id="patientSearchForm">
+                    <div class="search-input-group">
+                        <div class="input-prefix">
+                            <i class="fas fa-mobile-alt"></i> +91
+                        </div>
+                        <input 
+                            type="tel" 
+                            id="mobileNumberInput" 
+                            class="search-input" 
+                            placeholder="Enter 10-digit mobile number" 
+                            pattern="[0-9]{10}" 
+                            maxlength="10" 
+                            required 
+                            autocomplete="tel-national"
+                            inputmode="numeric"
+                        >
+                        <button type="submit" id="btnSearchSubmit" class="btn-search-submit">
+                            <i class="fas fa-search"></i> <span>Search</span>
+                        </button>
+                    </div>
+                </form>
+                <div class="search-hint">
+                    <i class="fas fa-lock"></i> Your medical records are encrypted and protected
+                </div>
+            </div>
+        </section>
+
+        <!-- Message/Alert Box -->
+        <div id="messageBox" class="portal-alert" role="alert">
+            <i id="messageIcon" class="fas fa-info-circle"></i>
+            <span id="messageText"></span>
         </div>
 
-        <div id="searchSection">
-            <form id="patientSearchForm">
-                <div class="search-form-group">
-                    <input type="tel" id="mobileNumberInput" placeholder="Enter your 10-digit Mobile Number" pattern="[0-9]{10}" required maxlength="10">
-                    <button type="submit" class="btn-search">
-                        <i class="fas fa-search"></i> Search
+        <!-- Prescription History Selector (When multiple visits exist) -->
+        <section id="historySelectorSection" class="history-selector-wrapper">
+            <div class="history-header">
+                <h4><i class="fas fa-history"></i> Prescription History</h4>
+                <span class="text-muted" style="font-size: 0.8rem;" id="historyCountLabel"></span>
+            </div>
+            <div id="historyTabsContainer" class="history-tabs">
+                <!-- Dynamically populated visit pills -->
+            </div>
+        </section>
+
+        <!-- Prescription Results Display Area -->
+        <section id="prescriptionCardContainer">
+            
+            <!-- Quick Actions Toolbar -->
+            <div class="rx-actions-top">
+                <div class="rx-actions-left">
+                    <button type="button" onclick="downloadPrescriptionImage()" class="btn-action-pill btn-primary-pill" title="Save prescription as image">
+                        <i class="fas fa-download"></i> Save Image
+                    </button>
+                    <button type="button" onclick="printPrescription()" class="btn-action-pill" title="Print this prescription">
+                        <i class="fas fa-print"></i> Print / PDF
                     </button>
                 </div>
-            </form>
-            <div id="messageBox" class="message-box alert-info">Enter your mobile number to retrieve your prescription.</div>
-        </div>
-
-        <div id="prescriptionViewContainer" style="display: none;">
-            <div class="rx-header">
-                <h3>Your Latest Prescription</h3>
-                <p class="text-muted" id="clinicInfoDisplay">Prescription from [Clinic Name]</p>
-                <p class="text-muted" id="optometristInfoDisplay">Checked by [Optometrist Name]</p>
+                <div class="rx-actions-right">
+                    <button type="button" onclick="shareOnWhatsApp()" class="btn-action-pill btn-whatsapp-pill" title="Share with Optometrist">
+                        <i class="fab fa-whatsapp"></i> Share on WhatsApp
+                    </button>
+                </div>
             </div>
 
-            <div class="rx-patient-details">
-                <div><strong>Patient Name:</strong> <span id="rxPatientName"></span></div>
-                <div><strong>Mobile:</strong> <span id="rxMobile"></span></div>
-                <div><strong>Date Issued:</strong> <span id="rxDate"></span></div>
-                <div><strong>Next Checkup:</strong> <span id="rxNextCheckupDate" class="text-success"></span></div>
+            <!-- Digital Prescription Card -->
+            <div id="digitalPrescriptionCard" class="digital-rx-card">
+
+                <!-- Header: Clinic Details -->
+                <div class="rx-card-header">
+                    <div class="rx-clinic-branding">
+                        <div class="rx-clinic-icon">
+                            <i class="fas fa-glasses"></i>
+                        </div>
+                        <div class="rx-clinic-title">
+                            <h3 id="clinicNameDisplay">
+                                Eye Care Optical <i class="fas fa-check-circle verified-badge" title="Verified Digital Prescription"></i>
+                            </h3>
+                            <p id="clinicAddressDisplay">Registered Optical Clinic</p>
+                            <p id="optometristNameDisplay" style="font-size: 0.8rem; color: #cbd5e1; margin-top: 2px;">
+                                <i class="fas fa-user-md"></i> Optometrist: In-charge
+                            </p>
+                        </div>
+                    </div>
+                    <div class="rx-meta-badge">
+                        <div class="meta-label">Date Issued</div>
+                        <div id="rxDateDisplay" class="meta-date">--/--/----</div>
+                    </div>
+                </div>
+
+                <!-- Patient Overview Banner -->
+                <div class="rx-patient-banner">
+                    <div class="patient-info-item">
+                        <span class="label">Patient Name</span>
+                        <span id="rxPatientNameDisplay" class="val">--</span>
+                    </div>
+                    <div class="patient-info-item">
+                        <span class="label">Age / Gender</span>
+                        <span id="rxAgeGenderDisplay" class="val">--</span>
+                    </div>
+                    <div class="patient-info-item">
+                        <span class="label">Mobile</span>
+                        <span id="rxMobileDisplay" class="val">--</span>
+                    </div>
+                    <div class="patient-info-item">
+                        <span class="label">Rx Status</span>
+                        <span class="val" style="color: var(--emerald);"><i class="fas fa-check-circle"></i> Active</span>
+                    </div>
+                </div>
+
+                <!-- Prescription Grid -->
+                <div class="rx-grid-section">
+                    <div class="section-header-row">
+                        <h4><i class="fas fa-eye"></i> Refractive Correction</h4>
+                    </div>
+
+                    <!-- Clean OD/OS Table -->
+                    <div class="table-responsive-clean">
+                        <table class="rx-modern-table">
+                            <thead>
+                                <tr>
+                                    <th>Eye</th>
+                                    <th>Type</th>
+                                    <th>SPH (Spherical)</th>
+                                    <th>CYL (Cylinder)</th>
+                                    <th>AXIS</th>
+                                    <th>V/A (Acuity)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Right Eye (OD) -->
+                                <tr>
+                                    <td><span class="eye-tag-od">OD (Right)</span></td>
+                                    <td><strong>DIST</strong></td>
+                                    <td id="rxRightDistSPH">0.00</td>
+                                    <td id="rxRightDistCYL">0.00</td>
+                                    <td id="rxRightDistAXIS">--</td>
+                                    <td id="rxRightDistVA" style="font-weight: 700; color: var(--primary);">6/6</td>
+                                </tr>
+                                <tr id="rxRightAddRow" class="row-add-power" style="display: none;">
+                                    <td></td>
+                                    <td><strong>ADD</strong></td>
+                                    <td colspan="4" style="text-align: left; padding-left: 20px;">
+                                        <span class="add-badge"><i class="fas fa-plus"></i> <span id="rxRightAddSPH">0.00</span> D</span>
+                                    </td>
+                                </tr>
+
+                                <!-- Left Eye (OS) -->
+                                <tr>
+                                    <td><span class="eye-tag-os">OS (Left)</span></td>
+                                    <td><strong>DIST</strong></td>
+                                    <td id="rxLeftDistSPH">0.00</td>
+                                    <td id="rxLeftDistCYL">0.00</td>
+                                    <td id="rxLeftDistAXIS">--</td>
+                                    <td id="rxLeftDistVA" style="font-weight: 700; color: var(--primary);">6/6</td>
+                                </tr>
+                                <tr id="rxLeftAddRow" class="row-add-power" style="display: none;">
+                                    <td></td>
+                                    <td><strong>ADD</strong></td>
+                                    <td colspan="4" style="text-align: left; padding-left: 20px;">
+                                        <span class="add-badge"><i class="fas fa-plus"></i> <span id="rxLeftAddSPH">0.00</span> D</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Recommended Specifications -->
+                    <div class="section-header-row">
+                        <h4><i class="fas fa-glasses"></i> Lens & Frame Recommendations</h4>
+                    </div>
+
+                    <div class="specs-cards-grid">
+                        <div class="spec-mini-card">
+                            <div class="spec-icon">
+                                <i class="fas fa-bullseye"></i>
+                            </div>
+                            <div class="spec-content">
+                                <div class="spec-title">Vision Type</div>
+                                <div id="rxVisionTypeDisplay" class="spec-value">Single Vision</div>
+                            </div>
+                        </div>
+                        <div class="spec-mini-card">
+                            <div class="spec-icon">
+                                <i class="fas fa-shield-virus"></i>
+                            </div>
+                            <div class="spec-content">
+                                <div class="spec-title">Lens Material / Coating</div>
+                                <div id="rxLensTypeDisplay" class="spec-value">Standard</div>
+                            </div>
+                        </div>
+                        <div class="spec-mini-card">
+                            <div class="spec-icon">
+                                <i class="fas fa-crop-alt"></i>
+                            </div>
+                            <div class="spec-content">
+                                <div class="spec-title">Frame Recommendation</div>
+                                <div id="rxFrameTypeDisplay" class="spec-value">Full Rim</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Next Checkup Notification Card -->
+                    <div id="checkupCallout" class="checkup-callout-card">
+                        <div class="checkup-info">
+                            <div class="checkup-icon-box">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <div class="checkup-text">
+                                <h5>Recommended Next Eye Checkup</h5>
+                                <p id="rxNextCheckupDateDisplay">Due on: --/--/----</p>
+                            </div>
+                        </div>
+                        <a id="btnAddToCalendar" href="#" target="_blank" class="btn-calendar" title="Set a reminder in your calendar">
+                            <i class="far fa-calendar-plus"></i> Add Reminder
+                        </a>
+                    </div>
+
+                </div>
+
+                <!-- Card Footer Seal -->
+                <div class="rx-card-footer">
+                    <div class="digital-seal">
+                        <i class="fas fa-shield-check"></i> Official Digital Record • Powered by LensRx
+                    </div>
+                    <div>
+                        lensrxbymnr.netlify.app
+                    </div>
+                </div>
+
             </div>
 
-            <div class="rx-prescription-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Eye</th>
-                            <th>Type</th>
-                            <th>SPH</th>
-                            <th>CYL</th>
-                            <th>AXIS</th>
-                            <th>PD (Far/Near)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Right Eye -->
-                        <tr>
-                            <td rowspan="2" class="rx-eye-label"><strong>OD (R)</strong></td>
-                            <td>DIST</td>
-                            <td id="rxRightDistSPH"></td>
-                            <td id="rxRightDistCYL"></td>
-                            <td id="rxRightDistAXIS"></td>
-                            <td rowspan="2" id="rxPDFarNear"></td>
-                        </tr>
-                        <tr class="rx-add-row">
-                            <td>ADD</td>
-                            <td id="rxRightAddSPH" colspan="3"></td>
-                        </tr>
-                        <!-- Left Eye -->
-                        <tr>
-                            <td rowspan="2" class="rx-eye-label"><strong>OS (L)</strong></td>
-                            <td>DIST</td>
-                            <td id="rxLeftDistSPH"></td>
-                            <td id="rxLeftDistCYL"></td>
-                            <td id="rxLeftDistAXIS"></td>
-                            <td rowspan="2"></td>
-                        </tr>
-                        <tr class="rx-add-row">
-                            <td>ADD</td>
-                            <td id="rxLeftAddSPH" colspan="3"></td>
-                        </tr>
-                    </tbody>
-                </table>
+            <!-- Clinic Contact Quick Bar -->
+            <div class="clinic-contact-bar">
+                <div class="clinic-contact-left">
+                    <div class="clinic-avatar">
+                        <i class="fas fa-clinic-medical"></i>
+                    </div>
+                    <div class="clinic-contact-info">
+                        <h4 id="clinicContactTitle">Have questions about your prescription?</h4>
+                        <p id="clinicContactSubtitle">Contact your optometrist or eye care specialist</p>
+                    </div>
+                </div>
+                <div class="clinic-contact-btns">
+                    <a id="btnCallClinic" href="#" class="btn-action-pill">
+                        <i class="fas fa-phone-alt"></i> Call Clinic
+                    </a>
+                    <a id="btnWhatsAppClinic" href="#" target="_blank" class="btn-action-pill btn-whatsapp-pill">
+                        <i class="fab fa-whatsapp"></i> WhatsApp
+                    </a>
+                </div>
             </div>
 
-            <div class="rx-details">
-                <div><strong>Vision Type:</strong> <span id="rxVisionType"></span></div>
-                <div><strong>Lens Type:</strong> <span id="rxLensType"></span></div>
-                <div><strong>Frame Type:</strong> <span id="rxFrameType"></span></div>
-            </div>
-            
-            <div class="disclaimer">
-                This is a digital copy for viewing only. Physical printouts, downloads, and screen capture features have been disabled for security and data privacy.
-            </div>
-        </div>
-        
-        <div class="text-center mt-4">
-            <a href="index.html" class="btn btn-secondary btn-sm">
-                <i class="fas fa-home"></i> Back to Landing Page
-            </a>
-        </div>
-    </div>
+        </section>
 
-    <!-- Firebase SDK -->
+    </main>
+
+    <!-- Footer -->
+    <footer class="portal-footer">
+        <p>© 2026 LensRx Optical Systems. All rights reserved. Secure Digital Prescriptions.</p>
+    </footer>
+
+    <!-- Firebase SDK (Compat) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>

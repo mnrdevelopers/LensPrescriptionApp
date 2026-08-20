@@ -971,7 +971,12 @@ async function submitPrescription() {
     const formData = getFormData();
     
     if (!validateFormData(formData)) {
-        showStatusMessage('Please fill all required patient and amount fields correctly.', 'error');
+        const config = getFormFieldsConfig();
+        if (config.showPayment) {
+            showStatusMessage('Please fill all required patient and amount fields correctly.', 'error');
+        } else {
+            showStatusMessage('Please fill all required patient fields correctly.', 'error');
+        }
         return;
     }
 
@@ -981,9 +986,20 @@ async function submitPrescription() {
         
         const patientData = await savePatientRecord(formData, nextCheckupDate);
 
+        // Fetch clinic and optometrist details to attach to prescription record
+        const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+        const clinicName = userProfile.clinicName || document.getElementById('clinicName')?.textContent || '';
+        const clinicAddress = userProfile.address || document.getElementById('clinicAddress')?.textContent || '';
+        const optometristName = userProfile.optometristName || document.getElementById('optometristName')?.textContent || '';
+        const contactNumber = userProfile.contactNumber || document.getElementById('contactNumber')?.textContent || '';
+
         const newPrescriptionRef = await db.collection('prescriptions').add({
             userId: user.uid,
             patientId: patientData.patientId, 
+            clinicName: clinicName,
+            clinicAddress: clinicAddress,
+            optometristName: optometristName,
+            contactNumber: contactNumber,
             ...formData,
             // Store date as ISO string for client-side display consistency
             date: new Date().toISOString(), 
@@ -993,6 +1009,10 @@ async function submitPrescription() {
         });
         
         currentPrescriptionData = { 
+            clinicName: clinicName,
+            clinicAddress: clinicAddress,
+            optometristName: optometristName,
+            contactNumber: contactNumber,
             ...formData, 
             // Store the nextCheckupDate as a Timestamp object for consistency, loadPreviewData will handle formatting
             nextCheckupDate: firebase.firestore.Timestamp.fromDate(nextCheckupDate)
@@ -1026,10 +1046,6 @@ function getFormData() {
         gender: getStringValue('gender'),
         mobile: getStringValue('patientMobile'),
         amount: getNumberValue('amount'),
-        // NEW PD FIELDS
-        pdFar: getStringValue('pdFar'),
-        pdNear: getStringValue('pdNear'),
-        // END NEW PD FIELDS
         visionType: getStringValue('visionType'),
         lensType: getStringValue('lensType'),
         frameType: getStringValue('frameType'),
@@ -1039,18 +1055,13 @@ function getFormData() {
             rightDistSPH: getStringValue('rightDistSPH'),
             rightDistCYL: getStringValue('rightDistCYL'),
             rightDistAXIS: getStringValue('rightDistAXIS'),
-            rightDistVA: getStringValue('rightDistVA'),
+            rightDistVA: getStringValue('rightDistVA') || '6/6',
             leftDistSPH: getStringValue('leftDistSPH'),
             leftDistCYL: getStringValue('leftDistCYL'),
             leftDistAXIS: getStringValue('leftDistAXIS'),
-            leftDistVA: getStringValue('leftDistVA'),
-            // Prism
-            rightPrismDiopter: getStringValue('rightPrismDiopter'),
-            rightPrismBase: getStringValue('rightPrismBase'),
-            leftPrismDiopter: getStringValue('leftPrismDiopter'),
-            leftPrismBase: getStringValue('leftPrismBase'),
+            leftDistVA: getStringValue('leftDistVA') || '6/6',
             // Add Power (Simplified)
-            rightAddSPH: getStringValue('rightAddSPH'), // Now only the ADD power value
+            rightAddSPH: getStringValue('rightAddSPH'),
             leftAddSPH: getStringValue('leftAddSPH'),
         },
         customFields: (function() {
@@ -1070,8 +1081,14 @@ function validateFormData(data) {
     if (!data.patientName) return false;
     if (!data.age || data.age <= 0) return false;
     if (!data.mobile || !data.mobile.match(/^\d{10}$/)) return false;
-    if (!data.amount || data.amount < 0) return false;
-    if (!data.pdFar) return false; // PD Far is now required
+    const config = getFormFieldsConfig();
+    if (config.showPayment) {
+        const amountEl = document.getElementById('amount');
+        const amountStr = amountEl ? amountEl.value.trim() : '';
+        if (amountStr === '' || data.amount === undefined || data.amount === null || isNaN(data.amount) || data.amount < 0) {
+            return false;
+        }
+    }
     return true;
 }
 
@@ -1087,6 +1104,12 @@ function resetForm(clearPatientData = false) {
         });
         // Clear all prescription data inputs
         document.querySelectorAll('#prescriptionFormSection input[type="text"], #prescriptionFormSection input[type="number"]').forEach(input => input.value = '');
+        
+        // Restore default V/A values
+        const rightVA = document.getElementById('rightDistVA');
+        if (rightVA) rightVA.value = '6/6';
+        const leftVA = document.getElementById('leftDistVA');
+        if (leftVA) leftVA.value = '6/6';
     }
     isFormFilled = false;
     
@@ -1118,14 +1141,7 @@ function copyRightToLeft(isDist = true) {
             }
         });
         
-        // Copy Prism fields
-        const prismDiopter = document.getElementById('rightPrismDiopter')?.value;
-        const prismBase = document.getElementById('rightPrismBase')?.value;
-        
-        document.getElementById('leftPrismDiopter').value = prismDiopter;
-        document.getElementById('leftPrismBase').value = prismBase;
-        
-        showStatusMessage("Right Eye (OD) Distance & Prism copied to Left Eye (OS).", 'info');
+        showStatusMessage("Right Eye (OD) Distance copied to Left Eye (OS).", 'info');
         
     } else {
         // Copy Add field only
@@ -1484,9 +1500,7 @@ async function saveAsTemplate() {
         visionType: formData.visionType,
         lensType: formData.lensType,
         frameType: formData.frameType,
-        prescriptionData: formData.prescriptionData,
-        pdFar: formData.pdFar, // NEW
-        pdNear: formData.pdNear // NEW
+        prescriptionData: formData.prescriptionData
     };
     
     try {
@@ -1523,21 +1537,14 @@ function loadTemplate(templateId) {
         document.getElementById('visionType').value = template.visionType || 'Single Vision';
         document.getElementById('lensType').value = template.lensType || 'Blue Cut';
         document.getElementById('frameType').value = template.frameType || 'Full Rim';
-        
-        // NEW: Load PD fields
-        document.getElementById('pdFar').value = template.pdFar || '';
-        document.getElementById('pdNear').value = template.pdNear || '';
 
-        const presData = template.prescriptionData;
+        const presData = template.prescriptionData || {};
         
         // UPDATED: List of fields to populate
         const fields = [
             // Dist
             'rightDistSPH', 'rightDistCYL', 'rightDistAXIS', 'rightDistVA',
             'leftDistSPH', 'leftDistCYL', 'leftDistAXIS', 'leftDistVA',
-            // Prism
-            'rightPrismDiopter', 'rightPrismBase', 
-            'leftPrismDiopter', 'leftPrismBase',
             // Add (Simplified)
             'rightAddSPH',
             'leftAddSPH'
@@ -1546,7 +1553,7 @@ function loadTemplate(templateId) {
         fields.forEach(field => {
             const element = document.getElementById(field);
             if (element) {
-                element.value = presData[field] || '';
+                element.value = presData[field] || (field.endsWith('VA') ? '6/6' : '');
             }
         });
 
@@ -1804,7 +1811,7 @@ function generateViewContent(prescription) {
                 </thead>
                 <tbody>
                     <tr>
-                        <td rowspan="3"><strong>OD</strong></td>
+                        <td rowspan="2"><strong>OD</strong></td>
                         <td><strong>DIST</strong></td>
                         <td>${presData.rightDistSPH || ''}</td>
                         <td>${presData.rightDistCYL || ''}</td>
@@ -1812,27 +1819,17 @@ function generateViewContent(prescription) {
                         <td>${presData.rightDistVA || ''}</td>
                     </tr>
                     <tr>
-                        <td><strong>PRISM</strong></td>
-                        <td colspan="2">${presData.rightPrismDiopter || ''}</td>
-                        <td colspan="2">${presData.rightPrismBase || ''}</td>
-                    </tr>
-                    <tr>
                         <td><strong>ADD</strong></td>
                         <td>${presData.rightAddSPH || ''}</td>
                         <td colspan="3"></td>
                     </tr>
                     <tr>
-                        <td rowspan="3"><strong>OS</strong></td>
+                        <td rowspan="2"><strong>OS</strong></td>
                         <td><strong>DIST</strong></td>
                         <td>${presData.leftDistSPH || ''}</td>
                         <td>${presData.leftDistCYL || ''}</td>
                         <td>${presData.leftDistAXIS || ''}</td>
                         <td>${presData.leftDistVA || ''}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>PRISM</strong></td>
-                        <td colspan="2">${presData.leftPrismDiopter || ''}</td>
-                        <td colspan="2">${presData.leftPrismBase || ''}</td>
                     </tr>
                     <tr>
                         <td><strong>ADD</strong></td>
@@ -1841,20 +1838,6 @@ function generateViewContent(prescription) {
                     </tr>
                 </tbody>
             </table>
-        </div>
-
-        <div class="prescription-view-section">
-            <h4>Dispensing Parameters</h4>
-            <div class="patient-info-grid">
-                <div class="info-item">
-                    <span class="info-label">PD Far</span>
-                    <span class="info-value">${prescription.pdFar || 'N/A'}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">PD Near</span>
-                    <span class="info-value">${prescription.pdNear || 'N/A'}</span>
-                </div>
-            </div>
         </div>
 
         <div class="prescription-view-section">
@@ -1970,15 +1953,7 @@ function generateEditForm(prescription) {
                 </div>
                 <div class="edit-form-group">
                     <label for="editRightDistVA">DIST V/A</label>
-                    <input type="text" id="editRightDistVA" value="${presData.rightDistVA || ''}" placeholder="6/6 or 20/20">
-                </div>
-                <div class="edit-form-group">
-                    <label for="editRightPrismDiopter">PRISM Diopter</label>
-                    <input type="text" id="editRightPrismDiopter" value="${presData.rightPrismDiopter || ''}" placeholder="Prism D">
-                </div>
-                <div class="edit-form-group">
-                    <label for="editRightPrismBase">PRISM Base</label>
-                    <input type="text" id="editRightPrismBase" value="${presData.rightPrismBase || ''}" placeholder="IN/OUT/UP/DOWN">
+                    <input type="text" id="editRightDistVA" value="${presData.rightDistVA || '6/6'}" placeholder="6/6 or 20/20">
                 </div>
                 <div class="edit-form-group">
                     <label for="editRightAddSPH">ADD SPH</label>
@@ -2004,15 +1979,7 @@ function generateEditForm(prescription) {
                 </div>
                 <div class="edit-form-group">
                     <label for="editLeftDistVA">DIST V/A</label>
-                    <input type="text" id="editLeftDistVA" value="${presData.leftDistVA || ''}" placeholder="6/6 or 20/20">
-                </div>
-                <div class="edit-form-group">
-                    <label for="editLeftPrismDiopter">PRISM Diopter</label>
-                    <input type="text" id="editLeftPrismDiopter" value="${presData.leftPrismDiopter || ''}" placeholder="Prism D">
-                </div>
-                <div class="edit-form-group">
-                    <label for="editLeftPrismBase">PRISM Base</label>
-                    <input type="text" id="editLeftPrismBase" value="${presData.leftPrismBase || ''}" placeholder="IN/OUT/UP/DOWN">
+                    <input type="text" id="editLeftDistVA" value="${presData.leftDistVA || '6/6'}" placeholder="6/6 or 20/20">
                 </div>
                 <div class="edit-form-group">
                     <label for="editLeftAddSPH">ADD SPH</label>
@@ -2024,14 +1991,6 @@ function generateEditForm(prescription) {
         <div class="edit-prescription-section">
             <h4>Additional Details</h4>
             <div class="edit-prescription-grid">
-                <div class="edit-form-group">
-                    <label for="editPdFar">PD Far *</label>
-                    <input type="text" id="editPdFar" value="${prescription.pdFar || ''}" required placeholder="e.g., 60 or 30/30">
-                </div>
-                <div class="edit-form-group">
-                    <label for="editPdNear">PD Near</label>
-                    <input type="text" id="editPdNear" value="${prescription.pdNear || ''}" placeholder="e.g., 57 or 28.5/28.5">
-                </div>
                 <div class="edit-form-group">
                     <label for="editVisionType">Vision Type</label>
                     <select id="editVisionType">
@@ -2065,8 +2024,8 @@ function generateEditForm(prescription) {
                     </select>
                 </div>
                 <div class="edit-form-group">
-                    <label for="editAmount">Amount (₹) *</label>
-                    <input type="number" id="editAmount" value="${prescription.amount || ''}" step="0.01" required>
+                    <label for="editAmount">Amount (₹)</label>
+                    <input type="number" id="editAmount" value="${prescription.amount !== undefined && prescription.amount !== null ? prescription.amount : ''}" step="0.01">
                 </div>
                 <div class="edit-form-group">
                     <label for="editPaymentMode">Payment Mode</label>
@@ -2277,8 +2236,6 @@ function getEditFormData() {
         age: getNumberValue('editAge'),
         gender: getValue('editGender'),
         mobile: getValue('editMobile'),
-        pdFar: getValue('editPdFar'),
-        pdNear: getValue('editPdNear'),
         visionType: getValue('editVisionType'),
         lensType: getValue('editLensType'),
         frameType: getValue('editFrameType'),
@@ -2289,16 +2246,12 @@ function getEditFormData() {
             rightDistSPH: getValue('editRightDistSPH'),
             rightDistCYL: getValue('editRightDistCYL'),
             rightDistAXIS: getValue('editRightDistAXIS'),
-            rightDistVA: getValue('editRightDistVA'),
-            rightPrismDiopter: getValue('editRightPrismDiopter'),
-            rightPrismBase: getValue('editRightPrismBase'),
+            rightDistVA: getValue('editRightDistVA') || '6/6',
             rightAddSPH: getValue('editRightAddSPH'),
             leftDistSPH: getValue('editLeftDistSPH'),
             leftDistCYL: getValue('editLeftDistCYL'),
             leftDistAXIS: getValue('editLeftDistAXIS'),
-            leftDistVA: getValue('editLeftDistVA'),
-            leftPrismDiopter: getValue('editLeftPrismDiopter'),
-            leftPrismBase: getValue('editLeftPrismBase'),
+            leftDistVA: getValue('editLeftDistVA') || '6/6',
             leftAddSPH: getValue('editLeftAddSPH')
         }
     };
@@ -2317,11 +2270,7 @@ function validateEditForm(data) {
         showStatusMessage('Valid 10-digit mobile number is required.', 'error');
         return false;
     }
-    if (!data.pdFar) {
-        showStatusMessage('PD Far is required.', 'error');
-        return false;
-    }
-    if (!data.amount || data.amount < 0) {
+    if (data.amount !== undefined && data.amount !== null && data.amount < 0) {
         showStatusMessage('Valid amount is required.', 'error');
         return false;
     }
@@ -2538,8 +2487,6 @@ function loadPreviewData(data) {
     const lensType = data.lensType || 'N/A';
     const frameType = data.frameType || 'N/A';
     const paymentMode = data.paymentMode || 'N/A';
-    const pdFar = data.pdFar || 'N/A';
-    const pdNear = data.pdNear || 'N/A';
     
     // Get prescription data with safe defaults
     const presData = data.prescriptionData || {};
@@ -2554,9 +2501,7 @@ function loadPreviewData(data) {
         'previewVisionType': visionType,
         'previewLensType': lensType,
         'previewFrameType': frameType,
-        'previewPaymentMode': paymentMode,
-        'previewPdFar': pdFar,
-        'previewPdNear': pdNear
+        'previewPaymentMode': paymentMode
     };
 
     // Update all text elements
@@ -2566,6 +2511,30 @@ function loadPreviewData(data) {
             element.textContent = elements[elementId];
         }
     });
+
+    // Update clinic details in preview
+    const userData = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    const previewClinicName = document.getElementById('previewClinicName');
+    if (previewClinicName) previewClinicName.textContent = data.clinicName || userData.clinicName || 'Optical Clinic';
+    
+    const previewClinicAddress = document.getElementById('previewClinicAddress');
+    if (previewClinicAddress) previewClinicAddress.textContent = data.clinicAddress || userData.address || 'Clinic Address';
+    
+    const previewOptometristName = document.getElementById('previewOptometristName');
+    if (previewOptometristName) previewOptometristName.textContent = data.optometristName || userData.optometristName || 'Optometrist';
+    
+    const previewContactNumber = document.getElementById('previewContactNumber');
+    if (previewContactNumber) previewContactNumber.textContent = data.contactNumber || userData.contactNumber || '';
+
+    // Handle Issue Date
+    const previewDateElement = document.getElementById('previewcurrentDate');
+    if (previewDateElement) {
+        if (data.date) {
+            previewDateElement.textContent = new Date(data.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        } else {
+            previewDateElement.textContent = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+    }
 
     // Handle Next Checkup Date with better error handling
     let checkupDate = 'N/A';
@@ -2580,7 +2549,7 @@ function loadPreviewData(data) {
         }
         
         if (dateObj instanceof Date && !isNaN(dateObj)) {
-            checkupDate = dateObj.toLocaleDateString();
+            checkupDate = dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
         }
     }
     
@@ -2594,9 +2563,6 @@ function loadPreviewData(data) {
         // Dist
         'rightDistSPH', 'rightDistCYL', 'rightDistAXIS', 'rightDistVA',
         'leftDistSPH', 'leftDistCYL', 'leftDistAXIS', 'leftDistVA',
-        // Prism
-        'rightPrismDiopter', 'rightPrismBase',
-        'leftPrismDiopter', 'leftPrismBase',
         // Add (Simplified)
         'rightAddSPH',
         'leftAddSPH'
@@ -2605,12 +2571,25 @@ function loadPreviewData(data) {
     prescriptionFields.forEach(field => {
         const element = document.getElementById(`preview${field}`);
         if (element) {
-            element.textContent = presData[field] || '';
+            let val = presData[field];
+            if (field.endsWith('VA')) {
+                element.textContent = val || '6/6';
+            } else if (field.endsWith('AXIS')) {
+                element.textContent = val ? `${val}°` : '--';
+            } else if (val !== undefined && val !== null && val !== '') {
+                const num = parseFloat(val);
+                if (!isNaN(num)) {
+                    element.textContent = num > 0 ? `+${num.toFixed(2)}` : num.toFixed(2);
+                } else {
+                    element.textContent = val;
+                }
+            } else {
+                element.textContent = (field.includes('Add') ? '0.00' : '0.00');
+            }
         }
     });
 
     // Update UPI QR Image in Preview section
-    const userData = JSON.parse(localStorage.getItem('userProfile') || '{}');
     const previewUpiContainer = document.getElementById('previewUpiContainer');
     const previewQrCodeImage = document.getElementById('previewQrCodeImage');
     
@@ -2725,10 +2704,6 @@ function printPreview() {
     const gender = document.getElementById('previewGender')?.textContent || '';
     const mobile = document.getElementById('previewMobile')?.textContent || '';
     const nextCheckupDate = document.getElementById('previewNextCheckupDate')?.textContent || 'N/A';
-
-    // NEW PD Fields
-    const pdFar = document.getElementById('previewPdFar')?.textContent || '';
-    const pdNear = document.getElementById('previewPdNear')?.textContent || '';
     
     const visionType = document.getElementById('previewVisionType')?.textContent || '';
     const lensType = document.getElementById('previewLensType')?.textContent || '';
@@ -2762,10 +2737,6 @@ function printPreview() {
             AXIS: document.getElementById('previewrightDistAXIS')?.textContent || '',
             VA: document.getElementById('previewrightDistVA')?.textContent || ''
         },
-        rightPrism: {
-            DIOPTER: document.getElementById('previewrightPrismDiopter')?.textContent || '',
-            BASE: document.getElementById('previewrightPrismBase')?.textContent || ''
-        },
         rightAdd: {
             SPH: document.getElementById('previewrightAddSPH')?.textContent || '',
         },
@@ -2775,27 +2746,9 @@ function printPreview() {
             AXIS: document.getElementById('previewleftDistAXIS')?.textContent || '',
             VA: document.getElementById('previewleftDistVA')?.textContent || ''
         },
-        leftPrism: {
-            DIOPTER: document.getElementById('previewleftPrismDiopter')?.textContent || '',
-            BASE: document.getElementById('previewleftPrismBase')?.textContent || ''
-        },
         leftAdd: {
             SPH: document.getElementById('previewleftAddSPH')?.textContent || '',
         }
-    };
-    
-    // Logic to display Prism if present
-    const getPrismRow = (eyeData) => {
-        if (eyeData.DIOPTER || eyeData.BASE) {
-            return `
-                <tr>
-                    <td class="section-heading">PRISM</td>
-                    <td colspan="2">${eyeData.DIOPTER}</td>
-                    <td colspan="2">${eyeData.BASE}</td>
-                </tr>
-            `;
-        }
-        return '';
     };
 
     // Logic to display ADD if present
@@ -2823,7 +2776,7 @@ function printPreview() {
             </div>
             <p style="font-size: 8px; margin: 2px 0; color: #666;">
                 View your prescription online at: 
-                <strong style="color: #007bff;">lensrx.online</strong>
+                <strong style="color: #007bff;">lensrxbymnr.netlify.app</strong>
             </p>
             <p style="font-size: 7px; margin: 0; color: #888;">
                 Powered by MNR Developers
@@ -2979,10 +2932,6 @@ function printPreview() {
                     <div class="patient-value">${mobile}</div>
                 </div>
                 <div class="patient-row">
-                    <div class="patient-label">PD Far / Near:</div>
-                    <div class="patient-value">${pdFar} / ${pdNear || 'N/A'}</div>
-                </div>
-                <div class="patient-row">
                     <div class="patient-label">Next Checkup:</div>
                     <div class="patient-value">${nextCheckupDate}</div>
                 </div>
@@ -3008,7 +2957,6 @@ function printPreview() {
                             <td>${prescriptionData.rightDist.AXIS}</td>
                             <td>${prescriptionData.rightDist.VA}</td>
                         </tr>
-                        ${getPrismRow(prescriptionData.rightPrism)}
                         ${getAddRow(prescriptionData.rightAdd)}
                     </tbody>
                 </table>
@@ -3034,7 +2982,6 @@ function printPreview() {
                             <td>${prescriptionData.leftDist.AXIS}</td>
                             <td>${prescriptionData.leftDist.VA}</td>
                         </tr>
-                        ${getPrismRow(prescriptionData.leftPrism)}
                         ${getAddRow(prescriptionData.leftAdd)}
                     </tbody>
                 </table>
@@ -3775,20 +3722,15 @@ function setupInputValidation() {
         { id: 'leftDistAXIS', type: 'axis' }, { id: 'leftDistVA', type: 'va' },
         // Add (Simplified)
         { id: 'rightAddSPH', type: 'add' }, 
-        { id: 'leftAddSPH', type: 'add' }, 
-        // Prism (New)
-        { id: 'rightPrismDiopter', type: 'prism_diopter' },
-        { id: 'rightPrismBase', type: 'prism_base' },
-        { id: 'leftPrismDiopter', type: 'prism_diopter' },
-        { id: 'leftPrismBase', type: 'prism_base' },
-        // PD (New)
-        { id: 'pdFar', type: 'pd_complex' },
-        { id: 'pdNear', type: 'pd_complex' },
+        { id: 'leftAddSPH', type: 'add' }
     ];
 
     prescriptionInputs.forEach(field => {
         const element = document.getElementById(field.id);
         if (element) {
+            if (field.type === 'va' && !element.value.trim()) {
+                element.value = '6/6';
+            }
             element.addEventListener('input', function() {
                 if (field.type === 'number') {
                     // Allow optional sign, digits, and one decimal point
@@ -3802,15 +3744,6 @@ function setupInputValidation() {
                 } else if (field.type === 'axis') {
                     // Only digits (0-180)
                     this.value = this.value.replace(/[^0-9]/g, '');
-                } else if (field.type === 'prism_diopter') {
-                    // Prism diopter (e.g., 1.5) - only digits and one decimal point
-                     this.value = this.value.replace(/[^0-9.]/g, ''); 
-                } else if (field.type === 'prism_base') {
-                     // Base direction (IN, OUT, UP, DOWN)
-                     this.value = this.value.toUpperCase().replace(/[^INOUTUPDOWN]/g, '');
-                } else if (field.type === 'pd_complex') {
-                    // Allow monocular or binocular PD (e.g., 60 or 30/30 or 30.5/30.5)
-                     this.value = this.value.replace(/[^0-9./]/g, '');
                 }
             });
         }
@@ -4172,9 +4105,7 @@ window.updateBottomNav = updateBottomNav;
 
 function getFormFieldsConfig() {
     const defaultConfig = {
-        showPrism: true,
         showAdd: true,
-        showPdNear: true,
         showSpecs: true,
         showPayment: true,
         customFields: []
@@ -4199,15 +4130,11 @@ function toggleFormCustomizer() {
 
 function syncCustomizerControls() {
     const config = getFormFieldsConfig();
-    const prismCb = document.getElementById('togglePrismRow');
     const addCb = document.getElementById('toggleAddRow');
-    const pdNearCb = document.getElementById('togglePdNear');
     const specsCb = document.getElementById('toggleSpecsSection');
     const paymentCb = document.getElementById('togglePaymentSection');
 
-    if (prismCb) prismCb.checked = config.showPrism;
     if (addCb) addCb.checked = config.showAdd;
-    if (pdNearCb) pdNearCb.checked = config.showPdNear;
     if (specsCb) specsCb.checked = config.showSpecs;
     if (paymentCb) paymentCb.checked = config.showPayment;
 
@@ -4215,16 +4142,12 @@ function syncCustomizerControls() {
 }
 
 function saveFormFieldsConfig() {
-    const prismCb = document.getElementById('togglePrismRow');
     const addCb = document.getElementById('toggleAddRow');
-    const pdNearCb = document.getElementById('togglePdNear');
     const specsCb = document.getElementById('toggleSpecsSection');
     const paymentCb = document.getElementById('togglePaymentSection');
 
     const config = getFormFieldsConfig();
-    config.showPrism = prismCb ? prismCb.checked : true;
     config.showAdd = addCb ? addCb.checked : true;
-    config.showPdNear = pdNearCb ? pdNearCb.checked : true;
     config.showSpecs = specsCb ? specsCb.checked : true;
     config.showPayment = paymentCb ? paymentCb.checked : true;
 
@@ -4293,31 +4216,29 @@ function renderCustomFieldsList(customFields) {
 function applyFormFieldsConfig() {
     const config = getFormFieldsConfig();
 
-    // 1. Toggle Prism Rows
-    const rightPrism = document.getElementById('rightPrismRow');
-    const leftPrism = document.getElementById('leftPrismRow');
-    if (rightPrism) rightPrism.style.display = config.showPrism ? '' : 'none';
-    if (leftPrism) leftPrism.style.display = config.showPrism ? '' : 'none';
-
-    // 2. Toggle ADD Rows
+    // 1. Toggle ADD Rows
     const rightAdd = document.getElementById('rightAddRow');
     const leftAdd = document.getElementById('leftAddRow');
     if (rightAdd) rightAdd.style.display = config.showAdd ? '' : 'none';
     if (leftAdd) leftAdd.style.display = config.showAdd ? '' : 'none';
 
-    // 3. Toggle PD Near
-    const pdNear = document.getElementById('pdNearContainer');
-    if (pdNear) pdNear.style.display = config.showPdNear ? '' : 'none';
-
-    // 4. Toggle Specs Section
+    // 2. Toggle Specs Section
     const specs = document.getElementById('specsSectionContainer');
     if (specs) specs.style.display = config.showSpecs ? '' : 'none';
 
-    // 5. Toggle Payment Section
+    // 3. Toggle Payment Section & Amount Requirement
     const payment = document.getElementById('paymentSectionContainer');
+    const amountInput = document.getElementById('amount');
     if (payment) payment.style.display = config.showPayment ? '' : 'none';
+    if (amountInput) {
+        if (config.showPayment) {
+            amountInput.setAttribute('required', 'required');
+        } else {
+            amountInput.removeAttribute('required');
+        }
+    }
 
-    // 6. Render Custom Fields in Prescription Form
+    // 4. Render Custom Fields in Prescription Form
     const customSection = document.getElementById('customRxSectionContainer');
     const customContainer = document.getElementById('customRxFieldsContainer');
 

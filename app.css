@@ -1730,59 +1730,433 @@ body.dark-mode .feature-comparison .table td {
   border: 1px solid var(--border);
 }
 
-#prescriptionPreview {
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 24px;
-  font-family: 'Inter', sans-serif;
+/* ================================================================
+   REDESIGNED PRESCRIPTION PREVIEW (AFTER SAVING)
+   ================================================================ */
+.preview-container {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 10px 0 40px;
 }
 
-.preview-header { text-align: center; margin-bottom: 14px; }
-.preview-header h2 { color: var(--navy); font-size: 1.25rem; font-weight: 700; }
+.preview-toolbar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
 
-.preview-details { margin-bottom: 14px; }
-.preview-details p { margin-bottom: 4px; font-size: 13.5px; }
-
-.preview-prescription h3 {
-  font-size: 0.95rem;
+.preview-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ecfdf5;
+  color: #065f46;
+  font-size: 0.85rem;
   font-weight: 700;
-  color: var(--navy);
-  margin-bottom: 10px;
+  padding: 6px 14px;
+  border-radius: 50px;
+  border: 1px solid #a7f3d0;
 }
 
-.preview-prescription table {
+.prescription-preview-card {
+  background: white;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 15px 30px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+  color: #1e293b;
+}
+
+/* Card Header */
+.rx-card-header {
+  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+  color: white;
+  padding: 22px 26px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.rx-clinic-branding {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rx-clinic-icon {
+  width: 44px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  color: #93c5fd;
+  flex-shrink: 0;
+}
+
+.rx-clinic-title h2 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: white;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.rx-clinic-title p {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.82);
+  margin: 2px 0 0 0;
+}
+
+.rx-doctor-subtext {
+  font-size: 0.78rem !important;
+  color: #fde68a !important;
+  margin-top: 3px !important;
+}
+
+.rx-meta-badge {
+  text-align: right;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.rx-meta-badge .meta-date {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #fde68a;
+}
+
+.rx-meta-badge .meta-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* Patient Strip */
+.rx-patient-strip {
+  background: #f8fafc;
+  padding: 14px 26px;
+  border-bottom: 1px solid #e2e8f0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.patient-strip-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.strip-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.4px;
+}
+
+.strip-val {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Card Body Section */
+.rx-body-section {
+  padding: 20px 26px;
+}
+
+.rx-section-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Prescription Table */
+.rx-table-wrapper {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.rx-preview-table {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 14px;
-  font-size: 13px;
+  text-align: center;
+  font-size: 0.88rem;
 }
 
-.preview-prescription th {
-  background: var(--navy);
-  color: white;
-  padding: 8px 10px;
-  text-align: center;
+.rx-preview-table thead th {
+  background: #f1f5f9;
+  color: #334155;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  padding: 10px 8px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.rx-preview-table tbody td {
+  padding: 10px 8px;
+  font-weight: 600;
+  color: #1e293b;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.eye-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.eye-od {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.eye-os {
+  background: #fdf2f8;
+  color: #be185d;
+}
+
+.power-val {
+  font-family: monospace, sans-serif;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.va-val {
+  font-weight: 800;
+  color: #2563eb;
+}
+
+.add-row td {
+  background: #fafafa;
+  font-size: 0.82rem;
+}
+
+.add-power-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #ecfdf5;
+  color: #065f46;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+/* Specs Grid */
+.rx-specs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.spec-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.spec-card-icon {
+  width: 32px;
+  height: 32px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2563eb;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.spec-card-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.4px;
+}
+
+.spec-card-value {
+  font-size: 0.85rem;
+  color: #0f172a;
+}
+
+/* Billing Row */
+.rx-billing-row {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  padding: 12px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.billing-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.billing-label {
+  font-size: 0.82rem;
+  color: #166534;
   font-weight: 600;
 }
 
-.preview-prescription td {
-  padding: 7px 10px;
-  border: 1px solid var(--border);
-  text-align: center;
+.billing-amount {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #14532d;
 }
 
-.preview-prescription tbody tr:nth-child(odd) { background: var(--surface-2); }
+.billing-mode {
+  font-size: 0.88rem;
+  background: white;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid #86efac;
+  color: #166534;
+}
 
+/* UPI Box */
+.preview-upi-box {
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  padding: 12px;
+  text-align: center;
+  background: #f8fafc;
+  margin-bottom: 16px;
+}
+
+.upi-qr-img {
+  width: 90px;
+  height: 90px;
+  margin: 0 auto 6px;
+  display: block;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.upi-title {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-bottom: 2px;
+}
+
+.upi-id {
+  font-size: 0.82rem;
+  color: #0f172a;
+}
+
+/* App Promotion Footer */
+.app-promotion-section {
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+  padding: 14px 26px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.app-promotion-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.app-promotion-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+}
+
+.app-promotion-text h4 {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #1e3a8a;
+  margin: 0;
+}
+
+.app-promotion-text p {
+  font-size: 0.72rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.app-promotion-content {
+  text-align: right;
+}
+
+.app-portal-url {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #2563eb;
+  margin: 0;
+}
+
+.app-portal-sub {
+  font-size: 0.68rem;
+  color: #94a3b8;
+  margin: 0;
+}
+
+/* Thank You Note */
 .preview-footer {
   text-align: center;
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid var(--border);
-  color: var(--text-muted);
-  font-size: 12.5px;
+  padding: 12px 26px;
+  background: white;
+  border-top: 1px solid #f1f5f9;
 }
 
+.thank-you-title {
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: #334155;
+  margin: 0;
+}
+
+.thank-you-subtitle {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  margin: 2px 0 0 0;
+}
+
+/* Action Buttons */
 .preview-buttons {
   display: flex;
   gap: 12px;
@@ -1790,29 +2164,39 @@ body.dark-mode .feature-comparison .table td {
   flex-wrap: wrap;
 }
 
-.preview-buttons .btn { flex: 1; min-width: 110px; }
-
-/* App Promotion (inside preview print) */
-.app-promotion-section {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 12px;
-  margin: 10px 0;
-  background: linear-gradient(135deg, #f0f4ff, #eef2ff);
-}
-
-.app-promotion-header {
-  display: flex;
+.preview-buttons .btn {
+  flex: 1;
+  min-width: 140px;
+  padding: 12px 18px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  border-radius: 10px;
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 6px;
+  justify-content: center;
+  gap: 8px;
 }
 
-.app-promotion-logo {
-  width: 38px;
-  height: 38px;
-  border-radius: 8px;
+.btn-download {
+  background: #2563eb;
+  color: white;
+  border: none;
 }
+.btn-download:hover { background: #1d4ed8; }
+
+.btn-print {
+  background: #0f172a;
+  color: white;
+  border: none;
+}
+.btn-print:hover { background: #1e293b; }
+
+.btn-whatsapp {
+  background: #25d366;
+  color: white;
+  border: none;
+}
+.btn-whatsapp:hover { background: #20ba5a; }
 
 
 /* ── NOTIFICATIONS ──────────────────────────────────────────────── */

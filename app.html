@@ -392,23 +392,9 @@
                     <div class="customizer-sections-grid">
                         <div class="customizer-group">
                             <label class="customizer-switch">
-                                <input type="checkbox" id="togglePrismRow" checked onchange="saveFormFieldsConfig()">
-                                <span class="slider"></span>
-                                <span class="label-text">Show Prism Rows (OD & OS)</span>
-                            </label>
-                        </div>
-                        <div class="customizer-group">
-                            <label class="customizer-switch">
                                 <input type="checkbox" id="toggleAddRow" checked onchange="saveFormFieldsConfig()">
                                 <span class="slider"></span>
                                 <span class="label-text">Show ADD Rows (OD & OS)</span>
-                            </label>
-                        </div>
-                        <div class="customizer-group">
-                            <label class="customizer-switch">
-                                <input type="checkbox" id="togglePdNear" checked onchange="saveFormFieldsConfig()">
-                                <span class="slider"></span>
-                                <span class="label-text">Show PD Near Field</span>
                             </label>
                         </div>
                         <div class="customizer-group">
@@ -498,7 +484,7 @@
                     <hr>
 
                     <!-- Prescription Details (UPDATED SECTION) -->
-                    <div class="section-title">Refractive Correction & Prism (SPH, CYL, AXIS)</div>
+                    <div class="section-title">Refractive Correction (SPH, CYL, AXIS)</div>
                     
                     <div class="prescription-table">
                         <!-- Right Eye Table -->
@@ -523,15 +509,8 @@
                                     <td><input type="text" id="rightDistSPH" placeholder="±D"></td>
                                     <td><input type="text" id="rightDistCYL" placeholder="±D"></td>
                                     <td><input type="text" id="rightDistAXIS" placeholder="1-180"></td>
-                                    <td><input type="text" id="rightDistVA" placeholder="6/6 or 20/20"></td>
-                                    <td><button onclick="copyRightToLeft(true)" class="btn btn-sm btn-secondary copy-btn" title="Copy Distance & Prism to OS">Dist/Prism →</button></td>
-                                </tr>
-                                <!-- PRISM Row -->
-                                <tr id="rightPrismRow">
-                                    <td><strong>PRISM</strong></td>
-                                    <td colspan="2"><input type="text" id="rightPrismDiopter" placeholder="Prism D"></td>
-                                    <td colspan="2"><input type="text" id="rightPrismBase" placeholder="Base (IN/OUT/UP/DOWN)"></td>
-                                    <td></td>
+                                    <td><input type="text" id="rightDistVA" value="6/6" placeholder="6/6 or 20/20"></td>
+                                    <td><button onclick="copyRightToLeft(true)" class="btn btn-sm btn-secondary copy-btn" title="Copy Distance to OS">Dist →</button></td>
                                 </tr>
                                 <!-- ADD Power Row -->
                                 <tr id="rightAddRow" class="bg-light">
@@ -567,14 +546,7 @@
                                     <td><input type="text" id="leftDistSPH" placeholder="±D"></td>
                                     <td><input type="text" id="leftDistCYL" placeholder="±D"></td>
                                     <td><input type="text" id="leftDistAXIS" placeholder="1-180"></td>
-                                    <td><input type="text" id="leftDistVA" placeholder="6/6 or 20/20"></td>
-                                    <td></td>
-                                </tr>
-                                <!-- PRISM Row -->
-                                <tr id="leftPrismRow">
-                                    <td><strong>PRISM</strong></td>
-                                    <td colspan="2"><input type="text" id="leftPrismDiopter" placeholder="Prism D"></td>
-                                    <td colspan="2"><input type="text" id="leftPrismBase" placeholder="Base (IN/OUT/UP/DOWN)"></td>
+                                    <td><input type="text" id="leftDistVA" value="6/6" placeholder="6/6 or 20/20"></td>
                                     <td></td>
                                 </tr>
                                 <!-- ADD Power Row -->
@@ -588,20 +560,6 @@
                                 </tr>
                             </tbody>
                         </table>
-                    </div>
-                    <hr>
-
-                    <!-- Dispensing Parameters -->
-                    <div class="section-title">Dispensing Parameters (PD)</div>
-                    <div class="patient-details" style="grid-template-columns: 1fr 1fr;">
-                        <div>
-                            <label for="pdFar">Pupillary Distance (PD) - Far (mm)</label>
-                            <input type="text" id="pdFar" placeholder="e.g., 60 or 30/30" required>
-                        </div>
-                        <div id="pdNearContainer">
-                            <label for="pdNear">Pupillary Distance (PD) - Near (mm) (Optional)</label>
-                            <input type="text" id="pdNear" placeholder="e.g., 57 or 28.5/28.5">
-                        </div>
                     </div>
                     <hr>
                     
@@ -793,199 +751,213 @@
         </section>
 
       <!-- Preview Section -->
+      <!-- Preview Section (After Saving) -->
 <section id="previewSection" class="page-section">
     <div class="preview-container">
-        <button onclick="navigateIfProfileComplete(showPrescriptions, 'prescriptions')" class="btn btn-back">
-            <i class="fas fa-arrow-left"></i> Back
-        </button>
-
-        <!-- Prescription Preview Container -->
-        <div id="prescriptionPreview">
-            <!-- Clinic Details -->
-            <div class="preview-header">
-                <h2 id="previewClinicName">Loading...</h2>
-                <p id="previewClinicAddress">Please wait...</p>
+        
+        <!-- Top Toolbar -->
+        <div class="preview-toolbar-top">
+            <button onclick="navigateIfProfileComplete(showPrescriptions, 'prescriptions')" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left"></i> Back to Prescriptions
+            </button>
+            <div class="preview-status-pill">
+                <i class="fas fa-check-circle text-success"></i> Prescription Saved Successfully
             </div>
-            <hr>
+            <button onclick="showPrescriptionForm()" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus"></i> New Prescription
+            </button>
+        </div>
 
-            <!-- Optometrist Details -->
-            <div class="preview-details">
-                <p id="previewOptometristName"><strong>Loading...</strong></p>
-                <p id="previewContactNumber"><strong>Please wait...</strong></p>
-                <p><strong>Date:</strong> <span id="previewcurrentDate"></span></p>
-            </div>
-            <hr>
-
-            <!-- Patient Details -->
-            <div class="preview-details">
-                <p><strong>Patient Name:</strong> <span id="previewPatientName"></span></p>
-                <p><strong>Age:</strong> <span id="previewAge"></span></p>
-                <p><strong>Gender:</strong> <span id="previewGender"></span></p>
-                <p><strong>Mobile:</strong> <span id="previewMobile"></span></p>
-                <!-- H: Checkup date in preview -->
-                <p><strong>Next Checkup:</strong> <span id="previewNextCheckupDate"></span></p>
-            </div>
-            <hr>
-
-            <!-- Prescription Details (UPDATED PREVIEW) -->
-            <div class="preview-prescription">
-                <h3>Prescription Details</h3>
-
-                <!-- Right Eye Table -->
-                <table>
-                    <thead>
-                        <tr>
-                            <th colspan="5">RIGHT EYE (OD)</th>
-                        </tr>
-                        <tr>
-                            <th></th>
-                            <th>SPH</th>
-                            <th>CYL</th>
-                            <th>AXIS</th>
-                            <th>V/A</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- DISTANCE Row -->
-                        <tr>
-                            <td><strong>DIST</strong></td>
-                            <td><span id="previewrightDistSPH"></span></td>
-                            <td><span id="previewrightDistCYL"></span></td>
-                            <td><span id="previewrightDistAXIS"></span></td>
-                            <td><span id="previewrightDistVA"></span></td>
-                        </tr>
-                        <!-- PRISM Row -->
-                        <tr>
-                            <td><strong>PRISM</strong></td>
-                            <td colspan="2"><span id="previewrightPrismDiopter"></span></td>
-                            <td colspan="2"><span id="previewrightPrismBase"></span></td>
-                        </tr>
-                        <!-- ADD Power Row (Simplified) -->
-                        <tr class="bg-light">
-                            <td><strong>ADD</strong></td>
-                            <td><span id="previewrightAddSPH"></span></td>
-                            <td></td> <!-- Blank cell -->
-                            <td></td> <!-- Blank cell -->
-                            <td></td> <!-- Blank cell -->
-                        </tr>
-                    </tbody>
-                </table>
-
-                <!-- Left Eye Table -->
-                <table>
-                    <thead>
-                        <tr>
-                            <th colspan="5">LEFT EYE (OS)</th>
-                        </tr>
-                        <tr>
-                            <th></th>
-                            <th>SPH</th>
-                            <th>CYL</th>
-                            <th>AXIS</th>
-                            <th>V/A</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- DISTANCE Row -->
-                        <tr>
-                            <td><strong>DIST</strong></td>
-                            <td><span id="previewleftDistSPH"></span></td>
-                            <td><span id="previewleftDistCYL"></span></td>
-                            <td><span id="previewleftDistAXIS"></span></td>
-                            <td><span id="previewleftDistVA"></span></td>
-                        </tr>
-                        <!-- PRISM Row -->
-                        <tr>
-                            <td><strong>PRISM</strong></td>
-                            <td colspan="2"><span id="previewleftPrismDiopter"></span></td>
-                            <td colspan="2"><span id="previewleftPrismBase"></span></td>
-                        </tr>
-                        <!-- ADD Power Row (Simplified) -->
-                        <tr class="bg-light">
-                            <td><strong>ADD</strong></td>
-                            <td><span id="previewleftAddSPH"></span></td>
-                            <td></td> <!-- Blank cell -->
-                            <td></td> <!-- Blank cell -->
-                            <td></td> <!-- Blank cell -->
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <hr>
-
-            <!-- Dispensing Parameters Preview (NEW SECTION) -->
-            <div class="preview-details">
-                <p><strong>PD Far:</strong> <span id="previewPdFar"></span></p>
-                <p><strong>PD Near:</strong> <span id="previewPdNear"></span></p>
-            </div>
-            <hr>
+        <!-- Prescription Preview Container (Captured for Image / Thermal) -->
+        <div id="prescriptionPreview" class="prescription-preview-card">
             
-            <!-- Vision Type, Lens Type, Frame Type -->
-            <div class="preview-details">
-                <p><strong>Vision Type:</strong> <span id="previewVisionType"></span></p>
-                <p><strong>Lens Type:</strong> <span id="previewLensType"></span></p>
-                <p><strong>Frame Type:</strong> <span id="previewFrameType"></span></p>
-            </div>
-            <hr>
-
-            <!-- Amount -->
-            <div class="preview-details">
-                <p><strong>Amount:</strong> ₹<span id="previewAmount"></span></p>
-                <p><strong>Payment Mode:</strong> <span id="previewPaymentMode"></span></p>
-            </div>
-            
-            <!-- NEW: UPI QR/ID in Preview -->
-            <div id="previewUpiContainer" style="display: none;">
-                <div class="text-center mb-2">
-                     <img id="previewQrCodeImage" alt="UPI QR Code" style="width: 100px; height: 100px; margin: 0 auto; display: block;">
-                     <p style="font-size: 10px; margin-top: 5px;">Scan to Pay (UPI)</p>
-                     <p style="font-weight: bold; font-size: 11px;">UPI ID: <span id="previewUpiId"></span></p>
+            <!-- Clinic Details Header -->
+            <div class="rx-card-header">
+                <div class="rx-clinic-branding">
+                    <div class="rx-clinic-icon">
+                        <i class="fas fa-eye"></i>
+                    </div>
+                    <div class="rx-clinic-title">
+                        <h2 id="previewClinicName">Loading Clinic...</h2>
+                        <p id="previewClinicAddress">Please wait...</p>
+                        <p class="rx-doctor-subtext">
+                            <i class="fas fa-user-md"></i> <span id="previewOptometristName">Optometrist</span> 
+                            • <i class="fas fa-phone-alt"></i> <span id="previewContactNumber">Contact</span>
+                        </p>
+                    </div>
                 </div>
-                <hr>
+                <div class="rx-meta-badge">
+                    <div class="meta-label">Date Issued</div>
+                    <div id="previewcurrentDate" class="meta-date">--/--/----</div>
+                </div>
             </div>
 
-            <!-- NEW: App Promotion Section (This will appear in images and prints) -->
+            <!-- Patient Information Strip -->
+            <div class="rx-patient-strip">
+                <div class="patient-strip-item">
+                    <span class="strip-label">Patient Name</span>
+                    <strong id="previewPatientName" class="strip-val">--</strong>
+                </div>
+                <div class="patient-strip-item">
+                    <span class="strip-label">Age / Gender</span>
+                    <strong class="strip-val"><span id="previewAge">--</span> Yrs / <span id="previewGender">--</span></strong>
+                </div>
+                <div class="patient-strip-item">
+                    <span class="strip-label">Mobile Number</span>
+                    <strong class="strip-val">+91 <span id="previewMobile">--</span></strong>
+                </div>
+                <div class="patient-strip-item">
+                    <span class="strip-label">Next Checkup</span>
+                    <strong id="previewNextCheckupDate" class="strip-val text-primary">--</strong>
+                </div>
+            </div>
+
+            <!-- Prescription Refractive Table -->
+            <div class="rx-body-section">
+                <div class="rx-section-title">
+                    <i class="fas fa-glasses text-primary"></i> Refractive Correction
+                </div>
+
+                <div class="rx-table-wrapper">
+                    <table class="rx-preview-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 18%;">Eye</th>
+                                <th style="width: 14%;">Type</th>
+                                <th style="width: 17%;">SPH</th>
+                                <th style="width: 17%;">CYL</th>
+                                <th style="width: 17%;">AXIS</th>
+                                <th style="width: 17%;">V/A</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Right Eye (OD) -->
+                            <tr>
+                                <td><span class="eye-badge eye-od">OD (Right)</span></td>
+                                <td><strong>DIST</strong></td>
+                                <td><span id="previewrightDistSPH" class="power-val">0.00</span></td>
+                                <td><span id="previewrightDistCYL" class="power-val">0.00</span></td>
+                                <td><span id="previewrightDistAXIS">--</span></td>
+                                <td><span id="previewrightDistVA" class="va-val">6/6</span></td>
+                            </tr>
+                            <tr class="add-row">
+                                <td></td>
+                                <td><strong>ADD</strong></td>
+                                <td colspan="4" style="text-align: left; padding-left: 16px;">
+                                    <span class="add-power-pill"><i class="fas fa-plus"></i> <span id="previewrightAddSPH">0.00</span> D</span>
+                                </td>
+                            </tr>
+
+                            <!-- Left Eye (OS) -->
+                            <tr>
+                                <td><span class="eye-badge eye-os">OS (Left)</span></td>
+                                <td><strong>DIST</strong></td>
+                                <td><span id="previewleftDistSPH" class="power-val">0.00</span></td>
+                                <td><span id="previewleftDistCYL" class="power-val">0.00</span></td>
+                                <td><span id="previewleftDistAXIS">--</span></td>
+                                <td><span id="previewleftDistVA" class="va-val">6/6</span></td>
+                            </tr>
+                            <tr class="add-row">
+                                <td></td>
+                                <td><strong>ADD</strong></td>
+                                <td colspan="4" style="text-align: left; padding-left: 16px;">
+                                    <span class="add-power-pill"><i class="fas fa-plus"></i> <span id="previewleftAddSPH">0.00</span> D</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Lens & Frame Recommendations -->
+                <div class="rx-section-title mt-3">
+                    <i class="fas fa-clipboard-list text-primary"></i> Lens & Frame Specifications
+                </div>
+
+                <div class="rx-specs-grid">
+                    <div class="spec-card">
+                        <div class="spec-card-icon"><i class="fas fa-bullseye"></i></div>
+                        <div>
+                            <div class="spec-card-label">Vision Type</div>
+                            <strong id="previewVisionType" class="spec-card-value">Single Vision</strong>
+                        </div>
+                    </div>
+                    <div class="spec-card">
+                        <div class="spec-card-icon"><i class="fas fa-shield-alt"></i></div>
+                        <div>
+                            <div class="spec-card-label">Lens Type / Coating</div>
+                            <strong id="previewLensType" class="spec-card-value">Standard</strong>
+                        </div>
+                    </div>
+                    <div class="spec-card">
+                        <div class="spec-card-icon"><i class="fas fa-crop"></i></div>
+                        <div>
+                            <div class="spec-card-label">Frame Type</div>
+                            <strong id="previewFrameType" class="spec-card-value">Full Rim</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Billing & Amount -->
+                <div class="rx-billing-row">
+                    <div class="billing-item">
+                        <span class="billing-label">Total Amount:</span>
+                        <strong class="billing-amount">₹<span id="previewAmount">0.00</span></strong>
+                    </div>
+                    <div class="billing-item">
+                        <span class="billing-label">Payment Mode:</span>
+                        <strong id="previewPaymentMode" class="billing-mode">Cash</strong>
+                    </div>
+                </div>
+
+                <!-- UPI QR Scan Section (Optional) -->
+                <div id="previewUpiContainer" class="preview-upi-box" style="display: none;">
+                    <img id="previewQrCodeImage" alt="UPI QR Code" class="upi-qr-img">
+                    <div class="upi-text">
+                        <p class="upi-title">Scan to Pay via UPI</p>
+                        <p class="upi-id">UPI ID: <strong id="previewUpiId">--</strong></p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- App Promotion / Online Lookup Section -->
             <div class="app-promotion-section">
                 <div class="app-promotion-header">
                     <img src="lenslogo.png" alt="LensRx" class="app-promotion-logo">
                     <div class="app-promotion-text">
-                        <h4 style="margin: 0; color: #1e3a8a; font-weight: bold;">Lens Rx App</h4>
-                        <p style="margin: 2px 0; font-size: 14px; color: #666;">Digital Prescription Management</p>
+                        <h4>Lens Rx Digital Health</h4>
+                        <p>Access your digital prescription online anytime</p>
                     </div>
                 </div>
                 <div class="app-promotion-content">
-                    <p style="margin: 0; font-size: 14px; color: #333;">
-                        <strong>View your prescription online anytime at:</strong>
+                    <p class="app-portal-url">
+                        <i class="fas fa-globe"></i> lensrxbymnr.netlify.app
                     </p>
-                    <p style="margin: 5px 0; font-size: 16px; font-weight: bold; color: #007bff;">
-                        lensrx.online
-                    </p>
+                    <p class="app-portal-sub">Powered by MNR Developers • Verified Digital Records</p>
                 </div>
-                <p style="margin: 5px 0 0 0; font-size: 12px; color: #6b7280;">
-                    Powered by MNR Developers • Secure Digital Prescriptions
-                </p>
             </div>
-            <hr>
 
-            <!-- Thank You Note -->
+            <!-- Thank You Note Footer -->
             <div class="preview-footer">
-                <p>Thank you for choosing Us</p>
-                <p>We hope to see you again soon.</p>
+                <p class="thank-you-title">Thank you for choosing Us!</p>
+                <p class="thank-you-subtitle">Please consult your optometrist for annual routine eye exams.</p>
             </div>
+
         </div>
 
-        <!-- Buttons -->
+        <!-- Action Buttons -->
         <div class="preview-buttons">
             <button onclick="generateImage()" class="btn btn-download">
-                <i class="fas fa-image"></i> Download 
+                <i class="fas fa-download"></i> Save Image (PNG)
             </button>
             <button onclick="printPreview()" class="btn btn-print">
-                <i class="fas fa-print"></i> Print
+                <i class="fas fa-print"></i> Print Receipt
             </button>
             <button onclick="sendWhatsApp()" class="btn btn-whatsapp">
-                <i class="fab fa-whatsapp"></i> WhatsApp
+                <i class="fab fa-whatsapp"></i> WhatsApp Patient
             </button>
         </div>
+
     </div>
 </section>
         
